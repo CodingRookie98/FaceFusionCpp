@@ -30,6 +30,7 @@ public:
     void tick();
     void markAsCompleted();
     static void showConsoleCursor(bool show);
+    bool isCompleted() const;
 
 private:
     indicators::ProgressBar *m_bar;

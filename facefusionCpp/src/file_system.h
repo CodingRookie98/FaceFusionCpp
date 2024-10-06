@@ -11,14 +11,10 @@
 #ifndef FACEFUSIONCPP_SRC_FILE_SYSTEM_H_
 #define FACEFUSIONCPP_SRC_FILE_SYSTEM_H_
 
-#include <filesystem>
 #include <string>
 #include <opencv2/opencv.hpp>
 #include <unordered_set>
 #include <vector>
-#include <random>
-#include <thread_pool/thread_pool.h>
-#include "vision.h"
 
 namespace Ffc {
 
@@ -33,7 +29,7 @@ public:
     static std::string getFileNameFromURL(const std::string &url);
     static uintmax_t getFileSize(const std::string &path);
     static std::unordered_set<std::string> listFilesInDirectory(const std::string &path);
-    static std::string resolveRelativePath(const std::string &path);
+    static std::string absolutePath(const std::string &path);
     static bool hasImage(const std::unordered_set<std::string> &paths);
     static std::unordered_set<std::string> filterImagePaths(const std::unordered_set<std::string> &paths);
     static std::string normalizeOutputPath(const std::string &targetPath, const std::string &outputPath);
@@ -42,6 +38,7 @@ public:
     static void createDirectory(const std::string &path);
     static void removeDirectory(const std::string &path);
     static void removeFile(const std::string &path);
+    static void removeFiles(const std::vector<std::string> &paths);
     static void copyFile(const std::string &source, const std::string &destination);
     static void copyFiles(const std::vector<std::string> &sources, const std::vector<std::string> &destination);
     static void moveFile(const std::string &source, const std::string &destination);

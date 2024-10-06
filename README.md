@@ -19,9 +19,11 @@ Additional environment requirements:
 
 1. Face swapping in images
 2. Facial enhancement in images
-3. Batch processing
-4. Multi-threaded acceleration
-5. TensorRT engine acceleration (engine caching available)
+3. Expression restore
+4. Image Super-Resolution
+5. Batch processing
+6. Multi-threaded acceleration
+7. TensorRT engine acceleration (engine caching available)
 
 ## Next
 

@@ -1,23 +1,27 @@
 cmake_minimum_required(VERSION 3.28)
-project(faceFusionCpp VERSION 0.2.1 DESCRIPTION "This project is the C++ version of the open-source project FaceFusion.")
+project(faceFusionCpp VERSION 0.3.0 DESCRIPTION "This project is the C++ version of the open-source project FaceFusion.")
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/bin/Debug)
-Set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/bin/Release)
+set(RUNTIME_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/build/runtime")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${RUNTIME_PREFIX}/${CMAKE_BUILD_TYPE}")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+    add_definitions(-D_WIN32_WINNT=0x0601)
+endif ()
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_link_options(-static-libgcc -static-libstdc++)
 endif ()
 
 set(ProgramName ${PROJECT_NAME})
 add_executable(${ProgramName})
-
-include("./cmake/onnxruntime-gpu.cmake")
+if (LINUX)
+    set_target_properties(${ProgramName} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+endif ()
 
 add_subdirectory(facefusionCpp)
-set(ONNXRUNTIME "${CMAKE_BINARY_DIR}/onnxruntime-win-x64-gpu-1.18.1")
 
 find_package(OpenCV REQUIRED)
 find_package(ONNX CONFIG REQUIRED)
@@ -34,14 +38,27 @@ find_package(FFMPEG REQUIRED)
 target_include_directories(${ProgramName} PRIVATE ${FFMPEG_INCLUDE_DIRS})
 target_link_directories(${ProgramName} PRIVATE ${FFMPEG_LIBRARY_DIRS})
 target_link_libraries(${ProgramName} PRIVATE ${FFMPEG_LIBRARIES})
-
 target_include_directories(${ProgramName} PRIVATE ${SIMPLEINI_INCLUDE_DIRS})
-target_link_directories(${ProgramName} PRIVATE ${VCPKG_INSTALLED_DIR}/x64-windows/lib)
 target_link_libraries(${ProgramName} PRIVATE ${OpenCV_LIBS})
-target_include_directories(${ProgramName} PRIVATE "${ONNXRUNTIME}/include")
-target_link_directories(${ProgramName} PRIVATE "${ONNXRUNTIME}/lib")
-target_link_libraries(${ProgramName} PRIVATE onnxruntime)
-target_link_libraries(${ProgramName} PRIVATE onnx onnx_proto)
+
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/onnxruntime-gpu.cmake")
+add_library(onnxruntime SHARED IMPORTED)
+if (LINUX)
+    set_target_properties(onnxruntime PROPERTIES
+            IMPORTED_LOCATION "${ORT_PATH}/lib/libonnxruntime.so"
+            INTERFACE_INCLUDE_DIRECTORIES "${ORT_PATH}/include"
+    )
+endif ()
+target_include_directories(${ProgramName} PRIVATE "${ORT_PATH}/include")
+target_link_directories(${ProgramName} PRIVATE "${ORT_PATH}/lib")
+if (LINUX)
+    target_link_libraries(${ProgramName} PRIVATE onnxruntime)
+endif ()
+if (WIN32)
+    target_link_libraries(${ProgramName} PRIVATE "${ORT_PATH}/lib/onnxruntime.lib")
+endif ()
+
+target_link_libraries(${ProgramName} PRIVATE ONNX::onnx ONNX::onnx_proto)
 target_link_libraries(${ProgramName} PRIVATE nlohmann_json::nlohmann_json)
 target_link_libraries(${ProgramName} PRIVATE spdlog::spdlog_header_only)
 target_link_libraries(${ProgramName} PRIVATE CURL::libcurl)
@@ -54,7 +71,6 @@ list(APPEND RESOURCE_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/faceFusionCpp.ini"
         "${CMAKE_CURRENT_SOURCE_DIR}/facefusionCpp/modelsInfo.json"
 )
-
 add_custom_target(COPY_RESOURCE_FILES
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${RESOURCE_FILES}
@@ -63,49 +79,95 @@ add_custom_target(COPY_RESOURCE_FILES
 )
 add_dependencies(${ProgramName} COPY_RESOURCE_FILES)
 
+set(X_VCPKG_APPLOCAL_DEPS_INSTALL TRUE CACHE BOOL "Automatically COPY dependencies into the install target directory for executables.")
+set(X_VCPKG_APPLOCAL_DEPS_SERIALIZED ON) # 控制VCPKG的依赖项是否被序列化处理
+cmake_policy(SET CMP0177 NEW) #使用CMP0177策略的新行为，即对DESTINATION路径进行规范化处理, 需要cmake>=3.31
+install(TARGETS ${ProgramName} DESTINATION "./"
+        RUNTIME DESTINATION "./"
+        LIBRARY DESTINATION "./"
+        ARCHIVE DESTINATION "./"
+        COMPONENT "app"
+)
+
+if (WIN32)
+    install(FILES $<TARGET_RUNTIME_DLLS:${ProgramName}>
+            COMPONENT "app_dll"
+            DESTINATION "./"
+    )
+endif ()
+
+install(FILES ${RESOURCE_FILES} DESTINATION "./" COMPONENT "app")
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/README.md"
+        "${CMAKE_CURRENT_SOURCE_DIR}/DOCUMENT.md"
+        "${CMAKE_CURRENT_SOURCE_DIR}/DISCLAIMER.txt"
+        DESTINATION "./"
+        COMPONENT "app"
+)
+
+# Please configure cmake again after building the project
+if (WIN32)
+    file(GLOB ONNXRUNTIME_LIBS "${ORT_PATH}/lib/*.dll")
+    file(GLOB OUTPUT_RUNTIME_LIBS "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/*.dll")
+endif ()
+if (LINUX)
+    file(GLOB ONNXRUNTIME_LIBS "${ORT_PATH}/lib/*.so*")
+endif ()
+if (WIN32)
+    install(FILES ${ONNXRUNTIME_LIBS} ${OUTPUT_RUNTIME_LIBS} DESTINATION "./" COMPONENT "app")
+endif ()
+if (LINUX)
+    install(FILES ${ONNXRUNTIME_LIBS} ${OUTPUT_RUNTIME_LIBS} DESTINATION "./lib" COMPONENT "app")
+endif ()
+
+set(INSTALL_INI_FILE "${CMAKE_INSTALL_PREFIX}/faceFusionCpp.ini")
+file(WRITE "${CMAKE_BINARY_DIR}/trim_file_content_4install.cmake" "
+    file(READ \"${INSTALL_INI_FILE}\" CONTENT)
+    string(REPLACE \"\n\" \";\" LINES \"\${CONTENT\}\") # 按行分隔
+    set(NEW_CONTENT \"\")
+    foreach(LINE IN LISTS LINES)
+        string(REGEX REPLACE \"((.*)=).*\" \"\\\\1\" LINE \"\$\{LINE\}\") # 删除最后一个=后的内容
+        set(NEW_CONTENT \"\$\{NEW_CONTENT\}\$\{LINE\}\\n\")
+    endforeach()
+    file(WRITE \"${INSTALL_INI_FILE}\" \"\$\{NEW_CONTENT\}\") # 写入文件
+")
+install(SCRIPT "${CMAKE_BINARY_DIR}/trim_file_content_4install.cmake" COMPONENT "app")
+
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "./")
+include(InstallRequiredSystemLibraries)
+
 # 设置打包的方式
-set(CPACK_GENERATOR ZIP)
+if (WIN32)
+    set(CPACK_GENERATOR ZIP)
+endif ()
+if (LINUX)
+    set(CPACK_GENERATOR TGZ)
+endif ()
 
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_PACKAGE_VERSION_MAJOR "${faceFusionCpp_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${faceFusionCpp_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${faceFusionCpp_VERSION_PATCH}")
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
+set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-${${PROJECT_NAME}_VERSION}-${CMAKE_BUILD_TYPE}")
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-win-x64-${${PROJECT_NAME}_VERSION}")
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-linux-x64-${${PROJECT_NAME}_VERSION}")
+if (WIN32)
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(CPACK_INI_FILE "${CMAKE_BINARY_DIR}/_CPack_Packages/win64/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/faceFusionCpp.ini")
+    else ()
+        set(CPACK_INI_FILE "${CMAKE_BINARY_DIR}/_CPack_Packages/win32/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/faceFusionCpp.ini")
+    endif ()
 else ()
-    message(STATUS "The system is neither Windows nor Linux.")
+    set(CPACK_INI_FILE "${CMAKE_BINARY_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/faceFusionCpp.ini")
 endif ()
-
-set(INSTALL_PATH "./")
-set(X_VCPKG_APPLOCAL_DEPS_INSTALL TRUE CACHE BOOL "Automatically COPY dependencies into the install target directory for executables.")
-set(X_VCPKG_APPLOCAL_DEPS_SERIALIZED ON)
-
-install(TARGETS ${ProgramName} DESTINATION ${INSTALL_PATH}
-        RUNTIME LIBRARY ARCHIVE COMPONENT "app_exe" DESTINATION ${INSTALL_PATH}
-)
-
-install(FILES $<TARGET_RUNTIME_DLLS:${ProgramName}>
-        COMPONENT "app_dll"
-        DESTINATION ${INSTALL_PATH}
-)
-install(FILES ${RESOURCE_FILES} DESTINATION ${INSTALL_PATH})
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/README.md"
-        "${CMAKE_CURRENT_SOURCE_DIR}/DOCUMENT.md"
-        "${CMAKE_CURRENT_SOURCE_DIR}/DISCLAIMER.txt"
-        DESTINATION ${INSTALL_PATH}
-)
-
-# Please configure cmake again after building the project
-if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-    file(GLOB RUNTIME_FILES "${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}/*.dll")
-elseif (${CMAKE_BUILD_TYPE} STREQUAL "Release")
-    file(GLOB RUNTIME_FILES "${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}/*.dll")
-endif ()
-install(FILES ${RUNTIME_FILES} DESTINATION ${INSTALL_PATH})
-
-include(InstallRequiredSystemLibraries)
+file(WRITE "${CMAKE_BINARY_DIR}/trim_file_content_4cpack.cmake" "
+    file(READ \"${CPACK_INI_FILE}\" CONTENT)
+    string(REPLACE \"\n\" \";\" LINES \"\${CONTENT\}\") # 按行分隔
+    set(NEW_CONTENT \"\")
+    foreach(LINE IN LISTS LINES)
+        string(REGEX REPLACE \"((.*)=).*\" \"\\\\1\" LINE \"\$\{LINE\}\") # 删除最后一个=后的内容
+        set(NEW_CONTENT \"\$\{NEW_CONTENT\}\$\{LINE\}\\n\")
+    endforeach()
+    file(WRITE \"${CPACK_INI_FILE}\" \"\$\{NEW_CONTENT\}\") # 写入文件
+")
+set(CPACK_PRE_BUILD_SCRIPTS "${CMAKE_BINARY_DIR}/trim_file_content_4cpack.cmake")
 include(CPack)

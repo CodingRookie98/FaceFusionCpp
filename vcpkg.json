@@ -1,0 +1,26 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "facefusioncpp",
+  "version": "0.3.0",
+  "builtin-baseline": "d567b667adba0e72c5c3931ddbe745b66aa34b73",
+  "dependencies": [
+    "boost-process",
+    "curl",
+    "dp-thread-pool",
+    "ffmpeg",
+    "indicators",
+    "nlohmann-json",
+    "onnx",
+    {
+      "name": "opencv",
+      "features": [
+        "ffmpeg",
+        "openmp",
+        "tbb"
+      ]
+    },
+    "openssl",
+    "simpleini",
+    "spdlog"
+  ]
+}

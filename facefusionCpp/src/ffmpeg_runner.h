@@ -11,28 +11,12 @@
 #ifndef FACEFUSIONCPP_FACEFUSIONCPP_FFMPEG_RUNNER_H_
 #define FACEFUSIONCPP_FACEFUSIONCPP_FFMPEG_RUNNER_H_
 
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libavutil/channel_layout.h>
-#include <libavutil/common.h>
-#include <libavutil/frame.h>
-#include <libavutil/imgutils.h>
-#include <libavutil/samplefmt.h>
-#include <libswscale/swscale.h>
-}
-
-#include <boost/process.hpp>
 #include <string>
-#include <iostream>
-#include <fstream>
 #include <unordered_set>
-#include <opencv2/opencv.hpp>
-#include "logger.h"
-#include "file_system.h"
+#include <unordered_map>
+#include <vector>
 
 namespace Ffc {
-namespace bp = boost::process;
 class FfmpegRunner {
 public:
     enum Audio_Codec {
@@ -47,7 +31,7 @@ public:
     public:
         // Initialize the `frameRate`, `width`, and `height` member variables.
         explicit VideoPrams(const std::string &videoPath);
-        
+
         double frameRate;
         unsigned int width;
         unsigned int height;

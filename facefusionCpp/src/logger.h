@@ -12,8 +12,6 @@
 #define FACEFUSIONCPP_SRC_LOGGER_H_
 
 #include <spdlog/spdlog.h>
-#include <spdlog/sinks/daily_file_sink.h>
-#include <spdlog/async.h>
 
 namespace Ffc {
 
@@ -33,13 +31,14 @@ public:
     void setLogLevel(const Logger::LogLevel &level);
     [[nodiscard]] LogLevel getLogLevel() const;
     void log(const Logger::LogLevel &level, const std::string &message) const;
+    static void log(const char *level, const char *msg);
     void trace(const std::string &message) const;
     void debug(const std::string &message) const;
     void info(const std::string &message) const;
     void warn(const std::string &message) const;
     void error(const std::string &message) const;
     void critical(const std::string &message) const;
-    
+
     Logger();
     ~Logger() = default;
     Logger(const Logger &) = delete;

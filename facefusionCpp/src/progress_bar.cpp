@@ -71,4 +71,8 @@ void ProgressBar::markAsCompleted() {
 void ProgressBar::showConsoleCursor(bool show) {
     show_console_cursor(show);
 }
+
+bool ProgressBar::isCompleted() const {
+    return m_bar->is_completed();
+}
 } // namespace Ffc

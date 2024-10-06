@@ -15,12 +15,12 @@
 
 namespace Ffc::MetaData {
 
-const std::string name = "FaceFusionCPP";
+const std::string name = "FaceFusionCpp";
 const std::string description = "This project is a C++ implementation of the open-source project facefusion.";
-const std::string version = "0.2.1";
+const std::string version = "0.3.0";
 const std::string license = "GPL-3.0 License";
-const std::string author = "CodingRookie";
-const std::string url = "https://github.com/CodingRookie98/faceFusionCpp";
+const std::string author = "CodingRookie https://github.com/CodingRookie98";
+const std::string url = "https://github.com/CodingRookie98/FaceFusionCpp";
 
 } // namespace Ffc
 

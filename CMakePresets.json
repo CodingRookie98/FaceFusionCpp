@@ -1,0 +1,80 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "linux-base",
+            "hidden": true,
+            "generator": "Ninja",
+            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            },
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            }
+        },
+        {
+            "name": "linux-release",
+            "displayName": "x64 Release",
+            "inherits": "linux-base",
+            "binaryDir": "${sourceDir}/build/release",
+            "installDir": "${sourceDir}/build/install/release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "linux-debug",
+            "displayName": "x64 debug",
+            "inherits": "linux-base",
+            "binaryDir": "${sourceDir}/build/debug",
+            "installDir": "${sourceDir}/build/install/debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "windows-base",
+            "hidden": true,
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "cl.exe",
+                "CMAKE_CXX_COMPILER": "cl.exe"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            }
+        },
+        {
+            "name": "win-x64-release",
+            "displayName": "x64 release",
+            "inherits": "windows-base",
+            "binaryDir": "${sourceDir}/build/release",
+            "installDir": "${sourceDir}/build/install/release",
+            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "win-x64-debug",
+            "displayName": "x64 debug",
+            "inherits": "windows-base",
+            "binaryDir": "${sourceDir}/build/debug",
+            "installDir": "${sourceDir}/build/install/debug",
+            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        }
+    ]
+}

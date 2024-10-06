@@ -8,10 +8,27 @@
  ******************************************************************************
  */
 
-#include <numeric>
 #include "ffmpeg_runner.h"
+#include <numeric>
+#include <iostream>
+#include <fstream>
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/channel_layout.h>
+#include <libavutil/common.h>
+#include <libavutil/frame.h>
+#include <libavutil/imgutils.h>
+#include <libavutil/samplefmt.h>
+#include <libswscale/swscale.h>
+}
+#include <boost/process.hpp>
+#include <opencv2/opencv.hpp>
+#include "file_system.h"
+#include "logger.h"
 
 namespace Ffc {
+namespace bp = boost::process;
 
 std::vector<std::string> FfmpegRunner::childProcess(const std::string &command) {
     std::vector<std::string> lines;
@@ -24,7 +41,7 @@ std::vector<std::string> FfmpegRunner::childProcess(const std::string &command) 
         bp::child c(commandToRun, bp::std_out > pipeStream);
 
         if (!c.valid()) {
-            std::string error = "child process is valid : " + commandToRun;
+            std::string error = "child swapFace is valid : " + commandToRun;
             lines.emplace_back(error);
             return lines;
         }
@@ -51,7 +68,7 @@ bool FfmpegRunner::isVideo(const std::string &videoPath) {
     if (FileSystem::isImage(videoPath)) {
         return false;
     }
-    
+
     cv::VideoCapture cap(videoPath);
     if (!cap.isOpened()) {
         Logger::getInstance()->error(std::format("{} : {}", __FUNCTION__, "Failed to open video file : " + videoPath));
@@ -66,8 +83,8 @@ bool FfmpegRunner::isAudio(const std::string &audioPath) {
         Logger::getInstance()->error(std::format("{} : {}", __FUNCTION__, "Not a audio file : " + audioPath));
         return false;
     }
-    
-     AVFormatContext *formatContext = avformat_alloc_context();
+
+    AVFormatContext *formatContext = avformat_alloc_context();
     if (avformat_open_input(&formatContext, audioPath.c_str(), nullptr, nullptr) != 0) {
         std::cerr << "Could not open input file." << std::endl;
         return false;
@@ -77,7 +94,7 @@ bool FfmpegRunner::isAudio(const std::string &audioPath) {
         std::cerr << "Could not find stream information." << std::endl;
         return false;
     }
-    
+
     for (size_t i = 0; i < formatContext->nb_streams; ++i) {
         if (formatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             avformat_close_input(&formatContext);
@@ -189,7 +206,7 @@ std::unordered_map<unsigned int, std::string> FfmpegRunner::getAudioStreamsIndex
         std::cerr << "Could not find stream information." << std::endl;
         return {};
     }
-    
+
     std::unordered_map<unsigned int, std::string> results;
     for (size_t i = 0; i < formatContext->nb_streams; ++i) {
         if (formatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -198,7 +215,7 @@ std::unordered_map<unsigned int, std::string> FfmpegRunner::getAudioStreamsIndex
         }
     }
     avformat_close_input(&formatContext);
-    
+
     return results;
 }
 

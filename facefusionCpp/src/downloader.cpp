@@ -9,11 +9,19 @@
  */
 
 #include "downloader.h"
+#include <fstream>
+#include <filesystem>
+#include "file_system.h"
+#include "logger.h"
 
 namespace Ffc {
 
 size_t Downloader::writeData(void *ptr, size_t size, size_t nmemb, std::ofstream *stream) {
     stream->write(static_cast<char *>(ptr), size * nmemb);
+    return size * nmemb;
+}
+
+size_t Downloader::emptyWriteFunc(void *ptr, size_t size, size_t nmemb, void *userdata) {
     return size * nmemb;
 }
 
@@ -40,7 +48,10 @@ long Downloader::getFileSize(const std::string &url) {
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L); // 验证证书上的主机名
 
         // 自定义处理头部数据
-        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, headerCallback);
+        //        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, headerCallback);
+
+        // 用于设置响应头在控制台输出
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, emptyWriteFunc);
 
         res = curl_easy_perform(curl);
 
@@ -72,7 +83,7 @@ bool Downloader::isDownloadDone(const std::string &Url, const std::string &fileP
 }
 
 bool Downloader::batchDownload(const std::unordered_set<std::string> &urls, const std::string &outPutDirectory) {
-    std::string outputDir = FileSystem::resolveRelativePath(outPutDirectory);
+    std::string outputDir = FileSystem::absolutePath(outPutDirectory);
     for (const auto &url : urls) {
         if (!download(url, outputDir)) {
             return false;
@@ -82,7 +93,7 @@ bool Downloader::batchDownload(const std::unordered_set<std::string> &urls, cons
 }
 
 bool Downloader::download(const std::string &url, const std::string &outPutDirectory) {
-    std::string outputDir = FileSystem::resolveRelativePath(outPutDirectory);
+    std::string outputDir = FileSystem::absolutePath(outPutDirectory);
     if (!std::filesystem::exists(outputDir)) {
         if (!std::filesystem::create_directories(outputDir)) {
             Logger::getInstance()->error(std::format("Failed to create output directory: {}", outputDir));
@@ -98,8 +109,10 @@ bool Downloader::download(const std::string &url, const std::string &outPutDirec
     }
 
     // 获取文件路径
-    std::string outputFilePath = FileSystem::resolveRelativePath(outputDir + "/" + getFileNameFromUrl(url));
-    std::ofstream output(outputFilePath, std::ios::binary);
+    std::string outputFileName = getFileNameFromUrl(url);
+    std::string outputFilePath = FileSystem::absolutePath(outputDir + "/" + outputFileName);
+    std::string tempFilePath = outputFilePath + ".downloading";
+    std::ofstream output(tempFilePath, std::ios::binary);
     if (!output.is_open()) {
         Logger::getInstance()->error(std::format("Failed to open output file: {}", outputFilePath));
         return false;
@@ -124,19 +137,11 @@ bool Downloader::download(const std::string &url, const std::string &outPutDirec
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &output);
 
         // 设置进度回调函数
-        curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, progressCallback);
-
-        ProgressBar *bar = new ProgressBar;
-        bar->setMaxProgress(100);
-        bar->setProgress(0);
-        bar->setPrefixText("Downloading " + getFileNameFromUrl(url) + ": ");
-        bar->setPostfixText(std::format("{}/{}", humanReadableSize(0), humanReadableSize(fileSize)));
+        //        curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, progressCallback);
         // 传递给回调函数的自定义数据
-        curl_easy_setopt(curl, CURLOPT_XFERINFODATA, bar);
-
+        //        curl_easy_setopt(curl, CURLOPT_XFERINFODATA, bar);
         // 自定义处理头部数据
-        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, headerCallback);
-
+        //        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, headerCallback);
         // 启用进度回调 1L为禁用
         curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
 
@@ -146,27 +151,28 @@ bool Downloader::download(const std::string &url, const std::string &outPutDirec
         // 设置SSL选项
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L); // 验证服务器的SSL证书
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L); // 验证证书上的主机名
-
-        bar->showConsoleCursor(false);
+        
+        Logger::getInstance()->info(std::format("Downloading {}", outputFileName));
         // 执行请求
         res = curl_easy_perform(curl);
-        bar->showConsoleCursor(true);
 
         // 清理
         curl_easy_cleanup(curl);
-        delete bar;
+        output.close();
 
         if (res != CURLE_OK) {
             Logger::getInstance()->error(std::format("curl_easy_perform() failed: {}", curl_easy_strerror(res)));
+            // remove temp file
+            std::filesystem::remove(tempFilePath);
             return false;
+        } else {
+            // rename temp file to output file
+            std::filesystem::rename(tempFilePath, outputFilePath);
+            Logger::getInstance()->info(std::format("Download completed: {}", outputFileName));
+            return true;
         }
-        return true;
-    }
-    if (FileSystem::fileExists(outputFilePath) && FileSystem::getFileSize(outputFilePath) == fileSize) {
-        Logger::getInstance()->info("File already exists.");
-        return true;
     } else {
-        Logger::getInstance()->error("File downloaded failed.");
+        Logger::getInstance()->error("Failed to initialize curl.");
         return false;
     }
 }
@@ -184,11 +190,6 @@ int Downloader::progressCallback(void *clientp, curl_off_t dltotal, curl_off_t d
     // dlnow: 当前已下载的数据量
     // ultotal: 总上传数据量（对上传请求有用）
     // ulnow: 当前已上传的数据量（对上传请求有用）
-
-    // 获取进度条对象
-    ProgressBar *bar = static_cast<ProgressBar *>(clientp);
-    bar->setPostfixText(std::format("{}/{}", humanReadableSize(dlnow), humanReadableSize(dltotal)));
-    bar->setProgress(std::round((float)dlnow / (float)dltotal * 100.0f));
 
     // 返回0继续操作，返回1中止操作
     return 0;

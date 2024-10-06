@@ -8,22 +8,29 @@
  ******************************************************************************
  */
 
-#ifndef FACEFUSIONCPP_SRC_CONFIG_H_
-#define FACEFUSIONCPP_SRC_CONFIG_H_
+#ifndef FACEFUSIONCPP_FACEFUSIONCPP_SRC_CONFIG_H_
+#define FACEFUSIONCPP_FACEFUSIONCPP_SRC_CONFIG_H_
 
-#include <SimpleIni.h>
 #include <string>
 #include <vector>
 #include <unordered_set>
-#include <opencv2/opencv.hpp>
 #include <shared_mutex>
-#include "typing.h"
-#include "file_system.h"
-#include "vision.h"
+#include <SimpleIni.h>
+#include <opencv2/opencv.hpp>
 #include "logger.h"
+#include "processor_base.h"
+#include "face_detectors.h"
+#include "model_manager.h"
+#include "face_swapper_helper.h"
+#include "face_enhancer_helper.h"
+#include "face_selector.h"
+#include "face_maskers.h"
+#include "face_masker_region.h"
+#include "inference_session.h"
+#include "face_landmarkers.h"
+#include "frame_enhancer_helper.h"
 
 namespace Ffc {
-
 class Config {
 public:
     explicit Config(const std::string &configPath = "./faceFusionCpp.ini");
@@ -48,42 +55,48 @@ public:
 
     // execution
     int m_executionDeviceId;
-    std::unordered_set<Typing::EnumExecutionProvider> m_executionProviders;
+    std::unordered_set<InferenceSession::ExecutionProvider> m_executionProviders;
     int m_executionThreadCount;
 
     // tensort
     bool m_enableTensorrtCache;
     bool m_enableTensorrtEmbedEngine;
+    size_t m_trtMaxWorkspaceSize;
 
     // memory
-    float m_perSessionGpuMemLimit;
+    enum ProcessorMemoryStrategy {
+        Strict,
+        Tolerant,
+    };
+    ProcessorMemoryStrategy m_processorMemoryStrategy;
 
     // face analyser
     float m_faceDetectorScore;
+    FaceLandmarkers::Landmarker68Model  m_faceLandmarkerModel;
     float m_faceLandmarkerScore;
-    Typing::EnumFaceDetectModel m_faceDetectorModel;
+    FaceDetectors::FaceDetectorType m_faceDetectorModel;
     cv::Size m_faceDetectorSize;
-    Typing::EnumFaceRecognizerModel m_faceRecognizerModel;
 
     // face selector
-    Typing::EnumFaceSelectorMode m_faceSelectorMode;
-    Typing::EnumFaceSelectorOrder m_faceSelectorOrder;
-    Typing::EnumFaceSelectorAge m_faceSelectorAge;
-    Typing::EnumFaceSelectorGender m_faceSelectorGender;
-    int m_referenceFacePosition;
+    FaceSelector::SelectorMode m_faceSelectorMode;
+    FaceSelector::FaceSelectorOrder m_faceSelectorOrder;
+    FaceSelector::Gender m_faceSelectorGender;
+    FaceSelector::Race m_faceSelectorRace;
+    unsigned int m_faceSelectorAgeStart, m_faceSelectorAgeEnd;
+    unsigned int m_referenceFacePosition;
     float m_referenceFaceDistance;
-    int m_referenceFrameNumber;
+    unsigned int m_referenceFrameNumber;
 
     // face masker
-    std::unordered_set<Typing::EnumFaceMaskerType> m_faceMaskTypeSet;
+    std::unordered_set<FaceMaskers::Type> m_faceMaskTypeSet;
     float m_faceMaskBlur;
-    Typing::Padding m_faceMaskPadding;
-    std::unordered_set<Typing::EnumFaceMaskRegion> m_faceMaskRegionsSet;
+    std::array<int, 4> m_faceMaskPadding;
+    std::unordered_set<FaceMaskerRegion::Region> m_faceMaskRegionsSet;
 
     // output creation
     int m_outputImageQuality;
     cv::Size m_outputImageResolution;
-    
+
     // video
     unsigned int m_videoSegmentDuration;
     std::string m_outputVideoEncoder;
@@ -94,10 +107,13 @@ public:
     std::string m_tempFrameFormat;
 
     // Frame Processors
-    std::vector<Typing::EnumFrameProcessor> m_frameProcessors;
-    Typing::EnumFaceSwapperModel m_faceSwapperModel;
-    Typing::EnumFaceEnhancerModel m_faceEnhancerModel;
+    std::vector<ProcessorBase::ProcessorType> m_frameProcessors;
+    FaceSwapperHelper::FaceSwapperModel m_faceSwapperModel;
+    FaceEnhancerHelper::Model m_faceEnhancerModel;
     int m_faceEnhancerBlend;
+    float m_expressionRestorerFactor;
+    FrameEnhancerHelper::Model m_frameEnhancerModel;
+    int m_frameEnhancerBlend;
 
 private:
     CSimpleIniA m_ini;
@@ -105,7 +121,7 @@ private:
     std::string m_configPath;
     std::shared_ptr<Logger> m_logger = Logger::getInstance();
     void loadConfig();
-    static std::tuple<int, int, int, int> normalizePadding(const std::vector<int> &padding);
+    static std::array<int, 4> normalizePadding(const std::vector<int> &padding);
     static std::vector<int> parseStringToVector(const std::string &input);
 
     void general();
@@ -119,8 +135,8 @@ private:
     void image();
     void video();
     void frameProcessors();
+    static void tolower(std::string &str);
 };
-
 } // namespace Ffc
 
-#endif // FACEFUSIONCPP_SRC_CONFIG_H_
+#endif // FACEFUSIONCPP_FACEFUSIONCPP_SRC_CONFIG_H_

@@ -8,8 +8,10 @@
  ******************************************************************************
  */
 
-#include <spdlog/sinks/wincolor_sink.h>
 #include "logger.h"
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/daily_file_sink.h>
+#include <spdlog/async.h>
 
 namespace Ffc {
 std::shared_ptr<Logger> Logger::getInstance() {
@@ -92,7 +94,7 @@ void Logger::critical(const std::string &message) const {
 
 Logger::Logger() {
     spdlog::init_thread_pool(8192, 2);
-    auto consoleSink = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
+    auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     consoleSink->set_color_mode(spdlog::color_mode::automatic);
     consoleSink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
     auto dailySink = std::make_shared<spdlog::sinks::daily_file_sink_mt>("logs/faceFusionCpp.log", 23, 59);
@@ -106,5 +108,22 @@ Logger::Logger() {
 
 Logger::LogLevel Logger::getLogLevel() const {
     return m_level;
+}
+
+void Logger::log(const char *level, const char *msg) {
+    std::string levelStr(level), msgStr(msg);
+    if (levelStr == "trace") {
+        Logger::getInstance()->trace(msgStr);
+    } else if (levelStr == "debug") {
+        Logger::getInstance()->debug(msgStr);
+    } else if (levelStr == "info") {
+        Logger::getInstance()->info(msgStr);
+    } else if (levelStr == "warn") {
+        Logger::getInstance()->warn(msgStr);
+    } else if (levelStr == "error") {
+        Logger::getInstance()->error(msgStr);
+    } else if (levelStr == "critical") {
+        Logger::getInstance()->critical(msgStr);
+    }
 }
 } // namespace Ffc
