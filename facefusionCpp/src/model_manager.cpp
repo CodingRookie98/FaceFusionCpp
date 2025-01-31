@@ -8,17 +8,27 @@
  ******************************************************************************
  */
 
-#include "model_manager.h"
+module;
 #include <fstream>
-#include "downloader.h"
-#include "file_system.h"
+#include <unordered_set>
+#include <nlohmann/json.hpp>
 
-namespace Ffc {
+module model_manager;
+import downloader;
+import file_system;
+
+namespace ffc {
+
+std::unique_ptr<nlohmann::json> m_modelsInfoJson = nullptr;
+
 ModelManager::ModelManager(const std::string &modelsInfoJsonPath) {
     m_modelsInfoJsonPath = modelsInfoJsonPath;
-    std::ifstream file(m_modelsInfoJsonPath);
-    if (file.is_open()) {
-        file >> m_modelsInfoJson;
+    if (std::ifstream file(m_modelsInfoJsonPath); file.is_open()) {
+        // file >> m_modelsInfoJson;
+        if (m_modelsInfoJson != nullptr) {
+            m_modelsInfoJson->clear();
+        }
+        m_modelsInfoJson = std::make_unique<nlohmann::json>(nlohmann::json::parse(file));
         file.close();
     } else {
         throw std::runtime_error("Failed to open " + m_modelsInfoJsonPath);
@@ -27,9 +37,9 @@ ModelManager::ModelManager(const std::string &modelsInfoJsonPath) {
 
 void *ModelManager::getModelInfo(const ModelManager::Model &model, const ModelManager::ModelInfoType &modelInfoType,
                                  const bool &skipDownload, std::string *errMsg) const {
-    std::string modelName = getModelName(model);
-    std::string modelPath = m_modelsInfoJson.at(modelName).at(m_modelInfoTypeMap.at(Path)).get<std::string>();
-    std::string modelUrl = m_modelsInfoJson.at(modelName).at(m_modelInfoTypeMap.at(Url)).get<std::string>();
+    const std::string modelName = getModelName(model);
+    const std::string modelPath = m_modelsInfoJson->at(modelName).at(m_modelInfoTypeMap.at(Path)).get<std::string>();
+    const std::string modelUrl = m_modelsInfoJson->at(modelName).at(m_modelInfoTypeMap.at(Url)).get<std::string>();
 
     if (!skipDownload && !FileSystem::fileExists(modelPath)) {
         bool downloadSuccess = Downloader::download(modelUrl, "./models");
@@ -41,7 +51,7 @@ void *ModelManager::getModelInfo(const ModelManager::Model &model, const ModelMa
         }
     }
 
-    auto modelInfo = m_modelsInfoJson.at(modelName).at(m_modelInfoTypeMap.at(modelInfoType));
+    const auto modelInfo = m_modelsInfoJson->at(modelName).at(m_modelInfoTypeMap.at(modelInfoType));
     if (modelInfo.is_null()) {
         if (errMsg) {
             *errMsg = "Model info not found";
@@ -57,7 +67,8 @@ void *ModelManager::getModelInfo(const ModelManager::Model &model, const ModelMa
             return nullptr;
         }
         return new std::string(modelPath);
-    } else if (modelInfoType == ModelInfoType::Url) {
+    }
+    if (modelInfoType == ModelInfoType::Url) {
         if (modelUrl.empty()) {
             if (errMsg) {
                 *errMsg = "Model url is empty";
@@ -65,16 +76,15 @@ void *ModelManager::getModelInfo(const ModelManager::Model &model, const ModelMa
             return nullptr;
         }
         return new std::string(modelUrl);
-    } else {
-        if (errMsg) {
-            *errMsg = "Unknown model info modelInfoType";
-        }
-        return nullptr;
     }
+    if (errMsg) {
+        *errMsg = "Unknown model info modelInfoType";
+    }
+    return nullptr;
 }
 
 std::string ModelManager::getModelUrl(const ModelManager::Model &model, std::string *errMsg) const {
-    std::string modelUrl = m_modelsInfoJson.at(getModelName(model)).at(m_modelInfoTypeMap.at(Url)).get<std::string>();
+    std::string modelUrl = m_modelsInfoJson->at(getModelName(model)).at(m_modelInfoTypeMap.at(Url)).get<std::string>();
     if (modelUrl.empty()) {
         if (errMsg) {
             *errMsg = "Model url is empty";
@@ -86,7 +96,7 @@ std::string ModelManager::getModelUrl(const ModelManager::Model &model, std::str
 
 std::string ModelManager::getModelPath(const ModelManager::Model &model, const bool &skipDownload, std::string *errMsg) const {
     std::string modelName = getModelName(model);
-    std::string modelPath = m_modelsInfoJson.at(modelName).at(m_modelInfoTypeMap.at(Path)).get<std::string>();
+    std::string modelPath = m_modelsInfoJson->at(modelName).at(m_modelInfoTypeMap.at(Path)).get<std::string>();
     modelPath = FileSystem::absolutePath(modelPath);
     std::string modelUrl = getModelUrl(model);
 
@@ -105,7 +115,7 @@ std::string ModelManager::getModelPath(const ModelManager::Model &model, const b
 
 std::unordered_set<std::string> ModelManager::getModelsUrl() const {
     std::unordered_set<std::string> modelUrls;
-    for (const auto &model : m_modelsInfoJson) {
+    for (const auto &model : *m_modelsInfoJson) {
         if (!model.is_object()) {
             continue;
         }
@@ -114,34 +124,34 @@ std::unordered_set<std::string> ModelManager::getModelsUrl() const {
     return modelUrls;
 }
 
-std::string ModelManager::getModelName(const ModelManager::Model &model) const {
+std::string ModelManager::getModelName(const ModelManager::Model &model) {
     static std::unordered_map<Model, std::string> modelNames = {
-        {Gfpgan_12, "gfpgan_1.2"},
-        {Gfpgan_13, "gfpgan_1.3"},
-        {Gfpgan_14, "gfpgan_1.4"},
-        {Codeformer, "codeformer"},
-        {Inswapper_128, "inswapper_128"},
-        {Inswapper_128_fp16, "inswapper_128_fp16"},
-        {Face_detector_retinaface, "face_detector_retinaface"},
-        {Face_detector_scrfd, "face_detector_scrfd"},
-        {Face_detector_yoloface, "face_detector_yoloface"},
-        {Face_recognizer_arcface_w600k_r50, "face_recognizer_arcface_w600k_r50"},
-        {Face_landmarker_68, "face_landmarker_68"},
-        {Face_landmarker_peppawutz, "face_landmarker_peppa_wutz"},
-        {Face_landmarker_68_5, "face_landmarker_68_5"},
-        {FairFace, "fairface"},
-        {Face_parser, "face_parser"},
-        {Face_occluder, "face_occluder"},
-        {Feature_extractor, "feature_extractor"},
-        {Motion_extractor, "motion_extractor"},
-        {Generator, "generator"},
-        {Real_esrgan_x2, "real_esrgan_x2"},
-        {Real_esrgan_x2_fp16, "real_esrgan_x2_fp16"},
-        {Real_esrgan_x4, "real_esrgan_x4"},
-        {Real_esrgan_x4_fp16, "real_esrgan_x4_fp16"},
-        {Real_esrgan_x8, "real_esrgan_x8"},
-        {Real_esrgan_x8_fp16, "real_esrgan_x8_fp16"},
-        {Real_hatgan_x4, "real_hatgan_x4"},
+        {Model::Gfpgan_12, "gfpgan_1.2"},
+        {Model::Gfpgan_13, "gfpgan_1.3"},
+        {Model::Gfpgan_14, "gfpgan_1.4"},
+        {Model::Codeformer, "codeformer"},
+        {Model::Inswapper_128, "inswapper_128"},
+        {Model::Inswapper_128_fp16, "inswapper_128_fp16"},
+        {Model::Face_detector_retinaface, "face_detector_retinaface"},
+        {Model::Face_detector_scrfd, "face_detector_scrfd"},
+        {Model::Face_detector_yoloface, "face_detector_yoloface"},
+        {Model::Face_recognizer_arcface_w600k_r50, "face_recognizer_arcface_w600k_r50"},
+        {Model::Face_landmarker_68, "face_landmarker_68"},
+        {Model::Face_landmarker_peppawutz, "face_landmarker_peppa_wutz"},
+        {Model::Face_landmarker_68_5, "face_landmarker_68_5"},
+        {Model::FairFace, "fairface"},
+        {Model::Face_parser, "face_parser"},
+        {Model::Face_occluder, "face_occluder"},
+        {Model::Feature_extractor, "feature_extractor"},
+        {Model::Motion_extractor, "motion_extractor"},
+        {Model::Generator, "generator"},
+        {Model::Real_esrgan_x2, "real_esrgan_x2"},
+        {Model::Real_esrgan_x2_fp16, "real_esrgan_x2_fp16"},
+        {Model::Real_esrgan_x4, "real_esrgan_x4"},
+        {Model::Real_esrgan_x4_fp16, "real_esrgan_x4_fp16"},
+        {Model::Real_esrgan_x8, "real_esrgan_x8"},
+        {Model::Real_esrgan_x8_fp16, "real_esrgan_x8_fp16"},
+        {Model::Real_hatgan_x4, "real_hatgan_x4"},
     };
     return modelNames[model];
 }
@@ -153,9 +163,9 @@ std::shared_ptr<ModelManager> ModelManager::getInstance(const std::string &model
     return instance;
 }
 
-bool ModelManager::downloadAllModel() {
+bool ModelManager::downloadAllModel() const {
     std::unordered_set<std::string> modelUrls = getModelsUrl();
-    return Ffc::Downloader::batchDownload(modelUrls, "./models");
+    return ffc::Downloader::batchDownload(modelUrls, "./models");
 }
 
-} // namespace Ffc
+} // namespace ffc

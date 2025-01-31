@@ -8,12 +8,15 @@
  ******************************************************************************
  */
 
-#include "logger.h"
+module;
+#include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/daily_file_sink.h>
 #include <spdlog/async.h>
 
-namespace Ffc {
+module logger;
+
+namespace ffc {
 std::shared_ptr<Logger> Logger::getInstance() {
     static std::shared_ptr<Logger> instance;
     static std::once_flag flag;
@@ -24,22 +27,22 @@ std::shared_ptr<Logger> Logger::getInstance() {
 void Logger::setLogLevel(const Logger::LogLevel &level) {
     m_level = level;
     switch (m_level) {
-    case Trace:
+    case LogLevel::Trace:
         m_logger->set_level(spdlog::level::level_enum::trace);
         break;
-    case Debug:
+    case LogLevel::Debug:
         m_logger->set_level(spdlog::level::level_enum::debug);
         break;
-    case Info:
+    case LogLevel::Info:
         m_logger->set_level(spdlog::level::level_enum::info);
         break;
-    case Warn:
+    case LogLevel::Warn:
         m_logger->set_level(spdlog::level::level_enum::warn);
         break;
-    case Error:
+    case LogLevel::Error:
         m_logger->set_level(spdlog::level::level_enum::err);
         break;
-    case Critical:
+    case LogLevel::Critical:
         m_logger->set_level(spdlog::level::level_enum::critical);
         break;
     }
@@ -47,22 +50,22 @@ void Logger::setLogLevel(const Logger::LogLevel &level) {
 
 void Logger::log(const Logger::LogLevel &level, const std::string &message) const {
     switch (level) {
-    case Trace:
+    case LogLevel::Trace:
         trace(message);
         break;
-    case Debug:
+    case LogLevel::Debug:
         debug(message);
         break;
-    case Info:
+    case LogLevel::Info:
         info(message);
         break;
-    case Warn:
+    case LogLevel::Warn:
         warn(message);
         break;
-    case Error:
+    case LogLevel::Error:
         error(message);
         break;
-    case Critical:
+    case LogLevel::Critical:
         critical(message);
         break;
     }
@@ -93,7 +96,7 @@ void Logger::critical(const std::string &message) const {
 }
 
 Logger::Logger() {
-    spdlog::init_thread_pool(8192, 2);
+    spdlog::init_thread_pool(8192, 4);
     auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     consoleSink->set_color_mode(spdlog::color_mode::automatic);
     consoleSink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
@@ -110,20 +113,22 @@ Logger::LogLevel Logger::getLogLevel() const {
     return m_level;
 }
 
-void Logger::log(const char *level, const char *msg) {
-    std::string levelStr(level), msgStr(msg);
-    if (levelStr == "trace") {
-        Logger::getInstance()->trace(msgStr);
-    } else if (levelStr == "debug") {
-        Logger::getInstance()->debug(msgStr);
-    } else if (levelStr == "info") {
-        Logger::getInstance()->info(msgStr);
-    } else if (levelStr == "warn") {
-        Logger::getInstance()->warn(msgStr);
-    } else if (levelStr == "error") {
-        Logger::getInstance()->error(msgStr);
-    } else if (levelStr == "critical") {
-        Logger::getInstance()->critical(msgStr);
+void Logger::log(const std::string &level, const std::string &msg) {
+    // level to lower
+    std::string level_t = level;
+    std::ranges::for_each(level_t, [](char &c) { c = std::tolower(c); });
+    if (level_t == "trace") {
+        getInstance()->trace(msg);
+    } else if (level_t == "debug") {
+        getInstance()->debug(msg);
+    } else if (level_t == "info") {
+        getInstance()->info(msg);
+    } else if (level_t == "warn") {
+        getInstance()->warn(msg);
+    } else if (level_t == "error") {
+        getInstance()->error(msg);
+    } else if (level_t == "critical") {
+        getInstance()->critical(msg);
     }
 }
-} // namespace Ffc
+} // namespace ffc

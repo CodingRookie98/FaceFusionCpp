@@ -1,5 +1,4 @@
 {
-  "version": "0.3.0",
   "codeformer": {
     "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/codeformer.onnx",
     "path": "./models/codeformer.onnx"

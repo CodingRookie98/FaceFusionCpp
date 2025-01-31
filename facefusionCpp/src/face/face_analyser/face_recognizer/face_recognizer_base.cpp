@@ -8,9 +8,11 @@
  ******************************************************************************
  */
 
-#include "face_recognizer_base.h"
+module face_recognizer_hub;
+import :face_recognizer_base;
 
-FaceRecognizerBase::FaceRecognizerBase(const std::shared_ptr<Ort::Env> &env, const std::string &modelPath) :
-    m_inferenceSession(env) {
-    m_inferenceSession.createSession(modelPath);
+namespace ffc::faceRecognizer {
+FaceRecognizerBase::FaceRecognizerBase(const std::shared_ptr<Ort::Env> &env) :
+    InferenceSession(env) {
 }
+} // namespace ffc::face_recognizer

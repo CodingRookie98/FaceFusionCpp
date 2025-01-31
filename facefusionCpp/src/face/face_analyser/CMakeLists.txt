@@ -1,20 +1,13 @@
 target_sources(${ProgramName} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/face_analyser.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/face_analyser.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/face_classifiers.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/face_classifiers.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/face_detectors.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/face_detectors.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/face_landmarkers.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/face_landmarkers.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/face_maskers.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/face_maskers.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/face_recognizers.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/face_recognizers.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/face_selector.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/face_selector.h
+        FILE_SET CXX_MODULES FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/face_analyser.ixx
+        ${CMAKE_CURRENT_SOURCE_DIR}/face_selector.ixx
 )
 
+target_sources(${ProgramName} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/face_analyser.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/face_selector.cpp
+)
 target_include_directories(${ProgramName} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
 )

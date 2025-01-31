@@ -8,33 +8,46 @@
  ******************************************************************************
  */
 
-#include "file_system.h"
-#include <future>
-#include <filesystem>
+module;
 #include <random>
+#include <filesystem>
 #include <thread_pool/thread_pool.h>
-#include "vision.h"
+#include <opencv2/opencv.hpp>
 
-namespace Ffc {
+module file_system;
+import vision;
+import ffmpeg_runner;
+
+namespace ffc {
 
 bool FileSystem::fileExists(const std::string &path) {
     return std::filesystem::exists(path);
 }
 
-bool FileSystem::isDirectory(const std::string &path) {
-    return std::filesystem::is_directory(path);
+bool FileSystem::dirExists(const std::string &path) {
+    return std::filesystem::exists(path);
+}
+
+bool FileSystem::isDir(const std::string &path) {
+    return dirExists(path) && std::filesystem::is_directory(path);
 }
 
 bool FileSystem::isFile(const std::string &path) {
-    return std::filesystem::is_regular_file(path);
+    return fileExists(path) && std::filesystem::is_regular_file(path);
 }
 
 bool FileSystem::isImage(const std::string &path) {
     if (!isFile(path)) {
         return false;
-    } else {
-        return cv::haveImageReader(path);
     }
+    return cv::haveImageReader(path);
+}
+
+bool FileSystem::isVideo(const std::string &path) {
+    if (!isFile(path)) {
+        return false;
+    }
+    return FfmpegRunner::isVideo(path);
 }
 
 std::string FileSystem::getFileNameFromURL(const std::string &url) {
@@ -50,15 +63,14 @@ std::string FileSystem::getFileNameFromURL(const std::string &url) {
 uintmax_t FileSystem::getFileSize(const std::string &path) {
     if (isFile(path)) {
         return std::filesystem::file_size(path);
-    } else {
-        return 0;
     }
+    return 0;
 }
 
-std::unordered_set<std::string> FileSystem::listFilesInDirectory(const std::string &path) {
+std::unordered_set<std::string> FileSystem::listFilesInDir(const std::string &path) {
     std::unordered_set<std::string> filePaths;
 
-    if (!isDirectory(path)) {
+    if (!isDir(path)) {
         throw std::invalid_argument("Path is not a directory");
     }
 
@@ -83,11 +95,13 @@ std::string FileSystem::absolutePath(const std::string &path) {
 
 bool FileSystem::hasImage(const std::unordered_set<std::string> &paths) {
     std::unordered_set<std::string> imagePaths;
-    for (auto &path : paths) {
-        auto absPath = absolutePath(path);
-        if (!isImage(absPath)) {
-            return false;
-        }
+
+    const bool isImg = std::ranges::all_of(paths.begin(), paths.end(), [](const std::string &path) {
+        const std::string absPath = absolutePath(path);
+        return isImage(path);
+    });
+    if (!isImg) {
+        return false;
     }
     return true;
 }
@@ -95,8 +109,7 @@ bool FileSystem::hasImage(const std::unordered_set<std::string> &paths) {
 std::unordered_set<std::string> FileSystem::filterImagePaths(const std::unordered_set<std::string> &paths) {
     std::unordered_set<std::string> imagePaths;
     for (auto &path : paths) {
-        auto absPath = absolutePath(path);
-        if (isImage(absPath)) {
+        if (auto absPath = absolutePath(path); isImage(absPath)) {
             imagePaths.insert(absPath);
         }
     }
@@ -105,25 +118,22 @@ std::unordered_set<std::string> FileSystem::filterImagePaths(const std::unordere
 
 std::string FileSystem::normalizeOutputPath(const std::string &targetPath, const std::string &outputPath) {
     if (!targetPath.empty() && !outputPath.empty()) {
-        std::filesystem::path targetPathObj(targetPath);
-        std::filesystem::path outputPathObj(outputPath);
-        std::string targetFileName = targetPathObj.stem().string();
-        std::string targetFileExtension = targetPathObj.extension().string();
+        const std::string targetBaseName = getBaseName(targetPath);
+        const std::string targetExtension = getExtension(targetPath);
 
-        if (isDirectory(outputPath)) {
-            std::string normedPath = absolutePath(outputPath + "/" + targetFileName + targetFileExtension);
+        if (isDir(outputPath)) {
+            std::string normedPath = absolutePath(outputPath + "/" + targetBaseName + targetExtension);
             while (fileExists(normedPath)) {
                 std::string suffix = generateRandomString(8);
-                normedPath = absolutePath(outputPath + "/" + targetFileName + "-" + suffix + targetFileExtension);
+                normedPath = absolutePath(outputPath + "/" + targetBaseName + "-" + suffix + targetExtension);
             }
             return normedPath;
-        } else {
-            std::string outputDir = outputPathObj.parent_path().string();
-            std::string outputFileName = outputPathObj.stem().string();
-            std::string outputExtension = outputPathObj.extension().string();
-            if (isDirectory(outputDir) && !outputFileName.empty() && !outputExtension.empty()) {
-                return absolutePath(outputDir + "/" + outputFileName + outputExtension);
-            }
+        }
+        const std::string outputDir = parentPath(outputPath);
+        const std::string outputBaseName = getBaseName(outputPath);
+        const std::string outputExtension = getExtension(outputPath);
+        if (isDir(outputDir) && !outputBaseName.empty() && !outputExtension.empty()) {
+            return absolutePath(outputDir + "/" + outputBaseName + outputExtension);
         }
     }
     return {};
@@ -144,14 +154,10 @@ std::vector<std::string> FileSystem::normalizeOutputPaths(const std::vector<std:
     return normedPaths;
 }
 
-bool FileSystem::directoryExists(const std::string &path) {
-    return std::filesystem::exists(path) && FileSystem::isDirectory(path);
-}
-
-void FileSystem::createDirectory(const std::string &path) {
+void FileSystem::createDir(const std::string &path) {
     static std::mutex mutex;
     std::lock_guard<std::mutex> lock(mutex);
-    if (!directoryExists(path)) {
+    if (!dirExists(path)) {
         std::error_code ec;
         if (!std::filesystem::create_directories(path, ec)) {
             std::cerr << __FUNCTION__ << " Failed to create directory: " + path + " Error: " + ec.message() << std::endl;
@@ -161,8 +167,12 @@ void FileSystem::createDirectory(const std::string &path) {
 
 std::string FileSystem::getTempPath() {
     std::string tempPath = absolutePath("temp");
-    createDirectory(tempPath);
+    createDir(tempPath);
     return tempPath;
+}
+
+std::string FileSystem::parentPath(const std::string &path) {
+    return std::filesystem::path(path).parent_path().string();
 }
 
 std::string FileSystem::getFileName(const std::string &filePath) {
@@ -175,9 +185,14 @@ std::string FileSystem::getExtension(const std::string &filePath) {
     return pathObj.extension().string();
 }
 
-std::string FileSystem::getBaseName(const std::string &filePath) {
-    std::filesystem::path pathObj(filePath);
-    return pathObj.stem().string();
+std::string FileSystem::getBaseName(const std::string &path) {
+    std::filesystem::path pathObj(path);
+    if (std::filesystem::is_regular_file(path)) {
+        return pathObj.stem().string();
+    } else if (std::filesystem::is_directory(path)) {
+        return pathObj.filename().string();
+    }
+    return "";
 }
 
 bool FileSystem::copyImage(const std::string &imagePath, const std::string &destination, const cv::Size &size) {
@@ -190,8 +205,8 @@ bool FileSystem::copyImage(const std::string &imagePath, const std::string &dest
 
     // 获取临时文件路径
     std::filesystem::path destinationPath = destination;
-    if (!directoryExists(destinationPath.parent_path().string())) {
-        createDirectory(destinationPath.parent_path().string());
+    if (!dirExists(destinationPath.parent_path().string())) {
+        createDir(destinationPath.parent_path().string());
     }
 
     // 调整图片尺寸
@@ -205,7 +220,7 @@ bool FileSystem::copyImage(const std::string &imagePath, const std::string &dest
         cv::resize(inputImage, resizedImage, outputSize);
     } else {
         if (destinationPath.extension() != ".webp") {
-            copyFile(imagePath, destinationPath.string());
+            copy(imagePath, destinationPath.string());
             return true;
         }
         resizedImage = inputImage;
@@ -239,8 +254,8 @@ bool FileSystem::copyImages(const std::vector<std::string> &imagePaths, const st
 
     std::vector<std::future<bool>> futures;
     for (size_t i = 0; i < imagePaths.size(); ++i) {
-        std::string imagePath = imagePaths[i];
-        std::string destination = destinations[i];
+        const std::string &imagePath = imagePaths[i];
+        const std::string &destination = destinations[i];
         futures.emplace_back(pool.enqueue([imagePath, destination, size]() {
             return copyImage(imagePath, destination, size);
         }));
@@ -273,7 +288,7 @@ bool FileSystem::finalizeImage(const std::string &imagePath, const std::string &
         cv::resize(inputImage, resizedImage, outputSize);
     } else {
         if (outputImageQuality == 100) {
-            copyFile(imagePath, outputPath);
+            copy(imagePath, outputPath);
             return true;
         }
         resizedImage = inputImage;
@@ -281,7 +296,7 @@ bool FileSystem::finalizeImage(const std::string &imagePath, const std::string &
 
     // 设置保存参数，默认无压缩
     std::vector<int> compressionParams;
-    std::string extension = std::filesystem::path(outputPath).extension().string();
+    const std::string extension = std::filesystem::path(outputPath).extension().string();
 
     if (extension == ".webp") {
         compressionParams.push_back(cv::IMWRITE_WEBP_QUALITY);
@@ -327,7 +342,7 @@ bool FileSystem::finalizeImages(const std::vector<std::string> &imagePaths, cons
 
     bool allSuccess = true;
     for (auto &future : futures) {
-        bool success = future.get();
+        const bool success = future.get();
         if (!success) {
             allSuccess = false;
         }
@@ -336,7 +351,7 @@ bool FileSystem::finalizeImages(const std::vector<std::string> &imagePaths, cons
     return allSuccess;
 }
 
-void FileSystem::removeDirectory(const std::string &path) {
+void FileSystem::removeDir(const std::string &path) {
     try {
         std::filesystem::remove_all(path);
     } catch (const std::filesystem::filesystem_error &e) {
@@ -352,8 +367,8 @@ void FileSystem::removeFile(const std::string &path) {
     }
 }
 
-void FileSystem::removeFiles(const std::vector<std::string> &paths) {
-    dp::thread_pool pool(std::thread::hardware_concurrency());
+void FileSystem::removeFiles(const std::vector<std::string> &paths, const unsigned short &threadCnt) {
+    dp::thread_pool pool(threadCnt);
     std::vector<std::future<void>> futures;
     for (const auto &path : paths) {
         futures.emplace_back(pool.enqueue([path]() {
@@ -365,30 +380,29 @@ void FileSystem::removeFiles(const std::vector<std::string> &paths) {
     }
 }
 
-void FileSystem::copyFile(const std::string &source, const std::string &destination) {
+void FileSystem::copy(const std::string &source, const std::string &destination) {
     if (source == destination) return;
-    if (!fileExists(source)) {
-        throw std::invalid_argument("Source file does not exist");
-    }
 
     // parent path of destination is not exist
-    if (!isDirectory(std::filesystem::path(destination).parent_path().string())) {
-        createDirectory(std::filesystem::path(destination).parent_path().string());
+    if (!isDir(std::filesystem::path(destination).parent_path().string())) {
+        createDir(std::filesystem::path(destination).parent_path().string());
     }
 
     std::filesystem::copy(source, destination, std::filesystem::copy_options::overwrite_existing);
 }
 
-void FileSystem::copyFiles(const std::vector<std::string> &sources, const std::vector<std::string> &destination) {
+void FileSystem::copyFiles(const std::vector<std::string> &sources,
+                           const std::vector<std::string> &destination,
+                           const unsigned short &threadCnt) {
     if (sources.size() != destination.size()) {
         throw std::invalid_argument("Source and destination paths must have the same size");
     }
 
-    dp::thread_pool pool(std::thread::hardware_concurrency());
+    dp::thread_pool pool(threadCnt);
     std::vector<std::future<void>> futures;
     for (size_t i = 0; i < sources.size(); ++i) {
         futures.emplace_back(pool.enqueue([sources, destination, i]() {
-            copyFile(sources[i], destination[i]);
+            copy(sources[i], destination[i]);
         }));
     }
     for (auto &future : futures) {
@@ -398,8 +412,8 @@ void FileSystem::copyFiles(const std::vector<std::string> &sources, const std::v
 
 void FileSystem::moveFile(const std::string &source, const std::string &destination) {
     // if parent path of destination is not exist
-    if (!isDirectory(std::filesystem::path(destination).parent_path().string())) {
-        createDirectory(std::filesystem::path(destination).parent_path().string());
+    if (!isDir(std::filesystem::path(destination).parent_path().string())) {
+        createDir(std::filesystem::path(destination).parent_path().string());
     }
 
     // if destination is existed
@@ -411,12 +425,13 @@ void FileSystem::moveFile(const std::string &source, const std::string &destinat
 }
 
 void FileSystem::moveFiles(const std::vector<std::string> &sources,
-                           const std::vector<std::string> &destination) {
+                           const std::vector<std::string> &destination,
+                           const unsigned short &threadCnt) {
     if (sources.size() != destination.size()) {
         throw std::invalid_argument("Source and destination paths must have the same size");
     }
 
-    dp::thread_pool pool(std::thread::hardware_concurrency());
+    dp::thread_pool pool(threadCnt);
     std::vector<std::future<void>> futures;
     for (size_t i = 0; i < sources.size(); ++i) {
         futures.emplace_back(pool.enqueue([sources, destination, i]() {
@@ -429,6 +444,9 @@ void FileSystem::moveFiles(const std::vector<std::string> &sources,
 }
 
 std::string FileSystem::generateRandomString(const size_t &length) {
+    if (length == 0) {
+        return "";
+    }
     const std::string characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     std::random_device rd;
     std::default_random_engine generator(rd());
@@ -440,5 +458,17 @@ std::string FileSystem::generateRandomString(const size_t &length) {
     }
 
     return randomString;
+}
+
+void FileSystem::setLocalToUTF8() {
+    static std::once_flag onceFlag;
+    std::call_once(onceFlag, []() {
+        try {
+            std::locale::global(std::locale("en_US.UTF-8")); // 设置全局 locale
+        } catch (const std::runtime_error &e) {
+            std::cerr << std::format("Failed to set locale: {}. Fall back to system default.", e.what());
+            std::locale::global(std::locale("")); // 回退到系统默认
+    }
+    });
 }
 } // namespace Ffc

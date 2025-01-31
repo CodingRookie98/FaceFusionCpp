@@ -8,32 +8,51 @@
  ******************************************************************************
  */
 
-#include "inference_session.h"
-#include <iostream>
-#include "config.h"
+module;
+#include <unordered_set>
+#include <filesystem>
+#include <mutex>
+#include <onnxruntime_cxx_api.h>
 
-namespace Ffc {
+#include <unordered_set>
+#include <filesystem>
+
+module inference_session;
+
+namespace ffc {
 InferenceSession::InferenceSession(const std::shared_ptr<Ort::Env> &env) {
     m_env = env;
-    m_config = Ffc::Config::getInstance();
     m_sessionOptions = Ort::SessionOptions();
     m_sessionOptions.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
     auto availableProviders = Ort::GetAvailableProviders();
     m_availableProviders.insert(availableProviders.begin(), availableProviders.end());
-
-    if (m_config->m_executionProviders.contains(TensorRT)) {
-        appendProviderTensorrt();
-    }
-    if (m_config->m_executionProviders.contains(CUDA)) {
-        appendProviderCUDA();
-    }
+    m_logger = Logger::getInstance();
 }
 
-void InferenceSession::createSession(const std::string &modelPath) {
-    std::lock_guard<std::mutex> lock(m_mutex);
+void InferenceSession::loadModel(const std::string &modelPath, const Options &options) {
+    if (modelPath.empty()) {
+        throw std::runtime_error("modelPath is empty");
+    }
+    if (!std::filesystem::exists(modelPath)) {
+        throw std::runtime_error(std::format("modelPath: {} does not exist", modelPath));
+    }
+
+    std::lock_guard lock(m_mutex);
+    if (m_env == nullptr) {
+        m_env = std::make_shared<Ort::Env>(Ort::Env(ORT_LOGGING_LEVEL_WARNING, typeid(*this).name()));
+    }
+
+    m_options = options;
+    if (m_options.executionProviders.contains(ExecutionProvider::TensorRT)) {
+        appendProviderTensorrt();
+    }
+    if (m_options.executionProviders.contains(ExecutionProvider::CUDA)) {
+        appendProviderCUDA();
+    }
+
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
     // windows
-    std::wstring wideModelPath(modelPath.begin(), modelPath.end());
+    const std::wstring wideModelPath(modelPath.begin(), modelPath.end());
     try {
         m_ortSession = std::make_unique<Ort::Session>(*m_env, wideModelPath.c_str(), m_sessionOptions);
     } catch (const Ort::Exception &e) {
@@ -51,8 +70,8 @@ void InferenceSession::createSession(const std::string &modelPath) {
     m_ortSession = std::make_unique<Ort::Session>(Ort::Session(*m_env, modelPath.c_str(), m_sessionOptions));
 #endif
 
-    size_t numInputNodes = m_ortSession->GetInputCount();
-    size_t numOutputNodes = m_ortSession->GetOutputCount();
+    const size_t numInputNodes = m_ortSession->GetInputCount();
+    const size_t numOutputNodes = m_ortSession->GetOutputCount();
 
     m_inputNames.reserve(numInputNodes);
     m_outputNames.reserve(numOutputNodes);
@@ -76,6 +95,27 @@ void InferenceSession::createSession(const std::string &modelPath) {
         auto outputDims = outputTensorInfo.GetShape();
         m_outputNodeDims.push_back(outputDims);
     }
+
+    std::string infoMsg = "Model loaded: " + modelPath + ", Providers: ";
+    for (const auto &provider : options.executionProviders) {
+        switch (provider) {
+        case ExecutionProvider::CPU:
+            infoMsg += "CPU ";
+            break;
+        case ExecutionProvider::TensorRT:
+            infoMsg += "TensorRT ";
+            break;
+        case ExecutionProvider::CUDA:
+            infoMsg += "CUDA ";
+            break;
+        default:
+            break;
+        }
+    }
+
+    m_logger->trace(infoMsg);
+    m_isModelLoaded = true;
+    m_modelPath = modelPath;
 }
 
 void InferenceSession::appendProviderCUDA() {
@@ -83,12 +123,17 @@ void InferenceSession::appendProviderCUDA() {
         m_logger->error("CUDA execution provider is not available in your environment.");
         return;
     }
-    m_cudaProviderOptions = std::make_shared<OrtCUDAProviderOptions>();
-    m_cudaProviderOptions->device_id = m_config->m_executionDeviceId;
-    if (m_config->m_trtMaxWorkspaceSize > 0) {
-        m_cudaProviderOptions->gpu_mem_limit = m_config->m_trtMaxWorkspaceSize * (1 << 30);
+    m_cudaProviderOptions = std::make_unique<OrtCUDAProviderOptions>();
+    m_cudaProviderOptions->device_id = m_options.executionDeviceId;
+    if (m_options.trtMaxWorkspaceSize > 0) {
+        m_cudaProviderOptions->gpu_mem_limit = m_options.trtMaxWorkspaceSize * (1 << 30);
     }
-    m_sessionOptions.AppendExecutionProvider_CUDA(*m_cudaProviderOptions);
+    try {
+        m_sessionOptions.AppendExecutionProvider_CUDA(*m_cudaProviderOptions);
+    } catch (const Ort::Exception &e) {
+        m_logger->error(std::format("AppendExecutionProvider_CUDA: Ort::Exception: {}", e.what()));
+        throw std::runtime_error(e.what());
+    }
 }
 
 void InferenceSession::appendProviderTensorrt() {
@@ -103,22 +148,22 @@ void InferenceSession::appendProviderTensorrt() {
     api.CreateTensorRTProviderOptions(&tensorrtProviderOptionsV2);
 
     std::string trtMaxWorkSpaceSiz;
-    if (m_config->m_trtMaxWorkspaceSize > 0) {
-        trtMaxWorkSpaceSiz = std::to_string(m_config->m_trtMaxWorkspaceSize);
+    if (m_options.trtMaxWorkspaceSize > 0) {
+        trtMaxWorkSpaceSiz = std::to_string(m_options.trtMaxWorkspaceSize);
         keys.emplace_back("trt_max_workspace_size");
         values.emplace_back(trtMaxWorkSpaceSiz.c_str());
     }
 
-    std::string deviceId = std::to_string(m_config->m_executionDeviceId);
+    const std::string deviceId = std::to_string(m_options.executionDeviceId);
     keys.emplace_back("device_id");
     values.emplace_back(deviceId.c_str());
 
     std::string enableTensorrtCache;
     std::string enableTensorrtEmbedEngine;
     std::string tensorrtEmbedEnginePath;
-    if (m_config->m_enableTensorrtEmbedEngine) {
-        enableTensorrtCache = std::to_string(m_config->m_enableTensorrtCache);
-        enableTensorrtEmbedEngine = std::to_string(m_config->m_enableTensorrtEmbedEngine);
+    if (m_options.enableTensorrtEmbedEngine) {
+        enableTensorrtCache = std::to_string(m_options.enableTensorrtCache);
+        enableTensorrtEmbedEngine = std::to_string(m_options.enableTensorrtEmbedEngine);
         tensorrtEmbedEnginePath = "./trt_engine_cache";
 
         keys.emplace_back("trt_engine_cache_enable");
@@ -130,7 +175,7 @@ void InferenceSession::appendProviderTensorrt() {
     }
 
     std::string tensorrtCachePath;
-    if (m_config->m_enableTensorrtCache) {
+    if (m_options.enableTensorrtCache) {
         if (enableTensorrtEmbedEngine.empty()) {
             keys.emplace_back("trt_engine_cache_enable");
             values.emplace_back("1");
@@ -149,11 +194,22 @@ void InferenceSession::appendProviderTensorrt() {
         m_sessionOptions.AppendExecutionProvider_TensorRT_V2(*tensorrtProviderOptionsV2);
     } catch (const Ort::Exception &e) {
         m_logger->warn(std::format("Failed to append TensorRT execution provider: {}", e.what()));
+        throw std::runtime_error(e.what());
     } catch (const std::exception &e) {
         m_logger->warn(std::format("Failed to append TensorRT execution provider: {}", e.what()));
+        throw std::runtime_error(e.what());
     } catch (...) {
         m_logger->error("Failed to append TensorRT execution provider: Unknown error");
+        throw std::runtime_error("Failed to append TensorRT execution provider: Unknown error");
     }
     api.ReleaseTensorRTProviderOptions(tensorrtProviderOptionsV2);
 }
-} // namespace Ffc
+
+bool InferenceSession::isModelLoaded() const {
+    return m_isModelLoaded;
+}
+
+std::string InferenceSession::getModelPath() const {
+    return m_modelPath;
+}
+} // namespace ffc

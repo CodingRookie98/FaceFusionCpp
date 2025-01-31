@@ -8,53 +8,67 @@
  ******************************************************************************
  */
 
-#include "face_selector.h"
+module;
+#include <vector>
+#include <algorithm>
 
-std::vector<Face> FaceSelector::sortByOrder(std::vector<Face> &faces, const FaceSelector::FaceSelectorOrder &order) {
+module face_selector;
+
+namespace ffc {
+
+std::vector<Face> FaceSelector::select(const std::vector<Face> &faces, const Options &options) {
+    auto res = filterByAge(faces, options.ageStart, options.ageEnd);
+    res = filterByGender(res, options.gender);
+    res = filterByRace(res, options.race);
+    res = sortByOrder(res, options.order);
+    return res;
+}
+
+std::vector<Face> FaceSelector::sortByOrder(std::vector<Face> faces, const FaceSelector::FaceSelectorOrder &order) {
     if (faces.empty()) {
         return faces;
     }
 
     switch (order) {
-    case Left_Right:
-        std::sort(faces.begin(), faces.end(), [](const Face &face1, const Face &face2) {
-            return face1.m_bBox.xmin < face2.m_bBox.xmin;
+    case FaceSelectorOrder::Left_Right:
+        std::ranges::sort(faces, [](const Face &face1, const Face &face2) {
+            return face1.m_bBox.xMin < face2.m_bBox.xMin;
         });
         break;
-    case Right_Left:
-        std::sort(faces.begin(), faces.end(), [](const Face &face1, const Face &face2) {
-            return face1.m_bBox.xmin > face2.m_bBox.xmin;
+    case FaceSelectorOrder::Right_Left:
+        std::ranges::sort(faces, [](const Face &face1, const Face &face2) {
+            return face1.m_bBox.xMin > face2.m_bBox.xMin;
         });
         break;
-    case Top_Bottom:
-        std::sort(faces.begin(), faces.end(), [](const Face &face1, const Face &face2) {
-            return face1.m_bBox.ymin < face2.m_bBox.ymin;
+    case FaceSelectorOrder::Top_Bottom:
+        std::ranges::sort(faces, [](const Face &face1, const Face &face2) {
+            return face1.m_bBox.yMin < face2.m_bBox.yMin;
         });
         break;
-    case Bottom_Top:
-        std::sort(faces.begin(), faces.end(), [](const Face &face1, const Face &face2) {
-            return face1.m_bBox.ymin > face2.m_bBox.ymin;
+    case FaceSelectorOrder::Bottom_Top:
+        std::ranges::sort(faces, [](const Face &face1, const Face &face2) {
+            return face1.m_bBox.yMin > face2.m_bBox.yMin;
         });
         break;
-    case Small_Large:
-        std::sort(faces.begin(), faces.end(), [](const Face &face1, const Face &face2) {
-            return (face1.m_bBox.xmax - face1.m_bBox.xmin) * (face1.m_bBox.ymax - face1.m_bBox.ymin)
-                   < (face2.m_bBox.xmax - face2.m_bBox.xmin) * (face2.m_bBox.ymax - face2.m_bBox.ymin);
+    case FaceSelectorOrder::Small_Large:
+        std::ranges::sort(faces, [](const Face &face1, const Face &face2) {
+            return (face1.m_bBox.xMax - face1.m_bBox.xMin) * (face1.m_bBox.yMax - face1.m_bBox.yMin)
+                   < (face2.m_bBox.xMax - face2.m_bBox.xMin) * (face2.m_bBox.yMax - face2.m_bBox.yMin);
         });
         break;
-    case Large_Small:
-        std::sort(faces.begin(), faces.end(), [](const Face &face1, const Face &face2) {
-            return (face1.m_bBox.xmax - face1.m_bBox.xmin) * (face1.m_bBox.ymax - face1.m_bBox.ymin)
-                   > (face2.m_bBox.xmax - face2.m_bBox.xmin) * (face2.m_bBox.ymax - face2.m_bBox.ymin);
+    case FaceSelectorOrder::Large_Small:
+        std::ranges::sort(faces, [](const Face &face1, const Face &face2) {
+            return (face1.m_bBox.xMax - face1.m_bBox.xMin) * (face1.m_bBox.yMax - face1.m_bBox.yMin)
+                   > (face2.m_bBox.xMax - face2.m_bBox.xMin) * (face2.m_bBox.yMax - face2.m_bBox.yMin);
         });
         break;
-    case Best_Worst:
-        std::sort(faces.begin(), faces.end(), [](const Face &face1, const Face &face2) {
+    case FaceSelectorOrder::Best_Worst:
+        std::ranges::sort(faces, [](const Face &face1, const Face &face2) {
             return face1.m_detectorScore > face2.m_detectorScore;
         });
         break;
-    case Worst_Best:
-        std::sort(faces.begin(), faces.end(), [](const Face &face1, const Face &face2) {
+    case FaceSelectorOrder::Worst_Best:
+        std::ranges::sort(faces, [](const Face &face1, const Face &face2) {
             return face1.m_detectorScore < face2.m_detectorScore;
         });
         break;
@@ -73,17 +87,7 @@ std::vector<Face> FaceSelector::filterByRace(std::vector<Face> faces, const Face
     }
     // Erase if race is not match (erase iterator is next iterator
     for (auto it = faces.begin(); it != faces.end();) {
-        FaceSelector::Race fs_race;
-        switch (it->m_race) {
-        case Face::Black: fs_race = Race::Black; break;
-        case Face::Latino: fs_race = Race::Latino; break;
-        case Face::Indian: fs_race = Race::Indian; break;
-        case Face::Asian: fs_race = Race::Asian; break;
-        case Face::Arabic: fs_race = Race::Arabic; break;
-        case Face::White: fs_race = Race::White; break;
-        }
-        
-        if (fs_race == race) {
+        if (static_cast<FaceSelector::Race>(it->m_race) == race) {
             ++it;
         } else {
             it = faces.erase(it);
@@ -101,14 +105,7 @@ std::vector<Face> FaceSelector::filterByGender(std::vector<Face> faces, const Fa
     }
     // Erase if gender is not match (erase iterator is next iterator
     for (auto it = faces.begin(); it != faces.end();) {
-        FaceSelector::Gender fs_gender;
-        if (it->m_gender == Face::Male) {
-            fs_gender = Gender::Male;
-        } else {
-            fs_gender = Gender::Female;
-        }
-
-        if (fs_gender == gender) {
+        if (static_cast<FaceSelector::Gender>(it->m_gender) == gender) {
             ++it;
         } else {
             it = faces.erase(it);
@@ -131,3 +128,4 @@ std::vector<Face> FaceSelector::filterByAge(std::vector<Face> faces, const unsig
     }
     return faces;
 }
+} // namespace ffc

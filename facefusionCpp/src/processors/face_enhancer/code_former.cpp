@@ -8,76 +8,109 @@
  ******************************************************************************
  */
 
-#include "code_former.h"
-#include <future>
-CodeFormer::CodeFormer(const std::shared_ptr<Ort::Env> &env, const std::shared_ptr<FaceMaskers> &faceMaskers, const std::string &modelPath) :
-    FaceEnhancerBase(env, faceMaskers, modelPath) {
-    m_inputHeight = m_inferenceSession.m_inputNodeDims[0][2];
-    m_inputWidth = m_inferenceSession.m_inputNodeDims[0][3];
+module;
+#include <opencv2/opencv.hpp>
+#include <onnxruntime_cxx_api.h>
+
+module face_enhancer;
+import :code_former;
+
+namespace ffc::faceEnhancer {
+CodeFormer::CodeFormer(const std::shared_ptr<Ort::Env> &env) :
+    InferenceSession(env) {
 }
 
-std::unordered_set<ProcessorBase::InputDataType> CodeFormer::getInputDataTypes() {
-    return {ProcessorBase::InputDataType::TargetFrame,
-            ProcessorBase::InputDataType::TargetFaces};
+std::string CodeFormer::getProcessorName() const {
+    return "FaceEnhancer.CodeFormer";
 }
 
-std::vector<float> CodeFormer::getInputImageData(const cv::Mat &croppedImage) const {
-    std::vector<cv::Mat> bgrChannels(3);
-    split(croppedImage, bgrChannels);
-    for (int c = 0; c < 3; c++) {
-        bgrChannels[c].convertTo(bgrChannels[c], CV_32FC1, 1 / (255.0 * 0.5), -1.0);
+void CodeFormer::loadModel(const std::string &modelPath, const Options &options) {
+    InferenceSession::loadModel(modelPath, options);
+    m_inputHeight = m_inputNodeDims[0][2];
+    m_inputWidth = m_inputNodeDims[0][3];
+    m_size = cv::Size(m_inputWidth, m_inputHeight);
+}
+
+cv::Mat CodeFormer::enhanceFace(const CodeFormerInput &args) const {
+    if (args.targetFrame == nullptr || args.targetFaces == nullptr) {
+        throw std::runtime_error("args.targetFrame or args.targetFaces is nullptr");
+    }
+    if (args.targetFrame->empty() || args.targetFaces->empty()) {
+        throw std::runtime_error("args.targetFrame or args.targetFaces is empty");
+    }
+    if (args.faceBlend > 100) {
+        throw std::runtime_error("args.faceBlend is greater than 100");
+    }
+    if (!isModelLoaded()) {
+        throw std::runtime_error("model is not loaded");
+    }
+    if (!hasFaceMaskerHub()) {
+        throw std::runtime_error("faceMaskers is nullptr");
     }
 
-    const int imageArea = croppedImage.cols * croppedImage.rows;
-    std::vector<float> inputImageData;
-    inputImageData.resize(3 * imageArea);
-    size_t singleChnSize = imageArea * sizeof(float);
-    memcpy(inputImageData.data(), (float *)bgrChannels[2].data, singleChnSize); /// rgb顺序
-    memcpy(inputImageData.data() + imageArea, (float *)bgrChannels[1].data, singleChnSize);
-    memcpy(inputImageData.data() + imageArea * 2, (float *)bgrChannels[0].data, singleChnSize);
-    return inputImageData;
+    std::vector<cv::Mat> croppedTargetFrames;
+    std::vector<cv::Mat> affineMatrices;
+    std::vector<cv::Mat> croppedResultFrames;
+    std::vector<cv::Mat> bestMasks;
+    for (const auto &targetFace : *args.targetFaces) {
+        cv::Mat croppedTargetFrame, affineMatrix;
+        std::tie(croppedTargetFrame, affineMatrix) = FaceHelper::warpFaceByFaceLandmarks5(*args.targetFrame, targetFace.m_landMark5By68, FaceHelper::getWarpTemplate(m_warpTemplateType), m_size);
+        croppedTargetFrames.emplace_back(croppedTargetFrame);
+        affineMatrices.emplace_back(affineMatrix);
+    }
+    for (const auto &croppedTargetFrame : croppedTargetFrames) {
+        croppedResultFrames.emplace_back(applyEnhance(croppedTargetFrame));
+    }
+    for (auto &croppedTargetFrame : croppedTargetFrames) {
+        FaceMaskerHub::FuncGBM_Args func_gbm_args;
+        func_gbm_args.faceMaskersTypes = args.faceMaskersTypes;
+        func_gbm_args.boxMaskBlur = args.boxMaskBlur;
+        func_gbm_args.boxMaskPadding = args.boxMaskPadding;
+        func_gbm_args.boxSize = m_size;
+        func_gbm_args.occlusionFrame = &croppedTargetFrame;
+        bestMasks.emplace_back(m_faceMaskerHub->getBestMask(func_gbm_args));
+    }
+    if (croppedTargetFrames.size() != affineMatrices.size() || croppedTargetFrames.size() != croppedResultFrames.size() || croppedTargetFrames.size() != bestMasks.size()) {
+        throw std::runtime_error("The size of croppedTargetFrames, affineMatrices, croppedResultFrames, and bestMasks must be equal.");
+    }
+    cv::Mat resultFrame = args.targetFrame->clone();
+    for (size_t i = 0; i < bestMasks.size(); ++i) {
+        resultFrame = FaceHelper::pasteBack(resultFrame, croppedResultFrames[i], bestMasks[i], affineMatrices[i]);
+    }
+    resultFrame = blendFrame(*args.targetFrame, resultFrame, args.faceBlend);
+    return resultFrame;
 }
 
-cv::Mat CodeFormer::enhanceFace(const cv::Mat &image, const Face &targetFace) const {
-    cv::Mat cropedTargetImg, affineMat;
-    std::tie(cropedTargetImg, affineMat) = FaceHelper::warpFaceByFaceLandmarks5(image, targetFace.m_landMark5By68, FaceHelper::getWarpTemplate(m_warpTemplateType), m_size);
-
-    std::vector<std::future<cv::Mat>> futures;
-    static cv::Mat (FaceMaskers:: *funcPtrBox)(const cv::Size &) = &FaceMaskers::createStaticBoxMask;
-    futures.emplace_back(std::async(std::launch::async, funcPtrBox, m_faceMaskers, cropedTargetImg.size()));
-    if (m_maskerTypes.contains(FaceMaskers::Occlusion)) {
-        futures.emplace_back(std::async(std::launch::async, &FaceMaskers::createOcclusionMask, m_faceMaskers, cropedTargetImg));
-    }
-
-    std::vector<float> inputImageData = getInputImageData(cropedTargetImg);
-    std::vector<int64_t> inputImageDataShape{1, 3, m_inputHeight, m_inputWidth};
+cv::Mat CodeFormer::applyEnhance(const cv::Mat &croppedFrame) const {
+    std::vector<float> inputImageData = getInputImageData(croppedFrame);
+    const std::vector<int64_t> inputImageDataShape{1, 3, m_inputHeight, m_inputWidth};
     std::vector<double> inputWeightData{1.0};
-    std::vector<int64_t> inputWeightDataShape{1, 1};
+    const std::vector<int64_t> inputWeightDataShape{1, 1};
     std::vector<Ort::Value> inputTensors;
-    for (const auto &name : m_inferenceSession.m_inputNames) {
+    for (const auto &name : m_inputNames) {
         if (std::string(name) == "input") {
-            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_inferenceSession.m_memoryInfo,
+            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo,
                                                                       inputImageData.data(), inputImageData.size(),
                                                                       inputImageDataShape.data(), inputImageDataShape.size()));
         } else if (std::string(name) == "weight") {
-            inputTensors.emplace_back(Ort::Value::CreateTensor<double>(m_inferenceSession.m_memoryInfo,
+            inputTensors.emplace_back(Ort::Value::CreateTensor<double>(m_memoryInfo,
                                                                        inputWeightData.data(), inputWeightData.size(),
                                                                        inputWeightDataShape.data(), inputWeightDataShape.size()));
         }
     }
 
-    std::vector<Ort::Value> outputTensor = m_inferenceSession.m_ortSession->Run(m_inferenceSession.m_runOptions,
-                                                                                m_inferenceSession.m_inputNames.data(),
-                                                                                inputTensors.data(), inputTensors.size(),
-                                                                                m_inferenceSession.m_outputNames.data(),
-                                                                                m_inferenceSession.m_outputNames.size());
+    std::vector<Ort::Value> outputTensor = m_ortSession->Run(m_runOptions,
+                                                             m_inputNames.data(),
+                                                             inputTensors.data(), inputTensors.size(),
+                                                             m_outputNames.data(),
+                                                             m_outputNames.size());
 
-    float *pdata = outputTensor[0].GetTensorMutableData<float>();
-    std::vector<int64_t> outsShape = outputTensor[0].GetTensorTypeAndShapeInfo().GetShape();
-    long long outputHeight = outsShape[2];
-    long long outputWidth = outsShape[3];
+    auto *pdata = outputTensor[0].GetTensorMutableData<float>();
+    const std::vector<int64_t> outsShape = outputTensor[0].GetTensorTypeAndShapeInfo().GetShape();
+    const long long outputHeight = outsShape[2];
+    const long long outputWidth = outsShape[3];
 
-    long long channelStep = outputHeight * outputWidth;
+    const long long channelStep = outputHeight * outputWidth;
     std::vector<cv::Mat> channelMats(3);
     // Create matrices for each channel and scale/clamp values
     channelMats[2] = cv::Mat(outputHeight, outputWidth, CV_32FC1, pdata);                   // R
@@ -95,31 +128,23 @@ cv::Mat CodeFormer::enhanceFace(const cv::Mat &image, const Face &targetFace) co
     cv::merge(channelMats, resultMat);
     resultMat.convertTo(resultMat, CV_8UC3);
 
-    std::vector<cv::Mat> masks;
-    for (auto &future : futures) {
-        masks.emplace_back(future.get());
-    }
-    for (auto &mask : masks) {
-        mask.setTo(0, mask < 0);
-        mask.setTo(1, mask > 1);
-    }
-    auto bestMask = FaceMaskers::getBestMask(masks);
-
-    resultMat = FaceHelper::pasteBack(image, resultMat, bestMask, affineMat);
-    resultMat = blendFrame(image, resultMat);
-
     return resultMat;
 }
 
-cv::Mat CodeFormer::processFrame(const ProcessorBase::InputData *inputData) {
-    FaceEnhancerBase::validateInputData(inputData);
-
-    cv::Mat resultFrame = inputData->m_targetFrame->clone();
-    for (const auto &targetFace : *inputData->m_targetFaces) {
-        if (targetFace.isEmpty()) {
-            continue;
-        }
-        resultFrame = enhanceFace(resultFrame, targetFace);
+std::vector<float> CodeFormer::getInputImageData(const cv::Mat &croppedImage) {
+    std::vector<cv::Mat> bgrChannels(3);
+    split(croppedImage, bgrChannels);
+    for (int c = 0; c < 3; c++) {
+        bgrChannels[c].convertTo(bgrChannels[c], CV_32FC1, 1 / (255.0 * 0.5), -1.0);
     }
-    return resultFrame;
+
+    const int imageArea = croppedImage.cols * croppedImage.rows;
+    std::vector<float> inputImageData;
+    inputImageData.resize(3 * imageArea);
+    const size_t singleChnSize = imageArea * sizeof(float);
+    memcpy(inputImageData.data(), bgrChannels[2].data, singleChnSize); /// rgb顺序
+    memcpy(inputImageData.data() + imageArea, bgrChannels[1].data, singleChnSize);
+    memcpy(inputImageData.data() + imageArea * 2, bgrChannels[0].data, singleChnSize);
+    return inputImageData;
+}
 }

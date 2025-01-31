@@ -37,13 +37,10 @@
             }
         },
         {
-            "name": "windows-base",
+            "name": "windows-x64-base",
             "hidden": true,
             "generator": "Ninja",
-            "cacheVariables": {
-                "CMAKE_C_COMPILER": "cl.exe",
-                "CMAKE_CXX_COMPILER": "cl.exe"
-            },
+            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
             "condition": {
                 "type": "equals",
                 "lhs": "${hostSystemName}",
@@ -55,25 +52,35 @@
             }
         },
         {
-            "name": "win-x64-release",
-            "displayName": "x64 release",
-            "inherits": "windows-base",
-            "binaryDir": "${sourceDir}/build/release",
-            "installDir": "${sourceDir}/build/install/release",
-            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+            "name": "msvc-x64-base",
+            "hidden": true,
+            "inherits": "windows-x64-base",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
+                "CMAKE_C_COMPILER": "cl.exe",
+                "CMAKE_CXX_COMPILER": "cl.exe",
+                "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/vcpkg_custom_triplets/msvc/"
             }
         },
         {
-            "name": "win-x64-debug",
-            "displayName": "x64 debug",
-            "inherits": "windows-base",
-            "binaryDir": "${sourceDir}/build/debug",
-            "installDir": "${sourceDir}/build/install/debug",
-            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+            "name": "msvc-x64-release",
+            "displayName": "msvc x64 release",
+            "inherits": "msvc-x64-base",
+            "binaryDir": "${sourceDir}/build/msvc-x64-release",
+            "installDir": "${sourceDir}/build/install/msvc-x64-release",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/runtime/msvc-x64-release"
+            }
+        },
+        {
+            "name": "msvc-x64-debug",
+            "displayName": "msvc x64 debug",
+            "inherits": "msvc-x64-base",
+            "binaryDir": "${sourceDir}/build/msvc-x64-debug",
+            "installDir": "${sourceDir}/build/install/msvc-x64-debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/runtime/msvc-x64-debug"
             }
         }
     ]

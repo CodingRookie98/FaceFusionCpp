@@ -7,8 +7,10 @@
  * @date           : 24-10-9
  ******************************************************************************
  */
+module;
+#include <vector>
 
-#include "face.h"
+module face;
 
 bool Face::isEmpty() const {
     if (m_bBox.isEmpty() || m_landmark5.empty()) {

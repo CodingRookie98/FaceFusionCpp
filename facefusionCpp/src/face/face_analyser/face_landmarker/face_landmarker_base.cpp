@@ -8,11 +8,16 @@
  ******************************************************************************
  */
 
-#include "face_landmarker_base.h"
+module;
+#include <opencv2/opencv.hpp>
+#include <onnxruntime_cxx_api.h>
 
-FaceLandmarkerBase::FaceLandmarkerBase(const std::shared_ptr<Ort::Env> &env, const std::string &modelPath) :
-    m_inferenceSession(env) {
-    m_inferenceSession.createSession(modelPath);
+module face_landmarker_hub;
+import :face_landmarker_base;
+
+namespace ffc::faceLandmarker {
+FaceLandmarkerBase::FaceLandmarkerBase(const std::shared_ptr<Ort::Env> &env) :
+    InferenceSession(env) {
 }
 
 cv::Mat FaceLandmarkerBase::conditionalOptimizeContrast(const cv::Mat &visionFrame) {
@@ -35,3 +40,4 @@ cv::Mat FaceLandmarkerBase::conditionalOptimizeContrast(const cv::Mat &visionFra
     cv::cvtColor(result, result, cv::COLOR_Lab2BGR);
     return result;
 }
+} // namespace ffc::faceLandmarker

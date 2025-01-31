@@ -1,0 +1,34 @@
+/**
+ ******************************************************************************
+ * @file           : real_esr_gan.h
+ * @author         : CodingRookie
+ * @brief          : None
+ * @attention      : None
+ * @date           : 24-10-30
+ ******************************************************************************
+ */
+
+module;
+#include <onnxruntime_cxx_api.h>
+#include <opencv2/opencv.hpp>
+
+export module frame_enhancer:real_esr_gan;
+import :frame_enhancer_base;
+import inference_session;
+
+export namespace ffc::frameEnhancer {
+struct RealEsrGanInput {
+    cv::Mat *targetFrame = nullptr;
+    unsigned short blend{80};
+};
+
+class RealEsrGan final : public FrameEnhancerBase, public InferenceSession {
+public:
+    explicit RealEsrGan(const std::shared_ptr<Ort::Env> &env);
+    ~RealEsrGan() override = default;
+
+    [[nodiscard]] std::string getProcessorName() const override;
+
+    [[nodiscard]] cv::Mat enhanceFrame(const RealEsrGanInput &input) const;
+};
+} // namespace frameEnhancer

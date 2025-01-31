@@ -8,32 +8,27 @@
  ******************************************************************************
  */
 
-#include "face_store.h"
+module;
+#include <shared_mutex>
+#include <opencv2/opencv.hpp>
 #include <openssl/sha.h>
 
-std::shared_ptr<FaceStore> FaceStore::getInstance() {
-    static std::shared_ptr<FaceStore> instance;
-    static std::once_flag flag;
-    std::call_once(flag, [&]() { instance = std::make_shared<FaceStore>(); });
-    return instance;
-}
+module face_store;
 
-FaceStore::FaceStore() {
-    m_faces = std::make_unique<std::unordered_map<std::string, std::vector<Face>>>();
-}
+FaceStore::FaceStore() = default;
 
 void FaceStore::appendFaces(const cv::Mat &frame, const std::vector<Face> &faces) {
     if (faces.empty()) {
         return;
     }
     std::unique_lock<std::shared_mutex> lock(m_rwMutex);
-    (*m_faces)[createFrameHash(frame)] = faces;
+    m_facesMap[createFrameHash(frame)] = faces;
 }
 
 std::vector<Face> FaceStore::getFaces(const cv::Mat &visionFrame) {
     std::shared_lock<std::shared_mutex> lock(m_rwMutex);
-    auto it = m_faces->find(createFrameHash(visionFrame));
-    if (it != m_faces->end()) {
+    auto it = m_facesMap.find(createFrameHash(visionFrame));
+    if (it != m_facesMap.end()) {
         return it->second;
     }
     return {};
@@ -41,21 +36,21 @@ std::vector<Face> FaceStore::getFaces(const cv::Mat &visionFrame) {
 
 void FaceStore::clearFaces() {
     std::unique_lock<std::shared_mutex> lock(m_rwMutex);
-    m_faces->clear();
+    m_facesMap.clear();
 }
 
-std::string FaceStore::createFrameHash(const cv::Mat &visionFrame) {
+std::string FaceStore::createFrameHash(const cv::Mat &frame) {
     // 获取 Mat 数据的指针和大小
-    const uchar *data = visionFrame.data;
-    size_t dataSize = visionFrame.total() * visionFrame.elemSize();
+    const uchar *data = frame.data;
+    const size_t dataSize = frame.total() * frame.elemSize();
 
     // 最终计算并获取结果
     unsigned char hash[SHA_DIGEST_LENGTH];
     SHA1(reinterpret_cast<const unsigned char *>(data), dataSize, hash);
     // 将哈希结果转换为十六进制字符串
     std::ostringstream oss;
-    for (unsigned char i : hash) {
-        oss << std::hex << std::setw(2) << std::setfill('0') << (int)i;
+    for (const unsigned char &i : hash) {
+        oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(i);
     }
 
     return oss.str();
@@ -63,12 +58,12 @@ std::string FaceStore::createFrameHash(const cv::Mat &visionFrame) {
 
 void FaceStore::removeFaces(const std::string &facesName) {
     std::unique_lock<std::shared_mutex> lock(m_rwMutex);
-    m_faces->erase(facesName);
+    m_facesMap.erase(facesName);
 }
 
 void FaceStore::removeFaces(const cv::Mat &frame) {
     std::unique_lock<std::shared_mutex> lock(m_rwMutex);
-    m_faces->erase(createFrameHash(frame));
+    m_facesMap.erase(createFrameHash(frame));
 }
 
 void FaceStore::appendFaces(const std::string &facesName, const std::vector<Face> &faces) {
@@ -76,18 +71,27 @@ void FaceStore::appendFaces(const std::string &facesName, const std::vector<Face
         return;
     }
     std::unique_lock<std::shared_mutex> lock(m_rwMutex);
-    (*m_faces)[facesName] = faces;
+    m_facesMap[facesName] = faces;
 }
 
 std::vector<Face> FaceStore::getFaces(const std::string &facesName) {
     std::shared_lock<std::shared_mutex> lock(m_rwMutex);
-    auto it = m_faces->find(facesName);
-    if (it != m_faces->end()) {
-        return it->second;
+    if (m_facesMap.contains(facesName)) {
+        return m_facesMap[facesName];
     }
     return {};
 }
 
 FaceStore::~FaceStore() {
     clearFaces();
+}
+
+bool FaceStore::isContains(const cv::Mat &frame) {
+    std::shared_lock<std::shared_mutex> lock(m_rwMutex);
+    return m_facesMap.contains(createFrameHash(frame));
+}
+
+bool FaceStore::isContains(const std::string &facesName) {
+    std::shared_lock<std::shared_mutex> lock(m_rwMutex);
+    return m_facesMap.contains(facesName);
 }

@@ -8,26 +8,29 @@
  ******************************************************************************
  */
 
-#include "ffmpeg_runner.h"
+module;
 #include <numeric>
-#include <iostream>
 #include <fstream>
+#include <unordered_set>
+#include <ranges>
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <libavutil/channel_layout.h>
-#include <libavutil/common.h>
-#include <libavutil/frame.h>
-#include <libavutil/imgutils.h>
-#include <libavutil/samplefmt.h>
+// #include <libavutil/channel_layout.h>
+// #include <libavutil/common.h>
+// #include <libavutil/frame.h>
+// #include <libavutil/imgutils.h>
+// #include <libavutil/samplefmt.h>
 #include <libswscale/swscale.h>
 }
 #include <boost/process.hpp>
 #include <opencv2/opencv.hpp>
-#include "file_system.h"
-#include "logger.h"
 
-namespace Ffc {
+module ffmpeg_runner;
+import logger;
+import file_system;
+
+namespace ffc {
 namespace bp = boost::process;
 
 std::vector<std::string> FfmpegRunner::childProcess(const std::string &command) {
@@ -178,13 +181,11 @@ void FfmpegRunner::extractAudios(const std::string &videoPath, const std::string
         break;
     }
 
-    auto audioStreamsInfo = getAudioStreamsIndexAndCodec(videoPath);
-
-    for (const auto &audioStreamInfo : audioStreamsInfo) {
-        std::string index = std::to_string(audioStreamInfo.first);
+    const auto audioStreamsInfo = getAudioStreamsIndexAndCodec(videoPath);
+    for (const auto &key : audioStreamsInfo | std::views::keys) {
+        std::string index = std::to_string(key);
         std::string command = "ffmpeg -v error -i \"" + videoPath + "\" -map 0:" + index + " -c:a " + audioCodecStr + " -vn -y \"" + outputDir + "/audio_" + index + extension + "\"";
-        std::vector<std::string> results = childProcess(command);
-        if (!results.empty()) {
+        if (std::vector<std::string> results = childProcess(command); !results.empty()) {
             Logger::getInstance()->error(std::format("{} Failed to extract audio : {}", __FUNCTION__, command));
         }
     }
@@ -225,8 +226,7 @@ bool FfmpegRunner::concatVideoSegments(const std::vector<std::string> &videoSegm
         bp::filesystem::remove(outputVideoPath);
     }
 
-    std::string parentPath = bp::filesystem::path(outputVideoPath).parent_path().string();
-    if (bp::filesystem::is_directory(parentPath) && !bp::filesystem::exists(parentPath)) {
+    if (std::string parentPath = bp::filesystem::path(outputVideoPath).parent_path().string(); bp::filesystem::is_directory(parentPath) && !bp::filesystem::exists(parentPath)) {
         bp::filesystem::create_directory(parentPath);
     }
 
@@ -277,7 +277,7 @@ bool FfmpegRunner::concatVideoSegments(const std::vector<std::string> &videoSegm
 
 std::unordered_set<std::string> FfmpegRunner::filterVideoPaths(const std::unordered_set<std::string> &filePaths) {
     std::unordered_set<std::string> filteredPaths;
-    std::for_each(filePaths.begin(), filePaths.end(), [&](const std::string &videoPath) {
+    std::ranges::for_each(filePaths, [&](const std::string &videoPath) {
         if (isVideo(videoPath)) {
             filteredPaths.insert(videoPath);
         }
@@ -287,7 +287,7 @@ std::unordered_set<std::string> FfmpegRunner::filterVideoPaths(const std::unorde
 
 std::unordered_set<std::string> FfmpegRunner::filterAudioPaths(const std::unordered_set<std::string> &filePaths) {
     std::unordered_set<std::string> filteredPaths;
-    std::for_each(filePaths.begin(), filePaths.end(), [&](const std::string &audioPath) {
+    std::ranges::for_each(filePaths, [&](const std::string &audioPath) {
         if (isAudio(audioPath)) {
             filteredPaths.insert(audioPath);
         }
@@ -325,8 +325,7 @@ bool FfmpegRunner::addAudiosToVideo(const std::string &videoPath,
         command += " -map " + std::to_string(i + 1) + ":a:0";
     }
     command += " -c:v copy -c:a copy -shortest -y \"" + outputVideoPath + "\"";
-    std::vector<std::string> results = childProcess(command);
-    if (!results.empty()) {
+    if (const std::vector<std::string> results = childProcess(command); !results.empty()) {
         Logger::getInstance()->error("Failed to add audios to video : " + command);
         return false;
     }
@@ -352,16 +351,15 @@ bool FfmpegRunner::imagesToVideo(const std::string &inputImagePattern,
         bp::filesystem::create_directory(bp::filesystem::path(outputVideoPath).parent_path());
     }
 
-    std::string frameRate = std::to_string(videoPrams.frameRate);
-    std::string codec = videoPrams.videoCodec;
-    std::string outputRes = std::to_string(videoPrams.width) + "x" + std::to_string(videoPrams.height);
+    const std::string frameRate = std::to_string(videoPrams.frameRate);
+    const std::string codec = videoPrams.videoCodec;
+    const std::string outputRes = std::to_string(videoPrams.width) + "x" + std::to_string(videoPrams.height);
 
     std::string command = "ffmpeg -v error -r " + frameRate + " -i \"" + inputImagePattern + "\" -s " + outputRes + " -c:v " + codec + " ";
     command += getCompressionAndPresetCmd(videoPrams.quality, videoPrams.preset, codec);
     command += " -pix_fmt yuv420p -colorspace bt709 -y -r " + frameRate + " \"" + outputVideoPath + "\"";
 
-    std::vector<std::string> results = childProcess(command);
-    if (!results.empty()) {
+    if (const std::vector<std::string> results = childProcess(command); !results.empty()) {
         Logger::getInstance()->error("Failed to create video from images : " + command);
         Logger::getInstance()->error(std::accumulate(results.begin(), results.end(), std::string()));
         return false;
@@ -376,14 +374,15 @@ std::string FfmpegRunner::map_NVENC_preset(const std::string &preset) {
 
     if (fastPresets.contains(preset)) {
         return "fast";
-    } else if (mediumPresets.contains(preset)) {
-        return "medium";
-    } else if (slowPresets.contains(preset)) {
-        return "slow";
-    } else {
-        Logger::getInstance()->warn(std::format("{} : Unknown preset: {}, using medium preset", __FUNCTION__, preset));
+    }
+    if (mediumPresets.contains(preset)) {
         return "medium";
     }
+    if (slowPresets.contains(preset)) {
+        return "slow";
+    }
+    Logger::getInstance()->warn(std::format("{} : Unknown preset: {}, using medium preset", __FUNCTION__, preset));
+    return "medium";
 }
 
 std::string FfmpegRunner::map_amf_preset(const std::string &preset) {
@@ -393,28 +392,32 @@ std::string FfmpegRunner::map_amf_preset(const std::string &preset) {
 
     if (fastPresets.contains(preset)) {
         return "speed";
-    } else if (mediumPresets.contains(preset)) {
-        return "balanced";
-    } else if (slowPresets.contains(preset)) {
-        return "quality";
-    } else {
-        Logger::getInstance()->warn(std::format("{} : Unknown preset: {}, using medium preset", __FUNCTION__, preset));
+    }
+    if (mediumPresets.contains(preset)) {
         return "balanced";
     }
+    if (slowPresets.contains(preset)) {
+        return "quality";
+    }
+    Logger::getInstance()->warn(std::format("{} : Unknown preset: {}, using medium preset", __FUNCTION__, preset));
+    return "balanced";
 }
 
 std::string FfmpegRunner::getCompressionAndPresetCmd(const unsigned int &quality, const std::string &preset, const std::string &codec) {
     if (codec == "libx264" || codec == "libx265") {
-        int crf = (int)std::round(51 - (float)(quality * 0.51));
+        const int crf = static_cast<int>(std::round(51 - static_cast<float>(quality * 0.51)));
         return "-crf " + std::to_string(crf) + " -preset " + preset;
-    } else if (codec == "libvpx-vp9") {
-        int crf = (int)std::round(63 - (float)(quality * 0.63));
+    }
+    if (codec == "libvpx-vp9") {
+        const int crf = static_cast<int>(std::round(63 - static_cast<float>(quality * 0.63)));
         return "-cq " + std::to_string(crf);
-    } else if (codec == "h264_nvenc" || codec == "hevc_nvenc") {
-        int cq = (int)std::round(51 - (float)(quality * 0.51));
+    }
+    if (codec == "h264_nvenc" || codec == "hevc_nvenc") {
+        const int cq = static_cast<int>(std::round(51 - static_cast<float>(quality * 0.51)));
         return "-crf " + std::to_string(cq) + " -preset " + map_NVENC_preset(preset);
-    } else if (codec == "h264_amf" || codec == "hevc_amf") {
-        int qb_i = (int)std::round(51 - (float)(quality * 0.51));
+    }
+    if (codec == "h264_amf" || codec == "hevc_amf") {
+        const int qb_i = static_cast<int>(std::round(51 - static_cast<float>(quality * 0.51)));
         return "-qb_i " + std::to_string(qb_i) + " -qb_p " + std::to_string(qb_i) + " -quality " + map_amf_preset(preset);
     }
     return {};
@@ -423,16 +426,19 @@ std::string FfmpegRunner::getCompressionAndPresetCmd(const unsigned int &quality
 FfmpegRunner::Audio_Codec FfmpegRunner::getAudioCodec(const std::string &codec) {
     if (codec == "aac") {
         return Audio_Codec::Codec_AAC;
-    } else if (codec == "mp3") {
-        return Audio_Codec::Codec_MP3;
-    } else if (codec == "opus") {
-        return Audio_Codec::Codec_OPUS;
-    } else if (codec == "vorbis") {
-        return Audio_Codec::Codec_VORBIS;
-    } else {
-        Logger::getInstance()->warn(std::format("{} : Unknown audio codec: {}", __FUNCTION__, codec));
-        return Audio_Codec::Codec_UNKNOWN;
     }
+    if (codec == "mp3") {
+        return Audio_Codec::Codec_MP3;
+    }
+    if (codec == "opus") {
+        return Audio_Codec::Codec_OPUS;
+    }
+    if (codec == "vorbis") {
+        return Audio_Codec::Codec_VORBIS;
+    }
+
+    Logger::getInstance()->warn(std::format("{} : Unknown audio codec: {}", __FUNCTION__, codec));
+    return Audio_Codec::Codec_UNKNOWN;
 }
 
 FfmpegRunner::VideoPrams::VideoPrams(const std::string &videoPath) {
@@ -441,9 +447,10 @@ FfmpegRunner::VideoPrams::VideoPrams(const std::string &videoPath) {
         Logger::getInstance()->error(std::format("{} : Failed to open video : {}", __FUNCTION__, videoPath));
         return;
     }
-    width = (int)cap.get(cv::CAP_PROP_FRAME_WIDTH);
-    height = (int)cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+    width = static_cast<unsigned int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
+    height = static_cast<unsigned int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
     frameRate = cap.get(cv::CAP_PROP_FPS);
+    quality = 80;
     cap.release();
 }
-} // namespace Ffc
+} // namespace ffc

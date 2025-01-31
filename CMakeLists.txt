@@ -1,16 +1,21 @@
-cmake_minimum_required(VERSION 3.28)
-project(faceFusionCpp VERSION 0.3.0 DESCRIPTION "This project is the C++ version of the open-source project FaceFusion.")
+cmake_minimum_required(VERSION 3.31)
+project(faceFusionCpp
+        VERSION 0.3.1
+        DESCRIPTION "This project is the C++ version of the open-source project FaceFusion."
+)
 
 set(CMAKE_CXX_STANDARD 20)
-
-set(RUNTIME_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/build/runtime")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${RUNTIME_PREFIX}/${CMAKE_BUILD_TYPE}")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
-    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
-    add_definitions(-D_WIN32_WINNT=0x0601)
+    add_compile_options(
+            /utf-8
+    )
+    add_definitions(-D_WIN32_WINNT=0x0A00)
 endif ()
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_link_options(-static-libgcc -static-libstdc++)
 endif ()
@@ -32,8 +37,8 @@ find_package(CURL REQUIRED)
 find_package(indicators CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(thread-pool CONFIG REQUIRED)
+cmake_policy(SET CMP0167 NEW) # 抑制FindBoost 模块已被移除的警告
 find_package(Boost REQUIRED COMPONENTS process)
-
 find_package(FFMPEG REQUIRED)
 target_include_directories(${ProgramName} PRIVATE ${FFMPEG_INCLUDE_DIRS})
 target_link_directories(${ProgramName} PRIVATE ${FFMPEG_LIBRARY_DIRS})
@@ -131,6 +136,12 @@ file(WRITE "${CMAKE_BINARY_DIR}/trim_file_content_4install.cmake" "
     file(WRITE \"${INSTALL_INI_FILE}\" \"\$\{NEW_CONTENT\}\") # 写入文件
 ")
 install(SCRIPT "${CMAKE_BINARY_DIR}/trim_file_content_4install.cmake" COMPONENT "app")
+
+# "copy dependencies"
+# add_custom_command(TARGET ${ProgramName} POST_BUILD
+#     COMMAND ${CMAKE_SOURCE_DIR}/install_dependencies.sh ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${ProgramName}
+# )
+# install(DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/lib" COMPONENT "libs" DESTINATION "./")
 
 set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "./")
 include(InstallRequiredSystemLibraries)

@@ -8,10 +8,13 @@
  ******************************************************************************
  */
 
-#include "face_classifier_base.h"
+module face_classifier_hub;
+import :face_classifier_base;
 
-FaceClassifierBase::FaceClassifierBase(const std::shared_ptr<Ort::Env> &env,
-                                       const std::string &modelPath):
-    m_inferenceSession(env){
-    m_inferenceSession.createSession(modelPath);
+namespace ffc::faceClassifier {
+
+FaceClassifierBase::FaceClassifierBase(const std::shared_ptr<Ort::Env> &env) :
+    InferenceSession(env) {
 }
+
+} // namespace ffc::faceClassfier

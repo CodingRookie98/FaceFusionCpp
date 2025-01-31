@@ -8,22 +8,16 @@
  ******************************************************************************
  */
 
-#include "frame_enhancer_base.h"
-FrameEnhancerBase::FrameEnhancerBase(const std::shared_ptr<Ort::Env> &env, const std::string &modelPath) :
-    m_inferenceSession(env) {
-    m_inferenceSession.createSession(modelPath);
-}
+module;
+#include <opencv2/opencv.hpp>
 
-std::string FrameEnhancerBase::getProcessorName() {
-    return "FrameEnhancer";
-}
+module frame_enhancer;
+import :frame_enhancer_base;
 
-ProcessorBase::ProcessorType FrameEnhancerBase::getProcessorType() {
-    return ProcessorBase::FrameEnhancer;
-}
+namespace ffc::frameEnhancer {
 
-cv::Mat FrameEnhancerBase::blendFrame(const cv::Mat &tempFrame, const cv::Mat &mergedFrame) const {
-    float blendFactor = 1 - ((float)m_blend / 100.f);
+cv::Mat FrameEnhancerBase::blendFrame(const cv::Mat &tempFrame, const cv::Mat &mergedFrame, const int &blend) {
+    const float blendFactor = 1 - static_cast<float>(blend) / 100.f;
     cv::Mat result;
     cv::resize(tempFrame, result, mergedFrame.size());
     cv::addWeighted(result, blendFactor, mergedFrame, 1 - blendFactor, 0, result);
@@ -39,7 +33,7 @@ std::vector<float> FrameEnhancerBase::getInputImageData(const cv::Mat &frame) {
 
     const int imageArea = frame.rows * frame.cols;
     std::vector<float> inputImageData(3 * imageArea);
-    size_t singleChnSize = imageArea * sizeof(float);
+    const size_t singleChnSize = imageArea * sizeof(float);
     memcpy(inputImageData.data(), (float *)bgrChannels[2].data, singleChnSize);                 // R
     memcpy(inputImageData.data() + imageArea, (float *)bgrChannels[1].data, singleChnSize);     // G
     memcpy(inputImageData.data() + imageArea * 2, (float *)bgrChannels[0].data, singleChnSize); // B
@@ -51,7 +45,7 @@ cv::Mat FrameEnhancerBase::getOutputImage(const float *outputData, const cv::Siz
     cv::Mat outputImage(size, CV_32FC3);
 
     // Direct memory copy and processing
-    float *outputPtr = outputImage.ptr<float>();
+    auto *outputPtr = outputImage.ptr<float>();
 #pragma omp parallel for
     for (long long i = 0; i < channelStep; ++i) {
         // B, G, R order for OpenCV
@@ -62,12 +56,4 @@ cv::Mat FrameEnhancerBase::getOutputImage(const float *outputData, const cv::Siz
 
     return outputImage;
 }
-
-void FrameEnhancerBase::validateInputData(const ProcessorBase::InputData *inputData) {
-    if (inputData == nullptr) {
-        throw std::runtime_error(__FUNCTION__ + std::string(": inputData is null."));
-    }
-    if (inputData->m_targetFrame == nullptr) {
-        throw std::invalid_argument(__FUNCTION__ + std::string(": inputData->m_targetFrame is nullptr"));
-    }
-}
+} // namespace frameEnhancer

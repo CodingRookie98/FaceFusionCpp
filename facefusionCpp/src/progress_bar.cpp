@@ -8,9 +8,13 @@
  ******************************************************************************
  */
 
-#include "progress_bar.h"
+module;
+#include <indicators/cursor_control.hpp>
+#include <indicators/progress_bar.hpp>
 
-namespace Ffc {
+module progress_bar;
+
+namespace ffc {
 ProgressBar::ProgressBar() {
     m_bar = new indicators::ProgressBar{
         option::BarWidth{50},
@@ -28,11 +32,11 @@ ProgressBar::ProgressBar() {
         option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}};
 }
 
-ProgressBar::~ProgressBar(){
+ProgressBar::~ProgressBar() {
     delete m_bar;
-};
+}
 
-void ProgressBar::setMaxProgress(const int64_t &max) {
+void ProgressBar::setMaxProgress(const int64_t &max) const {
     int64_t setMax = max;
     if (max < 0) {
         setMax = 0;
@@ -42,37 +46,38 @@ void ProgressBar::setMaxProgress(const int64_t &max) {
     m_bar->set_option(option::MaxProgress{setMax});
 }
 
-void ProgressBar::setPrefixText(const std::string &text) {
+void ProgressBar::setPrefixText(const std::string &text) const {
     m_bar->set_option(option::PrefixText{text});
 }
 
-void ProgressBar::setPostfixText(const std::string &text) {
+void ProgressBar::setPostfixText(const std::string &text) const {
     m_bar->set_option(option::PostfixText{text});
 }
 
-void ProgressBar::setProgress(const int &progress) {
-    int setProgress = progress;
+void ProgressBar::setProgress(const unsigned int &progress) const {
+    unsigned int setProgress = progress;
     if (progress < 0) {
         setProgress = 0;
-    } else if (progress > 100) {
+    }
+    if (progress > 100) {
         setProgress = 100;
     }
     m_bar->set_progress(setProgress);
 }
 
-void ProgressBar::tick() {
+void ProgressBar::tick() const {
     m_bar->tick();
 }
 
-void ProgressBar::markAsCompleted() {
+void ProgressBar::markAsCompleted() const {
     m_bar->mark_as_completed();
 }
 
-void ProgressBar::showConsoleCursor(bool show) {
+void ProgressBar::showConsoleCursor(const bool &show) {
     show_console_cursor(show);
 }
 
 bool ProgressBar::isCompleted() const {
     return m_bar->is_completed();
 }
-} // namespace Ffc
+} // namespace ffc
