@@ -55,7 +55,7 @@ private:
     Options coreOptions;
 
     bool processImages(CoreRunOptions _coreRunOptions);
-    bool processVideos(CoreRunOptions _coreRunOptions);
+    bool processVideos(const CoreRunOptions &_coreRunOptions, const bool &autoRemoveTarget = false);
     bool processVideo(CoreRunOptions _coreRunOptions);
     bool processVideoInSegments(CoreRunOptions _coreRunOptions);
     [[nodiscard]] bool processSourceAverageFace(CoreRunOptions _coreRunOptions) const;
@@ -63,7 +63,7 @@ private:
     bool enhanceFace(CoreRunOptions _coreRunOptions);
     bool restoreExpression(CoreRunOptions _coreRunOptions);
     bool enhanceFrame(CoreRunOptions _coreRunOptions);
-    std::vector<Face> getTargetFaces(const CoreRunOptions &_coreRunOptions, const cv::Mat &targetFrame) const;
+    [[nodiscard]] std::vector<Face> getTargetFaces(const CoreRunOptions &_coreRunOptions, const cv::Mat &targetFrame) const;
 };
 
 } // namespace ffc

@@ -10,6 +10,7 @@
 
 module;
 #include <unordered_set>
+#include <filesystem>
 #include <thread_pool/thread_pool.h>
 #include <opencv2/opencv.hpp>
 #include <onnxruntime_cxx_api.h>
@@ -220,7 +221,7 @@ bool Core::processVideoInSegments(CoreRunOptions _coreRunOptions) {
     return true;
 }
 
-bool Core::processVideos(CoreRunOptions _coreRunOptions) {
+bool Core::processVideos(const CoreRunOptions &_coreRunOptions, const bool &autoRemoveTarget) {
     if (_coreRunOptions.target_paths.empty()) {
         m_logger->error(" videoPaths is empty.");
         return false;
@@ -253,6 +254,9 @@ bool Core::processVideos(CoreRunOptions _coreRunOptions) {
                 isAllSuccess = false;
                 m_logger->error(std::format("[Core] Video {} processed failed.", _coreRunOptions.target_paths[i]));
             }
+        }
+        if (autoRemoveTarget) {
+            FileSystem::removeFile(_coreRunOptions.target_paths[i]);
         }
     }
     return isAllSuccess;
@@ -292,10 +296,19 @@ bool Core::run(CoreRunOptions _coreRunOptions) {
             outputImgPaths.emplace_back(outputPath);
         }
         if (FileSystem::isVideo(targetPath)) {
-            std::string str = tmpPath + "/videos/" + FileSystem::getFileName(targetPath);
-            FileSystem::copy(targetPath, str);
+            std::string file_symlink_path = tmpPath + "/videos/" + FileSystem::getFileName(targetPath);
+            try {
+                if (!FileSystem::dirExists(tmpPath + "/videos")) {
+                    FileSystem::createDir(tmpPath + "/videos");
+                }
+                std::filesystem::create_symlink(targetPath, file_symlink_path);
+            } catch (std::filesystem::filesystem_error &e) {
+                m_logger->error(std::format("[Core::Run] Create symlink failed! Error: {}", e.what()));
+            } catch (std::exception &e) {
+                m_logger->error(std::format("[Core::Run] Create symlink failed! Error: {}", e.what()));
+            }
             targetVideoPaths.emplace_back(targetPath);
-            tmpTargetVideoPaths.emplace_back(str);
+            tmpTargetVideoPaths.emplace_back(file_symlink_path);
             outputVideoPaths.emplace_back(outputPath);
         }
     }
@@ -318,7 +331,7 @@ bool Core::run(CoreRunOptions _coreRunOptions) {
         CoreRunOptions tmpRunOptions = _coreRunOptions;
         tmpRunOptions.target_paths = tmpTargetVideoPaths;
         tmpRunOptions.output_paths = outputVideoPaths;
-        if (!processVideos(tmpRunOptions)) {
+        if (!processVideos(tmpRunOptions, true)) {
             videosAllOK = false;
         }
     }
