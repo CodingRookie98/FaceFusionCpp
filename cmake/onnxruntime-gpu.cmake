@@ -27,7 +27,7 @@ if (NOT EXISTS "${ORT_DOWNLOAD_FILE}")
     # 确保解压目录存在
     file(MAKE_DIRECTORY "${ORT_EXTRACT_DIR}")
 else ()
-    message(STATUS "${ORT_DOWNLOAD_FILE} has already been downloaded.")
+    message(STATUS "${ORT_FILE_NAME} has already been downloaded.")
 endif ()
 
 set(ORT_PATH "${ORT_EXTRACT_DIR}/${ORT_FILE_BASE_NAME}")
@@ -39,7 +39,7 @@ if (NOT EXISTS "${ORT_PATH}")
             WORKING_DIRECTORY "${ORT_EXTRACT_DIR}"
     )
 else ()
-    message(STATUS "${ORT_DOWNLOAD_FILE} has already been extracted.")
+    message(STATUS "${ORT_FILE_NAME} has already been extracted.")
 endif ()
 
 if (WIN32 OR WIN64)
