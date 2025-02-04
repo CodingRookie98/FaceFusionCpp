@@ -44,7 +44,7 @@ std::vector<std::string> FfmpegRunner::childProcess(const std::string &command) 
         bp::child c(commandToRun, bp::std_out > pipeStream);
 
         if (!c.valid()) {
-            std::string error = "child swapFace is valid : " + commandToRun;
+            std::string error = "child process is valid : " + commandToRun;
             lines.emplace_back(error);
             return lines;
         }
