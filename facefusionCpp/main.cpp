@@ -1,4 +1,7 @@
 #include <iostream>
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 #include <onnxruntime_cxx_api.h>
 #include <opencv2/opencv.hpp>
 
@@ -13,6 +16,10 @@ using namespace ffc;
 
 int main() {
     FileSystem::setLocalToUTF8();
+
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
 
     std::cout << std::format("{} {} {} By {}", metadata::name, metadata::version, metadata::url, metadata::author) << std::endl;
     std::cout << std::format("onnxruntime {}", Ort::GetVersionString()) << std::endl;

@@ -63,7 +63,11 @@ std::string generateRandomString(const size_t &length);
 // This function can be called multiple times.
 // It is recommended to call it only once at the program entry.
 void setLocalToUTF8();
+
+#ifdef _WIN32
+std::string utf8ToSysDefaultLocal(const std::string &utf8tsr);
+#endif
+
 }
 
-} // namespace ffc
-
+} // namespace ffc::FileSystem

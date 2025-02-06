@@ -11,6 +11,9 @@
 module;
 #include <random>
 #include <filesystem>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <thread_pool/thread_pool.h>
 #include <opencv2/opencv.hpp>
 
@@ -29,22 +32,22 @@ bool FileSystem::dirExists(const std::string &path) {
 }
 
 bool FileSystem::isDir(const std::string &path) {
-    return dirExists(path) && std::filesystem::is_directory(path);
+    return std::filesystem::is_directory(path);
 }
 
 bool FileSystem::isFile(const std::string &path) {
-    return fileExists(path) && std::filesystem::is_regular_file(path);
+    return std::filesystem::is_regular_file(path);
 }
 
 bool FileSystem::isImage(const std::string &path) {
-    if (!isFile(path)) {
+    if (!isFile(path) || !fileExists(path)) {
         return false;
     }
     return cv::haveImageReader(path);
 }
 
 bool FileSystem::isVideo(const std::string &path) {
-    if (!isFile(path)) {
+    if (!isFile(path) || !fileExists(path)) {
         return false;
     }
     return FfmpegRunner::isVideo(path);
@@ -61,7 +64,7 @@ std::string FileSystem::getFileNameFromURL(const std::string &url) {
 }
 
 uintmax_t FileSystem::getFileSize(const std::string &path) {
-    if (isFile(path)) {
+    if (isFile(path) && fileExists(path)) {
         return std::filesystem::file_size(path);
     }
     return 0;
@@ -72,6 +75,9 @@ std::unordered_set<std::string> FileSystem::listFilesInDir(const std::string &pa
 
     if (!isDir(path)) {
         throw std::invalid_argument("Path is not a directory");
+    }
+    if (!dirExists(path)) {
+        throw std::invalid_argument("Directory does not exist");
     }
 
     try {
@@ -158,8 +164,7 @@ void FileSystem::createDir(const std::string &path) {
     static std::mutex mutex;
     std::lock_guard<std::mutex> lock(mutex);
     if (!dirExists(path)) {
-        std::error_code ec;
-        if (!std::filesystem::create_directories(path, ec)) {
+        if (std::error_code ec; !std::filesystem::create_directories(path, ec)) {
             std::cerr << __FUNCTION__ << " Failed to create directory: " + path + " Error: " + ec.message() << std::endl;
         }
     }
@@ -195,7 +200,7 @@ std::string FileSystem::getBaseName(const std::string &path) {
 
 bool FileSystem::copyImage(const std::string &imagePath, const std::string &destination, const cv::Size &size) {
     // 读取输入图片
-    cv::Mat inputImage = cv::imread(imagePath, cv::IMREAD_UNCHANGED);
+    const cv::Mat inputImage = cv::imread(imagePath, cv::IMREAD_UNCHANGED);
     if (inputImage.empty()) {
         std::cerr << "Could not open or find the image: " << imagePath << std::endl;
         return false;
@@ -466,7 +471,34 @@ void FileSystem::setLocalToUTF8() {
         } catch (const std::runtime_error &e) {
             std::cerr << std::format("Failed to set locale: {}. Fall back to system default.", e.what());
             std::locale::global(std::locale("")); // 回退到系统默认
-    }
+        }
     });
 }
-} // namespace Ffc
+
+#ifdef _WIN32
+std::string FileSystem::utf8ToSysDefaultLocal(const std::string &utf8tsr) {
+    // 计算转换为宽字符所需的缓冲区大小
+    const int wideCharSize = MultiByteToWideChar(CP_UTF8, 0, utf8tsr.c_str(), -1, nullptr, 0);
+    if (wideCharSize == 0) {
+        // 处理错误
+        return {};
+    }
+
+    // 分配缓冲区
+    std::wstring wideStr(wideCharSize, 0);
+    MultiByteToWideChar(CP_UTF8, 0, utf8tsr.c_str(), -1, &wideStr[0], wideCharSize);
+    // 计算转换为 Local 所需的缓冲区大小
+    const int LocalSize = WideCharToMultiByte(CP_ACP, 0, wideStr.c_str(), -1, nullptr, 0, nullptr, nullptr);
+    if (LocalSize == 0) {
+        // 处理错误
+        return {};
+    }
+
+    // 分配缓冲区
+    std::string currentLocalStr(LocalSize, 0);
+    WideCharToMultiByte(CP_ACP, 0, wideStr.c_str(), -1, &currentLocalStr[0], LocalSize, nullptr, nullptr);
+    return currentLocalStr;
+}
+#endif
+
+} // namespace ffc

@@ -41,7 +41,12 @@ std::vector<std::string> FfmpegRunner::childProcess(const std::string &command) 
 
         // 使用 Boost.Process 启动进程
         bp::ipstream pipeStream; // 用于读取进程输出
+#ifdef _WIN32
+        commandToRun = FileSystem::utf8ToSysDefaultLocal(commandToRun);
         bp::child c(commandToRun, bp::std_out > pipeStream);
+#else
+        bp::child c(commandToRun, bp::std_out > pipeStream);
+#endif
 
         if (!c.valid()) {
             std::string error = "child process is valid : " + commandToRun;
@@ -82,7 +87,7 @@ bool FfmpegRunner::isVideo(const std::string &videoPath) {
 }
 
 bool FfmpegRunner::isAudio(const std::string &audioPath) {
-    if (!bp::filesystem::exists(audioPath)) {
+    if (!FileSystem::fileExists(audioPath)) {
         Logger::getInstance()->error(std::format("{} : {}", __FUNCTION__, "Not a audio file : " + audioPath));
         return false;
     }
@@ -114,8 +119,8 @@ void FfmpegRunner::extractFrames(const std::string &videoPath, const std::string
         return;
     }
 
-    if (!bp::filesystem::exists(bp::filesystem::path(outputImagePattern).parent_path())) {
-        bp::filesystem::create_directory(bp::filesystem::path(outputImagePattern).parent_path());
+    if (!FileSystem::dirExists(FileSystem::parentPath(outputImagePattern))) {
+        FileSystem::createDir(FileSystem::parentPath(outputImagePattern));
     }
 
     std::string command = "ffmpeg -v error -i \"" + videoPath + "\" -q:v 0 -vsync 0 \"" + outputImagePattern + "\"";
@@ -131,12 +136,12 @@ bool FfmpegRunner::cutVideoIntoSegments(const std::string &videoPath, const std:
         Logger::getInstance()->error(std::format("{} : {}", __FUNCTION__, "Not a video file : " + videoPath));
         return false;
     }
-    if (!bp::filesystem::exists(outputPath)) {
-        bp::filesystem::create_directory(outputPath);
+    if (!FileSystem::dirExists(outputPath)) {
+        FileSystem::createDir(outputPath);
     }
 
-    std::string durationStr = std::to_string(segmentDuration);
-    std::string command = "ffmpeg -v error -i \"" + videoPath + "\" -c:v copy -an -f segment -segment_time " + durationStr + " -reset_timestamps 1 -y \"" + outputPath + "/" + outputPattern + "\"";
+    const std::string durationStr = std::to_string(segmentDuration);
+    const std::string command = "ffmpeg -v error -i \"" + videoPath + "\" -c:v copy -an -f segment -segment_time " + durationStr + " -reset_timestamps 1 -y \"" + outputPath + "/" + outputPattern + "\"";
     std::vector<std::string> results = childProcess(command);
     if (!results.empty()) {
         Logger::getInstance()->error(std::format("{} : {}", __FUNCTION__, std::accumulate(results.begin(), results.end(), std::string())));
@@ -151,12 +156,8 @@ void FfmpegRunner::extractAudios(const std::string &videoPath, const std::string
         Logger::getInstance()->error("Not a video file : " + videoPath);
         return;
     }
-    if (!bp::filesystem::is_directory(outputDir) && bp::filesystem::is_regular_file(outputDir)) {
-        Logger::getInstance()->error("Output directory is not a directory : " + outputDir);
-        return;
-    }
-    if (!bp::filesystem::exists(outputDir)) {
-        bp::filesystem::create_directory(outputDir);
+    if (!FileSystem::dirExists(outputDir)) {
+        FileSystem::createDir(outputDir);
     }
 
     std::string audioCodecStr;
@@ -181,8 +182,8 @@ void FfmpegRunner::extractAudios(const std::string &videoPath, const std::string
         break;
     }
 
-    const auto audioStreamsInfo = getAudioStreamsIndexAndCodec(videoPath);
-    for (const auto &key : audioStreamsInfo | std::views::keys) {
+    for (const auto audioStreamsInfo = getAudioStreamsIndexAndCodec(videoPath);
+         const auto &key : audioStreamsInfo | std::views::keys) {
         std::string index = std::to_string(key);
         std::string command = "ffmpeg -v error -i \"" + videoPath + "\" -map 0:" + index + " -c:a " + audioCodecStr + " -vn -y \"" + outputDir + "/audio_" + index + extension + "\"";
         if (std::vector<std::string> results = childProcess(command); !results.empty()) {
@@ -222,22 +223,23 @@ std::unordered_map<unsigned int, std::string> FfmpegRunner::getAudioStreamsIndex
 
 bool FfmpegRunner::concatVideoSegments(const std::vector<std::string> &videoSegmentsPaths,
                                        const std::string &outputVideoPath, const VideoPrams &videoPrams) {
-    if (bp::filesystem::is_regular_file(outputVideoPath) && bp::filesystem::exists(outputVideoPath)) {
-        bp::filesystem::remove(outputVideoPath);
+    if (FileSystem::isFile(outputVideoPath) && FileSystem::fileExists(outputVideoPath)) {
+        FileSystem::removeFile(outputVideoPath);
     }
 
-    if (std::string parentPath = bp::filesystem::path(outputVideoPath).parent_path().string(); bp::filesystem::is_directory(parentPath) && !bp::filesystem::exists(parentPath)) {
-        bp::filesystem::create_directory(parentPath);
+    if (std::string parentPath = FileSystem::parentPath(outputVideoPath);
+        FileSystem::isDir(parentPath) && !FileSystem::dirExists(parentPath)) {
+        FileSystem::createDir(parentPath);
     }
 
     std::string listVideoFilePath;
     // get outputVideo base name
-    std::string outputVideoBaseName = bp::filesystem::path(outputVideoPath).stem().string();
+    std::string outputVideoBaseName = FileSystem::getBaseName(outputVideoPath);
     std::string listFileName = outputVideoBaseName + "_segments.txt";
-    if (bp::filesystem::is_directory(outputVideoPath)) {
+    if (FileSystem::isDir(outputVideoPath)) {
         listVideoFilePath = outputVideoPath + "/" + listFileName;
     } else {
-        listVideoFilePath = bp::filesystem::path(outputVideoPath).parent_path().string() + "/" + listFileName;
+        listVideoFilePath = FileSystem::parentPath(outputVideoPath) + "/" + listFileName;
     }
     std::ofstream listFile(listVideoFilePath);
     if (!listFile.is_open()) {
@@ -259,14 +261,14 @@ bool FfmpegRunner::concatVideoSegments(const std::vector<std::string> &videoSegm
     std::string command;
     command = "ffmpeg -v error -f concat -safe 0 -r " + frameRate + " -i \"" + listVideoFilePath + "\" -s " + outputRes + " -c:v " + videoPrams.videoCodec + " ";
     command += getCompressionAndPresetCmd(videoPrams.quality, videoPrams.preset, videoPrams.videoCodec);
-    if (bp::filesystem::is_directory(outputVideoPath)) {
+    if (FileSystem::isDir(outputVideoPath)) {
         command += " -pix_fmt yuv420p -colorspace bt709 -y -r " + frameRate + " \"" + outputVideoPath + "/output.mp4\"";
     } else {
         command += " -pix_fmt yuv420p -colorspace bt709 -y -r " + frameRate + " \"" + outputVideoPath + "\"";
     }
 
     std::vector<std::string> results = childProcess(command);
-    bp::filesystem::remove(listVideoFilePath);
+    FileSystem::removeFile(listVideoFilePath);
     if (!results.empty()) {
         std::string error = std::accumulate(results.begin(), results.end(), std::string());
         Logger::getInstance()->error("Failed to concat video segments! Error: " + error);
@@ -302,17 +304,17 @@ bool FfmpegRunner::addAudiosToVideo(const std::string &videoPath,
         Logger::getInstance()->error("Not a video file : " + videoPath);
         return false;
     }
-    if (bp::filesystem::is_directory(outputVideoPath)) {
+    if (FileSystem::isDir(outputVideoPath)) {
         Logger::getInstance()->error("Output path is a directory : " + outputVideoPath);
         return false;
     }
-    if (!bp::filesystem::exists(bp::filesystem::path(outputVideoPath).parent_path().string())) {
-        bp::filesystem::create_directory(bp::filesystem::path(outputVideoPath).parent_path().string());
+    if (!FileSystem::dirExists(FileSystem::parentPath(outputVideoPath))) {
+        FileSystem::createDir(FileSystem::parentPath(outputVideoPath));
     }
 
     if (audioPaths.empty()) {
         Logger::getInstance()->warn(std::format("{} No audio files to add", __FUNCTION__));
-        bp::filesystem::copy(videoPath, outputVideoPath);
+        FileSystem::copy(videoPath, outputVideoPath);
         return true;
     }
 
@@ -340,15 +342,15 @@ bool FfmpegRunner::imagesToVideo(const std::string &inputImagePattern,
         return false;
     }
 
-    if (bp::filesystem::is_directory(outputVideoPath)) {
+    if (FileSystem::isDir(outputVideoPath)) {
         Logger::getInstance()->error(std::format("{} : Output video path is a directory : {}", __FUNCTION__, outputVideoPath));
         return false;
     }
-    if (bp::filesystem::is_regular_file(outputVideoPath)) {
-        bp::filesystem::remove(outputVideoPath);
+    if (FileSystem::isFile(outputVideoPath)) {
+        FileSystem::removeFile(outputVideoPath);
     }
-    if (!bp::filesystem::exists(bp::filesystem::path(outputVideoPath).parent_path())) {
-        bp::filesystem::create_directory(bp::filesystem::path(outputVideoPath).parent_path());
+    if (!FileSystem::dirExists(FileSystem::parentPath(outputVideoPath))) {
+        FileSystem::createDir(FileSystem::parentPath(outputVideoPath));
     }
 
     const std::string frameRate = std::to_string(videoPrams.frameRate);
