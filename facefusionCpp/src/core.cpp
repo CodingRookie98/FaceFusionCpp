@@ -26,6 +26,7 @@ import processor_hub;
 import processor_hub;
 import face_swapper;
 import progress_bar;
+import metadata;
 
 using namespace std;
 using namespace ffc;
@@ -51,7 +52,7 @@ Core::Core(const Options &options) :
 }
 
 Core::~Core() {
-    FileSystem::removeDir(FileSystem::getTempPath());
+    FileSystem::removeDir(FileSystem::getTempPath() + "/" + metadata::name);
 }
 
 bool Core::processVideo(CoreRunOptions _coreRunOptions) {
@@ -279,35 +280,32 @@ bool Core::run(CoreRunOptions _coreRunOptions) {
     std::string tmpPath;
     do {
         std::string id = FileSystem::generateRandomString(10);
-        tmpPath = FileSystem::getTempPath() + "/" + id;
+        tmpPath = FileSystem::getTempPath() + "/" + metadata::name + "/" + id;
         _coreRunOptions.source_average_face_id = id;
     } while (FileSystem::dirExists(tmpPath));
 
-    std::vector<string> targetImgPaths, tmpTargetImgPaths, outputImgPaths;
-    std::vector<string> targetVideoPaths, tmpTargetVideoPaths, outputVideoPaths;
+    std::vector<string> tmpTargetImgPaths, outputImgPaths;
+    std::vector<string> tmpTargetVideoPaths, outputVideoPaths;
     for (size_t i = 0; i < _coreRunOptions.target_paths.size(); ++i) {
-        std::string targetPath = _coreRunOptions.target_paths[i];
-        std::string outputPath = _coreRunOptions.output_paths[i];
+        const std::string &targetPath = _coreRunOptions.target_paths[i];
+        const std::string &outputPath = _coreRunOptions.output_paths[i];
         if (FileSystem::isImage(targetPath)) {
             std::string str = tmpPath + "/images/" + FileSystem::getFileName(targetPath);
             FileSystem::copy(targetPath, str);
-            targetImgPaths.emplace_back(targetPath);
             tmpTargetImgPaths.emplace_back(str);
             outputImgPaths.emplace_back(outputPath);
-        }
-        if (FileSystem::isVideo(targetPath)) {
-            std::string file_symlink_path = tmpPath + "/videos/" + FileSystem::getFileName(targetPath);
+        } else if (FileSystem::isVideo(targetPath)) {
+            const std::string file_symlink_path = tmpPath + "/videos/" + FileSystem::getFileName(targetPath);
+            if (!FileSystem::dirExists(tmpPath + "/videos")) {
+                FileSystem::createDir(tmpPath + "/videos");
+            }
             try {
-                if (!FileSystem::dirExists(tmpPath + "/videos")) {
-                    FileSystem::createDir(tmpPath + "/videos");
-                }
                 std::filesystem::create_symlink(targetPath, file_symlink_path);
             } catch (std::filesystem::filesystem_error &e) {
                 m_logger->error(std::format("[Core::Run] Create symlink failed! Error: {}", e.what()));
             } catch (std::exception &e) {
                 m_logger->error(std::format("[Core::Run] Create symlink failed! Error: {}", e.what()));
             }
-            targetVideoPaths.emplace_back(targetPath);
             tmpTargetVideoPaths.emplace_back(file_symlink_path);
             outputVideoPaths.emplace_back(outputPath);
         }

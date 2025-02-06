@@ -166,9 +166,7 @@ void FileSystem::createDir(const std::string &path) {
 }
 
 std::string FileSystem::getTempPath() {
-    std::string tempPath = absolutePath("temp");
-    createDir(tempPath);
-    return tempPath;
+    return std::filesystem::temp_directory_path().string();
 }
 
 std::string FileSystem::parentPath(const std::string &path) {

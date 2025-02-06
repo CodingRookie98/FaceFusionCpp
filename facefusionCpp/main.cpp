@@ -18,10 +18,21 @@ int main() {
     std::cout << std::format("onnxruntime {}", Ort::GetVersionString()) << std::endl;
     std::cout << std::format("OpenCV {}", cv::getVersionString()) << std::endl;
 
+    const std::string tmpPath = FileSystem::getTempPath() + "/" + metadata::name;
+    if (FileSystem::dirExists(tmpPath)) {
+        FileSystem::removeDir(tmpPath);
+    }
+
     ini_config ini_config;
     ini_config.loadConfig();
     const auto core = std::make_shared<ffc::Core>(ini_config.getCoreOptions());
     const bool ok = core->run(ini_config.getCoreRunOptions());
 
+    if (!ok) {
+        Logger::getInstance()->error("FaceFusionCpp failed to run. Maybe some of the tasks failed.");
+    }
+    if (FileSystem::dirExists(tmpPath)) {
+        FileSystem::removeDir(tmpPath);
+    }
     return 0;
 }
