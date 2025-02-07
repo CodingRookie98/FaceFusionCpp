@@ -317,6 +317,7 @@ bool Core::run(CoreRunOptions _coreRunOptions) {
         CoreRunOptions tmpRunOptions = _coreRunOptions;
         tmpRunOptions.target_paths = tmpTargetImgPaths;
         tmpRunOptions.output_paths = tmpTargetImgPaths;
+        m_logger->info("[Core] Processing Images...");
         if (!processImages(tmpRunOptions)) {
             imagesAllOK = false;
         }
@@ -329,6 +330,7 @@ bool Core::run(CoreRunOptions _coreRunOptions) {
         CoreRunOptions tmpRunOptions = _coreRunOptions;
         tmpRunOptions.target_paths = tmpTargetVideoPaths;
         tmpRunOptions.output_paths = outputVideoPaths;
+        m_logger->info("[Core] Processing Videos...");
         if (!processVideos(tmpRunOptions, true)) {
             videosAllOK = false;
         }
