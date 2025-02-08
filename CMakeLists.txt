@@ -71,8 +71,9 @@ target_link_libraries(${ProgramName} PRIVATE OpenSSL::Crypto)
 target_link_libraries(${ProgramName} PRIVATE dp::thread-pool)
 target_link_libraries(${ProgramName} PRIVATE Boost::process)
 
+set(${ProgramName}_ini_file_name "FaceFusionCpp.ini")
 list(APPEND RESOURCE_FILES
-        "${CMAKE_CURRENT_SOURCE_DIR}/faceFusionCpp.ini"
+        "${CMAKE_CURRENT_SOURCE_DIR}/${${ProgramName}_ini_file_name}"
         "${CMAKE_CURRENT_SOURCE_DIR}/facefusionCpp/modelsInfo.json"
 )
 add_custom_target(COPY_RESOURCE_FILES
@@ -85,7 +86,9 @@ add_dependencies(${ProgramName} COPY_RESOURCE_FILES)
 
 set(X_VCPKG_APPLOCAL_DEPS_INSTALL TRUE CACHE BOOL "Automatically COPY dependencies into the install target directory for executables.")
 set(X_VCPKG_APPLOCAL_DEPS_SERIALIZED ON) # 控制VCPKG的依赖项是否被序列化处理
-cmake_policy(SET CMP0177 NEW) #使用CMP0177策略的新行为，即对DESTINATION路径进行规范化处理, 需要cmake>=3.31
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.31")
+    cmake_policy(SET CMP0177 NEW) #使用CMP0177策略的新行为，即对DESTINATION路径进行规范化处理, 需要cmake>=3.31
+endif ()
 install(TARGETS ${ProgramName} DESTINATION "./"
         RUNTIME DESTINATION "./"
         LIBRARY DESTINATION "./"
@@ -123,7 +126,7 @@ if (LINUX)
     install(FILES ${ONNXRUNTIME_LIBS} ${OUTPUT_RUNTIME_LIBS} DESTINATION "./lib" COMPONENT "app")
 endif ()
 
-set(INSTALL_INI_FILE "${CMAKE_INSTALL_PREFIX}/faceFusionCpp.ini")
+set(INSTALL_INI_FILE "${CMAKE_INSTALL_PREFIX}/${${ProgramName}_ini_file_name}")
 file(WRITE "${CMAKE_BINARY_DIR}/trim_file_content_4install.cmake" "
     file(READ \"${INSTALL_INI_FILE}\" CONTENT)
     string(REPLACE \"\n\" \";\" LINES \"\${CONTENT\}\") # 按行分隔
@@ -135,12 +138,6 @@ file(WRITE "${CMAKE_BINARY_DIR}/trim_file_content_4install.cmake" "
     file(WRITE \"${INSTALL_INI_FILE}\" \"\$\{NEW_CONTENT\}\") # 写入文件
 ")
 install(SCRIPT "${CMAKE_BINARY_DIR}/trim_file_content_4install.cmake" COMPONENT "app")
-
-# "copy dependencies"
-# add_custom_command(TARGET ${ProgramName} POST_BUILD
-#     COMMAND ${CMAKE_SOURCE_DIR}/install_dependencies.sh ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${ProgramName}
-# )
-# install(DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/lib" COMPONENT "libs" DESTINATION "./")
 
 set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "./")
 include(InstallRequiredSystemLibraries)
@@ -162,22 +159,22 @@ set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM
 
 if (WIN32)
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(CPACK_INI_FILE "${CMAKE_BINARY_DIR}/_CPack_Packages/win64/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/faceFusionCpp.ini")
+        set(file_${ProgramName}_ini "${CMAKE_BINARY_DIR}/_CPack_Packages/win64/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/${${ProgramName}_ini_file_name}")
     else ()
-        set(CPACK_INI_FILE "${CMAKE_BINARY_DIR}/_CPack_Packages/win32/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/faceFusionCpp.ini")
+        set(file_${ProgramName}_ini "${CMAKE_BINARY_DIR}/_CPack_Packages/win32/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/${${ProgramName}_ini_file_name}")
     endif ()
 else ()
-    set(CPACK_INI_FILE "${CMAKE_BINARY_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/faceFusionCpp.ini")
+    set(file_${ProgramName}_ini "${CMAKE_BINARY_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/${${ProgramName}_ini_file_name}")
 endif ()
 file(WRITE "${CMAKE_BINARY_DIR}/trim_file_content_4cpack.cmake" "
-    file(READ \"${CPACK_INI_FILE}\" CONTENT)
+    file(READ \"${file_${ProgramName}_ini}\" CONTENT)
     string(REPLACE \"\n\" \";\" LINES \"\${CONTENT\}\") # 按行分隔
     set(NEW_CONTENT \"\")
     foreach(LINE IN LISTS LINES)
         string(REGEX REPLACE \"((.*)=).*\" \"\\\\1\" LINE \"\$\{LINE\}\") # 删除最后一个=后的内容
         set(NEW_CONTENT \"\$\{NEW_CONTENT\}\$\{LINE\}\\n\")
     endforeach()
-    file(WRITE \"${CPACK_INI_FILE}\" \"\$\{NEW_CONTENT\}\") # 写入文件
+    file(WRITE \"${file_${ProgramName}_ini}\" \"\$\{NEW_CONTENT\}\") # 写入文件
 ")
 set(CPACK_PRE_BUILD_SCRIPTS "${CMAKE_BINARY_DIR}/trim_file_content_4cpack.cmake")
 include(CPack)
