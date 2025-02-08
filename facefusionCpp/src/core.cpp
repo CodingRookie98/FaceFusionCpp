@@ -241,6 +241,7 @@ bool Core::processVideos(const CoreRunOptions &_coreRunOptions, const bool &auto
         CoreRunOptions tmpCoreRunOptions = _coreRunOptions;
         tmpCoreRunOptions.target_paths = {_coreRunOptions.target_paths[i]};
         tmpCoreRunOptions.output_paths = {_coreRunOptions.output_paths[i]};
+        m_logger->info(std::format("Processing video {}/{}", i + 1, _coreRunOptions.target_paths.size()));
         if (_coreRunOptions.video_segment_duration.value() > 0) {
             if (processVideoInSegments(tmpCoreRunOptions)) {
                 m_logger->info(std::format("[Core] Video processed successfully. Output path: {} ", _coreRunOptions.output_paths[i]));

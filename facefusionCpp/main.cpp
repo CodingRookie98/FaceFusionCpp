@@ -21,9 +21,9 @@ int main() {
     SetConsoleOutputCP(CP_UTF8);
 #endif
 
-    std::cout << std::format("{} {} {} By {}", metadata::name, metadata::version, metadata::url, metadata::author) << std::endl;
-    std::cout << std::format("onnxruntime {}", Ort::GetVersionString()) << std::endl;
-    std::cout << std::format("OpenCV {}", cv::getVersionString()) << std::endl;
+    std::cout << std::format("{} v{} {} By {}", metadata::name, metadata::version, metadata::url, metadata::author) << std::endl;
+    std::cout << std::format("onnxruntime v{}", Ort::GetVersionString()) << std::endl;
+    std::cout << std::format("OpenCV v{}", cv::getVersionString()) << std::endl;
 
     const std::string tmpPath = FileSystem::getTempPath() + "/" + metadata::name;
     if (FileSystem::dirExists(tmpPath)) {
