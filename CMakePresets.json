@@ -57,8 +57,7 @@
             "inherits": "windows-x64-base",
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "cl.exe",
-                "CMAKE_CXX_COMPILER": "cl.exe",
-                "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/vcpkg_custom_triplets/msvc/"
+                "CMAKE_CXX_COMPILER": "cl.exe"
             }
         },
         {
