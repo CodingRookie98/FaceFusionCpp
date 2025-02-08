@@ -23,12 +23,12 @@ public:
     explicit ini_config();
     ~ini_config() = default;
 
-    bool loadConfig(const std::string &configPath = "./faceFusionCpp.ini");
+    bool loadConfig(const std::string &configPath = "./FaceFusionCpp.ini");
 
-    Core::Options getCoreOptions() const {
+    [[nodiscard]] Core::Options getCoreOptions() const {
         return m_coreOptions;
     }
-    CoreRunOptions getCoreRunOptions() const {
+    [[nodiscard]] CoreRunOptions getCoreRunOptions() const {
         return m_coreRunOptions;
     }
 
