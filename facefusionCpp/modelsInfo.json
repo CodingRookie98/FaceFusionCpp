@@ -24,11 +24,11 @@
     "path": "./models/inswapper_128_fp16.onnx"
   },
   "face_occluder": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0-3.0.0/dfl_xseg.onnx",
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/dfl_xseg.onnx",
     "path": "./models/dfl_xseg.onnx"
   },
   "face_parser": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0-3.0.0/resnet_34.onnx",
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/resnet_34.onnx",
     "path": "./models/resnet_34.onnx"
   },
   "face_detector_retinaface": {
@@ -52,7 +52,7 @@
     "path": "./models/2dfan4.onnx"
   },
   "face_landmarker_peppa_wutz": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0-3.0.0/peppa_wutz.onnx",
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/peppa_wutz.onnx",
     "path": "./models/peppa_wutz.onnx"
   },
   "face_landmarker_68_5": {
@@ -60,47 +60,47 @@
     "path": "./models/face_landmarker_68_5.onnx"
   },
   "fairface": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0-3.0.0/fairface.onnx",
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/fairface.onnx",
     "path": "./models/fairface.onnx"
   },
   "feature_extractor": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0-3.0.0/live_portrait_feature_extractor.onnx",
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/live_portrait_feature_extractor.onnx",
     "path": "./models/live_portrait_feature_extractor.onnx"
   },
   "motion_extractor": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0-3.0.0/live_portrait_motion_extractor.onnx",
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/live_portrait_motion_extractor.onnx",
     "path": "./models/live_portrait_motion_extractor.onnx"
   },
   "generator": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0-3.0.0/live_portrait_generator.onnx",
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/live_portrait_generator.onnx",
     "path": "./models/live_portrait_generator.onnx"
   },
   "real_esrgan_x2": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0-3.0.0/real_esrgan_x2.onnx",
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/real_esrgan_x2.onnx",
     "path": "./models/real_esrgan_x2.onnx"
   },
   "real_esrgan_x2_fp16": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0-3.0.0/real_esrgan_x2_fp16.onnx",
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/real_esrgan_x2_fp16.onnx",
     "path": "./models/real_esrgan_x2_fp16.onnx"
   },
   "real_esrgan_x4": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0-3.0.0/real_esrgan_x4.onnx",
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/real_esrgan_x4.onnx",
     "path": "./models/real_esrgan_x4.onnx"
   },
   "real_esrgan_x4_fp16": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0-3.0.0/real_esrgan_x4_fp16.onnx",
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/real_esrgan_x4_fp16.onnx",
     "path": "./models/real_esrgan_x4_fp16.onnx"
   },
   "real_esrgan_x8": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0-3.0.0/real_esrgan_x8.onnx",
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/real_esrgan_x8.onnx",
     "path": "./models/real_esrgan_x8.onnx"
   },
   "real_esrgan_x8_fp16": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0-3.0.0/real_esrgan_x8_fp16.onnx",
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/real_esrgan_x8_fp16.onnx",
     "path": "./models/real_esrgan_x8_fp16.onnx"
   },
   "real_hatgan_x4": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0-3.0.0/real_hatgan_x4.onnx",
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/real_hatgan_x4.onnx",
     "path": "./models/real_hatgan_x4.onnx"
   }
 }
