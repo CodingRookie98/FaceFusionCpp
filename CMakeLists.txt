@@ -46,22 +46,21 @@ target_link_libraries(${ProgramName} PRIVATE ${FFMPEG_LIBRARIES})
 target_include_directories(${ProgramName} PRIVATE ${SIMPLEINI_INCLUDE_DIRS})
 target_link_libraries(${ProgramName} PRIVATE ${OpenCV_LIBS})
 
+# make onnxruntime available
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/onnxruntime-gpu.cmake")
-add_library(onnxruntime SHARED IMPORTED)
+if (WIN32)
+    file(GLOB ONNXRUNTIME_LIBRARIES "${ORT_PATH}/lib/onnxruntime*.lib")
+    foreach (ONNXRUNTIME_LIBRARY ${ONNXRUNTIME_LIBRARIES})
+        target_link_libraries(${ProgramName} PRIVATE ${ONNXRUNTIME_LIBRARY})
+    endforeach ()
+endif ()
 if (LINUX)
-    set_target_properties(onnxruntime PROPERTIES
-            IMPORTED_LOCATION "${ORT_PATH}/lib/libonnxruntime.so"
-            INTERFACE_INCLUDE_DIRECTORIES "${ORT_PATH}/include"
-    )
+    file(GLOB ONNXRUNTIME_LIBRARIES "${ORT_PATH}/lib/libonnxruntime*.so")
+    foreach (ONNXRUNTIME_LIBRARY ${ONNXRUNTIME_LIBRARIES})
+        target_link_libraries(${ProgramName} PRIVATE ${ONNXRUNTIME_LIBRARY})
+    endforeach ()
 endif ()
 target_include_directories(${ProgramName} PRIVATE "${ORT_PATH}/include")
-target_link_directories(${ProgramName} PRIVATE "${ORT_PATH}/lib")
-if (LINUX)
-    target_link_libraries(${ProgramName} PRIVATE onnxruntime)
-endif ()
-if (WIN32)
-    target_link_libraries(${ProgramName} PRIVATE "${ORT_PATH}/lib/onnxruntime.lib")
-endif ()
 
 target_link_libraries(${ProgramName} PRIVATE ONNX::onnx ONNX::onnx_proto)
 target_link_libraries(${ProgramName} PRIVATE nlohmann_json::nlohmann_json)
@@ -90,26 +89,23 @@ set(X_VCPKG_APPLOCAL_DEPS_SERIALIZED ON) # 控制VCPKG的依赖项是否被序�
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.31")
     cmake_policy(SET CMP0177 NEW) #使用CMP0177策略的新行为，即对DESTINATION路径进行规范化处理, 需要cmake>=3.31
 endif ()
-install(TARGETS ${ProgramName} DESTINATION "./"
-        RUNTIME DESTINATION "./"
-        LIBRARY DESTINATION "./"
-        ARCHIVE DESTINATION "./"
+install(TARGETS ${ProgramName} DESTINATION "."
+        RUNTIME DESTINATION "."
+        LIBRARY DESTINATION "."
+        ARCHIVE DESTINATION "."
         COMPONENT "app"
 )
 
 if (WIN32)
-    install(FILES $<TARGET_RUNTIME_DLLS:${ProgramName}>
-            COMPONENT "app_dll"
-            DESTINATION "./"
-    )
+    install(FILES $<TARGET_RUNTIME_DLLS:${ProgramName}> COMPONENT "app_dll" DESTINATION ".")
 endif ()
 
-install(FILES ${RESOURCE_FILES} DESTINATION "./" COMPONENT "app")
+install(FILES ${RESOURCE_FILES} DESTINATION "." COMPONENT "resource")
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/README.md"
         "${CMAKE_CURRENT_SOURCE_DIR}/DOCUMENT.md"
         "${CMAKE_CURRENT_SOURCE_DIR}/DISCLAIMER.txt"
-        DESTINATION "./"
-        COMPONENT "app"
+        DESTINATION "."
+        COMPONENT "doc"
 )
 
 # Please configure cmake again after building the project
@@ -119,29 +115,27 @@ if (WIN32)
 endif ()
 if (LINUX)
     file(GLOB ONNXRUNTIME_LIBS "${ORT_PATH}/lib/*.so*")
+    file(GLOB OUTPUT_RUNTIME_LIBS "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/*.so")
 endif ()
 if (WIN32)
-    install(FILES ${ONNXRUNTIME_LIBS} ${OUTPUT_RUNTIME_LIBS} DESTINATION "./" COMPONENT "app")
+    install(FILES ${ONNXRUNTIME_LIBS} ${OUTPUT_RUNTIME_LIBS} DESTINATION "." COMPONENT "app_libs")
 endif ()
 if (LINUX)
-    install(FILES ${ONNXRUNTIME_LIBS} ${OUTPUT_RUNTIME_LIBS} DESTINATION "./lib" COMPONENT "app")
+    install(FILES ${ONNXRUNTIME_LIBS} ${OUTPUT_RUNTIME_LIBS} DESTINATION "." COMPONENT "app_libs")
 endif ()
 
 set(INSTALL_INI_FILE "${CMAKE_INSTALL_PREFIX}/${${ProgramName}_ini_file_name}")
-file(WRITE "${CMAKE_BINARY_DIR}/trim_file_content_4install.cmake" "
-    file(READ \"${INSTALL_INI_FILE}\" CONTENT)
-    string(REPLACE \"\n\" \";\" LINES \"\${CONTENT\}\") # 按行分隔
-    set(NEW_CONTENT \"\")
-    foreach(LINE IN LISTS LINES)
-        string(REGEX REPLACE \"((.*)=).*\" \"\\\\1\" LINE \"\$\{LINE\}\") # 删除最后一个=后的内容
-        set(NEW_CONTENT \"\$\{NEW_CONTENT\}\$\{LINE\}\\n\")
-    endforeach()
-    file(WRITE \"${INSTALL_INI_FILE}\" \"\$\{NEW_CONTENT\}\") # 写入文件
-")
-install(SCRIPT "${CMAKE_BINARY_DIR}/trim_file_content_4install.cmake" COMPONENT "app")
+install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -D INI_FILE_PATH=${INSTALL_INI_FILE} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean_ini_file.cmake)")
 
-set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "./")
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION ".")
 include(InstallRequiredSystemLibraries)
+
+find_program(CMAKE_EXE cmake)
+add_custom_target(install_all
+        COMMAND ${CMAKE_EXE} --install ${CMAKE_BINARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+add_dependencies(install_all ${ProgramName})
 
 # 设置打包的方式
 if (WIN32)
@@ -152,11 +146,12 @@ if (LINUX)
 endif ()
 
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
-set(CPACK_PACKAGE_VERSION_MAJOR "${faceFusionCpp_VERSION_MAJOR}")
-set(CPACK_PACKAGE_VERSION_MINOR "${faceFusionCpp_VERSION_MINOR}")
-set(CPACK_PACKAGE_VERSION_PATCH "${faceFusionCpp_VERSION_PATCH}")
+set(CPACK_PACKAGE_VERSION_MAJOR "${${PROJECT_NAME}_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${${PROJECT_NAME}_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${${PROJECT_NAME}_VERSION_PATCH}")
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-${${PROJECT_NAME}_VERSION}-${CMAKE_BUILD_TYPE}")
+set(CPACK_PACKAGE_CHECKSUM "SHA256")
 
 if (WIN32)
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -167,15 +162,12 @@ if (WIN32)
 else ()
     set(file_${ProgramName}_ini "${CMAKE_BINARY_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/${${ProgramName}_ini_file_name}")
 endif ()
-file(WRITE "${CMAKE_BINARY_DIR}/trim_file_content_4cpack.cmake" "
-    file(READ \"${file_${ProgramName}_ini}\" CONTENT)
-    string(REPLACE \"\n\" \";\" LINES \"\${CONTENT\}\") # 按行分隔
-    set(NEW_CONTENT \"\")
-    foreach(LINE IN LISTS LINES)
-        string(REGEX REPLACE \"((.*)=).*\" \"\\\\1\" LINE \"\$\{LINE\}\") # 删除最后一个=后的内容
-        set(NEW_CONTENT \"\$\{NEW_CONTENT\}\$\{LINE\}\\n\")
-    endforeach()
-    file(WRITE \"${file_${ProgramName}_ini}\" \"\$\{NEW_CONTENT\}\") # 写入文件
-")
-set(CPACK_PRE_BUILD_SCRIPTS "${CMAKE_BINARY_DIR}/trim_file_content_4cpack.cmake")
+
+set(CPACK_PRE_BUILD_SCRIPTS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean_ini_file.cmake")
 include(CPack)
+find_program(CPACK_EXE NAMES cpack)
+add_custom_target(cpack_all
+        COMMAND ${CPACK_EXE} -V --config CPackConfig.cmake -D INI_FILE_PATH=${file_${ProgramName}_ini}
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+add_dependencies(cpack_all install_all)
