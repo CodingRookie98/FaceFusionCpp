@@ -76,13 +76,13 @@ list(APPEND RESOURCE_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/${${ProgramName}_ini_file_name}"
         "${CMAKE_CURRENT_SOURCE_DIR}/facefusionCpp/modelsInfo.json"
 )
-add_custom_target(COPY_RESOURCE_FILES
+add_custom_target(copy_resource_files
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${RESOURCE_FILES}
         $<TARGET_FILE_DIR:${ProgramName}>
         COMMENT "Copying resource files to runtime output directory"
 )
-add_dependencies(${ProgramName} COPY_RESOURCE_FILES)
+add_dependencies(${ProgramName} copy_resource_files)
 
 set(X_VCPKG_APPLOCAL_DEPS_INSTALL TRUE CACHE BOOL "Automatically COPY dependencies into the install target directory for executables.")
 set(X_VCPKG_APPLOCAL_DEPS_SERIALIZED ON) # 控制VCPKG的依赖项是否被序列化处理
@@ -151,18 +151,19 @@ set(CPACK_PACKAGE_VERSION_MAJOR "${${PROJECT_NAME}_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${${PROJECT_NAME}_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${${PROJECT_NAME}_VERSION_PATCH}")
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
-set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-${${PROJECT_NAME}_VERSION}-${CMAKE_BUILD_TYPE}")
+set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_BUILD_TYPE}")
 set(CPACK_PACKAGE_CHECKSUM "SHA256")
 set(CPACK_THREADS 0) # Use multi-threads. Given 0 CPack will try to use all available CPU cores.
+set(CPACK_PACKAGE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/packages/${CMAKE_BUILD_TYPE}")
 
 if (WIN32)
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(file_${ProgramName}_ini "${CMAKE_BINARY_DIR}/_CPack_Packages/win64/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/${${ProgramName}_ini_file_name}")
+        set(file_${ProgramName}_ini "${CPACK_PACKAGE_DIRECTORY}/_CPack_Packages/win64/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/${${ProgramName}_ini_file_name}")
     else ()
-        set(file_${ProgramName}_ini "${CMAKE_BINARY_DIR}/_CPack_Packages/win32/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/${${ProgramName}_ini_file_name}")
+        set(file_${ProgramName}_ini "${CPACK_PACKAGE_DIRECTORY}/_CPack_Packages/win32/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/${${ProgramName}_ini_file_name}")
     endif ()
 else ()
-    set(file_${ProgramName}_ini "${CMAKE_BINARY_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/${${ProgramName}_ini_file_name}")
+    set(file_${ProgramName}_ini "${CPACK_PACKAGE_DIRECTORY}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/${${ProgramName}_ini_file_name}")
 endif ()
 
 set(CPACK_PRE_BUILD_SCRIPTS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean_ini_file.cmake")
