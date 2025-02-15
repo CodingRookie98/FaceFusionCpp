@@ -18,16 +18,20 @@ import :face_detector_base;
 namespace ffc::faceDetector {
 export class Retina final : public FaceDetectorBase {
 public:
-    explicit Retina(const std::shared_ptr<Ort::Env> &env);
+    explicit Retina(const std::shared_ptr<Ort::Env>& env);
     ~Retina() override = default;
 
-    Result detectFaces(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize,
-                       const float &scoreThreshold) override;
+    Result detectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
+                       const float& scoreThreshold) override;
 
-    void loadModel(const std::string &modelPath, const Options &options) override;
+    void loadModel(const std::string& modelPath, const Options& options) override;
+
+    static inline std::vector<cv::Size> GetSupportSizes() {
+        return {{160, 160}, {320, 320}, {480, 480}, {512, 512}, {640, 640}};
+    }
 
 private:
-    static std::tuple<std::vector<float>, float, float> preProcess(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize);
+    static std::tuple<std::vector<float>, float, float> preProcess(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize);
     int m_inputHeight{0};
     int m_inputWidth{0};
     const std::vector<int> m_featureStrides{8, 16, 32};

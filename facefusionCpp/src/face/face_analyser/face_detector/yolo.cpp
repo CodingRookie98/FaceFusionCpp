@@ -63,6 +63,14 @@ Yolo::preProcess(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize) {
 Yolo::Result
 Yolo::detectFaces(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize,
                   const float &scoreThreshold) {
+    if (visionFrame.empty()) {
+        throw std::runtime_error("Input image is empty");
+    }
+    if (const std::vector<cv::Size>& supportSizes = GetSupportSizes();
+        !std::ranges::any_of(supportSizes, [faceDetectorSize](const cv::Size& size){ return size == faceDetectorSize;})) {
+        throw std::runtime_error("Face detector size is not supported");
+    }
+
     auto [inputData, ratioHeight, ratioWidth] = this->preProcess(visionFrame, faceDetectorSize);
 
     const std::vector<int64_t> inputImgShape = {1, 3, faceDetectorSize.height, faceDetectorSize.width};

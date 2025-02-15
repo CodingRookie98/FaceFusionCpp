@@ -433,7 +433,9 @@ void ini_config::faceAnalyser() {
         for (const auto &analyser : detectorModel) {
             if (analyser == "many") {
                 face_detector_options.types.insert({FaceDetectorHub::Type::Retina, FaceDetectorHub::Type::Yolo, FaceDetectorHub::Type::Scrfd});
-            } else if (analyser == "retinaface") {
+                break;
+            }
+            if (analyser == "retinaface") {
                 face_detector_options.types.insert(FaceDetectorHub::Type::Retina);
             } else if (analyser == "yoloface") {
                 face_detector_options.types.insert(FaceDetectorHub::Type::Yolo);
@@ -452,19 +454,23 @@ void ini_config::faceAnalyser() {
     value = m_ini.GetValue("face_analyser", "face_detector_size", "640x640");
     if (!value.empty()) {
         cv::Size faceDetectorSize = Vision::unpackResolution(value);
-        if (faceDetectorSize.width < 0) {
-            faceDetectorSize.width = 0;
-        } else if (faceDetectorSize.width > 1024) {
-            faceDetectorSize.width = 1024;
+        const auto supportCommonSizes = FaceDetectorHub::GetSupportCommonSizes(face_detector_options.types);
+        bool isIn = false;
+        cv::Size maxSize{0, 0};
+        for (const auto& commonSize : supportCommonSizes) {
+            if (commonSize == faceDetectorSize) {
+                isIn = true;
+                break;
+            }
+            if (commonSize.area() > maxSize.area()) {
+                maxSize = commonSize;
+            }
         }
-        if (faceDetectorSize.height < 0) {
-            faceDetectorSize.height = 0;
-        } else if (faceDetectorSize.height > 1024) {
-            faceDetectorSize.height = 1024;
-        }
+         if (!isIn) {
+            faceDetectorSize = maxSize;
+         }
+
         face_detector_options.faceDetectorSize = faceDetectorSize;
-    } else {
-        face_detector_options.faceDetectorSize = cv::Size(640, 640);
     }
 
     face_detector_options.minScore = m_ini.GetDoubleValue("face_analyser", "face_detector_score", 0.5);

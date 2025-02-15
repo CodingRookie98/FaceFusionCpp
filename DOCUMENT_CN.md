@@ -157,7 +157,7 @@ Choices: many retinaface scrfd yoloface
 设置face detector的大小。
 ```
 Default: 640x640
-Choices: 160x160 320x320 480x480 512x512 640x640 768x768 960x960 1024x1024
+Choices: 160x160 320x320 480x480 512x512 640x640
 ```
 
 #### face_detector_score

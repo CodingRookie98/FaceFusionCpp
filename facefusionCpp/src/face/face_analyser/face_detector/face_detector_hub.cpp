@@ -13,6 +13,7 @@ module;
 #include <future>
 #include <ranges>
 #include <onnxruntime_cxx_api.h>
+#include <opencv2/opencv.hpp>
 
 module face_detector_hub;
 import :yolo;
@@ -38,6 +39,39 @@ FaceDetectorHub::~FaceDetectorHub() {
         val = nullptr;
     }
     m_faceDetectors.clear();
+}
+
+std::vector<cv::Size> FaceDetectorHub::GetSupportSizes(const Type& type) {
+    switch (type) {
+    case Type::Retina:
+        return Retina::GetSupportSizes();
+    case Type::Scrfd:
+        return Scrfd::GetSupportSizes();
+    case Type::Yolo:
+        return Yolo::GetSupportSizes();
+    }
+    return {{640, 640}};
+}
+
+std::vector<cv::Size> FaceDetectorHub::GetSupportCommonSizes(const std::unordered_set<Type>& types) {
+    std::vector<cv::Size> commonSizes;
+    for (auto type : types) {
+        auto sizes = GetSupportSizes(type);
+        if (commonSizes.empty()) {
+            commonSizes = sizes;
+        } else {
+            std::vector<cv::Size> intersection;
+            std::ranges::set_intersection(commonSizes, sizes, std::inserter(intersection, intersection.begin()),
+                [](const cv::Size& size1, const cv::Size& size2)-> bool {
+                    if (size1.area() < size2.area()) {
+                        return true;
+                    }
+                    return false;
+                });
+            commonSizes = intersection;
+        }
+    }
+    return commonSizes;
 }
 
 std::vector<FaceDetectorBase::Result>

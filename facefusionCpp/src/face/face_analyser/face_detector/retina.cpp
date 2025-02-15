@@ -30,6 +30,13 @@ void Retina::loadModel(const std::string &modelPath, const Options &options) {
 
 Retina::Result Retina::detectFaces(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize,
                                                            const float &scoreThreshold) {
+    if (visionFrame.empty()) {
+        throw std::runtime_error("Input image is empty");
+    }
+    if (const std::vector<cv::Size>& supportSizes = GetSupportSizes();
+        !std::ranges::any_of(supportSizes, [faceDetectorSize](const cv::Size& size){ return size == faceDetectorSize;})) {
+        throw std::runtime_error("Face detector size is not supported");
+    }
     std::vector<float> inputData;
     float ratioHeight, ratioWidth;
     std::tie(inputData, ratioHeight, ratioWidth) = preProcess(visionFrame, faceDetectorSize);

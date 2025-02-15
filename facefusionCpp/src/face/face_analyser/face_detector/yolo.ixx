@@ -22,9 +22,13 @@ public:
     explicit Yolo(const std::shared_ptr<Ort::Env> &env);
     ~Yolo() override = default;
 
-    Result detectFaces(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize,
-                       const float &scoreThreshold) override;
-    void loadModel(const std::string &modelPath, const Options &options) override;
+    Result detectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
+                       const float& scoreThreshold) override;
+    void loadModel(const std::string& modelPath, const Options& options) override;
+
+    static inline std::vector<cv::Size> GetSupportSizes() {
+        return {{640, 640}};
+    }
 
 private:
     static std::tuple<std::vector<float>, float, float> preProcess(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize);

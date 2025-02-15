@@ -40,7 +40,10 @@ public:
         float minScore{0.5};
     };
     std::vector<FaceDetectorBase::Result>
-    detect(const cv::Mat &image, const Options &options = Options());
+    detect(const cv::Mat& image, const Options& options = Options());
+
+    static std::vector<cv::Size> GetSupportSizes(const Type& type);
+    static std::vector<cv::Size> GetSupportCommonSizes(const std::unordered_set<Type>& types);
 
 private:
     std::shared_ptr<Ort::Env> m_env;
