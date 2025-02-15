@@ -23,7 +23,6 @@ import vision;
 import file_system;
 import ffmpeg_runner;
 import processor_hub;
-import processor_hub;
 import face_swapper;
 import progress_bar;
 import metadata;

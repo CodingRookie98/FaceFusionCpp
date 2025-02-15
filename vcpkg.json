@@ -13,8 +13,7 @@
       "name": "opencv",
       "features": [
         "ffmpeg",
-        "tbb",
-        "cuda"
+        "tbb"
       ]
     },
     "openssl",

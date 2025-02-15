@@ -56,9 +56,6 @@ void InSwapper::init() {
         }
         ++itr;
     }
-    // if (initializer.data_type() == onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16) {
-    //     isFp16 = true;
-    // }
 
     // Convert initializer to an array
     if (!isFp16) {
