@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.31)
 project(FaceFusionCpp
-        VERSION 0.31.1
+        VERSION 0.31.2
         DESCRIPTION "This project is the C++ version of the open-source project FaceFusion."
 )
 
@@ -103,6 +103,7 @@ endif ()
 install(FILES ${RESOURCE_FILES} DESTINATION "." COMPONENT "resource")
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/README.md"
         "${CMAKE_CURRENT_SOURCE_DIR}/DOCUMENT.md"
+        "${CMAKE_CURRENT_SOURCE_DIR}/DOCUMENT_CN.md"
         "${CMAKE_CURRENT_SOURCE_DIR}/DISCLAIMER.txt"
         DESTINATION "."
         COMPONENT "doc"

@@ -338,7 +338,7 @@ choice: png jpg bmp
 Set the processor sequence.
 ```
 Default: face_swapper
-Choices: face_enhancer face_swapper expression_restorer
+Choices: face_enhancer face_swapper expression_restorer frame_enhancer
 Example 1: face_swapper face_enhancer
 Example 2: face_enhancer face_swapper expression_restorer face_enhancer
 ```

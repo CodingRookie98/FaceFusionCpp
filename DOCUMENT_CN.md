@@ -357,7 +357,7 @@ choice: png jpg bmp
 设置处理器序列。
 ```
 Default: face_swapper
-Choices: face_enhancer face_swapper expression_restorer
+Choices: face_enhancer face_swapper expression_restorer frame_enhancer
 Example 1: face_swapper face_enhancer
 Example 2: face_enhancer face_swapper expression_restorer face_enhancer
 ```
