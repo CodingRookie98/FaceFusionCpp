@@ -33,7 +33,7 @@ using namespace faceDetector;
 
 ini_config::ini_config() = default;
 
-bool ini_config::loadConfig(const std::string &configPath) {
+bool ini_config::loadConfig(const std::string& configPath) {
     if (!configPath.empty() && FileSystem::fileExists(configPath)) {
         m_configPath = configPath;
     } else {
@@ -63,7 +63,7 @@ bool ini_config::loadConfig(const std::string &configPath) {
     return true;
 }
 
-std::array<int, 4> ini_config::normalizePadding(const std::vector<int> &padding) {
+std::array<int, 4> ini_config::normalizePadding(const std::vector<int>& padding) {
     if (padding.size() == 1) {
         return {padding[0], padding[0], padding[0], padding[0]};
     }
@@ -79,7 +79,7 @@ std::array<int, 4> ini_config::normalizePadding(const std::vector<int> &padding)
     throw std::invalid_argument("Invalid padding length");
 }
 
-std::vector<int> ini_config::parseStr2VecInt(const std::string &input) {
+std::vector<int> ini_config::parseStr2VecInt(const std::string& input) {
     std::vector<int> values;
     std::stringstream ss(input);
     int value;
@@ -111,7 +111,7 @@ void ini_config::frameProcessors() {
             }
         }
         bool flag = false;
-        for (const auto &item : result) {
+        for (const auto& item : result) {
             if (item == "face_swapper") {
                 m_coreRunOptions.processor_list.emplace_back(ProcessorMajorType::FaceSwapper);
                 flag = true;
@@ -277,8 +277,8 @@ void ini_config::image() {
 }
 
 void ini_config::faceMasker() {
-    // face_mask
-    std::string value = m_ini.GetValue("face_mask", "face_mask_types", "box");
+    const std::string section_name{"face_masker"};
+    std::string value = m_ini.GetValue(section_name.c_str(), "face_mask_types", "box");
     if (!value.empty()) {
         m_coreRunOptions.face_mask_types = std::make_optional<std::unordered_set<FaceMaskerHub::Type>>();
         if (value.find("box") != std::string::npos) {
@@ -294,6 +294,28 @@ void ini_config::faceMasker() {
         m_coreRunOptions.face_mask_types->insert(FaceMaskerHub::Type::Box);
     }
 
+    if (m_coreRunOptions.face_mask_types.value().contains(FaceMaskerHub::Type::Occlusion)) {
+        value = m_ini.GetValue(section_name.c_str(), "face_occluder_model", "xseg_1");
+        if (value == "xseg_1") {
+            m_coreRunOptions.face_occluder_model = ModelManager::Model::xseg_1;
+        } else if (value == "xseg_2") {
+            m_coreRunOptions.face_occluder_model = ModelManager::Model::xseg_2;
+        } else {
+            m_coreRunOptions.face_occluder_model = ModelManager::Model::xseg_1;
+        }
+    }
+
+    if (m_coreRunOptions.face_mask_types.value().contains(FaceMaskerHub::Type::Region)) {
+        value = m_ini.GetValue(section_name.c_str(), "face_parser_model", "bisenet_resnet_34");
+        if (value == "bisenet_resnet_34") {
+            m_coreRunOptions.face_parser_model = ModelManager::Model::bisenet_resnet_34;
+        } else if (value == "bisenet_resnet_18") {
+            m_coreRunOptions.face_parser_model = ModelManager::Model::bisenet_resnet_18;
+        } else {
+            m_coreRunOptions.face_parser_model = ModelManager::Model::bisenet_resnet_34;
+        }
+    }
+
     m_coreRunOptions.face_mask_blur = m_ini.GetDoubleValue("face_mask", "face_mask_blur", 0.3);
     if (m_coreRunOptions.face_mask_blur < 0) {
         m_coreRunOptions.face_mask_blur = 0;
@@ -301,14 +323,14 @@ void ini_config::faceMasker() {
         m_coreRunOptions.face_mask_blur = 1;
     }
 
-    value = m_ini.GetValue("face_mask", "face_mask_padding", "0 0 0 0");
+    value = m_ini.GetValue("face_masker", "face_mask_padding", "0 0 0 0");
     if (!value.empty()) {
         m_coreRunOptions.face_mask_padding = normalizePadding(parseStr2VecInt(value));
     } else {
         m_coreRunOptions.face_mask_padding = {0, 0, 0, 0};
     }
 
-    value = m_ini.GetValue("face_mask", "face_mask_region", "All");
+    value = m_ini.GetValue("face_masker", "face_mask_region", "All");
     tolower(value);
     if (value == "all") {
         m_coreRunOptions.face_mask_regions = FaceMaskerRegion::getAllRegions();
@@ -430,7 +452,7 @@ void ini_config::faceAnalyser() {
     }
     FaceDetectorHub::Options face_detector_options;
     if (!detectorModel.empty()) {
-        for (const auto &analyser : detectorModel) {
+        for (const auto& analyser : detectorModel) {
             if (analyser == "many") {
                 face_detector_options.types.insert({FaceDetectorHub::Type::Retina, FaceDetectorHub::Type::Yolo, FaceDetectorHub::Type::Scrfd});
                 break;
@@ -466,9 +488,9 @@ void ini_config::faceAnalyser() {
                 maxSize = commonSize;
             }
         }
-         if (!isIn) {
+        if (!isIn) {
             faceDetectorSize = maxSize;
-         }
+        }
 
         face_detector_options.faceDetectorSize = faceDetectorSize;
     }
@@ -522,7 +544,7 @@ void ini_config::general() {
                 m_coreRunOptions.source_paths->emplace_back(value);
             } else if (FileSystem::isDir(value)) {
                 std::unordered_set<std::string> filePaths = FileSystem::listFilesInDir(value);
-                for (const auto &filePath : filePaths) {
+                for (const auto& filePath : filePaths) {
                     m_coreRunOptions.source_paths->emplace_back(filePath);
                 }
             } else {
@@ -539,7 +561,7 @@ void ini_config::general() {
             m_coreRunOptions.target_paths.emplace_back(value);
         } else if (FileSystem::isDir(value)) {
             std::unordered_set<std::string> filePaths = FileSystem::listFilesInDir(value);
-            for (const auto &filePath : filePaths) {
+            for (const auto& filePath : filePaths) {
                 m_coreRunOptions.target_paths.emplace_back(filePath);
             }
         } else {
@@ -749,9 +771,9 @@ void ini_config::video() {
     m_coreRunOptions.temp_frame_format = temp_frame_format;
 }
 
-void ini_config::tolower(std::string &str) {
+void ini_config::tolower(std::string& str) {
     std::ranges::transform(str, str.begin(),
                            [](const unsigned char c) { return std::tolower(c); });
 }
 
-}; // namespace Ffc
+}; // namespace ffc

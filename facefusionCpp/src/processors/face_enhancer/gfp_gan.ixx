@@ -23,24 +23,25 @@ export namespace ffc::faceEnhancer {
 using namespace faceMasker;
 
 struct GFP_GAN_Input {
-    cv::Mat *targetFrame = nullptr;
-    std::vector<Face> *targetFaces = nullptr;
+    cv::Mat* targetFrame = nullptr;
+    std::vector<Face>* targetFaces = nullptr;
     ushort faceBlend{80};
-    std::unordered_set<FaceMaskerHub::Type> faceMaskersTypes{FaceMaskerHub::Type::Box};
-    float boxMaskBlur{0.5};
-    std::array<int, 4> boxMaskPadding{0, 0, 0, 0};
+    FaceMaskerHub::Args4GetBestMask args4_get_best_mask{
+        .faceMaskersTypes = {FaceMaskerHub::Type::Box},
+        .boxMaskBlur = {0.5},
+        .boxMaskPadding = std::array{0, 0, 0, 0}};
 };
 
-class GFP_GAN final : public FaceEnhancerBase, public ffc::InferenceSession{
+class GFP_GAN final : public FaceEnhancerBase, public ffc::InferenceSession {
 public:
-    explicit GFP_GAN(const std::shared_ptr<Ort::Env> &env);
+    explicit GFP_GAN(const std::shared_ptr<Ort::Env>& env);
     ~GFP_GAN() override = default;
 
-    std::string getProcessorName() const override;
+    [[nodiscard]] std::string getProcessorName() const override;
 
-    void loadModel(const std::string &modelPath, const Options &options) override;
+    void loadModel(const std::string& modelPath, const Options& options) override;
 
-    [[nodiscard]] cv::Mat enhanceFace(const GFP_GAN_Input &input) const;
+    [[nodiscard]] cv::Mat enhanceFace(const GFP_GAN_Input& input) const;
 
 private:
     int m_inputHeight{0};
@@ -48,7 +49,7 @@ private:
     cv::Size m_size{0, 0};
     FaceHelper::WarpTemplateType m_warpTemplateType{FaceHelper::WarpTemplateType::Ffhq_512};
 
-    [[nodiscard]] static std::vector<float> getInputImageData(const cv::Mat &croppedImage) ;
-    [[nodiscard]] cv::Mat applyEnhance(const cv::Mat &croppedFrame) const;
+    [[nodiscard]] static std::vector<float> getInputImageData(const cv::Mat& croppedImage);
+    [[nodiscard]] cv::Mat applyEnhance(const cv::Mat& croppedFrame) const;
 };
-} // namespace faceEnhancer
+} // namespace ffc::faceEnhancer

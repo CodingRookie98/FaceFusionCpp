@@ -23,13 +23,21 @@
     "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/inswapper_128_fp16.onnx",
     "path": "./models/inswapper_128_fp16.onnx"
   },
-  "face_occluder": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/dfl_xseg.onnx",
-    "path": "./models/dfl_xseg.onnx"
+  "xseg_1": {
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/v0.32.0/xseg_1.onnx",
+    "path": "./models/xseg_1.onnx"
   },
-  "face_parser": {
-    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/resnet_34.onnx",
-    "path": "./models/resnet_34.onnx"
+  "xseg_2": {
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/v0.32.0/xseg_2.onnx",
+    "path": "./models/xseg_2.onnx"
+  },
+  "bisenet_resnet_18": {
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/v0.32.0/bisenet_resnet_18.onnx",
+    "path": "./models/bisenet_resnet_18.onnx"
+  },
+  "bisenet_resnet_34": {
+    "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/v0.32.0/bisenet_resnet_34.onnx",
+    "path": "./models/bisenet_resnet_34.onnx"
   },
   "face_detector_retinaface": {
     "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/retinaface_10g.onnx",

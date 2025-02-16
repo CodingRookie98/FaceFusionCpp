@@ -26,7 +26,7 @@ AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
 
 # 连续赋值时，对齐所有等号
-AlignConsecutiveAssignments: true
+AlignConsecutiveAssignments: None
 
 # 连续声明时，对齐所有声明的变量名和函数名
 AlignConsecutiveDeclarations: false

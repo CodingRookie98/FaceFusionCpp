@@ -23,24 +23,25 @@ export namespace ffc::faceEnhancer {
 using namespace faceMasker;
 
 struct CodeFormerInput {
-    cv::Mat *targetFrame = nullptr;
-    std::vector<Face> *targetFaces = nullptr;
+    cv::Mat* targetFrame = nullptr;
+    std::vector<Face>* targetFaces = nullptr;
     ushort faceBlend{80};
-    std::unordered_set<FaceMaskerHub::Type> faceMaskersTypes{FaceMaskerHub::Type::Box};
-    float boxMaskBlur{0.5};
-    std::array<int, 4> boxMaskPadding{0, 0, 0, 0};
+    FaceMaskerHub::Args4GetBestMask args4_get_best_mask{
+        .faceMaskersTypes = {FaceMaskerHub::Type::Box},
+        .boxMaskBlur = {0.5},
+        .boxMaskPadding = std::array{0, 0, 0, 0}};
 };
 
 class CodeFormer final : public FaceEnhancerBase, public ffc::InferenceSession {
 public:
-    CodeFormer(const std::shared_ptr<Ort::Env> &env);
+    explicit CodeFormer(const std::shared_ptr<Ort::Env>& env);
     ~CodeFormer() override = default;
 
     std::string getProcessorName() const override;
 
-    void loadModel(const std::string &modelPath, const Options &options) override;
+    void loadModel(const std::string& modelPath, const Options& options) override;
 
-    cv::Mat enhanceFace(const CodeFormerInput &_input) const;
+    cv::Mat enhanceFace(const CodeFormerInput& input) const;
 
 private:
     int m_inputHeight{0};
@@ -48,7 +49,7 @@ private:
     cv::Size m_size{0, 0};
     FaceHelper::WarpTemplateType m_warpTemplateType = FaceHelper::WarpTemplateType::Ffhq_512;
 
-    static std::vector<float> getInputImageData(const cv::Mat &croppedImage);
-    cv::Mat applyEnhance(const cv::Mat &croppedFrame) const;
+    static std::vector<float> getInputImageData(const cv::Mat& croppedImage);
+    cv::Mat applyEnhance(const cv::Mat& croppedFrame) const;
 };
-} // namespace faceEnhancer
+} // namespace ffc::faceEnhancer

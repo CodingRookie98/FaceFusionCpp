@@ -17,8 +17,8 @@ module face_masker_hub;
 import model_manager;
 
 namespace ffc::faceMasker {
-FaceMaskerHub::FaceMaskerHub(const std::shared_ptr<Ort::Env> &env,
-                             const InferenceSession::Options &options) :
+FaceMaskerHub::FaceMaskerHub(const std::shared_ptr<Ort::Env>& env,
+                             const InferenceSession::Options& options) :
     m_env(env), m_options(options) {
 }
 
@@ -30,7 +30,7 @@ FaceMaskerHub::~FaceMaskerHub() {
     m_maskers.clear();
 }
 
-FaceMaskerBase *FaceMaskerHub::getMasker(const FaceMaskerHub::Type &type) {
+FaceMaskerBase* FaceMaskerHub::getMasker(const FaceMaskerHub::Type& type, const ModelManager::Model& model) {
     std::unique_lock lock(m_sharedMutex);
     if (m_maskers.contains(type)) {
         if (m_maskers[type] != nullptr) {
@@ -38,15 +38,15 @@ FaceMaskerBase *FaceMaskerHub::getMasker(const FaceMaskerHub::Type &type) {
         }
     }
 
-    static std::shared_ptr<ffc::ModelManager> modelManager = ffc::ModelManager::getInstance();
-    FaceMaskerBase *masker = nullptr;
+    static std::shared_ptr<ModelManager> modelManager = ModelManager::getInstance();
+    FaceMaskerBase* masker = nullptr;
     if (type == Type::Region) {
         masker = new FaceMaskerRegion(m_env);
-        masker->loadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_parser), m_options);
+        masker->loadModel(modelManager->getModelPath(model), m_options);
     }
     if (type == Type::Occlusion) {
         masker = new Occlusion(m_env);
-        masker->loadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_occluder), m_options);
+        masker->loadModel(modelManager->getModelPath(model), m_options);
     }
     if (masker != nullptr) {
         m_maskers[type] = masker;
@@ -54,7 +54,7 @@ FaceMaskerBase *FaceMaskerHub::getMasker(const FaceMaskerHub::Type &type) {
     return m_maskers[type];
 }
 
-cv::Mat FaceMaskerHub::getBestMask(const FuncGBM_Args &func_gbm_args) {
+cv::Mat FaceMaskerHub::getBestMask(const Args4GetBestMask& func_gbm_args) {
     std::vector<std::future<cv::Mat>> futures;
     std::vector<cv::Mat> masks;
 
@@ -63,15 +63,21 @@ cv::Mat FaceMaskerHub::getBestMask(const FuncGBM_Args &func_gbm_args) {
         futures.emplace_back(std::async(std::launch::async, &FaceMaskerHub::createStaticBoxMask, func_gbm_args.boxSize.value(), func_gbm_args.boxMaskBlur.value(), func_gbm_args.boxMaskPadding.value()));
     }
 
-    if (func_gbm_args.faceMaskersTypes.contains(Type::Occlusion) && func_gbm_args.occlusionFrame.has_value()) {
-        futures.emplace_back(std::async(std::launch::async, &FaceMaskerHub::createOcclusionMask, this, *func_gbm_args.occlusionFrame.value()));
+    if (func_gbm_args.faceMaskersTypes.contains(Type::Occlusion) && func_gbm_args.occlusionFrame.has_value()
+        && func_gbm_args.occluder_model.has_value()) {
+        futures.emplace_back(std::async(std::launch::async, &FaceMaskerHub::createOcclusionMask, this,
+                                        *func_gbm_args.occlusionFrame.value(),
+                                        func_gbm_args.occluder_model.value()));
     }
 
     if (func_gbm_args.faceMaskersTypes.contains(Type::Region) && func_gbm_args.regionFrame.has_value()) {
-        futures.emplace_back(std::async(std::launch::async, &FaceMaskerHub::createRegionMask, this, *func_gbm_args.regionFrame.value(), func_gbm_args.faceMaskerRegions.value()));
+        futures.emplace_back(std::async(std::launch::async, &FaceMaskerHub::createRegionMask, this,
+                                        *func_gbm_args.regionFrame.value(),
+                                        func_gbm_args.parser_model.value(),
+                                        func_gbm_args.faceMaskerRegions.value()));
     }
 
-    for (auto &future : futures) {
+    for (auto& future : futures) {
         masks.emplace_back(future.get());
     }
 
@@ -79,18 +85,28 @@ cv::Mat FaceMaskerHub::getBestMask(const FuncGBM_Args &func_gbm_args) {
     return bestMask;
 }
 
-cv::Mat FaceMaskerHub::createOcclusionMask(const cv::Mat &cropVisionFrame) {
-    const auto faceMaskerOcclusion = dynamic_cast<Occlusion *>(getMasker(Type::Occlusion));
+cv::Mat FaceMaskerHub::createOcclusionMask(const cv::Mat& cropVisionFrame,
+                                           const ModelManager::Model& occluder_model) {
+    if (occluder_model != ModelManager::Model::xseg_1
+        && occluder_model != ModelManager::Model::xseg_2) {
+        throw std::runtime_error("Occlusion model not supported.");
+    }
+    const auto faceMaskerOcclusion = dynamic_cast<Occlusion*>(getMasker(Type::Occlusion, occluder_model));
     return faceMaskerOcclusion->createOcclusionMask(cropVisionFrame);
 }
 
-cv::Mat FaceMaskerHub::createRegionMask(const cv::Mat &inputImage,
-                                        const std::unordered_set<FaceMaskerRegion::Region> &regions) {
-    const auto faceMaskerRegion = dynamic_cast<FaceMaskerRegion *>(getMasker(Type::Region));
+cv::Mat FaceMaskerHub::createRegionMask(const cv::Mat& inputImage,
+                                        const ModelManager::Model& parser_model,
+                                        const std::unordered_set<FaceMaskerRegion::Region>& regions) {
+    if (parser_model != ModelManager::Model::bisenet_resnet_18
+        && parser_model != ModelManager::Model::bisenet_resnet_34) {
+        throw std::runtime_error("Region model not supported");
+    }
+    const auto faceMaskerRegion = dynamic_cast<FaceMaskerRegion*>(getMasker(Type::Region, parser_model));
     return faceMaskerRegion->createRegionMask(inputImage, regions);
 }
 
-cv::Mat FaceMaskerHub::createStaticBoxMask(const cv::Size &cropSize, const float &faceMaskBlur, const std::array<int, 4> &faceMaskPadding) {
+cv::Mat FaceMaskerHub::createStaticBoxMask(const cv::Size& cropSize, const float& faceMaskBlur, const std::array<int, 4>& faceMaskPadding) {
     const int blurAmount = static_cast<int>(cropSize.width * 0.5 * faceMaskBlur);
     const int blurArea = std::max(blurAmount / 2, 1);
 
@@ -113,7 +129,7 @@ cv::Mat FaceMaskerHub::createStaticBoxMask(const cv::Size &cropSize, const float
     return boxMask;
 }
 
-cv::Mat FaceMaskerHub::getBestMask(const std::vector<cv::Mat> &masks) {
+cv::Mat FaceMaskerHub::getBestMask(const std::vector<cv::Mat>& masks) {
     if (masks.empty()) {
         throw std::invalid_argument("The input vector is empty.");
     }

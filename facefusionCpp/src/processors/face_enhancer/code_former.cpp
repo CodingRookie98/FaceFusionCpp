@@ -31,14 +31,14 @@ void CodeFormer::loadModel(const std::string &modelPath, const Options &options)
     m_size = cv::Size(m_inputWidth, m_inputHeight);
 }
 
-cv::Mat CodeFormer::enhanceFace(const CodeFormerInput &args) const {
-    if (args.targetFrame == nullptr || args.targetFaces == nullptr) {
+cv::Mat CodeFormer::enhanceFace(const CodeFormerInput &input) const {
+    if (input.targetFrame == nullptr || input.targetFaces == nullptr) {
         throw std::runtime_error("args.targetFrame or args.targetFaces is nullptr");
     }
-    if (args.targetFrame->empty() || args.targetFaces->empty()) {
+    if (input.targetFrame->empty() || input.targetFaces->empty()) {
         throw std::runtime_error("args.targetFrame or args.targetFaces is empty");
     }
-    if (args.faceBlend > 100) {
+    if (input.faceBlend > 100) {
         throw std::runtime_error("args.faceBlend is greater than 100");
     }
     if (!isModelLoaded()) {
@@ -52,9 +52,9 @@ cv::Mat CodeFormer::enhanceFace(const CodeFormerInput &args) const {
     std::vector<cv::Mat> affineMatrices;
     std::vector<cv::Mat> croppedResultFrames;
     std::vector<cv::Mat> bestMasks;
-    for (const auto &targetFace : *args.targetFaces) {
+    for (const auto &targetFace : *input.targetFaces) {
         cv::Mat croppedTargetFrame, affineMatrix;
-        std::tie(croppedTargetFrame, affineMatrix) = FaceHelper::warpFaceByFaceLandmarks5(*args.targetFrame, targetFace.m_landMark5By68, FaceHelper::getWarpTemplate(m_warpTemplateType), m_size);
+        std::tie(croppedTargetFrame, affineMatrix) = FaceHelper::warpFaceByFaceLandmarks5(*input.targetFrame, targetFace.m_landMark5By68, FaceHelper::getWarpTemplate(m_warpTemplateType), m_size);
         croppedTargetFrames.emplace_back(croppedTargetFrame);
         affineMatrices.emplace_back(affineMatrix);
     }
@@ -62,22 +62,22 @@ cv::Mat CodeFormer::enhanceFace(const CodeFormerInput &args) const {
         croppedResultFrames.emplace_back(applyEnhance(croppedTargetFrame));
     }
     for (auto &croppedTargetFrame : croppedTargetFrames) {
-        FaceMaskerHub::FuncGBM_Args func_gbm_args;
-        func_gbm_args.faceMaskersTypes = args.faceMaskersTypes;
-        func_gbm_args.boxMaskBlur = args.boxMaskBlur;
-        func_gbm_args.boxMaskPadding = args.boxMaskPadding;
-        func_gbm_args.boxSize = m_size;
-        func_gbm_args.occlusionFrame = &croppedTargetFrame;
-        bestMasks.emplace_back(m_faceMaskerHub->getBestMask(func_gbm_args));
+        FaceMaskerHub::Args4GetBestMask args4_get_best_mask = input.args4_get_best_mask;
+        if (args4_get_best_mask.faceMaskersTypes.contains(FaceMaskerHub::Type::Region)) {
+            args4_get_best_mask.faceMaskersTypes.erase(FaceMaskerHub::Type::Region);
+        }
+        args4_get_best_mask.boxSize = {m_size};
+        args4_get_best_mask.occlusionFrame = {&croppedTargetFrame};
+        bestMasks.emplace_back(m_faceMaskerHub->getBestMask(args4_get_best_mask));
     }
     if (croppedTargetFrames.size() != affineMatrices.size() || croppedTargetFrames.size() != croppedResultFrames.size() || croppedTargetFrames.size() != bestMasks.size()) {
         throw std::runtime_error("The size of croppedTargetFrames, affineMatrices, croppedResultFrames, and bestMasks must be equal.");
     }
-    cv::Mat resultFrame = args.targetFrame->clone();
+    cv::Mat resultFrame = input.targetFrame->clone();
     for (size_t i = 0; i < bestMasks.size(); ++i) {
         resultFrame = FaceHelper::pasteBack(resultFrame, croppedResultFrames[i], bestMasks[i], affineMatrices[i]);
     }
-    resultFrame = blendFrame(*args.targetFrame, resultFrame, args.faceBlend);
+    resultFrame = blendFrame(*input.targetFrame, resultFrame, input.faceBlend);
     return resultFrame;
 }
 

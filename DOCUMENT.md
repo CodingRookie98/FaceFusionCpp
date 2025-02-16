@@ -222,7 +222,23 @@ Range: 0 to 1.5 at 0.05
 Example: 0.8
 ```
 
-### face_mask
+### face_masker
+
+#### face_occluder_model
+Choose the model responsible for the occlusion mask.
+```
+Default: xseg_1
+Choices: xseg_1 xseg_2
+Example: xseg_1
+```
+
+#### face_parser_model 
+Choose the model responsible for the region mask.
+```
+Default: bisenet_resnet_34
+Choices: bisenet_resnet_18 bisenet_resnet_34
+Example: bisenet_resnet_34
+```
 
 #### face_mask_types
 Set the types of face masks.

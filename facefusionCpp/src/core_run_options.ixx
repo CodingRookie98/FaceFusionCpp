@@ -10,6 +10,7 @@
 
 module;
 #include <opencv2/opencv.hpp>
+#include <unordered_set>
 
 export module core:core_run_options;
 import model_manager;
@@ -47,9 +48,21 @@ public:
 
     // face masker
     std::optional<std::unordered_set<FaceMaskerHub::Type>> face_mask_types;
+    std::optional<ModelManager::Model> face_occluder_model;
+    std::optional<ModelManager::Model> face_parser_model;
     std::optional<float> face_mask_blur;
     std::optional<std::array<int, 4>> face_mask_padding;
     std::optional<std::unordered_set<FaceMaskerRegion::Region>> face_mask_regions;
+    [[nodiscard]] FaceMaskerHub::Args4GetBestMask GetArgs4GetBestMask() const {
+        return FaceMaskerHub::Args4GetBestMask {
+            .faceMaskersTypes = {face_mask_types.value()},
+            .occluder_model = face_occluder_model,
+            .parser_model = face_parser_model,
+            .boxMaskBlur = face_mask_blur,
+            .boxMaskPadding = face_mask_padding,
+            .faceMaskerRegions = face_mask_regions
+        };
+    }
 
     // output creation
     std::optional<unsigned short> output_image_quality;

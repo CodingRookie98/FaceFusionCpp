@@ -35,7 +35,7 @@ using namespace expressionRestore;
 using namespace frameEnhancer;
 
 namespace ffc {
-Core::Core(const Options &options) :
+Core::Core(const Options& options) :
     processor_hub_(options.inference_session_options) {
     coreOptions = options;
     Logger::getInstance()->setLogLevel(coreOptions.log_level);
@@ -59,7 +59,7 @@ bool Core::processVideo(CoreRunOptions _coreRunOptions) {
         m_logger->warn(std::format("{}: Only one target video is supported. Only the first video is processed this time. \n{}", __FUNCTION__, _coreRunOptions.target_paths.front()));
     }
 
-    std::string &videoPath = _coreRunOptions.target_paths.front();
+    std::string& videoPath = _coreRunOptions.target_paths.front();
 
     std::string audiosDir = FileSystem::absolutePath(FileSystem::parentPath(videoPath) + "/audios");
     if (!_coreRunOptions.skip_audio) {
@@ -118,7 +118,7 @@ bool Core::processVideo(CoreRunOptions _coreRunOptions) {
     } else {
         try {
             FileSystem::moveFile(outputVideo_NA_Path, _coreRunOptions.output_paths.front());
-        } catch (const std::exception &e) {
+        } catch (const std::exception& e) {
             Logger::getInstance()->error("[Core] Move video failed! Error:" + std::string(e.what()));
             return false;
         }
@@ -131,7 +131,7 @@ bool Core::processVideo(CoreRunOptions _coreRunOptions) {
 }
 
 bool Core::processVideoInSegments(CoreRunOptions _coreRunOptions) {
-    std::string &videoPath = _coreRunOptions.target_paths.front();
+    std::string& videoPath = _coreRunOptions.target_paths.front();
 
     std::string audiosDir = FileSystem::absolutePath(FileSystem::parentPath(videoPath) + "/audios");
     if (!_coreRunOptions.skip_audio) {
@@ -160,12 +160,12 @@ bool Core::processVideoInSegments(CoreRunOptions _coreRunOptions) {
     std::vector<std::string> processedVideoSegmentsPaths;
     std::string processedVideoSegmentsDir = FileSystem::parentPath(videoPath) + "/videoSegments_processed";
     std::vector<std::string> videoSegmentsPathsVec(videoSegmentsPathsSet.begin(), videoSegmentsPathsSet.end());
-    std::ranges::sort(videoSegmentsPathsVec, [](const std::string &a, const std::string &b) {
+    std::ranges::sort(videoSegmentsPathsVec, [](const std::string& a, const std::string& b) {
         return a < b;
     });
 
     for (size_t segmentIndex = 0; segmentIndex < videoSegmentsPathsVec.size(); ++segmentIndex) {
-        const auto &videoSegmentPath = videoSegmentsPathsVec.at(segmentIndex);
+        const auto& videoSegmentPath = videoSegmentsPathsVec.at(segmentIndex);
         std::string outputVideoSegmentPath = FileSystem::absolutePath(processedVideoSegmentsDir + "/" + ffc::FileSystem::getFileName(videoSegmentPath));
 
         CoreRunOptions tmpCoreRunOptions = _coreRunOptions;
@@ -209,7 +209,7 @@ bool Core::processVideoInSegments(CoreRunOptions _coreRunOptions) {
     } else {
         try {
             FileSystem::moveFile(outputVideo_NA_Path, _coreRunOptions.output_paths.front());
-        } catch (const std::exception &e) {
+        } catch (const std::exception& e) {
             Logger::getInstance()->error("[Core] Move video failed! Error:" + std::string(e.what()));
             return false;
         }
@@ -221,7 +221,7 @@ bool Core::processVideoInSegments(CoreRunOptions _coreRunOptions) {
     return true;
 }
 
-bool Core::processVideos(const CoreRunOptions &_coreRunOptions, const bool &autoRemoveTarget) {
+bool Core::processVideos(const CoreRunOptions& _coreRunOptions, const bool& autoRemoveTarget) {
     if (_coreRunOptions.target_paths.empty()) {
         m_logger->error(" videoPaths is empty.");
         return false;
@@ -287,8 +287,8 @@ bool Core::run(CoreRunOptions _coreRunOptions) {
     std::vector<string> tmpTargetImgPaths, outputImgPaths;
     std::vector<string> tmpTargetVideoPaths, outputVideoPaths;
     for (size_t i = 0; i < _coreRunOptions.target_paths.size(); ++i) {
-        const std::string &targetPath = _coreRunOptions.target_paths[i];
-        const std::string &outputPath = _coreRunOptions.output_paths[i];
+        const std::string& targetPath = _coreRunOptions.target_paths[i];
+        const std::string& outputPath = _coreRunOptions.output_paths[i];
         if (FileSystem::isImage(targetPath)) {
             std::string str = tmpPath + "/images/" + FileSystem::getFileName(targetPath);
             FileSystem::copy(targetPath, str);
@@ -301,9 +301,9 @@ bool Core::run(CoreRunOptions _coreRunOptions) {
             }
             try {
                 std::filesystem::create_symlink(targetPath, file_symlink_path);
-            } catch (std::filesystem::filesystem_error &e) {
+            } catch (std::filesystem::filesystem_error& e) {
                 m_logger->error(std::format("[Core::Run] Create symlink failed! Error: {}", e.what()));
-            } catch (std::exception &e) {
+            } catch (std::exception& e) {
                 m_logger->error(std::format("[Core::Run] Create symlink failed! Error: {}", e.what()));
             }
             tmpTargetVideoPaths.emplace_back(file_symlink_path);
@@ -376,7 +376,7 @@ bool Core::processImages(CoreRunOptions _coreRunOptions) {
     std::vector<std::string> originalTargetPaths;
     if (_coreRunOptions.processor_minor_types.contains(ProcessorMajorType::ExpressionRestorer)) {
         if (_coreRunOptions.processor_list.front() != ProcessorMajorType::ExpressionRestorer) {
-            for (const auto &path : _coreRunOptions.target_paths) {
+            for (const auto& path : _coreRunOptions.target_paths) {
                 const std::string tmpSourcePath = FileSystem::parentPath(path) + "/" + FileSystem::getBaseName(path) + "_original" + FileSystem::getExtension(path);
                 originalTargetPaths.emplace_back(tmpSourcePath);
             }
@@ -398,7 +398,7 @@ bool Core::processImages(CoreRunOptions _coreRunOptions) {
         ++itr;
     }
 
-    for (const auto &type : _coreRunOptions.processor_list) {
+    for (const auto& type : _coreRunOptions.processor_list) {
         if (type == ProcessorMajorType::ExpressionRestorer) {
             if (originalTargetPaths.size() != _coreRunOptions.target_paths.size()) {
                 m_logger->error(std::string(__FUNCTION__) + std::format(" source Paths size is {}, but target paths size is {}!", originalTargetPaths.size(), _coreRunOptions.target_paths.size()));
@@ -553,8 +553,8 @@ bool Core::processSourceAverageFace(CoreRunOptions _coreRunOptions) const {
 }
 
 bool Core::swapFace(CoreRunOptions _coreRunOptions) {
-    std::vector<std::string> &targetImagePaths = _coreRunOptions.target_paths;
-    std::vector<std::string> &outputImagePaths = _coreRunOptions.output_paths;
+    std::vector<std::string>& targetImagePaths = _coreRunOptions.target_paths;
+    std::vector<std::string>& outputImagePaths = _coreRunOptions.output_paths;
 
     if (targetImagePaths.empty()) {
         m_logger->error(std::string(__FUNCTION__) + " targetImagePaths is empty");
@@ -583,10 +583,7 @@ bool Core::swapFace(CoreRunOptions _coreRunOptions) {
             Face sourceAverageFace = m_faceAnalyser->getFaceStore()->getFaces(_coreRunOptions.source_average_face_id.value()).front();
             faceSwapperInput.in_swapper_input->sourceFace = &sourceAverageFace;
             faceSwapperInput.in_swapper_input->targetFaces = &targetFaces;
-            faceSwapperInput.in_swapper_input->boxMaskBlur = _coreRunOptions.face_mask_blur.value();
-            faceSwapperInput.in_swapper_input->boxMaskPadding = _coreRunOptions.face_mask_padding.value();
-            faceSwapperInput.in_swapper_input->faceMaskersTypes = _coreRunOptions.face_mask_types.value();
-            faceSwapperInput.in_swapper_input->faceMaskerRegions = _coreRunOptions.face_mask_regions.value();
+            faceSwapperInput.in_swapper_input->args_4_get_best_mask = _coreRunOptions.GetArgs4GetBestMask();
 
             swappedFrame = processor_hub_.swapFace(FaceSwapperType::InSwapper,
                                                    _coreRunOptions.processor_model[ProcessorMajorType::FaceSwapper],
@@ -606,8 +603,8 @@ bool Core::swapFace(CoreRunOptions _coreRunOptions) {
 }
 
 bool Core::enhanceFace(CoreRunOptions _coreRunOptions) {
-    std::vector<std::string> &targetImagePaths = _coreRunOptions.target_paths;
-    std::vector<std::string> &outputImagePaths = _coreRunOptions.output_paths;
+    std::vector<std::string>& targetImagePaths = _coreRunOptions.target_paths;
+    std::vector<std::string>& outputImagePaths = _coreRunOptions.output_paths;
 
     if (targetImagePaths.empty()) {
         m_logger->error(std::string(__FUNCTION__) + " targetImagePaths is empty");
@@ -635,9 +632,10 @@ bool Core::enhanceFace(CoreRunOptions _coreRunOptions) {
             faceEnhancerInput.code_former_input->targetFrame = &targetFrame;
             faceEnhancerInput.code_former_input->targetFaces = &targetFaces;
             faceEnhancerInput.code_former_input->faceBlend = _coreRunOptions.face_enhancer_blend.value();
-            faceEnhancerInput.code_former_input->faceMaskersTypes = _coreRunOptions.face_mask_types.value();
-            faceEnhancerInput.code_former_input->boxMaskBlur = _coreRunOptions.face_mask_blur.value();
-            faceEnhancerInput.code_former_input->boxMaskPadding = _coreRunOptions.face_mask_padding.value();
+            faceEnhancerInput.code_former_input->args4_get_best_mask = _coreRunOptions.GetArgs4GetBestMask();
+            if (faceEnhancerInput.code_former_input->args4_get_best_mask.faceMaskersTypes.contains(FaceMaskerHub::Type::Region)) {
+                faceEnhancerInput.code_former_input->args4_get_best_mask.faceMaskersTypes.erase(FaceMaskerHub::Type::Region);
+            }
 
             enhancedFrame = processor_hub_.enhanceFace(FaceEnhancerType::CodeFormer,
                                                        _coreRunOptions.processor_model[ProcessorMajorType::FaceEnhancer],
@@ -651,9 +649,10 @@ bool Core::enhanceFace(CoreRunOptions _coreRunOptions) {
             faceEnhancerInput.gfp_gan_input->targetFrame = &targetFrame;
             faceEnhancerInput.gfp_gan_input->targetFaces = &targetFaces;
             faceEnhancerInput.gfp_gan_input->faceBlend = _coreRunOptions.face_enhancer_blend.value();
-            faceEnhancerInput.gfp_gan_input->faceMaskersTypes = _coreRunOptions.face_mask_types.value();
-            faceEnhancerInput.gfp_gan_input->boxMaskBlur = _coreRunOptions.face_mask_blur.value();
-            faceEnhancerInput.gfp_gan_input->boxMaskPadding = _coreRunOptions.face_mask_padding.value();
+            faceEnhancerInput.gfp_gan_input->args4_get_best_mask = _coreRunOptions.GetArgs4GetBestMask();
+            if (faceEnhancerInput.gfp_gan_input->args4_get_best_mask.faceMaskersTypes.contains(FaceMaskerHub::Type::Region)) {
+                faceEnhancerInput.gfp_gan_input->args4_get_best_mask.faceMaskersTypes.erase(FaceMaskerHub::Type::Region);
+            }
 
             enhancedFrame = processor_hub_.enhanceFace(FaceEnhancerType::GFP_GAN,
                                                        _coreRunOptions.processor_model[ProcessorMajorType::FaceEnhancer],
@@ -673,9 +672,9 @@ bool Core::enhanceFace(CoreRunOptions _coreRunOptions) {
 }
 
 bool Core::restoreExpression(CoreRunOptions _coreRunOptions) {
-    std::vector<std::string> &targetImagePaths = _coreRunOptions.target_paths;
-    std::vector<std::string> &sourceImagePaths = _coreRunOptions.source_paths.value();
-    std::vector<std::string> &outputImagePaths = _coreRunOptions.output_paths;
+    std::vector<std::string>& targetImagePaths = _coreRunOptions.target_paths;
+    std::vector<std::string>& sourceImagePaths = _coreRunOptions.source_paths.value();
+    std::vector<std::string>& outputImagePaths = _coreRunOptions.output_paths;
 
     if (targetImagePaths.empty()) {
         m_logger->error(std::string(__FUNCTION__) + " targetImagePaths is empty");
@@ -733,8 +732,8 @@ bool Core::restoreExpression(CoreRunOptions _coreRunOptions) {
 }
 
 bool Core::enhanceFrame(CoreRunOptions _coreRunOptions) {
-    std::vector<std::string> &targetImagePaths = _coreRunOptions.target_paths;
-    const std::vector<std::string> &outputImagePaths = _coreRunOptions.output_paths;
+    std::vector<std::string>& targetImagePaths = _coreRunOptions.target_paths;
+    const std::vector<std::string>& outputImagePaths = _coreRunOptions.output_paths;
 
     if (targetImagePaths.empty()) {
         m_logger->error(std::string(__FUNCTION__) + " targetImagePaths is empty");
@@ -783,8 +782,8 @@ bool Core::enhanceFrame(CoreRunOptions _coreRunOptions) {
     return true;
 }
 
-std::vector<Face> Core::getTargetFaces(const CoreRunOptions &_coreRunOptions,
-                                       const cv::Mat &targetFrame) const {
+std::vector<Face> Core::getTargetFaces(const CoreRunOptions& _coreRunOptions,
+                                       const cv::Mat& targetFrame) const {
     std::vector<Face> targetFaces;
     if (_coreRunOptions.face_selector_mode.value() == FaceSelector::SelectorMode::Many) {
         targetFaces = m_faceAnalyser->getManyFaces(targetFrame, _coreRunOptions.face_analyser_options.value());

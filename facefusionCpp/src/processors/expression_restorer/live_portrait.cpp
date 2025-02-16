@@ -59,7 +59,7 @@ cv::Mat LivePortrait::restoreExpression(const LivePortraitInput &input) {
         affineMatrices.emplace_back(affineMat);
     }
     for (auto & croppedTargetFrame : croppedTargetFrames) {
-        FaceMaskerHub::FuncGBM_Args func_gbm_args;
+        FaceMaskerHub::Args4GetBestMask func_gbm_args;
         func_gbm_args.faceMaskersTypes = input.faceMaskersTypes;
         func_gbm_args.boxMaskBlur = input.boxMaskBlur;
         func_gbm_args.boxMaskPadding = input.boxMaskPadding;

@@ -235,7 +235,23 @@ Example: 0.8
 
 
 
-### face_mask
+### face_masker
+
+#### face_occluder_model
+选择负责脸部遮罩的模型。
+```
+Default: xseg_1
+Choices: xseg_1 xseg_2
+Example: xseg_1
+```
+
+#### face_parser_model 
+选择负责脸部区域蒙版的模型。
+```
+Default: bisenet_resnet_34
+Choices: bisenet_resnet_18 bisenet_resnet_34
+Example: bisenet_resnet_34
+```
 
 #### face_mask_types
 设置脸部遮罩类型。

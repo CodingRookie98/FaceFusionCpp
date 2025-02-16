@@ -26,24 +26,24 @@ using namespace faceMasker;
 
 // 指针类型的数据请自行进行内存管理
 struct InSwapperInput {
-    Face *sourceFace = nullptr;
-    std::vector<Face> *targetFaces = nullptr;
-    cv::Mat *targetFrame = nullptr;
-    std::unordered_set<FaceMaskerHub::Type> faceMaskersTypes{FaceMaskerHub::Type::Box};
-    std::optional<std::unordered_set<FaceMaskerRegion::Region>> faceMaskerRegions = std::nullopt;
-    float boxMaskBlur{0.5};
-    std::array<int, 4> boxMaskPadding{0, 0, 0, 0};
+    Face* sourceFace = nullptr;
+    std::vector<Face>* targetFaces = nullptr;
+    cv::Mat* targetFrame = nullptr;
+    FaceMaskerHub::Args4GetBestMask args_4_get_best_mask{
+        .faceMaskersTypes = {FaceMaskerHub::Type::Box},
+        .boxMaskBlur = {0.5},
+        .boxMaskPadding = std::array<int, 4>{0, 0, 0, 0}};
 };
 
 class InSwapper final : public FaceSwapperBase, public InferenceSession {
 public:
-    explicit InSwapper(const std::shared_ptr<Ort::Env> &env);
+    explicit InSwapper(const std::shared_ptr<Ort::Env>& env);
     ~InSwapper() override = default;
 
     // must loadModel before swapFace
-    cv::Mat swapFace(const InSwapperInput &input);
+    cv::Mat swapFace(const InSwapperInput& input);
 
-    void loadModel(const std::string &modelPath, const Options &options) override;
+    void loadModel(const std::string& modelPath, const Options& options) override;
 
     [[nodiscard]] std::string getProcessorName() const override;
 
@@ -56,9 +56,9 @@ private:
     int m_inputWidth{0};
     std::vector<float> m_initializerArray;
 
-    [[nodiscard]] cv::Mat applySwap(const Face::Embedding &sourceEmbedding, const cv::Mat &croppedTargetFrame) const;
-    [[nodiscard]] std::vector<float> prepareSourceEmbedding(const Face::Embedding &sourceEmbedding) const;
-    [[nodiscard]] std::vector<float> getInputImageData(const cv::Mat &croppedTargetFrame) const;
+    [[nodiscard]] cv::Mat applySwap(const Face::Embedding& sourceEmbedding, const cv::Mat& croppedTargetFrame) const;
+    [[nodiscard]] std::vector<float> prepareSourceEmbedding(const Face::Embedding& sourceEmbedding) const;
+    [[nodiscard]] std::vector<float> getInputImageData(const cv::Mat& croppedTargetFrame) const;
     void init();
 };
 } // namespace ffc::faceSwapper

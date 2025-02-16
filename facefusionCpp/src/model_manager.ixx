@@ -19,10 +19,10 @@ export namespace ffc {
 
 class ModelManager {
 public:
-    explicit ModelManager(const std::string &modelsInfoJsonPath = "./modelsInfo.json");
+    explicit ModelManager(const std::string& modelsInfoJsonPath = "./modelsInfo.json");
     ~ModelManager() = default;
 
-    static std::shared_ptr<ModelManager> getInstance(const std::string &modelsInfoJsonPath = "./modelsInfo.json");
+    static std::shared_ptr<ModelManager> getInstance(const std::string& modelsInfoJsonPath = "./modelsInfo.json");
 
     enum class Model {
         // faceEnhancer
@@ -46,9 +46,13 @@ public:
         Face_landmarker_peppawutz,
         // faceClassfier
         FairFace,
+
         // faceMasker
-        Face_parser,
-        Face_occluder,
+        bisenet_resnet_18, // face_parser
+        bisenet_resnet_34, // face_parser
+        xseg_1,            // face_occluder
+        xseg_2,            // face_occluder
+
         // expressionRestorer
         Feature_extractor,
         Motion_extractor,
@@ -68,10 +72,10 @@ public:
         Url,
     };
 
-    void *getModelInfo(const Model &model, const ModelInfoType &modelInfoType,
-                       const bool &skipDownload = false, std::string *errMsg = nullptr) const;
-    std::string getModelPath(const Model &model, const bool &skipDownload = false, std::string *errMsg = nullptr) const;
-    std::string getModelUrl(const Model &model, std::string *errMsg = nullptr) const;
+    void* getModelInfo(const Model& model, const ModelInfoType& modelInfoType,
+                       const bool& skipDownload = false, std::string* errMsg = nullptr) const;
+    std::string getModelPath(const Model& model, const bool& skipDownload = false, std::string* errMsg = nullptr) const;
+    std::string getModelUrl(const Model& model, std::string* errMsg = nullptr) const;
     [[nodiscard]] std::unordered_set<std::string> getModelsUrl() const;
     [[nodiscard]] bool downloadAllModel() const;
 
@@ -83,7 +87,7 @@ private:
         {Url, "url"},
     };
 
-    static std::string getModelName(const Model &model);
+    static std::string getModelName(const Model& model);
     //    bool checkModel(const std::string &modelPath, const std::string &modelUrl, std::string *errMsg = nullptr) const;
 };
 
