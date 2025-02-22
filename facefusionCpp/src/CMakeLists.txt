@@ -12,7 +12,7 @@ target_sources(${ProgramName} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/model_manager.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/metadata.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/logger.ixx
-        ${CMAKE_CURRENT_SOURCE_DIR}/core_run_options.ixx
+        ${CMAKE_CURRENT_SOURCE_DIR}/core_task.ixx
 )
 
 target_sources(${ProgramName} PRIVATE
@@ -27,6 +27,7 @@ target_sources(${ProgramName} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/model_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/logger.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/common_macros.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/core_task.cpp
 )
 
 target_include_directories(${ProgramName} PRIVATE

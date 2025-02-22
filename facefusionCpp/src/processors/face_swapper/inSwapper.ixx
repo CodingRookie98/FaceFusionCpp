@@ -24,12 +24,11 @@ export namespace ffc::faceSwapper {
 
 using namespace faceMasker;
 
-// 指针类型的数据请自行进行内存管理
 struct InSwapperInput {
-    Face* sourceFace = nullptr;
-    std::vector<Face>* targetFaces = nullptr;
-    cv::Mat* targetFrame = nullptr;
-    FaceMaskerHub::Args4GetBestMask args_4_get_best_mask{
+    Face::Embeddings source_average_embeddings;
+    std::vector<Face::Landmarks> target_faces_5_landmarks;
+    std::shared_ptr<cv::Mat> target_frame = nullptr;
+    FaceMaskerHub::ArgsForGetBestMask args_for_get_best_mask{
         .faceMaskersTypes = {FaceMaskerHub::Type::Box},
         .boxMaskBlur = {0.5},
         .boxMaskPadding = std::array<int, 4>{0, 0, 0, 0}};
@@ -51,13 +50,13 @@ private:
     cv::Size m_size{0, 0};
     const std::vector<float> m_mean{0.0, 0.0, 0.0};
     const std::vector<float> m_standardDeviation{1.0, 1.0, 1.0};
-    const FaceHelper::WarpTemplateType m_warpTemplateType{FaceHelper::WarpTemplateType::Arcface_128_v2};
+    const face_helper::WarpTemplateType m_warpTemplateType{face_helper::WarpTemplateType::Arcface_128_v2};
     int m_inputHeight{0};
     int m_inputWidth{0};
     std::vector<float> m_initializerArray;
 
-    [[nodiscard]] cv::Mat applySwap(const Face::Embedding& sourceEmbedding, const cv::Mat& croppedTargetFrame) const;
-    [[nodiscard]] std::vector<float> prepareSourceEmbedding(const Face::Embedding& sourceEmbedding) const;
+    [[nodiscard]] cv::Mat applySwap(const Face::Embeddings& sourceEmbedding, const cv::Mat& croppedTargetFrame) const;
+    [[nodiscard]] std::vector<float> prepareSourceEmbedding(const Face::Embeddings& sourceEmbedding) const;
     [[nodiscard]] std::vector<float> getInputImageData(const cv::Mat& croppedTargetFrame) const;
     void init();
 };

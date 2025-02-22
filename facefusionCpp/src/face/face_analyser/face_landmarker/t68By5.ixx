@@ -22,11 +22,11 @@ public:
     explicit T68By5(const std::shared_ptr<Ort::Env> &env = nullptr);
     ~T68By5() override = default;
 
-    [[nodiscard]] Face::Landmark detect(const Face::Landmark &faceLandmark5) const;
+    [[nodiscard]] Face::Landmarks detect(const Face::Landmarks &faceLandmark5) const;
     void loadModel(const std::string &modelPath, const Options &options) override;
 
 private:
-    static std::tuple<std::vector<float>, cv::Mat> preProcess(const Face::Landmark &faceLandmark5);
+    static std::tuple<std::vector<float>, cv::Mat> preProcess(const Face::Landmarks &faceLandmark5);
     int m_inputHeight{0};
     int m_inputWidth{0};
 };

@@ -21,46 +21,46 @@ import inference_session;
 namespace ffc {
 
 export struct FaceSwapperInput {
-    std::optional<InSwapperInput> in_swapper_input;
+    std::unique_ptr<InSwapperInput> in_swapper_input{nullptr};
 };
 
 export struct FaceEnhancerInput {
-    std::optional<CodeFormerInput> code_former_input;
-    std::optional<GFP_GAN_Input> gfp_gan_input;
+    std::unique_ptr<CodeFormerInput> code_former_input{nullptr};
+    std::unique_ptr<GFP_GAN_Input> gfp_gan_input{nullptr};
 };
 
 export struct ExpressionRestorerInput {
-    std::optional<LivePortraitInput> live_portrait_input;
+    std::unique_ptr<LivePortraitInput> live_portrait_input;
 };
 
 export struct FrameEnhancerInput {
-    std::optional<RealEsrGanInput> real_esr_gan_input;
-    std::optional<RealHatGanInput> real_hat_gan_input;
+    std::unique_ptr<RealEsrGanInput> real_esr_gan_input;
+    std::unique_ptr<RealHatGanInput> real_hat_gan_input;
 };
 
 export class ProcessorHub {
 public:
-    explicit ProcessorHub(const InferenceSession::Options &_options);
+    explicit ProcessorHub(const InferenceSession::Options& _options);
     ~ProcessorHub() = default;
 
-    ProcessorPool &getProcessorPool() {
+    ProcessorPool& getProcessorPool() {
         return processorPool_;
     }
 
-    cv::Mat swapFace(const FaceSwapperType &_faceSwapperType,
-                     const ModelManager::Model &_model,
-                     const FaceSwapperInput &_faceSwapperInput);
+    cv::Mat swapFace(const FaceSwapperType& _faceSwapperType,
+                     const ModelManager::Model& _model,
+                     const FaceSwapperInput& _faceSwapperInput);
 
-    cv::Mat enhanceFace(const FaceEnhancerType &_faceEnhancerType,
-                        const ModelManager::Model &_model,
-                        const FaceEnhancerInput &_faceEnhancerInput);
+    cv::Mat enhanceFace(const FaceEnhancerType& _faceEnhancerType,
+                        const ModelManager::Model& _model,
+                        const FaceEnhancerInput& _faceEnhancerInput);
 
-    cv::Mat restoreExpression(const ExpressionRestorerType &_type,
-                              const ExpressionRestorerInput &input);
+    cv::Mat restoreExpression(const ExpressionRestorerType& _type,
+                              const ExpressionRestorerInput& input);
 
-    cv::Mat enhanceFrame(const FrameEnhancerType &_frameEnhancerType,
-                         const ModelManager::Model &_model,
-                         const FrameEnhancerInput &_input);
+    cv::Mat enhanceFrame(const FrameEnhancerType& _frameEnhancerType,
+                         const ModelManager::Model& _model,
+                         const FrameEnhancerInput& _input);
 
 private:
     ProcessorPool processorPool_;

@@ -20,10 +20,13 @@ import face_helper;
 export namespace ffc::expressionRestore {
 using namespace faceMasker;
 
+// You need to ensure that the source_faces5_landmarks.size == target_faces_5_landmarks.size
+// otherwise the returned value is target_frame.clone()
 struct LivePortraitInput {
-    cv::Mat *sourceFrame = nullptr;
-    cv::Mat *targetFrame = nullptr;
-    std::vector<Face> *targetFaces = nullptr;
+    std::shared_ptr<cv::Mat> source_frame{nullptr};
+    std::vector<Face::Landmarks> source_faces_5_landmarks;
+    std::shared_ptr<cv::Mat> target_frame{nullptr};
+    std::vector<Face::Landmarks> target_faces_5_landmarks;
     float restoreFactor{0.96};
     std::unordered_set<FaceMaskerHub::Type> faceMaskersTypes{FaceMaskerHub::Type::Box};
     float boxMaskBlur{0.5};
@@ -32,43 +35,43 @@ struct LivePortraitInput {
 
 class LivePortrait final : public ExpressionRestorerBase {
 public:
-    explicit LivePortrait(const std::shared_ptr<Ort::Env> &env);
+    explicit LivePortrait(const std::shared_ptr<Ort::Env>& env);
     ~LivePortrait() override = default;
 
     [[nodiscard]] std::string getProcessorName() const override;
 
-    void loadModel(const std::string &featureExtractorPath,
-                   const std::string &motionExtractorPath,
-                   const std::string &generatorPath,
-                   const InferenceSession::Options &options);
+    void loadModel(const std::string& featureExtractorPath,
+                   const std::string& motionExtractorPath,
+                   const std::string& generatorPath,
+                   const InferenceSession::Options& options);
 
     [[nodiscard]] bool isModelLoaded() const {
         return m_featureExtractor.isModelLoaded()
-               && m_motionExtractor.isModelLoaded()
-               && m_generator.isModelLoaded();
+            && m_motionExtractor.isModelLoaded()
+            && m_generator.isModelLoaded();
     }
 
-    [[nodiscard]] cv::Mat restoreExpression(const LivePortraitInput &input);
+    [[nodiscard]] cv::Mat restoreExpression(const LivePortraitInput& input);
 
 private:
     class FeatureExtractor final : public ffc::InferenceSession {
     public:
-        explicit FeatureExtractor(const std::shared_ptr<Ort::Env> &env);
-        [[nodiscard]] std::vector<float> extractFeature(const cv::Mat &frame) const;
+        explicit FeatureExtractor(const std::shared_ptr<Ort::Env>& env);
+        [[nodiscard]] std::vector<float> extractFeature(const cv::Mat& frame) const;
     };
 
     class MotionExtractor final : public ffc::InferenceSession {
     public:
-        explicit MotionExtractor(const std::shared_ptr<Ort::Env> &env);
-        [[nodiscard]] std::vector<std::vector<float>> extractMotion(const cv::Mat &frame) const;
+        explicit MotionExtractor(const std::shared_ptr<Ort::Env>& env);
+        [[nodiscard]] std::vector<std::vector<float>> extractMotion(const cv::Mat& frame) const;
     };
 
     class Generator final : public InferenceSession {
     public:
-        explicit Generator(const std::shared_ptr<Ort::Env> &env);
-        [[nodiscard]] cv::Mat generateFrame(std::vector<float> &featureVolume,
-                                            std::vector<float> &sourceMotionPoints,
-                                            std::vector<float> &targetMotionPoints) const;
+        explicit Generator(const std::shared_ptr<Ort::Env>& env);
+        [[nodiscard]] cv::Mat generateFrame(std::vector<float>& featureVolume,
+                                            std::vector<float>& sourceMotionPoints,
+                                            std::vector<float>& targetMotionPoints) const;
         [[nodiscard]] cv::Size getOutputSize() const {
             int outputHeight = m_outputNodeDims[0][2];
             int outputWidth = m_outputNodeDims[0][3];
@@ -77,19 +80,19 @@ private:
     };
 
     cv::Size m_generatorOutputSize{512, 512};
-    FaceHelper::WarpTemplateType m_warpTemplateType = FaceHelper::WarpTemplateType::Arcface_128_v2;
+    face_helper::WarpTemplateType m_warpTemplateType = face_helper::WarpTemplateType::Arcface_128_v2;
     float m_restoreFactor = 0.96;
     std::shared_ptr<Ort::Env> m_env;
     FeatureExtractor m_featureExtractor;
     MotionExtractor m_motionExtractor;
     Generator m_generator;
 
-    static std::vector<float> getInputImageData(const cv::Mat &image, const cv::Size &size);
+    static std::vector<float> getInputImageData(const cv::Mat& image, const cv::Size& size);
 
-    [[nodiscard]] cv::Mat applyRestore(const cv::Mat &croppedSourceFrame, const cv::Mat &croppedTargetFrame) const;
+    [[nodiscard]] cv::Mat applyRestore(const cv::Mat& croppedSourceFrame, const cv::Mat& croppedTargetFrame) const;
 
     [[nodiscard]] static cv::Mat createRotationMat(float pitch, float yaw, float roll);
 
-    [[nodiscard]] static cv::Mat limitExpression(const cv::Mat &expression);
+    [[nodiscard]] static cv::Mat limitExpression(const cv::Mat& expression);
 };
 } // namespace ffc::expressionRestore

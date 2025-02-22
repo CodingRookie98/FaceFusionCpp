@@ -35,7 +35,7 @@ Yolo::preProcess(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize) {
     const int faceDetectorHeight = faceDetectorSize.height;
     const int faceDetectorWidth = faceDetectorSize.width;
 
-    cv::Mat tempVisionFrame = Vision::resizeFrame(visionFrame, faceDetectorSize);
+    cv::Mat tempVisionFrame = vision::resizeFrame(visionFrame, faceDetectorSize);
     float ratioHeight = static_cast<float>(visionFrame.rows) / static_cast<float>(tempVisionFrame.rows);
     float ratioWidth = static_cast<float>(visionFrame.cols) / static_cast<float>(tempVisionFrame.cols);
 
@@ -86,7 +86,7 @@ Yolo::detectFaces(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize,
 
     std::vector<Face::BBox> bBoxRaw;
     std::vector<float> scoreRaw;
-    std::vector<Face::Landmark> landmarkRaw;
+    std::vector<Face::Landmarks> landmarkRaw;
     for (int i = 0; i < numBox; i++) {
         const float score = pdata[4 * numBox + i];
         if (score > scoreThreshold) {
@@ -105,7 +105,7 @@ Yolo::detectFaces(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize,
             scoreRaw.emplace_back(score);
 
             // 剩下的5个关键点坐标的计算
-            Face::Landmark faceLandmark;
+            Face::Landmarks faceLandmark;
             for (int j = 5; j < 20; j += 3) {
                 cv::Point2f point2F;
                 point2F.x = pdata[j * numBox + i] * ratioWidth;

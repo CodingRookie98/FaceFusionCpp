@@ -29,7 +29,7 @@ public:
         Face::Age age;
     };
 
-    virtual Result classify(const cv::Mat &image, const Face::Landmark &faceLandmark5) = 0;
+    virtual Result classify(const cv::Mat &image, const Face::Landmarks &faceLandmark5) = 0;
 };
 
 } // namespace ffc::faceClassifier

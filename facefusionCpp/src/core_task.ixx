@@ -12,7 +12,7 @@ module;
 #include <opencv2/opencv.hpp>
 #include <unordered_set>
 
-export module core:core_run_options;
+export module core:core_task;
 import model_manager;
 import face_selector;
 import face_masker_hub;
@@ -22,7 +22,7 @@ import processor_hub;
 using namespace ffc::faceMasker;
 
 namespace ffc {
-export class CoreRunOptions {
+export class CoreTask {
 public:
     // Processors
     std::list<ProcessorMajorType> processor_list;
@@ -53,15 +53,14 @@ public:
     std::optional<float> face_mask_blur;
     std::optional<std::array<int, 4>> face_mask_padding;
     std::optional<std::unordered_set<FaceMaskerRegion::Region>> face_mask_regions;
-    [[nodiscard]] FaceMaskerHub::Args4GetBestMask GetArgs4GetBestMask() const {
-        return FaceMaskerHub::Args4GetBestMask {
+    [[nodiscard]] FaceMaskerHub::ArgsForGetBestMask GetArgsForGetBestMask() const {
+        return FaceMaskerHub::ArgsForGetBestMask{
             .faceMaskersTypes = {face_mask_types.value()},
             .occluder_model = face_occluder_model,
             .parser_model = face_parser_model,
             .boxMaskBlur = face_mask_blur,
             .boxMaskPadding = face_mask_padding,
-            .faceMaskerRegions = face_mask_regions
-        };
+            .faceMaskerRegions = face_mask_regions};
     }
 
     // output creation
@@ -78,7 +77,32 @@ public:
     std::optional<std::string> temp_frame_format;
 
     // extra options
-    std::optional<std::string> source_average_face_id;
+    std::optional<std::string> source_average_face_id; // To get data from face_store
+    std::shared_ptr<Face> source_average_face;         // for inswapper
     bool show_progress_bar = true;
+
+    [[nodiscard]] FaceSwapperInput
+    GetFaceSwapperInput(const size_t& target_paths_index,
+                        const std::shared_ptr<FaceAnalyser>& face_analyser) const;
+
+    [[nodiscard]] FaceEnhancerInput
+    GetFaceEnhancerInput(const size_t& target_paths_index,
+                         const std::shared_ptr<FaceAnalyser>& face_analyser) const;
+
+    [[nodiscard]] ExpressionRestorerInput
+    GetExpressionRestorerInput(const size_t& source_paths_index,
+                               const size_t& target_paths_index,
+                               const std::shared_ptr<FaceAnalyser>& face_analyser) const;
+
+    [[nodiscard]] FrameEnhancerInput
+    GetFrameEnhancerInput(const size_t& target_paths_index) const;
+
+    [[nodiscard]] Face ProcessSourceAverageFace(const std::shared_ptr<FaceAnalyser>& face_analyser) const;
+
+private:
+    [[nodiscard]] std::vector<Face>
+    GetTargetFaces(const cv::Mat& target_frame,
+                   const std::shared_ptr<FaceAnalyser>& face_analyser) const;
 };
+
 } // namespace ffc

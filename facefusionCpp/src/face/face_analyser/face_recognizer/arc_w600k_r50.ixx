@@ -23,11 +23,11 @@ public:
     ~ArcW600kR50() override = default;
 
     // return: [0] embedding, [1] normedEmbedding
-    std::array<std::vector<float>, 2> recognize(const cv::Mat &visionFrame, const Face::Landmark &faceLandmark5) override;
+    std::array<std::vector<float>, 2> recognize(const cv::Mat &visionFrame, const Face::Landmarks &faceLandmark5) override;
     void loadModel(const std::string &modelPath, const Options &options) override;
 
 private:
-    std::vector<float> preProcess(const cv::Mat &visionFrame, const Face::Landmark &faceLandmark5_68) const;
+    std::vector<float> preProcess(const cv::Mat &visionFrame, const Face::Landmarks &faceLandmark5_68) const;
     int m_inputWidth{0};
     int m_inputHeight{0};
 };

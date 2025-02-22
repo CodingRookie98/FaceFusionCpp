@@ -16,7 +16,7 @@ module;
 export module vision;
 
 namespace ffc {
-export namespace Vision {
+export namespace vision {
 cv::Mat readStaticImage(const std::string &imagePath);
 std::vector<cv::Mat> readStaticImages(const std::unordered_set<std::string> &imagePaths,
                                       unsigned short threadCnt = 1);

@@ -17,29 +17,29 @@ module face_store;
 
 FaceStore::FaceStore() = default;
 
-void FaceStore::appendFaces(const cv::Mat &frame, const std::vector<Face> &faces) {
+void FaceStore::InsertFaces(const cv::Mat &frame, const std::vector<Face> &faces) {
     if (faces.empty()) {
         return;
     }
     std::unique_lock<std::shared_mutex> lock(m_rwMutex);
-    m_facesMap[createFrameHash(frame)] = faces;
+    m_facesMap[CreateFrameHash(frame)] = faces;
 }
 
-std::vector<Face> FaceStore::getFaces(const cv::Mat &visionFrame) {
+std::vector<Face> FaceStore::GetFaces(const cv::Mat &frame) {
     std::shared_lock<std::shared_mutex> lock(m_rwMutex);
-    auto it = m_facesMap.find(createFrameHash(visionFrame));
+    const auto it = m_facesMap.find(CreateFrameHash(frame));
     if (it != m_facesMap.end()) {
         return it->second;
     }
     return {};
 }
 
-void FaceStore::clearFaces() {
+void FaceStore::ClearFaces() {
     std::unique_lock<std::shared_mutex> lock(m_rwMutex);
     m_facesMap.clear();
 }
 
-std::string FaceStore::createFrameHash(const cv::Mat &frame) {
+std::string FaceStore::CreateFrameHash(const cv::Mat &frame) {
     // 获取 Mat 数据的指针和大小
     const uchar *data = frame.data;
     const size_t dataSize = frame.total() * frame.elemSize();
@@ -56,17 +56,17 @@ std::string FaceStore::createFrameHash(const cv::Mat &frame) {
     return oss.str();
 }
 
-void FaceStore::removeFaces(const std::string &facesName) {
+void FaceStore::RemoveFaces(const std::string &facesName) {
     std::unique_lock<std::shared_mutex> lock(m_rwMutex);
     m_facesMap.erase(facesName);
 }
 
-void FaceStore::removeFaces(const cv::Mat &frame) {
+void FaceStore::RemoveFaces(const cv::Mat &frame) {
     std::unique_lock<std::shared_mutex> lock(m_rwMutex);
-    m_facesMap.erase(createFrameHash(frame));
+    m_facesMap.erase(CreateFrameHash(frame));
 }
 
-void FaceStore::appendFaces(const std::string &facesName, const std::vector<Face> &faces) {
+void FaceStore::InsertFaces(const std::string &facesName, const std::vector<Face> &faces) {
     if (faces.empty()) {
         return;
     }
@@ -74,7 +74,7 @@ void FaceStore::appendFaces(const std::string &facesName, const std::vector<Face
     m_facesMap[facesName] = faces;
 }
 
-std::vector<Face> FaceStore::getFaces(const std::string &facesName) {
+std::vector<Face> FaceStore::GetFaces(const std::string &facesName) {
     std::shared_lock<std::shared_mutex> lock(m_rwMutex);
     if (m_facesMap.contains(facesName)) {
         return m_facesMap[facesName];
@@ -83,15 +83,15 @@ std::vector<Face> FaceStore::getFaces(const std::string &facesName) {
 }
 
 FaceStore::~FaceStore() {
-    clearFaces();
+    ClearFaces();
 }
 
-bool FaceStore::isContains(const cv::Mat &frame) {
+bool FaceStore::IsContains(const cv::Mat &frame) {
     std::shared_lock<std::shared_mutex> lock(m_rwMutex);
-    return m_facesMap.contains(createFrameHash(frame));
+    return m_facesMap.contains(CreateFrameHash(frame));
 }
 
-bool FaceStore::isContains(const std::string &facesName) {
+bool FaceStore::IsContains(const std::string &facesName) {
     std::shared_lock<std::shared_mutex> lock(m_rwMutex);
     return m_facesMap.contains(facesName);
 }

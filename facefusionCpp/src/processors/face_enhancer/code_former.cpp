@@ -16,7 +16,7 @@ module face_enhancer;
 import :code_former;
 
 namespace ffc::faceEnhancer {
-CodeFormer::CodeFormer(const std::shared_ptr<Ort::Env> &env) :
+CodeFormer::CodeFormer(const std::shared_ptr<Ort::Env>& env) :
     InferenceSession(env) {
 }
 
@@ -24,23 +24,24 @@ std::string CodeFormer::getProcessorName() const {
     return "FaceEnhancer.CodeFormer";
 }
 
-void CodeFormer::loadModel(const std::string &modelPath, const Options &options) {
+void CodeFormer::loadModel(const std::string& modelPath, const Options& options) {
     InferenceSession::loadModel(modelPath, options);
     m_inputHeight = m_inputNodeDims[0][2];
     m_inputWidth = m_inputNodeDims[0][3];
     m_size = cv::Size(m_inputWidth, m_inputHeight);
 }
 
-cv::Mat CodeFormer::enhanceFace(const CodeFormerInput &input) const {
-    if (input.targetFrame == nullptr || input.targetFaces == nullptr) {
-        throw std::runtime_error("args.targetFrame or args.targetFaces is nullptr");
+cv::Mat CodeFormer::enhanceFace(const CodeFormerInput& input) const {
+    if (input.target_frame == nullptr) {
+        return {};
     }
-    if (input.targetFrame->empty() || input.targetFaces->empty()) {
-        throw std::runtime_error("args.targetFrame or args.targetFaces is empty");
+    if (input.target_frame->empty()) {
+        return {};
     }
-    if (input.faceBlend > 100) {
-        throw std::runtime_error("args.faceBlend is greater than 100");
+    if (input.target_faces_5_landmarks.empty()) {
+        return input.target_frame->clone();
     }
+
     if (!isModelLoaded()) {
         throw std::runtime_error("model is not loaded");
     }
@@ -52,17 +53,17 @@ cv::Mat CodeFormer::enhanceFace(const CodeFormerInput &input) const {
     std::vector<cv::Mat> affineMatrices;
     std::vector<cv::Mat> croppedResultFrames;
     std::vector<cv::Mat> bestMasks;
-    for (const auto &targetFace : *input.targetFaces) {
+    for (const auto& target_faces_5_landmark : input.target_faces_5_landmarks) {
         cv::Mat croppedTargetFrame, affineMatrix;
-        std::tie(croppedTargetFrame, affineMatrix) = FaceHelper::warpFaceByFaceLandmarks5(*input.targetFrame, targetFace.m_landMark5By68, FaceHelper::getWarpTemplate(m_warpTemplateType), m_size);
+        std::tie(croppedTargetFrame, affineMatrix) = face_helper::warpFaceByFaceLandmarks5(*input.target_frame, target_faces_5_landmark, face_helper::getWarpTemplate(m_warpTemplateType), m_size);
         croppedTargetFrames.emplace_back(croppedTargetFrame);
         affineMatrices.emplace_back(affineMatrix);
     }
-    for (const auto &croppedTargetFrame : croppedTargetFrames) {
+    for (const auto& croppedTargetFrame : croppedTargetFrames) {
         croppedResultFrames.emplace_back(applyEnhance(croppedTargetFrame));
     }
-    for (auto &croppedTargetFrame : croppedTargetFrames) {
-        FaceMaskerHub::Args4GetBestMask args4_get_best_mask = input.args4_get_best_mask;
+    for (auto& croppedTargetFrame : croppedTargetFrames) {
+        FaceMaskerHub::ArgsForGetBestMask args4_get_best_mask = input.args_for_get_best_mask;
         if (args4_get_best_mask.faceMaskersTypes.contains(FaceMaskerHub::Type::Region)) {
             args4_get_best_mask.faceMaskersTypes.erase(FaceMaskerHub::Type::Region);
         }
@@ -73,21 +74,25 @@ cv::Mat CodeFormer::enhanceFace(const CodeFormerInput &input) const {
     if (croppedTargetFrames.size() != affineMatrices.size() || croppedTargetFrames.size() != croppedResultFrames.size() || croppedTargetFrames.size() != bestMasks.size()) {
         throw std::runtime_error("The size of croppedTargetFrames, affineMatrices, croppedResultFrames, and bestMasks must be equal.");
     }
-    cv::Mat resultFrame = input.targetFrame->clone();
+    cv::Mat resultFrame = input.target_frame->clone();
     for (size_t i = 0; i < bestMasks.size(); ++i) {
-        resultFrame = FaceHelper::pasteBack(resultFrame, croppedResultFrames[i], bestMasks[i], affineMatrices[i]);
+        resultFrame = face_helper::pasteBack(resultFrame, croppedResultFrames[i], bestMasks[i], affineMatrices[i]);
     }
-    resultFrame = blendFrame(*input.targetFrame, resultFrame, input.faceBlend);
+    if (input.faceBlend > 100) {
+        resultFrame = blendFrame(*input.target_frame, resultFrame, 100);
+    } else {
+        resultFrame = blendFrame(*input.target_frame, resultFrame, input.faceBlend);
+    }
     return resultFrame;
 }
 
-cv::Mat CodeFormer::applyEnhance(const cv::Mat &croppedFrame) const {
+cv::Mat CodeFormer::applyEnhance(const cv::Mat& croppedFrame) const {
     std::vector<float> inputImageData = getInputImageData(croppedFrame);
     const std::vector<int64_t> inputImageDataShape{1, 3, m_inputHeight, m_inputWidth};
     std::vector<double> inputWeightData{1.0};
     const std::vector<int64_t> inputWeightDataShape{1, 1};
     std::vector<Ort::Value> inputTensors;
-    for (const auto &name : m_inputNames) {
+    for (const auto& name : m_inputNames) {
         if (std::string(name) == "input") {
             inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo,
                                                                       inputImageData.data(), inputImageData.size(),
@@ -105,7 +110,7 @@ cv::Mat CodeFormer::applyEnhance(const cv::Mat &croppedFrame) const {
                                                              m_outputNames.data(),
                                                              m_outputNames.size());
 
-    auto *pdata = outputTensor[0].GetTensorMutableData<float>();
+    auto* pdata = outputTensor[0].GetTensorMutableData<float>();
     const std::vector<int64_t> outsShape = outputTensor[0].GetTensorTypeAndShapeInfo().GetShape();
     const long long outputHeight = outsShape[2];
     const long long outputWidth = outsShape[3];
@@ -116,7 +121,7 @@ cv::Mat CodeFormer::applyEnhance(const cv::Mat &croppedFrame) const {
     channelMats[2] = cv::Mat(outputHeight, outputWidth, CV_32FC1, pdata);                   // R
     channelMats[1] = cv::Mat(outputHeight, outputWidth, CV_32FC1, pdata + channelStep);     // G
     channelMats[0] = cv::Mat(outputHeight, outputWidth, CV_32FC1, pdata + 2 * channelStep); // B
-    for (auto &mat : channelMats) {
+    for (auto& mat : channelMats) {
         mat.setTo(-1, mat < -1);
         mat.setTo(1, mat > 1);
         mat = (mat + 1) * 125.f;
@@ -131,7 +136,7 @@ cv::Mat CodeFormer::applyEnhance(const cv::Mat &croppedFrame) const {
     return resultMat;
 }
 
-std::vector<float> CodeFormer::getInputImageData(const cv::Mat &croppedImage) {
+std::vector<float> CodeFormer::getInputImageData(const cv::Mat& croppedImage) {
     std::vector<cv::Mat> bgrChannels(3);
     split(croppedImage, bgrChannels);
     for (int c = 0; c < 3; c++) {
@@ -147,4 +152,4 @@ std::vector<float> CodeFormer::getInputImageData(const cv::Mat &croppedImage) {
     memcpy(inputImageData.data() + imageArea * 2, bgrChannels[0].data, singleChnSize);
     return inputImageData;
 }
-}
+} // namespace ffc::faceEnhancer

@@ -24,7 +24,7 @@ public:
 
     struct Result {
         std::vector<Face::BBox> bboxes;
-        std::vector<Face::Landmark> landmarks;
+        std::vector<Face::Landmarks> landmarks;
         std::vector<float> scores;
     };
 

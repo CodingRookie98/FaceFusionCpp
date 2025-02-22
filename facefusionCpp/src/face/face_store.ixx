@@ -20,16 +20,16 @@ public:
     FaceStore();
     ~FaceStore();
 
-    void removeFaces(const std::string &facesName);
-    void removeFaces(const cv::Mat &frame);
-    void appendFaces(const cv::Mat &frame, const std::vector<Face> &faces);
-    void appendFaces(const std::string &facesName, const std::vector<Face> &faces);
-    void clearFaces();
-    std::vector<Face> getFaces(const cv::Mat &frame);
-    std::vector<Face> getFaces(const std::string &facesName);
-    static std::string createFrameHash(const cv::Mat &frame);
-    bool isContains(const cv::Mat &frame);
-    bool isContains(const std::string &facesName);
+    void RemoveFaces(const std::string& facesName);
+    void RemoveFaces(const cv::Mat& frame);
+    void InsertFaces(const cv::Mat& frame, const std::vector<Face>& faces);
+    void InsertFaces(const std::string& facesName, const std::vector<Face>& faces);
+    void ClearFaces();
+    std::vector<Face> GetFaces(const cv::Mat& frame);
+    std::vector<Face> GetFaces(const std::string& facesName);
+    static std::string CreateFrameHash(const cv::Mat& frame);
+    bool IsContains(const cv::Mat& frame);
+    bool IsContains(const std::string& facesName);
 
 private:
     std::unordered_map<std::string, std::vector<Face>> m_facesMap;

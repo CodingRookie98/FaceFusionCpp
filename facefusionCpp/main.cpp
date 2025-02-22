@@ -32,6 +32,7 @@ int main() {
 
     ini_config ini_config;
     ini_config.loadConfig();
+
     const auto core = std::make_shared<ffc::Core>(ini_config.getCoreOptions());
     const bool ok = core->run(ini_config.getCoreRunOptions());
 

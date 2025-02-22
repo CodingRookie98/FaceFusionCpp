@@ -26,16 +26,16 @@ FaceDetectorBase::detectRotatedFaces(const cv::Mat &visionFrame,
                                      const cv::Size &faceDetectorSize,
                                      const double &angle, const float &detectorScore) {
     cv::Mat rotatedVisionFrame, rotatedInverseMat;
-    auto [rotatedMat, rotatedSize] = FaceHelper::createRotatedMatAndSize(angle, visionFrame.size());
+    auto [rotatedMat, rotatedSize] = face_helper::createRotatedMatAndSize(angle, visionFrame.size());
     cv::warpAffine(visionFrame, rotatedVisionFrame, rotatedMat, rotatedSize);
     cv::invertAffineTransform(rotatedMat, rotatedInverseMat);
     Result result = detectFaces(rotatedVisionFrame, faceDetectorSize, detectorScore);
     for (auto &bbox : result.bboxes) {
-        bbox = FaceHelper::transformBBox(bbox, rotatedInverseMat);
+        bbox = face_helper::transformBBox(bbox, rotatedInverseMat);
     }
 
     for (auto &landmarkVec : result.landmarks) {
-        landmarkVec = FaceHelper::transformPoints(landmarkVec, rotatedInverseMat);
+        landmarkVec = face_helper::transformPoints(landmarkVec, rotatedInverseMat);
     }
 
     return result;

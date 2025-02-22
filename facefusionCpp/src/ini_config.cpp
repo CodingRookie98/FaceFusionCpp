@@ -269,7 +269,7 @@ void ini_config::image() {
     cv::Size output_image_size;
     if (const std::string value = m_ini.GetValue("image", "output_image_resolution", "");
         !value.empty()) {
-        output_image_size = Vision::unpackResolution(value);
+        output_image_size = vision::unpackResolution(value);
     } else {
         output_image_size = cv::Size(0, 0);
     }
@@ -475,7 +475,7 @@ void ini_config::faceAnalyser() {
 
     value = m_ini.GetValue("face_analyser", "face_detector_size", "640x640");
     if (!value.empty()) {
-        cv::Size faceDetectorSize = Vision::unpackResolution(value);
+        cv::Size faceDetectorSize = vision::unpackResolution(value);
         const auto supportCommonSizes = FaceDetectorHub::GetSupportCommonSizes(face_detector_options.types);
         bool isIn = false;
         cv::Size maxSize{0, 0};

@@ -15,7 +15,7 @@ module;
 
 export module core;
 import face_analyser;
-export import :core_run_options;
+export import :core_task;
 import logger;
 import processor_hub;
 
@@ -41,29 +41,33 @@ public:
         InferenceSession::Options inference_session_options{};
     };
 
-    explicit Core(const Core::Options &options);
+    explicit Core(const Core::Options& options);
     ~Core();
 
-    [[nodiscard]] bool run(CoreRunOptions _coreRunOptions);
+    [[nodiscard]] bool run(CoreTask core_task);
 
 private:
     std::unique_ptr<dp::thread_pool<>> thread_pool_;
-    std::shared_ptr<Logger> m_logger;
-    std::shared_ptr<Ort::Env> m_env;
-    std::shared_ptr<FaceAnalyser> m_faceAnalyser;
+    std::shared_ptr<Logger> logger_;
+    std::shared_ptr<Ort::Env> env_;
+    std::shared_ptr<FaceAnalyser> face_analyser_;
     ProcessorHub processor_hub_;
-    Options coreOptions;
+    Options core_options_;
 
-    bool processImages(CoreRunOptions _coreRunOptions);
-    bool processVideos(const CoreRunOptions &_coreRunOptions, const bool &autoRemoveTarget = false);
-    bool processVideo(CoreRunOptions _coreRunOptions);
-    bool processVideoInSegments(CoreRunOptions _coreRunOptions);
-    [[nodiscard]] bool processSourceAverageFace(CoreRunOptions _coreRunOptions) const;
-    bool swapFace(CoreRunOptions _coreRunOptions);
-    bool enhanceFace(CoreRunOptions _coreRunOptions);
-    bool restoreExpression(CoreRunOptions _coreRunOptions);
-    bool enhanceFrame(CoreRunOptions _coreRunOptions);
-    [[nodiscard]] std::vector<Face> getTargetFaces(const CoreRunOptions &_coreRunOptions, const cv::Mat &targetFrame) const;
+    bool ProcessImages(CoreTask core_task);
+    bool ProcessVideos(const CoreTask& core_task, const bool& autoRemoveTarget = false);
+    bool ProcessVideo(CoreTask core_task);
+    bool ProcessVideoInSegments(CoreTask core_task);
+    bool SwapFace(const FaceSwapperInput& face_swapper_input, const std::string& output_path,
+                  const FaceSwapperType& type, const ModelManager::Model& model);
+    bool EnhanceFace(const FaceEnhancerInput& face_enhancer_input, const std::string& output_path,
+                     const FaceEnhancerType& type, const ModelManager::Model& model);
+    bool RestoreExpression(const ExpressionRestorerInput& expression_restorer_input,
+                           const std::string& output_path,
+                           const ExpressionRestorerType& type);
+    bool EnhanceFrame(const FrameEnhancerInput& frame_enhancer_input,
+                      const std::string& output_path,
+                      const FrameEnhancerType& type, const ModelManager::Model& model);
 };
 
 } // namespace ffc

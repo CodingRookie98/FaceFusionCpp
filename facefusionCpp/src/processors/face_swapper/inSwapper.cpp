@@ -70,8 +70,15 @@ void InSwapper::init() {
 }
 
 cv::Mat InSwapper::swapFace(const InSwapperInput& input) {
-    if (input.sourceFace == nullptr || input.targetFaces == nullptr || input.targetFrame == nullptr) {
-        throw std::runtime_error(std::format("File: {}, Line: {}, Error: Invalid input data.(some object is nullptr)", __FILE__, __LINE__));
+    if (input.source_average_embeddings.empty()
+        || input.target_frame == nullptr) {
+        return {};
+    }
+    if (input.target_frame->empty()) {
+        return {};
+    }
+    if (input.target_faces_5_landmarks.empty()) {
+        return input.target_frame->clone();
     }
 
     if (isModelLoaded() == false) {
@@ -85,29 +92,27 @@ cv::Mat InSwapper::swapFace(const InSwapperInput& input) {
         throw std::runtime_error(std::format("File: {}, Line: {}, Error: faceMaskers is nullptr!", __FILE__, __LINE__));
     }
 
-    const auto& sourceFace = *input.sourceFace;
-    const auto& targetFaces = *input.targetFaces;
-    const auto& targetFrame = *input.targetFrame;
-    if (sourceFace.isEmpty() || targetFaces.empty() || targetFrame.empty()) {
+    const auto& targetFrame = *input.target_frame;
+    if (targetFrame.empty()) {
         return {};
     }
     std::vector<cv::Mat> croppedTargetFrames;
     std::vector<cv::Mat> affineMatrices;
     std::vector<cv::Mat> croppedResultFrames;
     std::vector<cv::Mat> bestMasks;
-    for (const auto& targetFace : targetFaces) {
+    for (const auto& landmarks5 : input.target_faces_5_landmarks) {
         cv::Mat croppedTargetFrame, affineMat;
-        std::tie(croppedTargetFrame, affineMat) = FaceHelper::warpFaceByFaceLandmarks5(targetFrame, targetFace.m_landMark5By68,
-                                                                                       FaceHelper::getWarpTemplate(m_warpTemplateType),
+        std::tie(croppedTargetFrame, affineMat) = face_helper::warpFaceByFaceLandmarks5(targetFrame, landmarks5,
+                                                                                       face_helper::getWarpTemplate(m_warpTemplateType),
                                                                                        m_size);
         croppedTargetFrames.emplace_back(croppedTargetFrame);
         affineMatrices.emplace_back(affineMat);
     }
     for (const auto& croppedTargetFrame : croppedTargetFrames) {
-        croppedResultFrames.emplace_back(applySwap(sourceFace.m_embedding, croppedTargetFrame));
+        croppedResultFrames.emplace_back(applySwap(input.source_average_embeddings, croppedTargetFrame));
     }
     for (size_t i = 0; i < croppedTargetFrames.size(); ++i) {
-        FaceMaskerHub::Args4GetBestMask args_4_get_best_mask = input.args_4_get_best_mask;
+        FaceMaskerHub::ArgsForGetBestMask args_4_get_best_mask = input.args_for_get_best_mask;
         args_4_get_best_mask.boxSize = {m_size};
         args_4_get_best_mask.occlusionFrame = {&croppedTargetFrames[i]};
         args_4_get_best_mask.regionFrame = {&croppedResultFrames[i]};
@@ -120,12 +125,12 @@ cv::Mat InSwapper::swapFace(const InSwapperInput& input) {
 
     cv::Mat resultFrame = targetFrame.clone();
     for (size_t i = 0; i < bestMasks.size(); ++i) {
-        resultFrame = FaceHelper::pasteBack(resultFrame, croppedResultFrames[i], bestMasks[i], affineMatrices[i]);
+        resultFrame = face_helper::pasteBack(resultFrame, croppedResultFrames[i], bestMasks[i], affineMatrices[i]);
     }
     return resultFrame;
 }
 
-cv::Mat InSwapper::applySwap(const Face::Embedding& sourceEmbedding, const cv::Mat& croppedTargetFrame) const {
+cv::Mat InSwapper::applySwap(const Face::Embeddings& sourceEmbedding, const cv::Mat& croppedTargetFrame) const {
     std::vector<Ort::Value> inputTensors;
     std::vector<float> inputImageData, inputEmbeddingData;
     for (const auto& inputName : m_inputNames) {
@@ -167,7 +172,7 @@ cv::Mat InSwapper::applySwap(const Face::Embedding& sourceEmbedding, const cv::M
     return resultMat;
 }
 
-std::vector<float> InSwapper::prepareSourceEmbedding(const Face::Embedding& sourceEmbedding) const {
+std::vector<float> InSwapper::prepareSourceEmbedding(const Face::Embeddings& sourceEmbedding) const {
     std::vector<float> result;
     const double norm = cv::norm(sourceEmbedding, cv::NORM_L2);
     const size_t lenFeature = sourceEmbedding.size();

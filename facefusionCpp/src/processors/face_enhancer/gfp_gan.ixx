@@ -23,10 +23,10 @@ export namespace ffc::faceEnhancer {
 using namespace faceMasker;
 
 struct GFP_GAN_Input {
-    cv::Mat* targetFrame = nullptr;
-    std::vector<Face>* targetFaces = nullptr;
+    std::vector<Face::Landmarks> target_faces_5_landmarks;
+    std::shared_ptr<cv::Mat> target_frame = nullptr;
     ushort faceBlend{80};
-    FaceMaskerHub::Args4GetBestMask args4_get_best_mask{
+    FaceMaskerHub::ArgsForGetBestMask args_for_get_best_mask{
         .faceMaskersTypes = {FaceMaskerHub::Type::Box},
         .boxMaskBlur = {0.5},
         .boxMaskPadding = std::array{0, 0, 0, 0}};
@@ -47,7 +47,7 @@ private:
     int m_inputHeight{0};
     int m_inputWidth{0};
     cv::Size m_size{0, 0};
-    FaceHelper::WarpTemplateType m_warpTemplateType{FaceHelper::WarpTemplateType::Ffhq_512};
+    face_helper::WarpTemplateType m_warpTemplateType{face_helper::WarpTemplateType::Ffhq_512};
 
     [[nodiscard]] static std::vector<float> getInputImageData(const cv::Mat& croppedImage);
     [[nodiscard]] cv::Mat applyEnhance(const cv::Mat& croppedFrame) const;

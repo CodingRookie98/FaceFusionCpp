@@ -47,7 +47,7 @@ Retina::Result Retina::detectFaces(const cv::Mat &visionFrame, const cv::Size &f
     std::vector<Ort::Value> ortOutputs = m_ortSession->Run(m_runOptions, m_inputNames.data(), &inputTensor, 1, m_outputNames.data(), m_outputNames.size());
 
     std::vector<Face::BBox> resultBoundingBoxes;
-    std::vector<Face::Landmark> resultFaceLandmarks;
+    std::vector<Face::Landmarks> resultFaceLandmarks;
     std::vector<float> resultScores;
 
     for (size_t index = 0; index < m_featureStrides.size(); ++index) {
@@ -69,13 +69,13 @@ Retina::Result Retina::detectFaces(const cv::Mat &visionFrame, const cv::Size &f
         int strideHeight = std::floor(faceDetectorSize.height / featureStride);
         int strideWidth = std::floor(faceDetectorSize.width / featureStride);
 
-        std::vector<std::array<int, 2>> anchors = FaceHelper::createStaticAnchors(m_featureStrides[index],
+        std::vector<std::array<int, 2>> anchors = face_helper::createStaticAnchors(m_featureStrides[index],
                                                                                   m_anchorTotal,
                                                                                   strideHeight,
                                                                                   strideWidth);
 
         std::vector<Face::BBox> boundingBoxesRaw;
-        std::vector<Face::Landmark> faceLandmarksRaw;
+        std::vector<Face::Landmarks> faceLandmarksRaw;
 
         float *pdataBbox = ortOutputs[index + m_featureMapChannel].GetTensorMutableData<float>();
         float *pdataLandmark = ortOutputs[index + 2 * m_featureMapChannel].GetTensorMutableData<float>();
@@ -95,7 +95,7 @@ Retina::Result Retina::detectFaces(const cv::Mat &visionFrame, const cv::Size &f
         size_t pdataLandmarkSize = ortOutputs[index + 2 * m_featureMapChannel].GetTensorTypeAndShapeInfo().GetShape()[0]
                                    * ortOutputs[index + 2 * m_featureMapChannel].GetTensorTypeAndShapeInfo().GetShape()[1];
         for (size_t k = 0; k < pdataLandmarkSize; k += 10) {
-            Face::Landmark tempLandmark;
+            Face::Landmarks tempLandmark;
             tempLandmark.emplace_back(cv::Point2f(*(pdataLandmark + k), *(pdataLandmark + k + 1)));
             tempLandmark.emplace_back(cv::Point2f(*(pdataLandmark + k + 2), *(pdataLandmark + k + 3)));
             tempLandmark.emplace_back(cv::Point2f(*(pdataLandmark + k + 4), *(pdataLandmark + k + 5)));
@@ -109,14 +109,14 @@ Retina::Result Retina::detectFaces(const cv::Mat &visionFrame, const cv::Size &f
         }
 
         for (const auto &keepIndex : keepIndices) {
-            auto tempBbox = FaceHelper::distance2BBox(anchors[keepIndex], boundingBoxesRaw[keepIndex]);
+            auto tempBbox = face_helper::distance2BBox(anchors[keepIndex], boundingBoxesRaw[keepIndex]);
             tempBbox.xMin *= ratioWidth;
             tempBbox.yMin *= ratioHeight;
             tempBbox.xMax *= ratioWidth;
             tempBbox.yMax *= ratioHeight;
             resultBoundingBoxes.emplace_back(tempBbox);
 
-            auto tempLandmark = FaceHelper::distance2FaceLandmark5(anchors[keepIndex], faceLandmarksRaw[keepIndex]);
+            auto tempLandmark = face_helper::distance2FaceLandmark5(anchors[keepIndex], faceLandmarksRaw[keepIndex]);
             for (auto &point : tempLandmark) {
                 point.x *= ratioWidth;
                 point.y *= ratioHeight;
@@ -139,7 +139,7 @@ Retina::preProcess(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize)
     const int faceDetectorHeight = faceDetectorSize.height;
     const int faceDetectorWidth = faceDetectorSize.width;
 
-    const auto tempVisionFrame = ffc::Vision::resizeFrame(visionFrame, cv::Size(faceDetectorWidth, faceDetectorHeight));
+    const auto tempVisionFrame = ffc::vision::resizeFrame(visionFrame, cv::Size(faceDetectorWidth, faceDetectorHeight));
     float ratioHeight = static_cast<float>(visionFrame.rows) / static_cast<float>(tempVisionFrame.rows);
     float ratioWidth = static_cast<float>(visionFrame.cols) / static_cast<float>(tempVisionFrame.cols);
 

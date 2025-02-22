@@ -25,7 +25,7 @@ public:
         FairFace,
     };
     FaceClassifierBase::Result
-    classify(const cv::Mat &image, const Face::Landmark &faceLandmark5, const Type &type = Type::FairFace);
+    classify(const cv::Mat &image, const Face::Landmarks &faceLandmark5, const Type &type = Type::FairFace);
 
 private:
     std::shared_ptr<Ort::Env> m_env;

@@ -17,7 +17,7 @@ import :real_hat_gan;
 import vision;
 
 namespace ffc::frameEnhancer {
-RealHatGan::RealHatGan(const std::shared_ptr<Ort::Env> &env) :
+RealHatGan::RealHatGan(const std::shared_ptr<Ort::Env>& env) :
     FrameEnhancerBase(), InferenceSession(env) {
 }
 
@@ -25,9 +25,15 @@ std::string RealHatGan::getProcessorName() const {
     return "FrameEnhancer.RealHatGan";
 }
 
-cv::Mat RealHatGan::enhanceFrame(const RealHatGanInput &input) const {
-    const int tempWidth = input.targetFrame->cols, tempHeight = input.targetFrame->rows;
-    auto [tileVisionFrames, padWidth, pidHeight] = ffc::Vision::createTileFrames(*input.targetFrame, m_tileSize);
+cv::Mat RealHatGan::enhanceFrame(const RealHatGanInput& input) const {
+    if (input.target_frame == nullptr) {
+        return {};
+    }
+    if (input.target_frame->empty()) {
+        return {};
+    }
+    const int tempWidth = input.target_frame->cols, tempHeight = input.target_frame->rows;
+    auto [tileVisionFrames, padWidth, pidHeight] = ffc::vision::createTileFrames(*input.target_frame, m_tileSize);
 
     for (size_t i = 0; i < tileVisionFrames.size(); i++) {
         std::vector<float> inputImageData = getInputImageData(tileVisionFrames[i]);
@@ -38,18 +44,22 @@ cv::Mat RealHatGan::enhanceFrame(const RealHatGanInput &input) const {
         std::vector<Ort::Value> outputTensor = m_ortSession->Run(m_runOptions, m_inputNames.data(),
                                                                  inputTensors.data(), inputTensors.size(),
                                                                  m_outputNames.data(), m_outputNames.size());
-        const float *outputData = outputTensor[0].GetTensorMutableData<float>();
+        const float* outputData = outputTensor[0].GetTensorMutableData<float>();
         const int outputWidth = static_cast<int>(outputTensor[0].GetTensorTypeAndShapeInfo().GetShape()[2]);
         const int outputHeight = static_cast<int>(outputTensor[0].GetTensorTypeAndShapeInfo().GetShape()[3]);
         cv::Mat outputImage = getOutputImage(outputData, cv::Size(outputWidth, outputHeight));
         tileVisionFrames[i] = std::move(outputImage);
     }
 
-    cv::Mat outputImage = Vision::mergeTileFrames(tileVisionFrames, tempWidth * m_modelScale, tempHeight * m_modelScale,
+    cv::Mat outputImage = vision::mergeTileFrames(tileVisionFrames, tempWidth * m_modelScale, tempHeight * m_modelScale,
                                                   padWidth * m_modelScale, pidHeight * m_modelScale,
                                                   {m_tileSize[0] * m_modelScale, m_tileSize[1] * m_modelScale, m_tileSize[2] * m_modelScale});
 
-    outputImage = blendFrame(*input.targetFrame, outputImage, input.blend);
+    if (input.blend > 100) {
+        outputImage = blendFrame(*input.target_frame, outputImage, 100);
+    } else {
+        outputImage = blendFrame(*input.target_frame, outputImage, input.blend);
+    }
     return outputImage;
 }
 } // namespace ffc::frameEnhancer

@@ -54,7 +54,7 @@ FaceMaskerBase* FaceMaskerHub::getMasker(const FaceMaskerHub::Type& type, const 
     return m_maskers[type];
 }
 
-cv::Mat FaceMaskerHub::getBestMask(const Args4GetBestMask& func_gbm_args) {
+cv::Mat FaceMaskerHub::getBestMask(const ArgsForGetBestMask& func_gbm_args) {
     std::vector<std::future<cv::Mat>> futures;
     std::vector<cv::Mat> masks;
 

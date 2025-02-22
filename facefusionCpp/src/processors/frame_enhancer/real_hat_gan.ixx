@@ -18,17 +18,17 @@ import inference_session;
 
 export namespace ffc::frameEnhancer {
 struct RealHatGanInput {
-    cv::Mat *targetFrame = nullptr;
+    std::shared_ptr<cv::Mat> target_frame{nullptr};
     unsigned short blend{80};
 };
 
 class RealHatGan final : public FrameEnhancerBase, public InferenceSession {
 public:
-    explicit RealHatGan(const std::shared_ptr<Ort::Env> &env);
+    explicit RealHatGan(const std::shared_ptr<Ort::Env>& env);
     ~RealHatGan() override = default;
 
     [[nodiscard]] std::string getProcessorName() const override;
 
-    [[nodiscard]] cv::Mat enhanceFrame(const RealHatGanInput &input) const;
+    [[nodiscard]] cv::Mat enhanceFrame(const RealHatGanInput& input) const;
 };
 } // namespace ffc::frameEnhancer

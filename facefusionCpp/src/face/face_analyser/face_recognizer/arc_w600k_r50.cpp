@@ -27,10 +27,10 @@ void ArcW600kR50::loadModel(const std::string &modelPath, const Options &options
     m_inputHeight = static_cast<int>(m_inputNodeDims[0][3]);
 }
 
-std::vector<float> ArcW600kR50::preProcess(const cv::Mat &visionFrame, const Face::Landmark &faceLandmark5_68) const {
-    std::vector<cv::Point2f> warpTemplate = FaceHelper::getWarpTemplate(FaceHelper::WarpTemplateType::Arcface_112_v2);
+std::vector<float> ArcW600kR50::preProcess(const cv::Mat &visionFrame, const Face::Landmarks &faceLandmark5_68) const {
+    std::vector<cv::Point2f> warpTemplate = face_helper::getWarpTemplate(face_helper::WarpTemplateType::Arcface_112_v2);
     cv::Mat cropVisionFrame;
-    std::tie(cropVisionFrame, std::ignore) = FaceHelper::warpFaceByFaceLandmarks5(visionFrame, faceLandmark5_68,
+    std::tie(cropVisionFrame, std::ignore) = face_helper::warpFaceByFaceLandmarks5(visionFrame, faceLandmark5_68,
                                                                                   warpTemplate,
                                                                                   cv::Size(112, 112));
     std::vector<cv::Mat> bgrChannels(3);
@@ -49,7 +49,7 @@ std::vector<float> ArcW600kR50::preProcess(const cv::Mat &visionFrame, const Fac
     return inputData;
 }
 
-std::array<std::vector<float>, 2> ArcW600kR50::recognize(const cv::Mat &visionFrame, const Face::Landmark &faceLandmark5) {
+std::array<std::vector<float>, 2> ArcW600kR50::recognize(const cv::Mat &visionFrame, const Face::Landmarks &faceLandmark5) {
     std::vector<float> inputData = this->preProcess(visionFrame, faceLandmark5);
     const std::vector<int64_t> inputImgShape{1, 3, this->m_inputHeight, this->m_inputWidth};
     const Ort::Value inputTensor = Ort::Value::CreateTensor<float>(m_memoryInfo, inputData.data(),
@@ -63,7 +63,7 @@ std::array<std::vector<float>, 2> ArcW600kR50::recognize(const cv::Mat &visionFr
     auto *pdata = ortOutputs[0].GetTensorMutableData<float>(); /// 形状是(1, 512)
     const int lenFeature = ortOutputs[0].GetTensorTypeAndShapeInfo().GetShape()[1];
 
-    Face::Embedding embedding(lenFeature), normedEmbedding(lenFeature);
+    Face::Embeddings embedding(lenFeature), normedEmbedding(lenFeature);
 
     memcpy(embedding.data(), pdata, lenFeature * sizeof(float));
 

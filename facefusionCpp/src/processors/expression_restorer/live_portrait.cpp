@@ -17,7 +17,7 @@ module expression_restorer;
 import :live_portrait;
 
 namespace ffc::expressionRestore {
-LivePortrait::LivePortrait(const std::shared_ptr<Ort::Env> &env) :
+LivePortrait::LivePortrait(const std::shared_ptr<Ort::Env>& env) :
     m_featureExtractor(env), m_motionExtractor(env), m_generator(env) {
     m_env = env;
 }
@@ -26,19 +26,28 @@ std::string LivePortrait::getProcessorName() const {
     return "ExpressionRestorer.LivePortrait";
 }
 
-void LivePortrait::loadModel(const std::string &featureExtractorPath, const std::string &motionExtractorPath, const std::string &generatorPath, const ffc::InferenceSession::Options &options) {
+void LivePortrait::loadModel(const std::string& featureExtractorPath, const std::string& motionExtractorPath, const std::string& generatorPath, const ffc::InferenceSession::Options& options) {
     m_featureExtractor.loadModel(featureExtractorPath, options);
     m_motionExtractor.loadModel(motionExtractorPath, options);
     m_generator.loadModel(generatorPath, options);
     m_generatorOutputSize = m_generator.getOutputSize();
 }
 
-cv::Mat LivePortrait::restoreExpression(const LivePortraitInput &input) {
-    if (input.sourceFrame == nullptr || input.targetFrame == nullptr || input.targetFaces == nullptr) {
-        throw std::runtime_error(std::format("File: {}, Line: {}, Error: args.sourceFrame or args.targetFrame or  args.targetFaces is nullptr!", __FILE__, __LINE__));
+cv::Mat LivePortrait::restoreExpression(const LivePortraitInput& input) {
+    if (input.source_frame == nullptr) {
+        if (!input.target_frame->empty()) {
+            return input.target_frame->clone();
+        }
+        return {};
     }
-    if (input.sourceFrame->empty() || input.targetFrame->empty() || input.targetFaces->empty()) {
-        throw std::runtime_error(std::format("File: {}, Line: {}, Error: args.sourceFrame or args.targetFrame or  args.targetFaces is empty!", __FILE__, __LINE__));
+    if (input.target_frame->empty()) {
+        return {};
+    }
+    if (input.source_faces_5_landmarks.empty() || input.target_faces_5_landmarks.empty()) {
+        return input.target_frame->clone();
+    }
+    if (input.source_faces_5_landmarks.size() != input.target_faces_5_landmarks.size()) {
+        return input.target_frame->clone();
     }
 
     if (!m_featureExtractor.isModelLoaded() || !m_motionExtractor.isModelLoaded() || !m_generator.isModelLoaded()) {
@@ -50,40 +59,42 @@ cv::Mat LivePortrait::restoreExpression(const LivePortraitInput &input) {
     }
 
     std::vector<cv::Mat> croppedSourceFrames, croppedTargetFrames, affineMatrices, bestMasks, restoredFrames;
-    for (const auto &face : *input.targetFaces) {
+    for (size_t i = 0; i < input.source_faces_5_landmarks.size(); ++i) {
+        const auto& target_faces_5_landmark = input.target_faces_5_landmarks.at(i);
+        const auto& source_faces_5_landmark = input.source_faces_5_landmarks.at(i);
         cv::Mat sourceCroppedFrame, targetCropFrame, affineMat;
-        std::tie(sourceCroppedFrame, std::ignore) = FaceHelper::warpFaceByFaceLandmarks5(*input.sourceFrame, face.m_landMark5By68, m_warpTemplateType, m_generatorOutputSize);
-        std::tie(targetCropFrame, affineMat) = FaceHelper::warpFaceByFaceLandmarks5(*input.targetFrame, face.m_landMark5By68, m_warpTemplateType, m_generatorOutputSize);
+        std::tie(sourceCroppedFrame, std::ignore) = face_helper::warpFaceByFaceLandmarks5(*input.source_frame, source_faces_5_landmark, m_warpTemplateType, m_generatorOutputSize);
+        std::tie(targetCropFrame, affineMat) = face_helper::warpFaceByFaceLandmarks5(*input.target_frame, target_faces_5_landmark, m_warpTemplateType, m_generatorOutputSize);
         croppedSourceFrames.emplace_back(sourceCroppedFrame);
         croppedTargetFrames.emplace_back(targetCropFrame);
         affineMatrices.emplace_back(affineMat);
     }
-    for (auto & croppedTargetFrame : croppedTargetFrames) {
-        FaceMaskerHub::Args4GetBestMask func_gbm_args;
-        func_gbm_args.faceMaskersTypes = input.faceMaskersTypes;
-        func_gbm_args.boxMaskBlur = input.boxMaskBlur;
-        func_gbm_args.boxMaskPadding = input.boxMaskPadding;
-        func_gbm_args.boxSize = m_generatorOutputSize;
-        func_gbm_args.occlusionFrame = &croppedTargetFrame;
-        bestMasks.emplace_back(m_faceMaskerHub->getBestMask(func_gbm_args));
+    for (auto& croppedTargetFrame : croppedTargetFrames) {
+        FaceMaskerHub::ArgsForGetBestMask args_for_get_best_mask;
+        args_for_get_best_mask.faceMaskersTypes = input.faceMaskersTypes;
+        args_for_get_best_mask.boxMaskBlur = input.boxMaskBlur;
+        args_for_get_best_mask.boxMaskPadding = input.boxMaskPadding;
+        args_for_get_best_mask.boxSize = m_generatorOutputSize;
+        args_for_get_best_mask.occlusionFrame = &croppedTargetFrame;
+        bestMasks.emplace_back(m_faceMaskerHub->getBestMask(args_for_get_best_mask));
     }
 
     if (croppedSourceFrames.size() != croppedTargetFrames.size() || croppedSourceFrames.size() != bestMasks.size() || croppedSourceFrames.size() != affineMatrices.size()) {
-        throw std::runtime_error("croppedSourceFrames.size() != croppedTargetFrames.size() || croppedSourceFrames.size() != bestMasks.size() || croppedSourceFrames.size() != affineMatrices.size()");
+        return input.target_frame->clone();
     }
 
     for (size_t i = 0; i < croppedSourceFrames.size(); ++i) {
         restoredFrames.emplace_back(applyRestore(croppedSourceFrames[i], croppedTargetFrames[i]));
     }
 
-    cv::Mat resultFrame = input.targetFrame->clone();
+    cv::Mat resultFrame = input.target_frame->clone();
     for (size_t i = 0; i < croppedTargetFrames.size(); ++i) {
-        resultFrame = FaceHelper::pasteBack(resultFrame, restoredFrames[i], bestMasks[i], affineMatrices[i]);
+        resultFrame = face_helper::pasteBack(resultFrame, restoredFrames[i], bestMasks[i], affineMatrices[i]);
     }
     return resultFrame;
 }
 
-cv::Mat LivePortrait::applyRestore(const cv::Mat &croppedSourceFrame, const cv::Mat &croppedTargetFrame) const {
+cv::Mat LivePortrait::applyRestore(const cv::Mat& croppedSourceFrame, const cv::Mat& croppedTargetFrame) const {
     std::future<std::vector<float>> featureVolumeFu = std::async(std::launch::async, &FeatureExtractor::extractFeature, &m_featureExtractor, croppedTargetFrame);
     std::future<std::vector<std::vector<float>>> sourceMotionFu = std::async(std::launch::async, &MotionExtractor::extractMotion, &m_motionExtractor, croppedSourceFrame);
 
@@ -94,7 +105,7 @@ cv::Mat LivePortrait::applyRestore(const cv::Mat &croppedSourceFrame, const cv::
 
     cv::Mat rotationMat = createRotationMat(targetMotion[0][0], targetMotion[1][0], targetMotion[2][0]);
     std::vector<float> sourceExpression = std::move(sourceMotion[5]), targetExpression = std::move(targetMotion[5]);
-    for (auto &index : std::array{0, 4, 5, 8, 9}) {
+    for (auto& index : std::array{0, 4, 5, 8, 9}) {
         sourceExpression[index] = targetExpression[index];
     }
 
@@ -125,11 +136,11 @@ cv::Mat LivePortrait::applyRestore(const cv::Mat &croppedSourceFrame, const cv::
     return result;
 }
 
-LivePortrait::FeatureExtractor::FeatureExtractor(const std::shared_ptr<Ort::Env> &env) :
+LivePortrait::FeatureExtractor::FeatureExtractor(const std::shared_ptr<Ort::Env>& env) :
     InferenceSession(env) {
 }
 
-std::vector<float> LivePortrait::FeatureExtractor::extractFeature(const cv::Mat &frame) const {
+std::vector<float> LivePortrait::FeatureExtractor::extractFeature(const cv::Mat& frame) const {
     if (!isModelLoaded()) {
         throw std::runtime_error("Model is not loaded");
     }
@@ -142,18 +153,18 @@ std::vector<float> LivePortrait::FeatureExtractor::extractFeature(const cv::Mat 
     auto outputTensor = m_ortSession->Run(m_runOptions, m_inputNames.data(), inputTensors.data(), inputTensors.size(), m_outputNames.data(), m_outputNames.size());
     inputImageData.clear();
 
-    auto *outputData = outputTensor.front().GetTensorMutableData<float>();
+    auto* outputData = outputTensor.front().GetTensorMutableData<float>();
     constexpr size_t outputSize = 1 * 32 * 16 * 64 * 64;
     std::vector outputDataVec(outputData, outputData + outputSize);
 
     return outputDataVec;
 }
 
-LivePortrait::MotionExtractor::MotionExtractor(const std::shared_ptr<Ort::Env> &env) :
+LivePortrait::MotionExtractor::MotionExtractor(const std::shared_ptr<Ort::Env>& env) :
     InferenceSession(env) {
 }
 
-std::vector<std::vector<float>> LivePortrait::MotionExtractor::extractMotion(const cv::Mat &frame) const {
+std::vector<std::vector<float>> LivePortrait::MotionExtractor::extractMotion(const cv::Mat& frame) const {
     const int &width = m_inputNodeDims[0][2], &height = m_inputNodeDims[0][3];
     std::vector<float> inputImageData = getInputImageData(frame, cv::Size(width, height));
     std::vector<Ort::Value> inputTensors;
@@ -165,7 +176,7 @@ std::vector<std::vector<float>> LivePortrait::MotionExtractor::extractMotion(con
 
     std::vector<std::vector<float>> outputDataVec;
     for (size_t i = 0; i < m_outputNames.size(); ++i) {
-        auto *outputData = outputTensor[i].GetTensorMutableData<float>();
+        auto* outputData = outputTensor[i].GetTensorMutableData<float>();
         if (i == 0 || i == 1 || i == 2 || i == 3) {
             outputDataVec.emplace_back(outputData, outputData + 1);
         }
@@ -180,17 +191,17 @@ std::vector<std::vector<float>> LivePortrait::MotionExtractor::extractMotion(con
     return outputDataVec;
 }
 
-LivePortrait::Generator::Generator(const std::shared_ptr<Ort::Env> &env) :
+LivePortrait::Generator::Generator(const std::shared_ptr<Ort::Env>& env) :
     InferenceSession(env) {
 }
 
-cv::Mat LivePortrait::Generator::generateFrame(std::vector<float> &featureVolume,
-                                               std::vector<float> &sourceMotionPoints,
-                                               std::vector<float> &targetMotionPoints) const {
+cv::Mat LivePortrait::Generator::generateFrame(std::vector<float>& featureVolume,
+                                               std::vector<float>& sourceMotionPoints,
+                                               std::vector<float>& targetMotionPoints) const {
     std::vector<Ort::Value> inputTensors;
     const std::vector<int64_t> inputFeatureShape{1, 32, 16, 64, 64};
     const std::vector<int64_t> inputMotionShape{1, 21, 3};
-    for (const auto &name : m_inputNames) {
+    for (const auto& name : m_inputNames) {
         std::string nameStr(name);
         if (nameStr == "feature_volume") {
             inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo, featureVolume.data(), featureVolume.size(), inputFeatureShape.data(), inputFeatureShape.size()));
@@ -205,7 +216,7 @@ cv::Mat LivePortrait::Generator::generateFrame(std::vector<float> &featureVolume
 
     auto outputTensor = m_ortSession->Run(m_runOptions, m_inputNames.data(), inputTensors.data(), inputTensors.size(), m_outputNames.data(), m_outputNames.size());
 
-    auto *outputData = outputTensor.front().GetTensorMutableData<float>();
+    auto* outputData = outputTensor.front().GetTensorMutableData<float>();
     std::vector<int64_t> outsShape = outputTensor[0].GetTensorTypeAndShapeInfo().GetShape();
     const long long outputHeight = outsShape[2];
     const long long outputWidth = outsShape[3];
@@ -216,7 +227,7 @@ cv::Mat LivePortrait::Generator::generateFrame(std::vector<float> &featureVolume
     channelMats[2] = cv::Mat(outputHeight, outputWidth, CV_32FC1, outputData);                   // R
     channelMats[1] = cv::Mat(outputHeight, outputWidth, CV_32FC1, outputData + channelStep);     // G
     channelMats[0] = cv::Mat(outputHeight, outputWidth, CV_32FC1, outputData + 2 * channelStep); // B
-    for (auto &mat : channelMats) {
+    for (auto& mat : channelMats) {
         mat *= 255.f;
         mat.setTo(0, mat < 0);
         mat.setTo(255, mat > 255);
@@ -226,7 +237,7 @@ cv::Mat LivePortrait::Generator::generateFrame(std::vector<float> &featureVolume
     return resultMat;
 }
 
-std::vector<float> LivePortrait::getInputImageData(const cv::Mat &image, const cv::Size &size) {
+std::vector<float> LivePortrait::getInputImageData(const cv::Mat& image, const cv::Size& size) {
     cv::Mat inputImage;
     cv::resize(image, inputImage, size, cv::InterpolationFlags::INTER_AREA);
     std::vector<cv::Mat> bgrChannels(3);
@@ -238,9 +249,9 @@ std::vector<float> LivePortrait::getInputImageData(const cv::Mat &image, const c
     const int imageArea = inputImage.cols * inputImage.rows;
     std::vector<float> inputImageData(3 * imageArea);
     const size_t singleChnSize = imageArea * sizeof(float);
-    memcpy(inputImageData.data(), (float *)bgrChannels[2].data, singleChnSize);                 // R
-    memcpy(inputImageData.data() + imageArea, (float *)bgrChannels[1].data, singleChnSize);     // G
-    memcpy(inputImageData.data() + imageArea * 2, (float *)bgrChannels[0].data, singleChnSize); // B
+    memcpy(inputImageData.data(), (float*)bgrChannels[2].data, singleChnSize);                 // R
+    memcpy(inputImageData.data() + imageArea, (float*)bgrChannels[1].data, singleChnSize);     // G
+    memcpy(inputImageData.data() + imageArea * 2, (float*)bgrChannels[0].data, singleChnSize); // B
     return inputImageData;
 }
 
@@ -269,7 +280,7 @@ cv::Mat LivePortrait::createRotationMat(float pitch, float yaw, float roll) {
     return R;
 }
 
-cv::Mat LivePortrait::limitExpression(const cv::Mat &expression) {
+cv::Mat LivePortrait::limitExpression(const cv::Mat& expression) {
     static std::vector<float> expressionMin{
         -2.88067125e-02f, -8.12731311e-02f, -1.70541159e-03f,
         -4.88598682e-02f, -3.32196616e-02f, -1.67431499e-04f,

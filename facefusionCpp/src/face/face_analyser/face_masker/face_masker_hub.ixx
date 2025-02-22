@@ -33,7 +33,7 @@ public:
         Region
     };
 
-    struct Args4GetBestMask {
+    struct ArgsForGetBestMask {
         std::unordered_set<Type> faceMaskersTypes{Type::Box};
         std::optional<ModelManager::Model> occluder_model{std::nullopt};
         std::optional<ModelManager::Model> parser_model{std::nullopt};
@@ -57,7 +57,7 @@ public:
 
     static cv::Mat getBestMask(const std::vector<cv::Mat>& masks);
 
-    [[nodiscard]] cv::Mat getBestMask(const Args4GetBestMask& func_gbm_args);
+    [[nodiscard]] cv::Mat getBestMask(const ArgsForGetBestMask& func_gbm_args);
 
 private:
     std::shared_ptr<Ort::Env> m_env;

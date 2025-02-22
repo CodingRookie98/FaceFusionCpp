@@ -24,7 +24,7 @@ public:
 
     // Return the coordinates and confidence values for the 68 facial landmarks
     // 1st is landmark, 2nd is confidence
-    [[nodiscard]] std::tuple<Face::Landmark, float> detect(const cv::Mat &visionFrame, const Face::BBox &bBox) const;
+    [[nodiscard]] std::tuple<Face::Landmarks, float> detect(const cv::Mat &visionFrame, const Face::BBox &bBox) const;
 
     void loadModel(const std::string &modelPath, const Options &options) override;
 

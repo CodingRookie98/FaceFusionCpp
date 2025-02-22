@@ -53,16 +53,16 @@ FaceLandmarkerBase *FaceLandmarkerHub::getLandmarker(const FaceLandmarkerHub::La
     return m_landmarkers[type];
 }
 
-std::tuple<Face::Landmark, float>
+std::tuple<Face::Landmarks, float>
 FaceLandmarkerHub::detectLandmark68(const cv::Mat& visionFrame, const Face::BBox &bbox, const FaceLandmarkerHub::Options &options) {
-    std::vector<Face::Landmark> landmarks;
+    std::vector<Face::Landmarks> landmarks;
     std::vector<float> scores;
-    std::vector<std::future<std::tuple<Face::Landmark, float>>> futures;
+    std::vector<std::future<std::tuple<Face::Landmarks, float>>> futures;
     cv::Mat rotatedInverseMat;
     cv::Mat rotatedVisionFrame;
 
     if (options.angle != 0) {
-        auto [rotatedMat, rotatedSize] = FaceHelper::createRotatedMatAndSize(options.angle, visionFrame.size());
+        auto [rotatedMat, rotatedSize] = face_helper::createRotatedMatAndSize(options.angle, visionFrame.size());
         cv::warpAffine(visionFrame, rotatedVisionFrame, rotatedMat, rotatedSize);
         cv::invertAffineTransform(rotatedMat, rotatedInverseMat);
     } else {
@@ -81,7 +81,7 @@ FaceLandmarkerHub::detectLandmark68(const cv::Mat& visionFrame, const Face::BBox
     for (auto &future : futures) {
         auto [tempLandmark, tempScore] = future.get();
         if (options.angle != 0) {
-            tempLandmark = FaceHelper::transformPoints(tempLandmark, rotatedInverseMat);
+            tempLandmark = face_helper::transformPoints(tempLandmark, rotatedInverseMat);
         }
         landmarks.push_back(tempLandmark);
         scores.push_back(tempScore);
@@ -96,7 +96,7 @@ FaceLandmarkerHub::detectLandmark68(const cv::Mat& visionFrame, const Face::BBox
     return {landmarks[0], scores[0]};
 }
 
-Face::Landmark FaceLandmarkerHub::expandLandmark68By5(const Face::Landmark &landmark5) {
+Face::Landmarks FaceLandmarkerHub::expandLandmark68By5(const Face::Landmarks &landmark5) {
     auto landmarker68By5 = dynamic_cast<T68By5 *>(getLandmarker(LandmarkerModel::_68By5));
     return landmarker68By5->detect(landmark5);
 }

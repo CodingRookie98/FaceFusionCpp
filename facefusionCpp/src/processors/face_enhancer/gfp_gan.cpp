@@ -32,14 +32,14 @@ void GFP_GAN::loadModel(const std::string& modelPath, const Options& options) {
 }
 
 cv::Mat GFP_GAN::enhanceFace(const GFP_GAN_Input& input) const {
-    if (input.targetFrame == nullptr || input.targetFaces == nullptr) {
-        throw std::runtime_error("args.targetFrame or args.targetFaces is nullptr");
+    if (input.target_frame == nullptr) {
+        return {};
     }
-    if (input.targetFrame->empty() || input.targetFaces->empty()) {
-        throw std::runtime_error("args.targetFrame or args.targetFaces is empty");
+    if (input.target_frame->empty()) {
+        return {};
     }
-    if (input.faceBlend > 100) {
-        throw std::runtime_error("args.faceBlend is greater than 100");
+    if (input.target_faces_5_landmarks.empty()) {
+        return input.target_frame->clone();
     }
     if (!isModelLoaded()) {
         throw std::runtime_error("model is not loaded");
@@ -52,9 +52,9 @@ cv::Mat GFP_GAN::enhanceFace(const GFP_GAN_Input& input) const {
     std::vector<cv::Mat> affineMatrices;
     std::vector<cv::Mat> croppedResultFrames;
     std::vector<cv::Mat> bestMasks;
-    for (const auto& targetFace : *input.targetFaces) {
+    for (const auto& target_face_5_landmark : input.target_faces_5_landmarks) {
         cv::Mat croppedTargetFrame, affineMatrix;
-        std::tie(croppedTargetFrame, affineMatrix) = FaceHelper::warpFaceByFaceLandmarks5(*input.targetFrame, targetFace.m_landMark5By68, FaceHelper::getWarpTemplate(m_warpTemplateType), m_size);
+        std::tie(croppedTargetFrame, affineMatrix) = face_helper::warpFaceByFaceLandmarks5(*input.target_frame, target_face_5_landmark, face_helper::getWarpTemplate(m_warpTemplateType), m_size);
         croppedTargetFrames.emplace_back(croppedTargetFrame);
         affineMatrices.emplace_back(affineMatrix);
     }
@@ -62,7 +62,7 @@ cv::Mat GFP_GAN::enhanceFace(const GFP_GAN_Input& input) const {
         croppedResultFrames.emplace_back(applyEnhance(croppedTargetFrame));
     }
     for (auto& croppedTargetFrame : croppedTargetFrames) {
-        FaceMaskerHub::Args4GetBestMask args4_get_best_mask = input.args4_get_best_mask;
+        FaceMaskerHub::ArgsForGetBestMask args4_get_best_mask = input.args_for_get_best_mask;
         if (args4_get_best_mask.faceMaskersTypes.contains(FaceMaskerHub::Type::Region)) {
             args4_get_best_mask.faceMaskersTypes.erase(FaceMaskerHub::Type::Region);
         }
@@ -73,11 +73,15 @@ cv::Mat GFP_GAN::enhanceFace(const GFP_GAN_Input& input) const {
     if (croppedTargetFrames.size() != affineMatrices.size() || croppedTargetFrames.size() != croppedResultFrames.size() || croppedTargetFrames.size() != bestMasks.size()) {
         throw std::runtime_error("The size of croppedTargetFrames, affineMatrices, croppedResultFrames, and bestMasks must be equal.");
     }
-    cv::Mat resultFrame = input.targetFrame->clone();
+    cv::Mat resultFrame = input.target_frame->clone();
     for (size_t i = 0; i < bestMasks.size(); ++i) {
-        resultFrame = FaceHelper::pasteBack(resultFrame, croppedResultFrames[i], bestMasks[i], affineMatrices[i]);
+        resultFrame = face_helper::pasteBack(resultFrame, croppedResultFrames[i], bestMasks[i], affineMatrices[i]);
     }
-    resultFrame = blendFrame(*input.targetFrame, resultFrame, input.faceBlend);
+    if (input.faceBlend > 100) {
+        resultFrame = blendFrame(*input.target_frame, resultFrame, 100);
+    } else {
+        resultFrame = blendFrame(*input.target_frame, resultFrame, input.faceBlend);
+    }
     return resultFrame;
 }
 

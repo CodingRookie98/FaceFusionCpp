@@ -36,7 +36,7 @@ FaceClassifierHub::~FaceClassifierHub() {
 }
 
 FaceClassifierBase::Result
-FaceClassifierHub::classify(const cv::Mat &image, const Face::Landmark &faceLandmark5,
+FaceClassifierHub::classify(const cv::Mat &image, const Face::Landmarks &faceLandmark5,
                             const FaceClassifierHub::Type &type) {
     return getFaceClassifier(type)->classify(image, faceLandmark5);
 }

@@ -22,7 +22,7 @@ public:
     explicit Peppawutz(const std::shared_ptr<Ort::Env> &env = nullptr);
     ~Peppawutz() override = default;
 
-    std::tuple<Face::Landmark, float> detect(const cv::Mat &visionFrame, const Face::BBox &bBox) const;
+    std::tuple<Face::Landmarks, float> detect(const cv::Mat &visionFrame, const Face::BBox &bBox) const;
     void loadModel(const std::string &modelPath, const Options &options) override;
 
 private:

@@ -14,10 +14,7 @@ module;
 export module face_helper;
 export import face;
 
-export class FaceHelper {
-public:
-    FaceHelper() = default;
-    ~FaceHelper() = default;
+export namespace face_helper {
 
     enum class WarpTemplateType {
         Arcface_112_v1,
@@ -26,54 +23,53 @@ public:
         Ffhq_512,
     };
 
-    static std::vector<int>
+    std::vector<int>
     applyNms(const std::vector<Face::BBox> &boxes, std::vector<float> confidences, float nmsThresh);
 
     // return: 0->cropedVisionFrame, 1->affineMatrix
-    static std::tuple<cv::Mat, cv::Mat> warpFaceByFaceLandmarks5(const cv::Mat &tempVisionFrame,
-                                                                 const Face::Landmark &faceLandmark5,
+    std::tuple<cv::Mat, cv::Mat> warpFaceByFaceLandmarks5(const cv::Mat &tempVisionFrame,
+                                                                 const Face::Landmarks &faceLandmark5,
                                                                  const std::vector<cv::Point2f> &warpTemplate,
                                                                  const cv::Size &cropSize);
-    static std::tuple<cv::Mat, cv::Mat> warpFaceByFaceLandmarks5(const cv::Mat &tempVisionFrame,
-                                                                 const Face::Landmark &faceLandmark5,
+    std::tuple<cv::Mat, cv::Mat> warpFaceByFaceLandmarks5(const cv::Mat &tempVisionFrame,
+                                                                 const Face::Landmarks &faceLandmark5,
                                                                  const WarpTemplateType &warpTemplateType,
                                                                  const cv::Size &cropSize);
 
-    static cv::Mat estimateMatrixByFaceLandmark5(const Face::Landmark &landmark5,
+    cv::Mat estimateMatrixByFaceLandmark5(const Face::Landmarks &landmark5,
                                                  const std::vector<cv::Point2f> &warpTemplate,
                                                  const cv::Size &cropSize);
 
-    static std::tuple<cv::Mat, cv::Mat> warpFaceByTranslation(const cv::Mat &tempVisionFrame,
+    std::tuple<cv::Mat, cv::Mat> warpFaceByTranslation(const cv::Mat &tempVisionFrame,
                                                               const std::vector<float> &translation,
                                                               const float &scale,
                                                               const cv::Size &cropSize);
 
-    static Face::Landmark
-    convertFaceLandmark68To5(const Face::Landmark &faceLandmark68);
+    Face::Landmarks
+    convertFaceLandmark68To5(const Face::Landmarks &faceLandmark68);
 
-    static cv::Mat
+    cv::Mat
     pasteBack(const cv::Mat &tempVisionFrame, const cv::Mat &cropVisionFrame,
               const cv::Mat &cropMask, const cv::Mat &affineMatrix);
 
-    static std::vector<std::array<int, 2>>
+    std::vector<std::array<int, 2>>
     createStaticAnchors(const int &featureStride, const int &anchorTotal,
                         const int &strideHeight, const int &strideWidth);
 
-    static Face::BBox
+    Face::BBox
     distance2BBox(const std::array<int, 2> &anchor, const Face::BBox &bBox);
 
-    static Face::Landmark
-    distance2FaceLandmark5(const std::array<int, 2> &anchor, const Face::Landmark &faceLandmark5);
+    Face::Landmarks
+    distance2FaceLandmark5(const std::array<int, 2> &anchor, const Face::Landmarks &faceLandmark5);
 
-    static std::vector<cv::Point2f> getWarpTemplate(const WarpTemplateType &warpTemplateType);
-    static std::vector<float> calcAverageEmbedding(const std::vector<std::vector<float>> &embeddings);
-    static std::tuple<cv::Mat, cv::Size> createRotatedMatAndSize(const double &angle, const cv::Size &srcSize);
-    static Face::BBox transformBBox(const Face::BBox &bBox, const cv::Mat &affineMatrix);
-    static std::vector<cv::Point2f> transformPoints(const std::vector<cv::Point2f> &points,
+    std::vector<cv::Point2f> getWarpTemplate(const WarpTemplateType &warpTemplateType);
+    std::vector<float> calcAverageEmbedding(const std::vector<std::vector<float>> &embeddings);
+    std::tuple<cv::Mat, cv::Size> createRotatedMatAndSize(const double &angle, const cv::Size &srcSize);
+    Face::BBox transformBBox(const Face::BBox &bBox, const cv::Mat &affineMatrix);
+    std::vector<cv::Point2f> transformPoints(const std::vector<cv::Point2f> &points,
                                                     const cv::Mat &affineMatrix);
-    static std::vector<float> interp(const std::vector<float> &x, const std::vector<float> &xp,
+    std::vector<float> interp(const std::vector<float> &x, const std::vector<float> &xp,
                                      const std::vector<float> &fp);
 
-private:
-    static float getIoU(const Face::BBox &box1, const Face::BBox &box2);
-};
+    float getIoU(const Face::BBox &box1, const Face::BBox &box2);
+}

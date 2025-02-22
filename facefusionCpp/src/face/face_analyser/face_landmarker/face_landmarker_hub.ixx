@@ -37,8 +37,8 @@ public:
         float minScore{0.5f};
     };
 
-    Face::Landmark expandLandmark68By5(const Face::Landmark &landmark5);
-    std::tuple<Face::Landmark, float> detectLandmark68(const cv::Mat &visionFrame, const Face::BBox &bbox,
+    Face::Landmarks expandLandmark68By5(const Face::Landmarks &landmark5);
+    std::tuple<Face::Landmarks, float> detectLandmark68(const cv::Mat &visionFrame, const Face::BBox &bbox,
                                                        const Options &options);
 
 private:

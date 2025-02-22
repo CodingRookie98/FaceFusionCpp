@@ -28,11 +28,11 @@ void T68By5::loadModel(const std::string &modelPath, const Options &options) {
     m_inputWidth = m_inputNodeDims[0][2];
 }
 
-std::tuple<std::vector<float>, cv::Mat> T68By5::preProcess(const Face::Landmark &faceLandmark5) {
-    Face::Landmark landmark5 = faceLandmark5;
-    const std::vector<cv::Point2f> warpTemplate = FaceHelper::getWarpTemplate(FaceHelper::WarpTemplateType::Ffhq_512);
+std::tuple<std::vector<float>, cv::Mat> T68By5::preProcess(const Face::Landmarks &faceLandmark5) {
+    Face::Landmarks landmark5 = faceLandmark5;
+    const std::vector<cv::Point2f> warpTemplate = face_helper::getWarpTemplate(face_helper::WarpTemplateType::Ffhq_512);
 
-    cv::Mat affineMatrix = FaceHelper::estimateMatrixByFaceLandmark5(landmark5, warpTemplate, cv::Size(1, 1));
+    cv::Mat affineMatrix = face_helper::estimateMatrixByFaceLandmark5(landmark5, warpTemplate, cv::Size(1, 1));
     cv::transform(landmark5, landmark5, affineMatrix);
 
     std::vector<float> tensorData;
@@ -43,7 +43,7 @@ std::tuple<std::vector<float>, cv::Mat> T68By5::preProcess(const Face::Landmark 
     return std::make_tuple(tensorData, affineMatrix);
 }
 
-Face::Landmark T68By5::detect(const Face::Landmark &faceLandmark5) const {
+Face::Landmarks T68By5::detect(const Face::Landmarks &faceLandmark5) const {
     std::vector<float> inputTensorData;
     cv::Mat affineMatrix;
     std::tie(inputTensorData, affineMatrix) = this->preProcess(faceLandmark5);
@@ -57,7 +57,7 @@ Face::Landmark T68By5::detect(const Face::Landmark &faceLandmark5) const {
                                                              &inputTensor, 1, m_outputNames.data(),
                                                              m_outputNames.size());
     auto *pData = outputTensor[0].GetTensorMutableData<float>(); // shape(1, 68, 2);
-    Face::Landmark faceLandMark68_5;
+    Face::Landmarks faceLandMark68_5;
     for (int i = 0; i < 68; ++i) {
         faceLandMark68_5.emplace_back(pData[i * 2], pData[i * 2 + 1]);
     }

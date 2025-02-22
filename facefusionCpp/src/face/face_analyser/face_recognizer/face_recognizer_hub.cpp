@@ -46,7 +46,7 @@ FaceRecognizerBase *FaceRecognizerHub::getRecognizer(const FaceRecognizerHub::Ty
     return m_recognizers[type];
 }
 
-std::array<Face::Embedding, 2> FaceRecognizerHub::recognize(const cv::Mat &visionFrame, const Face::Landmark &faceLandmark5, const FaceRecognizerHub::Type &type) {
+std::array<Face::Embeddings, 2> FaceRecognizerHub::recognize(const cv::Mat &visionFrame, const Face::Landmarks &faceLandmark5, const FaceRecognizerHub::Type &type) {
     return getRecognizer(type)->recognize(visionFrame, faceLandmark5);
 }
 

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.31)
+cmake_minimum_required(VERSION 3.30)
 project(FaceFusionCpp
         VERSION 0.32.0
         DESCRIPTION "This project is the C++ version of the open-source project FaceFusion."
@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_compile_options(

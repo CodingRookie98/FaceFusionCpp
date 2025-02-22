@@ -22,19 +22,19 @@ public:
     explicit FairFace(const std::shared_ptr<Ort::Env> &env = nullptr);
     ~FairFace() override = default;
 
-    Result classify(const cv::Mat &image, const Face::Landmark &faceLandmark5) override;
+    Result classify(const cv::Mat &image, const Face::Landmarks &faceLandmark5) override;
 
     void loadModel(const std::string &modelPath, const Options &options) override;
 
 private:
-    FaceHelper::WarpTemplateType m_WarpTemplateType = FaceHelper::WarpTemplateType::Arcface_112_v2;
+    face_helper::WarpTemplateType m_WarpTemplateType = face_helper::WarpTemplateType::Arcface_112_v2;
     cv::Size m_size{224, 224};
     std::array<float, 3> m_mean{0.485, 0.456, 0.406};
     std::array<float, 3> m_standardDeviation{0.229, 0.224, 0.225};
     int m_inputWidth{0};
     int m_inputHeight{0};
 
-    std::vector<float> getInputImageData(const cv::Mat &image, const Face::Landmark &faceLandmark5) const;
+    std::vector<float> getInputImageData(const cv::Mat &image, const Face::Landmarks &faceLandmark5) const;
     static Face::Gender categorizeGender(const int64_t &genderId);
     static Face::Age categorizeAge(const int64_t &ageId);
     static Face::Race categorizeRace(const int64_t &raceId);

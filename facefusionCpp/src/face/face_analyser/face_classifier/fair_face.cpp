@@ -29,9 +29,9 @@ void FairFace::loadModel(const std::string &modelPath, const Options &options) {
     m_size = cv::Size(m_inputWidth, m_inputHeight);
 }
 
-std::vector<float> FairFace::getInputImageData(const cv::Mat &image, const Face::Landmark &faceLandmark5) const {
+std::vector<float> FairFace::getInputImageData(const cv::Mat &image, const Face::Landmarks &faceLandmark5) const {
     cv::Mat inputImage;
-    std::tie(inputImage, std::ignore) = FaceHelper::warpFaceByFaceLandmarks5(image, faceLandmark5, FaceHelper::getWarpTemplate(m_WarpTemplateType), m_size);
+    std::tie(inputImage, std::ignore) = face_helper::warpFaceByFaceLandmarks5(image, faceLandmark5, face_helper::getWarpTemplate(m_WarpTemplateType), m_size);
 
     std::vector<cv::Mat> inputChannels(3);
     cv::split(inputImage, inputChannels);
@@ -49,7 +49,7 @@ std::vector<float> FairFace::getInputImageData(const cv::Mat &image, const Face:
     return inputData;
 }
 
-FaceClassifierBase::Result FairFace::classify(const cv::Mat &image, const Face::Landmark &faceLandmark5) {
+FaceClassifierBase::Result FairFace::classify(const cv::Mat &image, const Face::Landmarks &faceLandmark5) {
     std::vector<Ort::Value> inputTensor;
     std::vector<int64_t> inputShape{1, 3, m_inputHeight, m_inputWidth};
     std::vector<float> inputData = getInputImageData(image, faceLandmark5);

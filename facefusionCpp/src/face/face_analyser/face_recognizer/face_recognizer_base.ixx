@@ -22,6 +22,6 @@ public:
     explicit FaceRecognizerBase(const std::shared_ptr<Ort::Env> &env = nullptr);
     ~FaceRecognizerBase() override = default;
 
-    virtual std::array<std::vector<float>, 2> recognize(const cv::Mat &visionFrame, const Face::Landmark &faceLandmark5) = 0;
+    virtual std::array<std::vector<float>, 2> recognize(const cv::Mat &visionFrame, const Face::Landmarks &faceLandmark5) = 0;
 };
 } // namespace ffc::face_recognizer

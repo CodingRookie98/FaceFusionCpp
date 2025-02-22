@@ -18,17 +18,17 @@ import inference_session;
 
 export namespace ffc::frameEnhancer {
 struct RealEsrGanInput {
-    cv::Mat *targetFrame = nullptr;
+    std::shared_ptr<cv::Mat> target_frame{nullptr};
     unsigned short blend{80};
 };
 
 class RealEsrGan final : public FrameEnhancerBase, public InferenceSession {
 public:
-    explicit RealEsrGan(const std::shared_ptr<Ort::Env> &env);
+    explicit RealEsrGan(const std::shared_ptr<Ort::Env>& env);
     ~RealEsrGan() override = default;
 
     [[nodiscard]] std::string getProcessorName() const override;
 
-    [[nodiscard]] cv::Mat enhanceFrame(const RealEsrGanInput &input) const;
+    [[nodiscard]] cv::Mat enhanceFrame(const RealEsrGanInput& input) const;
 };
-} // namespace frameEnhancer
+} // namespace ffc::frameEnhancer
