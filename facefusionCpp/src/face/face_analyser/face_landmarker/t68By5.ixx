@@ -23,7 +23,7 @@ public:
     ~T68By5() override = default;
 
     [[nodiscard]] Face::Landmarks detect(const Face::Landmarks &faceLandmark5) const;
-    void loadModel(const std::string &modelPath, const Options &options) override;
+    void LoadModel(const std::string &modelPath, const Options &options) override;
 
 private:
     static std::tuple<std::vector<float>, cv::Mat> preProcess(const Face::Landmarks &faceLandmark5);

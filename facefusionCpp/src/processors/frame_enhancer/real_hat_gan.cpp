@@ -39,11 +39,11 @@ cv::Mat RealHatGan::enhanceFrame(const RealHatGanInput& input) const {
         std::vector<float> inputImageData = getInputImageData(tileVisionFrames[i]);
         std::vector<int64_t> inputShape{1, 3, tileVisionFrames[i].cols, tileVisionFrames[i].rows};
         std::vector<Ort::Value> inputTensors;
-        inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo, inputImageData.data(), inputImageData.size(), inputShape.data(), inputShape.size()));
+        inputTensors.emplace_back(Ort::Value::CreateTensor<float>(memory_info_->GetConst(), inputImageData.data(), inputImageData.size(), inputShape.data(), inputShape.size()));
 
-        std::vector<Ort::Value> outputTensor = m_ortSession->Run(m_runOptions, m_inputNames.data(),
+        std::vector<Ort::Value> outputTensor = ort_session_->Run(run_options_, input_names_.data(),
                                                                  inputTensors.data(), inputTensors.size(),
-                                                                 m_outputNames.data(), m_outputNames.size());
+                                                                 output_names_.data(), output_names_.size());
         const float* outputData = outputTensor[0].GetTensorMutableData<float>();
         const int outputWidth = static_cast<int>(outputTensor[0].GetTensorTypeAndShapeInfo().GetShape()[2]);
         const int outputHeight = static_cast<int>(outputTensor[0].GetTensorTypeAndShapeInfo().GetShape()[3]);

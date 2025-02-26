@@ -42,7 +42,7 @@ public:
     // must loadModel before swapFace
     cv::Mat swapFace(const InSwapperInput& input);
 
-    void loadModel(const std::string& modelPath, const Options& options) override;
+    void LoadModel(const std::string& modelPath, const Options& options) override;
 
     [[nodiscard]] std::string getProcessorName() const override;
 

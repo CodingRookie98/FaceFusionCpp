@@ -24,10 +24,10 @@ GFP_GAN::GFP_GAN(const std::shared_ptr<Ort::Env>& env) :
 std::string GFP_GAN::getProcessorName() const {
     return "FaceEnhancer.GFP_GAN";
 }
-void GFP_GAN::loadModel(const std::string& modelPath, const Options& options) {
-    InferenceSession::loadModel(modelPath, options);
-    m_inputHeight = static_cast<int>(m_inputNodeDims[0][2]);
-    m_inputWidth = static_cast<int>(m_inputNodeDims[0][3]);
+void GFP_GAN::LoadModel(const std::string& modelPath, const Options& options) {
+    InferenceSession::LoadModel(modelPath, options);
+    m_inputHeight = static_cast<int>(input_node_dims_[0][2]);
+    m_inputWidth = static_cast<int>(input_node_dims_[0][3]);
     m_size = cv::Size(m_inputWidth, m_inputHeight);
 }
 
@@ -41,7 +41,7 @@ cv::Mat GFP_GAN::enhanceFace(const GFP_GAN_Input& input) const {
     if (input.target_faces_5_landmarks.empty()) {
         return input.target_frame->clone();
     }
-    if (!isModelLoaded()) {
+    if (!IsModelLoaded()) {
         throw std::runtime_error("model is not loaded");
     }
     if (!hasFaceMaskerHub()) {
@@ -89,13 +89,13 @@ cv::Mat GFP_GAN::applyEnhance(const cv::Mat& croppedFrame) const {
     std::vector<float> inputImageData = getInputImageData(croppedFrame);
     const std::vector<int64_t> inputDataShape{1, 3, m_inputHeight, m_inputWidth};
     std::vector<Ort::Value> inputTensors;
-    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo,
+    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(memory_info_->GetConst(),
                                                               inputImageData.data(), inputImageData.size(),
                                                               inputDataShape.data(), inputDataShape.size()));
 
-    std::vector<Ort::Value> outputTensor = m_ortSession->Run(m_runOptions, m_inputNames.data(),
+    std::vector<Ort::Value> outputTensor = ort_session_->Run(run_options_, input_names_.data(),
                                                              inputTensors.data(), inputTensors.size(),
-                                                             m_outputNames.data(), m_outputNames.size());
+                                                             output_names_.data(), output_names_.size());
 
     auto* pdata = outputTensor[0].GetTensorMutableData<float>();
     std::vector<int64_t> outsShape = outputTensor[0].GetTensorTypeAndShapeInfo().GetShape();

@@ -23,10 +23,10 @@ Scrfd::Scrfd(const std::shared_ptr<Ort::Env> &env) :
     FaceDetectorBase(env) {
 }
 
-void Scrfd::loadModel(const std::string &modelPath, const Options &options) {
-    FaceDetectorBase::loadModel(modelPath, options);
-    m_inputHeight = m_inputNodeDims[0][2];
-    m_inputWidth = m_inputNodeDims[0][3];
+void Scrfd::LoadModel(const std::string &modelPath, const Options &options) {
+    FaceDetectorBase::LoadModel(modelPath, options);
+    m_inputHeight = input_node_dims_[0][2];
+    m_inputWidth = input_node_dims_[0][3];
 }
 
 Scrfd::Result
@@ -44,9 +44,9 @@ Scrfd::detectFaces(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize,
     std::tie(inputData, ratioHeight, ratioWidth) = preProcess(visionFrame, faceDetectorSize);
 
     std::vector<int64_t> inputImgShape = {1, 3, faceDetectorSize.height, faceDetectorSize.width};
-    Ort::Value inputTensor = Ort::Value::CreateTensor<float>(m_memoryInfo, inputData.data(), inputData.size(), inputImgShape.data(), inputImgShape.size());
+    Ort::Value inputTensor = Ort::Value::CreateTensor<float>(memory_info_->GetConst(), inputData.data(), inputData.size(), inputImgShape.data(), inputImgShape.size());
 
-    std::vector<Ort::Value> ortOutputs = m_ortSession->Run(m_runOptions, m_inputNames.data(), &inputTensor, 1, m_outputNames.data(), m_outputNames.size());
+    std::vector<Ort::Value> ortOutputs = ort_session_->Run(run_options_, input_names_.data(), &inputTensor, 1, output_names_.data(), output_names_.size());
 
     std::vector<Face::BBox> resultBoundingBoxes;
     std::vector<Face::Landmarks> resultFaceLandmarks;

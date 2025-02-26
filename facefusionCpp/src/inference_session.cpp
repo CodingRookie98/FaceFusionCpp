@@ -14,90 +14,88 @@ module;
 #include <mutex>
 #include <onnxruntime_cxx_api.h>
 
-#include <unordered_set>
-#include <filesystem>
-
 module inference_session;
 
 namespace ffc {
-InferenceSession::InferenceSession(const std::shared_ptr<Ort::Env> &env) {
-    m_env = env;
-    m_sessionOptions = Ort::SessionOptions();
-    m_sessionOptions.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
+InferenceSession::InferenceSession(const std::shared_ptr<Ort::Env>& env) {
+    ort_env_ = env;
+    session_options_ = Ort::SessionOptions();
+    session_options_.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
     auto availableProviders = Ort::GetAvailableProviders();
-    m_availableProviders.insert(availableProviders.begin(), availableProviders.end());
-    m_logger = Logger::getInstance();
+    available_providers_.insert(availableProviders.begin(), availableProviders.end());
+    logger_ = Logger::getInstance();
+    memory_info_ = std::make_unique<Ort::MemoryInfo>(Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault));
 }
 
-void InferenceSession::loadModel(const std::string &modelPath, const Options &options) {
-    if (modelPath.empty()) {
+void InferenceSession::LoadModel(const std::string& model_path, const Options& options) {
+    if (model_path.empty()) {
         throw std::runtime_error("modelPath is empty");
     }
-    if (!std::filesystem::exists(modelPath)) {
-        throw std::runtime_error(std::format("modelPath: {} does not exist", modelPath));
+    if (!std::filesystem::exists(model_path)) {
+        throw std::runtime_error(std::format("modelPath: {} does not exist", model_path));
     }
 
-    std::lock_guard lock(m_mutex);
-    if (m_env == nullptr) {
-        m_env = std::make_shared<Ort::Env>(Ort::Env(ORT_LOGGING_LEVEL_WARNING, typeid(*this).name()));
+    std::lock_guard lock(mutex_);
+    if (ort_env_ == nullptr) {
+        ort_env_ = std::make_shared<Ort::Env>(Ort::Env(ORT_LOGGING_LEVEL_WARNING, typeid(*this).name()));
     }
 
-    m_options = options;
-    if (m_options.executionProviders.contains(ExecutionProvider::TensorRT)) {
-        appendProviderTensorrt();
+    options_ = options;
+    if (options_.execution_providers.contains(ExecutionProvider::TensorRT)) {
+        AppendProviderTensorrt();
     }
-    if (m_options.executionProviders.contains(ExecutionProvider::CUDA)) {
-        appendProviderCUDA();
+    if (options_.execution_providers.contains(ExecutionProvider::CUDA)) {
+        AppendProviderCuda();
     }
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
     // windows
-    const std::wstring wideModelPath(modelPath.begin(), modelPath.end());
+    const std::wstring wideModelPath(model_path.begin(), model_path.end());
     try {
-        m_ortSession = std::make_unique<Ort::Session>(*m_env, wideModelPath.c_str(), m_sessionOptions);
-    } catch (const Ort::Exception &e) {
-        m_logger->error(std::format("CreateSession: Ort::Exception: {}", e.what()));
+        ort_session_ = std::make_unique<Ort::Session>(*ort_env_, wideModelPath.c_str(), session_options_);
+    } catch (const Ort::Exception& e) {
+        logger_->error(std::format("CreateSession: Ort::Exception: {}", e.what()));
         return;
-    } catch (const std::exception &e) {
-        m_logger->error(std::format("CreateSession: std::exception: {}", e.what()));
+    } catch (const std::exception& e) {
+        logger_->error(std::format("CreateSession: std::exception: {}", e.what()));
         return;
     } catch (...) {
-        m_logger->error("CreateSession: Unknown exception occurred.");
+        logger_->error("CreateSession: Unknown exception occurred.");
         return;
     }
 #else
     // linux
-    m_ortSession = std::make_unique<Ort::Session>(Ort::Session(*m_env, modelPath.c_str(), m_sessionOptions));
+    ort_session_ = std::make_unique<Ort::Session>(Ort::Session(*m_env, modelPath.c_str(), session_options_));
 #endif
 
-    const size_t numInputNodes = m_ortSession->GetInputCount();
-    const size_t numOutputNodes = m_ortSession->GetOutputCount();
+    const size_t numInputNodes = ort_session_->GetInputCount();
+    const size_t numOutputNodes = ort_session_->GetOutputCount();
 
-    m_inputNames.reserve(numInputNodes);
-    m_outputNames.reserve(numOutputNodes);
-    m_inputNamesPtrs.reserve(numInputNodes);
-    m_outputNamesPtrs.reserve(numOutputNodes);
+    input_names_.reserve(numInputNodes);
+    output_names_.reserve(numOutputNodes);
+    input_names_ptrs_.reserve(numInputNodes);
+    output_names_ptrs_.reserve(numOutputNodes);
 
     Ort::AllocatorWithDefaultOptions allocator;
     for (size_t i = 0; i < numInputNodes; i++) {
-        m_inputNamesPtrs.push_back(std::move(m_ortSession->GetInputNameAllocated(i, allocator)));
-        m_inputNames.push_back(m_inputNamesPtrs[i].get());
-        Ort::TypeInfo inputTypeInfo = m_ortSession->GetInputTypeInfo(i);
+        input_names_ptrs_.push_back(std::move(ort_session_->GetInputNameAllocated(i, allocator)));
+        input_names_.push_back(input_names_ptrs_[i].get());
+        Ort::TypeInfo inputTypeInfo = ort_session_->GetInputTypeInfo(i);
         auto inputTensorInfo = inputTypeInfo.GetTensorTypeAndShapeInfo();
         auto inputDims = inputTensorInfo.GetShape();
-        m_inputNodeDims.push_back(inputDims);
+        input_node_dims_.push_back(inputDims);
     }
     for (size_t i = 0; i < numOutputNodes; i++) {
-        m_outputNamesPtrs.push_back(std::move(m_ortSession->GetOutputNameAllocated(i, allocator)));
-        m_outputNames.push_back(m_outputNamesPtrs[i].get());
-        Ort::TypeInfo outputTypeInfo = m_ortSession->GetOutputTypeInfo(i);
+        output_names_ptrs_.push_back(std::move(ort_session_->GetOutputNameAllocated(i, allocator)));
+        output_names_.push_back(output_names_ptrs_[i].get());
+        Ort::TypeInfo outputTypeInfo = ort_session_->GetOutputTypeInfo(i);
         auto outputTensorInfo = outputTypeInfo.GetTensorTypeAndShapeInfo();
         auto outputDims = outputTensorInfo.GetShape();
-        m_outputNodeDims.push_back(outputDims);
+        output_node_dims_.push_back(outputDims);
     }
 
-    std::string infoMsg = "Model loaded: " + modelPath + ", Providers: ";
-    for (const auto &provider : options.executionProviders) {
+    std::string infoMsg = "Model loaded: " + model_path + ", Providers: ";
+    for (const auto& provider : options.execution_providers) {
         switch (provider) {
         case ExecutionProvider::CPU:
             infoMsg += "CPU ";
@@ -113,57 +111,57 @@ void InferenceSession::loadModel(const std::string &modelPath, const Options &op
         }
     }
 
-    m_logger->trace(infoMsg);
-    m_isModelLoaded = true;
-    m_modelPath = modelPath;
+    logger_->trace(infoMsg);
+    is_model_loaded_ = true;
+    model_path_ = model_path;
 }
 
-void InferenceSession::appendProviderCUDA() {
-    if (!m_availableProviders.contains("CUDAExecutionProvider")) {
-        m_logger->error("CUDA execution provider is not available in your environment.");
+void InferenceSession::AppendProviderCuda() {
+    if (!available_providers_.contains("CUDAExecutionProvider")) {
+        logger_->error("CUDA execution provider is not available in your environment.");
         return;
     }
-    m_cudaProviderOptions = std::make_unique<OrtCUDAProviderOptions>();
-    m_cudaProviderOptions->device_id = m_options.executionDeviceId;
-    if (m_options.trtMaxWorkspaceSize > 0) {
-        m_cudaProviderOptions->gpu_mem_limit = m_options.trtMaxWorkspaceSize * (1 << 30);
+    cuda_provider_options_ = std::make_unique<OrtCUDAProviderOptions>();
+    cuda_provider_options_->device_id = options_.execution_device_id;
+    if (options_.trt_max_workspace_size > 0) {
+        cuda_provider_options_->gpu_mem_limit = options_.trt_max_workspace_size * (1 << 30);
     }
     try {
-        m_sessionOptions.AppendExecutionProvider_CUDA(*m_cudaProviderOptions);
-    } catch (const Ort::Exception &e) {
-        m_logger->error(std::format("AppendExecutionProvider_CUDA: Ort::Exception: {}", e.what()));
+        session_options_.AppendExecutionProvider_CUDA(*cuda_provider_options_);
+    } catch (const Ort::Exception& e) {
+        logger_->error(std::format("AppendExecutionProvider_CUDA: Ort::Exception: {}", e.what()));
         throw std::runtime_error(e.what());
     }
 }
 
-void InferenceSession::appendProviderTensorrt() {
-    if (!m_availableProviders.contains("TensorrtExecutionProvider")) {
-        m_logger->error("TensorRT execution provider is not available in your environment.");
+void InferenceSession::AppendProviderTensorrt() {
+    if (!available_providers_.contains("TensorrtExecutionProvider")) {
+        logger_->error("TensorRT execution provider is not available in your environment.");
         return;
     }
-    std::vector<const char *> keys;
-    std::vector<const char *> values;
-    const auto &api = Ort::GetApi();
-    OrtTensorRTProviderOptionsV2 *tensorrtProviderOptionsV2;
+    std::vector<const char*> keys;
+    std::vector<const char*> values;
+    const auto& api = Ort::GetApi();
+    OrtTensorRTProviderOptionsV2* tensorrtProviderOptionsV2;
     api.CreateTensorRTProviderOptions(&tensorrtProviderOptionsV2);
 
     std::string trtMaxWorkSpaceSiz;
-    if (m_options.trtMaxWorkspaceSize > 0) {
-        trtMaxWorkSpaceSiz = std::to_string(m_options.trtMaxWorkspaceSize);
+    if (options_.trt_max_workspace_size > 0) {
+        trtMaxWorkSpaceSiz = std::to_string(options_.trt_max_workspace_size);
         keys.emplace_back("trt_max_workspace_size");
         values.emplace_back(trtMaxWorkSpaceSiz.c_str());
     }
 
-    const std::string deviceId = std::to_string(m_options.executionDeviceId);
+    const std::string deviceId = std::to_string(options_.execution_device_id);
     keys.emplace_back("device_id");
     values.emplace_back(deviceId.c_str());
 
     std::string enableTensorrtCache;
     std::string enableTensorrtEmbedEngine;
     std::string tensorrtEmbedEnginePath;
-    if (m_options.enableTensorrtEmbedEngine) {
-        enableTensorrtCache = std::to_string(m_options.enableTensorrtCache);
-        enableTensorrtEmbedEngine = std::to_string(m_options.enableTensorrtEmbedEngine);
+    if (options_.enable_tensorrt_embed_engine) {
+        enableTensorrtCache = std::to_string(options_.enable_tensorrt_cache);
+        enableTensorrtEmbedEngine = std::to_string(options_.enable_tensorrt_embed_engine);
         tensorrtEmbedEnginePath = "./trt_engine_cache";
 
         keys.emplace_back("trt_engine_cache_enable");
@@ -175,7 +173,7 @@ void InferenceSession::appendProviderTensorrt() {
     }
 
     std::string tensorrtCachePath;
-    if (m_options.enableTensorrtCache) {
+    if (options_.enable_tensorrt_cache) {
         if (enableTensorrtEmbedEngine.empty()) {
             keys.emplace_back("trt_engine_cache_enable");
             values.emplace_back("1");
@@ -191,25 +189,25 @@ void InferenceSession::appendProviderTensorrt() {
     try {
         Ort::ThrowOnError(api.UpdateTensorRTProviderOptions(tensorrtProviderOptionsV2,
                                                             keys.data(), values.data(), keys.size()));
-        m_sessionOptions.AppendExecutionProvider_TensorRT_V2(*tensorrtProviderOptionsV2);
-    } catch (const Ort::Exception &e) {
-        m_logger->warn(std::format("Failed to append TensorRT execution provider: {}", e.what()));
+        session_options_.AppendExecutionProvider_TensorRT_V2(*tensorrtProviderOptionsV2);
+    } catch (const Ort::Exception& e) {
+        logger_->warn(std::format("Failed to append TensorRT execution provider: {}", e.what()));
         throw std::runtime_error(e.what());
-    } catch (const std::exception &e) {
-        m_logger->warn(std::format("Failed to append TensorRT execution provider: {}", e.what()));
+    } catch (const std::exception& e) {
+        logger_->warn(std::format("Failed to append TensorRT execution provider: {}", e.what()));
         throw std::runtime_error(e.what());
     } catch (...) {
-        m_logger->error("Failed to append TensorRT execution provider: Unknown error");
+        logger_->error("Failed to append TensorRT execution provider: Unknown error");
         throw std::runtime_error("Failed to append TensorRT execution provider: Unknown error");
     }
     api.ReleaseTensorRTProviderOptions(tensorrtProviderOptionsV2);
 }
 
-bool InferenceSession::isModelLoaded() const {
-    return m_isModelLoaded;
+bool InferenceSession::IsModelLoaded() const {
+    return is_model_loaded_;
 }
 
-std::string InferenceSession::getModelPath() const {
-    return m_modelPath;
+std::string InferenceSession::GetModelPath() const {
+    return model_path_;
 }
 } // namespace ffc

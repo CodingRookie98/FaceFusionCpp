@@ -21,24 +21,24 @@ FaceMaskerRegion::FaceMaskerRegion(const std::shared_ptr<Ort::Env> &env) :
     FaceMaskerBase(env) {
 }
 
-void FaceMaskerRegion::loadModel(const std::string &modelPath, const Options &options) {
-    FaceMaskerBase::loadModel(modelPath, options);
-    m_inputHeight = m_inputNodeDims[0][2];
-    m_inputWidth = m_inputNodeDims[0][3];
+void FaceMaskerRegion::LoadModel(const std::string &modelPath, const Options &options) {
+    FaceMaskerBase::LoadModel(modelPath, options);
+    m_inputHeight = input_node_dims_[0][2];
+    m_inputWidth = input_node_dims_[0][3];
 }
 
 cv::Mat FaceMaskerRegion::createRegionMask(const cv::Mat &inputImage, const std::unordered_set<Region> &regions) const {
     std::vector<float> inputImageData = getInputImageData(inputImage);
     std::vector<int64_t> inputImageShape{1, 3, m_inputWidth, m_inputHeight};
     std::vector<Ort::Value> inputTensors;
-    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo, inputImageData.data(),
+    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(memory_info_->GetConst(), inputImageData.data(),
                                                               inputImageData.size(),
                                                               inputImageShape.data(),
                                                               inputImageShape.size()));
 
-    std::vector<Ort::Value> outputTensors = m_ortSession->Run(m_runOptions, m_inputNames.data(),
+    std::vector<Ort::Value> outputTensors = ort_session_->Run(run_options_, input_names_.data(),
                                                               inputTensors.data(), inputTensors.size(),
-                                                              m_outputNames.data(), m_outputNames.size());
+                                                              output_names_.data(), output_names_.size());
 
     auto *pdata = outputTensors[0].GetTensorMutableData<float>();
     const std::vector<int64_t> outsShape = outputTensors[0].GetTensorTypeAndShapeInfo().GetShape();

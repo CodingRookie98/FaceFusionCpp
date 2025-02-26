@@ -81,7 +81,7 @@ ProcessorPool::getFaceSwapper(const FaceSwapperType &_faceSwapperType, const Mod
             throw std::invalid_argument("model is not supported for inswapper!");
         }
         const auto inSwapper = std::make_shared<InSwapper>(env_);
-        inSwapper->loadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
+        inSwapper->LoadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
         if (!inSwapper->hasFaceMaskerHub()) {
             inSwapper->setFaceMaskerHub(faceMaskerHub_);
         }
@@ -111,7 +111,7 @@ ProcessorPool::getFaceEnhancer(const FaceEnhancerType &_faceEnhancerType,
             throw std::invalid_argument("model is not supported for codeformer!");
         }
         const auto codeFormer = std::make_shared<CodeFormer>(env_);
-        codeFormer->loadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
+        codeFormer->LoadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
         if (!codeFormer->hasFaceMaskerHub()) {
             codeFormer->setFaceMaskerHub(faceMaskerHub_);
         }
@@ -123,7 +123,7 @@ ProcessorPool::getFaceEnhancer(const FaceEnhancerType &_faceEnhancerType,
             throw std::invalid_argument("model is not supported for gfpgan!");
         }
         const auto gfpgan = std::make_shared<GFP_GAN>(env_);
-        gfpgan->loadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
+        gfpgan->LoadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
         if (!gfpgan->hasFaceMaskerHub()) {
             gfpgan->setFaceMaskerHub(faceMaskerHub_);
         }
@@ -202,7 +202,7 @@ ProcessorPool::getFrameEnhancer(const FrameEnhancerType &_frameEnhancerType,
         }
 
         const auto realEsrGan = std::make_shared<RealEsrGan>(env_);
-        realEsrGan->loadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
+        realEsrGan->LoadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
         if (_model == ModelManager::Model::Real_esrgan_x2
             || _model == ModelManager::Model::Real_esrgan_x2_fp16) {
             realEsrGan->setModelScale(2);
@@ -227,7 +227,7 @@ ProcessorPool::getFrameEnhancer(const FrameEnhancerType &_frameEnhancerType,
             throw std::invalid_argument("model is not supported for real_hat_gan!");
         }
         const auto realHatGAN = std::make_shared<RealHatGan>(env_);
-        realHatGAN->loadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
+        realHatGAN->LoadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
         if (_model == ModelManager::Model::Real_hatgan_x4) {
             realHatGAN->setModelScale(4);
             realHatGAN->setTileSize({256, 16, 8});

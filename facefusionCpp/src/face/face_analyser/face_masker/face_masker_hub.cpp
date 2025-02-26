@@ -43,11 +43,11 @@ FaceMaskerBase* FaceMaskerHub::getMasker(const FaceMaskerHub::Type& type, const 
     FaceMaskerBase* masker = nullptr;
     if (type == Type::Region) {
         masker = new FaceMaskerRegion(m_env);
-        masker->loadModel(modelManager->getModelPath(model), m_options);
+        masker->LoadModel(modelManager->getModelPath(model), m_options);
     }
     if (type == Type::Occlusion) {
         masker = new Occlusion(m_env);
-        masker->loadModel(modelManager->getModelPath(model), m_options);
+        masker->LoadModel(modelManager->getModelPath(model), m_options);
     }
     if (masker != nullptr) {
         m_maskers[type] = masker;

@@ -22,21 +22,21 @@ Peppawutz::Peppawutz(const std::shared_ptr<Ort::Env> &env) :
     FaceLandmarkerBase(env) {
 }
 
-void Peppawutz::loadModel(const std::string &modelPath, const Options &options) {
-    FaceLandmarkerBase::loadModel(modelPath, options);
-    m_inputHeight = m_inputNodeDims[0][2];
-    m_inputWidth = m_inputNodeDims[0][3];
+void Peppawutz::LoadModel(const std::string &modelPath, const Options &options) {
+    FaceLandmarkerBase::LoadModel(modelPath, options);
+    m_inputHeight = input_node_dims_[0][2];
+    m_inputWidth = input_node_dims_[0][3];
     m_inputSize = cv::Size(m_inputWidth, m_inputHeight);
 }
 
 std::tuple<Face::Landmarks, float> Peppawutz::detect(const cv::Mat &visionFrame, const Face::BBox &bBox) const {
     auto [inputData, invAffineMatrix] = preProcess(visionFrame, bBox);
     std::vector<int64_t> inputImgShape = {1, 3, m_inputHeight, m_inputWidth};
-    Ort::Value inputTensor = Ort::Value::CreateTensor<float>(m_memoryInfo, inputData.data(), inputData.size(), inputImgShape.data(), inputImgShape.size());
+    Ort::Value inputTensor = Ort::Value::CreateTensor<float>(memory_info_->GetConst(), inputData.data(), inputData.size(), inputImgShape.data(), inputImgShape.size());
 
-    std::vector<Ort::Value> ortOutputs = m_ortSession->Run(m_runOptions, m_inputNames.data(),
-                                                           &inputTensor, 1, m_outputNames.data(),
-                                                           m_outputNames.size());
+    std::vector<Ort::Value> ortOutputs = ort_session_->Run(run_options_, input_names_.data(),
+                                                           &inputTensor, 1, output_names_.data(),
+                                                           output_names_.size());
 
     float *landmark68Data = ortOutputs[0].GetTensorMutableData<float>(); /// 形状是(1, 68, 3), 每一行的长度是3，表示一个关键点坐标x,y和置信度
     const int numPoints = ortOutputs[0].GetTensorTypeAndShapeInfo().GetShape()[1];

@@ -24,7 +24,7 @@ public:
 
     Result detectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
                        const float& scoreThreshold) override;
-    void loadModel(const std::string& modelPath, const Options& options) override;
+    void LoadModel(const std::string& modelPath, const Options& options) override;
 
     static inline std::vector<cv::Size> GetSupportSizes() {
         return {{640, 640}};

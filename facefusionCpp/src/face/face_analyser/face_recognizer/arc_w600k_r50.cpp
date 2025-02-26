@@ -21,10 +21,10 @@ ArcW600kR50::ArcW600kR50(const std::shared_ptr<Ort::Env> &env) :
     FaceRecognizerBase(env) {
 }
 
-void ArcW600kR50::loadModel(const std::string &modelPath, const Options &options) {
-    FaceRecognizerBase::loadModel(modelPath, options);
-    m_inputWidth = static_cast<int>(m_inputNodeDims[0][2]);
-    m_inputHeight = static_cast<int>(m_inputNodeDims[0][3]);
+void ArcW600kR50::LoadModel(const std::string &modelPath, const Options &options) {
+    FaceRecognizerBase::LoadModel(modelPath, options);
+    m_inputWidth = static_cast<int>(input_node_dims_[0][2]);
+    m_inputHeight = static_cast<int>(input_node_dims_[0][3]);
 }
 
 std::vector<float> ArcW600kR50::preProcess(const cv::Mat &visionFrame, const Face::Landmarks &faceLandmark5_68) const {
@@ -52,13 +52,13 @@ std::vector<float> ArcW600kR50::preProcess(const cv::Mat &visionFrame, const Fac
 std::array<std::vector<float>, 2> ArcW600kR50::recognize(const cv::Mat &visionFrame, const Face::Landmarks &faceLandmark5) {
     std::vector<float> inputData = this->preProcess(visionFrame, faceLandmark5);
     const std::vector<int64_t> inputImgShape{1, 3, this->m_inputHeight, this->m_inputWidth};
-    const Ort::Value inputTensor = Ort::Value::CreateTensor<float>(m_memoryInfo, inputData.data(),
+    const Ort::Value inputTensor = Ort::Value::CreateTensor<float>(memory_info_->GetConst(), inputData.data(),
                                                                    inputData.size(), inputImgShape.data(),
                                                                    inputImgShape.size());
 
-    std::vector<Ort::Value> ortOutputs = m_ortSession->Run(m_runOptions, m_inputNames.data(),
-                                                           &inputTensor, 1, m_outputNames.data(),
-                                                           m_outputNames.size());
+    std::vector<Ort::Value> ortOutputs = ort_session_->Run(run_options_, input_names_.data(),
+                                                           &inputTensor, 1, output_names_.data(),
+                                                           output_names_.size());
 
     auto *pdata = ortOutputs[0].GetTensorMutableData<float>(); /// 形状是(1, 512)
     const int lenFeature = ortOutputs[0].GetTensorTypeAndShapeInfo().GetShape()[1];

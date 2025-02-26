@@ -28,9 +28,9 @@ std::string LivePortrait::getProcessorName() const {
 }
 
 void LivePortrait::loadModel(const std::string& featureExtractorPath, const std::string& motionExtractorPath, const std::string& generatorPath, const ffc::InferenceSession::Options& options) {
-    m_featureExtractor.loadModel(featureExtractorPath, options);
-    m_motionExtractor.loadModel(motionExtractorPath, options);
-    m_generator.loadModel(generatorPath, options);
+    m_featureExtractor.LoadModel(featureExtractorPath, options);
+    m_motionExtractor.LoadModel(motionExtractorPath, options);
+    m_generator.LoadModel(generatorPath, options);
     m_generatorOutputSize = m_generator.getOutputSize();
 }
 
@@ -51,7 +51,7 @@ cv::Mat LivePortrait::restoreExpression(const LivePortraitInput& input) {
         return input.target_frame->clone();
     }
 
-    if (!m_featureExtractor.isModelLoaded() || !m_motionExtractor.isModelLoaded() || !m_generator.isModelLoaded()) {
+    if (!m_featureExtractor.IsModelLoaded() || !m_motionExtractor.IsModelLoaded() || !m_generator.IsModelLoaded()) {
         throw std::runtime_error(std::format("File: {}, Line: {}, Error: models is not loaded!", __FILE__, __LINE__));
     }
 
@@ -146,16 +146,16 @@ LivePortrait::FeatureExtractor::FeatureExtractor(const std::shared_ptr<Ort::Env>
 }
 
 std::vector<float> LivePortrait::FeatureExtractor::extractFeature(const cv::Mat& frame) const {
-    if (!isModelLoaded()) {
+    if (!IsModelLoaded()) {
         throw std::runtime_error("Model is not loaded");
     }
-    const int &width = m_inputNodeDims[0][2], &height = m_inputNodeDims[0][3];
+    const int &width = input_node_dims_[0][2], &height = input_node_dims_[0][3];
     std::vector<float> inputImageData = getInputImageData(frame, cv::Size(width, height));
     std::vector<Ort::Value> inputTensors;
     const std::vector<int64_t> inputShape = {1, 3, width, height};
-    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo, inputImageData.data(), inputImageData.size(), inputShape.data(), inputShape.size()));
+    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(memory_info_->GetConst(), inputImageData.data(), inputImageData.size(), inputShape.data(), inputShape.size()));
 
-    auto outputTensor = m_ortSession->Run(m_runOptions, m_inputNames.data(), inputTensors.data(), inputTensors.size(), m_outputNames.data(), m_outputNames.size());
+    auto outputTensor = ort_session_->Run(run_options_, input_names_.data(), inputTensors.data(), inputTensors.size(), output_names_.data(), output_names_.size());
     inputImageData.clear();
 
     auto* outputData = outputTensor.front().GetTensorMutableData<float>();
@@ -170,17 +170,17 @@ LivePortrait::MotionExtractor::MotionExtractor(const std::shared_ptr<Ort::Env>& 
 }
 
 std::vector<std::vector<float>> LivePortrait::MotionExtractor::extractMotion(const cv::Mat& frame) const {
-    const int &width = m_inputNodeDims[0][2], &height = m_inputNodeDims[0][3];
+    const int &width = input_node_dims_[0][2], &height = input_node_dims_[0][3];
     std::vector<float> inputImageData = getInputImageData(frame, cv::Size(width, height));
     std::vector<Ort::Value> inputTensors;
     const std::vector<int64_t> inputShape = {1, 3, width, height};
-    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo, inputImageData.data(), inputImageData.size(), inputShape.data(), inputShape.size()));
+    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(memory_info_->GetConst(), inputImageData.data(), inputImageData.size(), inputShape.data(), inputShape.size()));
 
-    auto outputTensor = m_ortSession->Run(m_runOptions, m_inputNames.data(), inputTensors.data(), inputTensors.size(), m_outputNames.data(), m_outputNames.size());
+    auto outputTensor = ort_session_->Run(run_options_, input_names_.data(), inputTensors.data(), inputTensors.size(), output_names_.data(), output_names_.size());
     inputImageData.clear();
 
     std::vector<std::vector<float>> outputDataVec;
-    for (size_t i = 0; i < m_outputNames.size(); ++i) {
+    for (size_t i = 0; i < output_names_.size(); ++i) {
         auto* outputData = outputTensor[i].GetTensorMutableData<float>();
         if (i == 0 || i == 1 || i == 2 || i == 3) {
             outputDataVec.emplace_back(outputData, outputData + 1);
@@ -206,20 +206,20 @@ cv::Mat LivePortrait::Generator::generateFrame(std::vector<float>& featureVolume
     std::vector<Ort::Value> inputTensors;
     const std::vector<int64_t> inputFeatureShape{1, 32, 16, 64, 64};
     const std::vector<int64_t> inputMotionShape{1, 21, 3};
-    for (const auto& name : m_inputNames) {
+    for (const auto& name : input_names_) {
         std::string nameStr(name);
         if (nameStr == "feature_volume") {
-            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo, featureVolume.data(), featureVolume.size(), inputFeatureShape.data(), inputFeatureShape.size()));
+            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(memory_info_->GetConst(), featureVolume.data(), featureVolume.size(), inputFeatureShape.data(), inputFeatureShape.size()));
         }
         if (nameStr == "source") {
-            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo, sourceMotionPoints.data(), sourceMotionPoints.size(), inputMotionShape.data(), inputMotionShape.size()));
+            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(memory_info_->GetConst(), sourceMotionPoints.data(), sourceMotionPoints.size(), inputMotionShape.data(), inputMotionShape.size()));
         }
         if (nameStr == "target") {
-            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo, targetMotionPoints.data(), targetMotionPoints.size(), inputMotionShape.data(), inputMotionShape.size()));
+            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(memory_info_->GetConst(), targetMotionPoints.data(), targetMotionPoints.size(), inputMotionShape.data(), inputMotionShape.size()));
         }
     }
 
-    auto outputTensor = m_ortSession->Run(m_runOptions, m_inputNames.data(), inputTensors.data(), inputTensors.size(), m_outputNames.data(), m_outputNames.size());
+    auto outputTensor = ort_session_->Run(run_options_, input_names_.data(), inputTensors.data(), inputTensors.size(), output_names_.data(), output_names_.size());
 
     auto* outputData = outputTensor.front().GetTensorMutableData<float>();
     std::vector<int64_t> outsShape = outputTensor[0].GetTensorTypeAndShapeInfo().GetShape();

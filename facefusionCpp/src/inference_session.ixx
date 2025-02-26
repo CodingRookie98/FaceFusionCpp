@@ -29,41 +29,41 @@ public:
     };
 
     struct Options {
-        std::unordered_set<ExecutionProvider> executionProviders{ExecutionProvider::CPU};
-        int executionDeviceId = 0;
-        size_t trtMaxWorkspaceSize = 0;
-        bool enableTensorrtEmbedEngine = true;
-        bool enableTensorrtCache = true;
+        std::unordered_set<ExecutionProvider> execution_providers{ExecutionProvider::CPU};
+        int execution_device_id = 0;
+        size_t trt_max_workspace_size = 0;
+        bool enable_tensorrt_embed_engine = true;
+        bool enable_tensorrt_cache = true;
     };
 
-    virtual void loadModel(const std::string& modelPath, const Options& options);
-    [[nodiscard]] bool isModelLoaded() const;
-    [[nodiscard]] std::string getModelPath() const;
+    virtual void LoadModel(const std::string& model_path, const Options& options);
+    [[nodiscard]] bool IsModelLoaded() const;
+    [[nodiscard]] std::string GetModelPath() const;
 
 protected:
-    std::unique_ptr<Ort::Session> m_ortSession;
-    Ort::SessionOptions m_sessionOptions;
-    Ort::RunOptions m_runOptions;
-    std::unique_ptr<OrtCUDAProviderOptions> m_cudaProviderOptions = nullptr;
-    std::vector<const char*> m_inputNames;
-    std::vector<const char*> m_outputNames;
-    std::vector<std::vector<int64_t>> m_inputNodeDims;  // >=1 outputs
-    std::vector<std::vector<int64_t>> m_outputNodeDims; // >=1 outputs
-    Ort::MemoryInfo m_memoryInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
+    std::unique_ptr<Ort::Session> ort_session_;
+    Ort::SessionOptions session_options_;
+    Ort::RunOptions run_options_;
+    std::unique_ptr<OrtCUDAProviderOptions> cuda_provider_options_{nullptr};
+    std::vector<const char*> input_names_;
+    std::vector<const char*> output_names_;
+    std::vector<std::vector<int64_t>> input_node_dims_;  // >=1 outputs
+    std::vector<std::vector<int64_t>> output_node_dims_; // >=1 outputs
+    std::unique_ptr<Ort::MemoryInfo> memory_info_;
 
 private:
-    void appendProviderCUDA();
-    void appendProviderTensorrt();
+    void AppendProviderCuda();
+    void AppendProviderTensorrt();
 
-    std::mutex m_mutex;
-    std::shared_ptr<Ort::Env> m_env;
-    std::unordered_set<std::string> m_availableProviders;
-    Options m_options;
-    std::vector<Ort::AllocatedStringPtr> m_inputNamesPtrs;
-    std::vector<Ort::AllocatedStringPtr> m_outputNamesPtrs;
-    std::shared_ptr<Logger> m_logger;
-    bool m_isModelLoaded = false;
-    std::string m_modelPath;
+    std::mutex mutex_;
+    std::shared_ptr<Ort::Env> ort_env_;
+    std::unordered_set<std::string> available_providers_;
+    Options options_;
+    std::vector<Ort::AllocatedStringPtr> input_names_ptrs_;
+    std::vector<Ort::AllocatedStringPtr> output_names_ptrs_;
+    std::shared_ptr<Logger> logger_;
+    bool is_model_loaded_ = false;
+    std::string model_path_;
 };
 
 } // namespace ffc

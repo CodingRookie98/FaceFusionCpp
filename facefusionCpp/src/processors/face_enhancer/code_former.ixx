@@ -39,7 +39,7 @@ public:
 
     [[nodiscard]] std::string getProcessorName() const override;
 
-    void loadModel(const std::string& modelPath, const Options& options) override;
+    void LoadModel(const std::string& modelPath, const Options& options) override;
 
     cv::Mat enhanceFace(const CodeFormerInput& input) const;
 

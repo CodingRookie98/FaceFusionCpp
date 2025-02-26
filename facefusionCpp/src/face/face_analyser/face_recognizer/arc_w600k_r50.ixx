@@ -24,7 +24,7 @@ public:
 
     // return: [0] embedding, [1] normedEmbedding
     std::array<std::vector<float>, 2> recognize(const cv::Mat &visionFrame, const Face::Landmarks &faceLandmark5) override;
-    void loadModel(const std::string &modelPath, const Options &options) override;
+    void LoadModel(const std::string &modelPath, const Options &options) override;
 
 private:
     std::vector<float> preProcess(const cv::Mat &visionFrame, const Face::Landmarks &faceLandmark5_68) const;

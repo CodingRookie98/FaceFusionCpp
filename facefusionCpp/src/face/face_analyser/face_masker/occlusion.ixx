@@ -23,7 +23,7 @@ public:
 
     cv::Mat createOcclusionMask(const cv::Mat &cropVisionFrame) const;
 
-    void loadModel(const std::string &modelPath, const Options &options) override;
+    void LoadModel(const std::string &modelPath, const Options &options) override;
 
 private:
     int m_inputHeight{0};

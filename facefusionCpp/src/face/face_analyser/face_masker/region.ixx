@@ -36,7 +36,7 @@ public:
 
     [[nodiscard]] cv::Mat createRegionMask(const cv::Mat &inputImage, const std::unordered_set<Region> &regions = getAllRegions()) const;
 
-    void loadModel(const std::string &modelPath, const Options &options) override;
+    void LoadModel(const std::string &modelPath, const Options &options) override;
 
     static std::unordered_set<Region> getAllRegions() {
         return {Region::Skin, Region::LeftEyebrow, Region::RightEyebrow, Region::LeftEye, Region::RightEye, Region::Glasses, Region::Nose, Region::Mouth, Region::UpperLip, Region::LowerLip};

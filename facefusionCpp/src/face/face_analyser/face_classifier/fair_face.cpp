@@ -22,10 +22,10 @@ FairFace::FairFace(const std::shared_ptr<Ort::Env> &env) :
     FaceClassifierBase(env) {
 }
 
-void FairFace::loadModel(const std::string &modelPath, const Options &options) {
-    FaceClassifierBase::loadModel(modelPath, options);
-    m_inputWidth = m_inputNodeDims[0][2];
-    m_inputHeight = m_inputNodeDims[0][3];
+void FairFace::LoadModel(const std::string &modelPath, const Options &options) {
+    FaceClassifierBase::LoadModel(modelPath, options);
+    m_inputWidth = input_node_dims_[0][2];
+    m_inputHeight = input_node_dims_[0][3];
     m_size = cv::Size(m_inputWidth, m_inputHeight);
 }
 
@@ -53,13 +53,13 @@ FaceClassifierBase::Result FairFace::classify(const cv::Mat &image, const Face::
     std::vector<Ort::Value> inputTensor;
     std::vector<int64_t> inputShape{1, 3, m_inputHeight, m_inputWidth};
     std::vector<float> inputData = getInputImageData(image, faceLandmark5);
-    inputTensor.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo,
+    inputTensor.emplace_back(Ort::Value::CreateTensor<float>(memory_info_->GetConst(),
                                                              inputData.data(), inputData.size(),
                                                              inputShape.data(), inputShape.size()));
 
-    std::vector<Ort::Value> outputTensor = m_ortSession->Run(m_runOptions, m_inputNames.data(),
+    std::vector<Ort::Value> outputTensor = ort_session_->Run(run_options_, input_names_.data(),
                                                              inputTensor.data(), inputTensor.size(),
-                                                             m_outputNames.data(), m_outputNames.size());
+                                                             output_names_.data(), output_names_.size());
 
     int64 raceId = outputTensor[0].GetTensorMutableData<int64>()[0];
     int64 genderId = outputTensor[1].GetTensorMutableData<int64>()[0];

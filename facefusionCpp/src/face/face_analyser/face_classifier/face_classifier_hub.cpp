@@ -53,7 +53,7 @@ FaceClassifierBase *FaceClassifierHub::getFaceClassifier(FaceClassifierHub::Type
     FaceClassifierBase *classifier = nullptr;
     if (type == Type::FairFace) {
         classifier = new FairFace(m_env);
-        classifier->loadModel(modelManager->getModelPath(ffc::ModelManager::Model::FairFace), m_ISOptions);
+        classifier->LoadModel(modelManager->getModelPath(ffc::ModelManager::Model::FairFace), m_ISOptions);
     }
 
     if (classifier) {

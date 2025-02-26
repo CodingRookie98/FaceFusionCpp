@@ -97,7 +97,7 @@ std::vector<Face> FaceAnalyser::GetManyFaces(const cv::Mat& visionFrame, const F
     for (int angle = 0; angle < 360; angle += 90) {
         FaceDetectorHub::Options faceDetectorOptions = options.faceDetectorOptions;
         faceDetectorOptions.angle = angle;
-        detectResults = faceDetectorHub_.detect(visionFrame, faceDetectorOptions);
+        detectResults = faceDetectorHub_.Detect(visionFrame, faceDetectorOptions);
         int emptyCount = 0;
         for (const auto& [bboxes, landmarks, scores] : detectResults) {
             if (bboxes.empty() || landmarks.empty() || scores.empty()) {
@@ -135,7 +135,7 @@ FaceAnalyser::CreateFaces(const cv::Mat& visionFrame, const std::vector<Face::BB
                           const std::vector<Face::Score>& scores, const double& detectedAngle,
                           const Options& options) {
     std::vector<Face> resultFaces;
-    if (options.faceDetectorOptions.minScore <= 0) {
+    if (options.faceDetectorOptions.min_score <= 0) {
         return resultFaces;
     }
 

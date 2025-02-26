@@ -11,7 +11,6 @@
 module;
 #include <memory>
 #include <future>
-#include <ranges>
 #include <onnxruntime_cxx_api.h>
 #include <opencv2/opencv.hpp>
 
@@ -26,21 +25,14 @@ namespace ffc::faceDetector {
 
 FaceDetectorHub::FaceDetectorHub(const std::shared_ptr<Ort::Env>& env, const InferenceSession::Options& ISOptions) {
     if (env == nullptr) {
-        m_env = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "FaceDetectorHub");
+        env_ = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "FaceDetectorHub");
     } else {
-        m_env = env;
+        env_ = env;
     }
-    m_ISOptions = ISOptions;
+    inference_session_options_ = ISOptions;
 }
 
-FaceDetectorHub::~FaceDetectorHub() {
-    std::unique_lock lock(m_sharedMutex);
-    for (auto val : m_faceDetectors | std::views::values) {
-        delete val;
-        val = nullptr;
-    }
-    m_faceDetectors.clear();
-}
+FaceDetectorHub::~FaceDetectorHub() = default;
 
 std::vector<cv::Size> FaceDetectorHub::GetSupportSizes(const Type& type) {
     switch (type) {
@@ -76,51 +68,51 @@ std::vector<cv::Size> FaceDetectorHub::GetSupportCommonSizes(const std::unordere
 }
 
 std::vector<FaceDetectorBase::Result>
-FaceDetectorHub::detect(const cv::Mat& image, const Options& options) {
+FaceDetectorHub::Detect(const cv::Mat& image, const Options& options) {
     std::vector<std::future<FaceDetectorBase::Result>> futures;
 
     if (options.types.contains(Type::Retina)) {
-        auto retina = dynamic_cast<Retina*>(getDetector(Type::Retina));
+        const auto retina = std::dynamic_pointer_cast<Retina>(GetDetector(Type::Retina));
         if (retina != nullptr) {
             if (options.angle > 0) {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue([&] {
-                    return retina->detectRotatedFaces(image, options.faceDetectorSize, options.angle, options.minScore);
+                futures.emplace_back(ThreadPool::Instance()->Enqueue([retina, image, options] {
+                    return retina->detectRotatedFaces(image, options.face_detector_size, options.angle, options.min_score);
                 }));
             } else {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue([&] {
-                    return retina->detectFaces(image, options.faceDetectorSize, options.minScore);
+                futures.emplace_back(ThreadPool::Instance()->Enqueue([retina, image, options] {
+                    return retina->detectFaces(image, options.face_detector_size, options.min_score);
                 }));
             }
         }
     }
 
     if (options.types.contains(Type::Scrfd)) {
-        auto scrfd = dynamic_cast<Scrfd*>(getDetector(Type::Scrfd));
+        const auto scrfd = std::dynamic_pointer_cast<Scrfd>(GetDetector(Type::Scrfd));
         if (scrfd != nullptr) {
             if (options.angle > 0) {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue([&] {
-                    return scrfd->detectRotatedFaces(image, options.faceDetectorSize, options.angle, options.minScore);
+                futures.emplace_back(ThreadPool::Instance()->Enqueue([scrfd, image, options] {
+                    return scrfd->detectRotatedFaces(image, options.face_detector_size, options.angle, options.min_score);
                 }));
             } else {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue([&] {
-                    return scrfd->detectFaces(image, options.faceDetectorSize, options.minScore);
+                futures.emplace_back(ThreadPool::Instance()->Enqueue([scrfd, image, options] {
+                    return scrfd->detectFaces(image, options.face_detector_size, options.min_score);
                 }));
             }
         }
     }
 
     if (options.types.contains(Type::Yolo)) {
-        auto yolo = dynamic_cast<Yolo*>(getDetector(Type::Yolo));
+        const auto yolo = std::dynamic_pointer_cast<Yolo>(GetDetector(Type::Yolo));
         if (yolo != nullptr) {
-           // TODO BUG FIX: I don't know why there is a bug when using the thread pool
+            // TODO BUG FIX: I don't know why there is a bug when using the thread pool
             if (options.angle > 0) {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue([&] {
-                    return yolo->detectRotatedFaces(image, options.faceDetectorSize, options.angle, options.minScore);
+                futures.emplace_back(ThreadPool::Instance()->Enqueue([yolo, image, options] {
+                    return yolo->detectRotatedFaces(image, options.face_detector_size, options.angle, options.min_score);
                 }));
                 // futures.emplace_back(std::async(std::launch::async, &Yolo::detectRotatedFaces, yolo, image, options.faceDetectorSize, options.angle, options.minScore));
             } else {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue([&] {
-                    return yolo->detectFaces(image, options.faceDetectorSize, options.minScore);
+                futures.emplace_back(ThreadPool::Instance()->Enqueue([yolo, image, options] {
+                    return yolo->detectFaces(image, options.face_detector_size, options.min_score);
                 }));
                 // futures.emplace_back(std::async(std::launch::async, &Yolo::detectFaces, yolo, image, options.faceDetectorSize, options.minScore));
             }
@@ -135,28 +127,28 @@ FaceDetectorHub::detect(const cv::Mat& image, const Options& options) {
     return results;
 }
 
-FaceDetectorBase* FaceDetectorHub::getDetector(const Type& type) {
-    std::unique_lock lock(m_sharedMutex);
-    if (m_faceDetectors.contains(type)) {
-        if (m_faceDetectors[type] != nullptr) {
-            return m_faceDetectors[type];
+std::shared_ptr<FaceDetectorBase> FaceDetectorHub::GetDetector(const Type& type) {
+    std::unique_lock lock(shared_mutex_);
+    if (face_detectors_.contains(type)) {
+        if (face_detectors_[type] != nullptr) {
+            return face_detectors_[type];
         }
     }
 
     static std::shared_ptr<ffc::ModelManager> modelManager = ffc::ModelManager::getInstance();
-    FaceDetectorBase* detector = nullptr;
+    std::shared_ptr<FaceDetectorBase> detector{nullptr};
     if (type == Type::Retina) {
-        detector = dynamic_cast<FaceDetectorBase*>(new Retina(m_env));
-        detector->loadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_detector_retinaface), m_ISOptions);
+        detector = std::make_shared<Retina>(env_);
+        detector->LoadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_detector_retinaface), inference_session_options_);
     } else if (type == Type::Scrfd) {
-        detector = new Scrfd(m_env);
-        detector->loadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_detector_scrfd), m_ISOptions);
+        detector = std::make_shared<Scrfd>(env_);
+        detector->LoadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_detector_scrfd), inference_session_options_);
     } else if (type == Type::Yolo) {
-        detector = new Yolo(m_env);
-        detector->loadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_detector_yoloface), m_ISOptions);
+        detector = std::make_shared<Yolo>(env_);
+        detector->LoadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_detector_yoloface), inference_session_options_);
     }
 
-    m_faceDetectors[type] = detector;
-    return m_faceDetectors[type];
+    face_detectors_[type] = detector;
+    return face_detectors_[type];
 }
 } // namespace ffc::faceDetector

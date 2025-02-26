@@ -22,10 +22,10 @@ T68By5::T68By5(const std::shared_ptr<Ort::Env> &env) :
     FaceLandmarkerBase(env) {
 }
 
-void T68By5::loadModel(const std::string &modelPath, const Options &options) {
-    FaceLandmarkerBase::loadModel(modelPath, options);
-    m_inputHeight = m_inputNodeDims[0][1];
-    m_inputWidth = m_inputNodeDims[0][2];
+void T68By5::LoadModel(const std::string &modelPath, const Options &options) {
+    FaceLandmarkerBase::LoadModel(modelPath, options);
+    m_inputHeight = input_node_dims_[0][1];
+    m_inputWidth = input_node_dims_[0][2];
 }
 
 std::tuple<std::vector<float>, cv::Mat> T68By5::preProcess(const Face::Landmarks &faceLandmark5) {
@@ -49,13 +49,13 @@ Face::Landmarks T68By5::detect(const Face::Landmarks &faceLandmark5) const {
     std::tie(inputTensorData, affineMatrix) = this->preProcess(faceLandmark5);
 
     std::vector<int64_t> inputShape{1, this->m_inputHeight, this->m_inputWidth};
-    Ort::Value inputTensor = Ort::Value::CreateTensor<float>(m_memoryInfo,
+    Ort::Value inputTensor = Ort::Value::CreateTensor<float>(memory_info_->GetConst(),
                                                              inputTensorData.data(),
                                                              inputTensorData.size(), inputShape.data(),
                                                              inputShape.size());
-    std::vector<Ort::Value> outputTensor = m_ortSession->Run(m_runOptions, m_inputNames.data(),
-                                                             &inputTensor, 1, m_outputNames.data(),
-                                                             m_outputNames.size());
+    std::vector<Ort::Value> outputTensor = ort_session_->Run(run_options_, input_names_.data(),
+                                                             &inputTensor, 1, output_names_.data(),
+                                                             output_names_.size());
     auto *pData = outputTensor[0].GetTensorMutableData<float>(); // shape(1, 68, 2);
     Face::Landmarks faceLandMark68_5;
     for (int i = 0; i < 68; ++i) {

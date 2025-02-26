@@ -24,10 +24,10 @@ Yolo::Yolo(const std::shared_ptr<Ort::Env>& env) :
     FaceDetectorBase(env) {
 }
 
-void Yolo::loadModel(const std::string& modelPath, const Options& options) {
-    FaceDetectorBase::loadModel(modelPath, options);
-    m_inputHeight = m_inputNodeDims[0][2];
-    m_inputWidth = m_inputNodeDims[0][3];
+void Yolo::LoadModel(const std::string& modelPath, const Options& options) {
+    FaceDetectorBase::LoadModel(modelPath, options);
+    m_inputHeight = input_node_dims_[0][2];
+    m_inputWidth = input_node_dims_[0][3];
 }
 
 std::tuple<std::vector<float>, float, float>
@@ -73,12 +73,12 @@ Yolo::detectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
 
     auto [inputData, ratioHeight, ratioWidth] = preProcess(visionFrame, faceDetectorSize);
 
-    const std::vector<int64_t> inputImgShape = {1, 3, faceDetectorSize.height, faceDetectorSize.width};
-    const Ort::Value inputTensor = Ort::Value::CreateTensor<float>(m_memoryInfo, inputData.data(), inputData.size(), inputImgShape.data(), inputImgShape.size());
+    const std::vector<int64_t> inputImgShape{1, 3, faceDetectorSize.height, faceDetectorSize.width};
+    const Ort::Value inputTensor = Ort::Value::CreateTensor<float>(memory_info_->GetConst(), inputData.data(), inputData.size(), inputImgShape.data(), inputImgShape.size());
 
-    std::vector<Ort::Value> ortOutputs = m_ortSession->Run(m_runOptions, m_inputNames.data(),
-                                                           &inputTensor, 1, m_outputNames.data(),
-                                                           m_outputNames.size());
+    std::vector<Ort::Value> ortOutputs = ort_session_->Run(run_options_, input_names_.data(),
+                                                           &inputTensor, 1, output_names_.data(),
+                                                           output_names_.size());
 
     // 不需要手动释放 pdata，它由 Ort::Value 管理
     float* pdata = ortOutputs[0].GetTensorMutableData<float>(); /// 形状是(1, 20, 8400),不考虑第0维batchsize，每一列的长度20,前4个元素是检测框坐标(cx,cy,w,h)，第4个元素是置信度，剩下的15个元素是5个关键点坐标x,y和置信度

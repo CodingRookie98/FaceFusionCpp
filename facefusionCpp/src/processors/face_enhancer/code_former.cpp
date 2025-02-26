@@ -24,10 +24,10 @@ std::string CodeFormer::getProcessorName() const {
     return "FaceEnhancer.CodeFormer";
 }
 
-void CodeFormer::loadModel(const std::string& modelPath, const Options& options) {
-    InferenceSession::loadModel(modelPath, options);
-    m_inputHeight = m_inputNodeDims[0][2];
-    m_inputWidth = m_inputNodeDims[0][3];
+void CodeFormer::LoadModel(const std::string& modelPath, const Options& options) {
+    InferenceSession::LoadModel(modelPath, options);
+    m_inputHeight = input_node_dims_[0][2];
+    m_inputWidth = input_node_dims_[0][3];
     m_size = cv::Size(m_inputWidth, m_inputHeight);
 }
 
@@ -42,7 +42,7 @@ cv::Mat CodeFormer::enhanceFace(const CodeFormerInput& input) const {
         return input.target_frame->clone();
     }
 
-    if (!isModelLoaded()) {
+    if (!IsModelLoaded()) {
         throw std::runtime_error("model is not loaded");
     }
     if (!hasFaceMaskerHub()) {
@@ -92,23 +92,23 @@ cv::Mat CodeFormer::applyEnhance(const cv::Mat& croppedFrame) const {
     std::vector<double> inputWeightData{1.0};
     const std::vector<int64_t> inputWeightDataShape{1, 1};
     std::vector<Ort::Value> inputTensors;
-    for (const auto& name : m_inputNames) {
+    for (const auto& name : input_names_) {
         if (std::string(name) == "input") {
-            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo,
+            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(memory_info_->GetConst(),
                                                                       inputImageData.data(), inputImageData.size(),
                                                                       inputImageDataShape.data(), inputImageDataShape.size()));
         } else if (std::string(name) == "weight") {
-            inputTensors.emplace_back(Ort::Value::CreateTensor<double>(m_memoryInfo,
+            inputTensors.emplace_back(Ort::Value::CreateTensor<double>(memory_info_->GetConst(),
                                                                        inputWeightData.data(), inputWeightData.size(),
                                                                        inputWeightDataShape.data(), inputWeightDataShape.size()));
         }
     }
 
-    std::vector<Ort::Value> outputTensor = m_ortSession->Run(m_runOptions,
-                                                             m_inputNames.data(),
+    std::vector<Ort::Value> outputTensor = ort_session_->Run(run_options_,
+                                                             input_names_.data(),
                                                              inputTensors.data(), inputTensors.size(),
-                                                             m_outputNames.data(),
-                                                             m_outputNames.size());
+                                                             output_names_.data(),
+                                                             output_names_.size());
 
     auto* pdata = outputTensor[0].GetTensorMutableData<float>();
     const std::vector<int64_t> outsShape = outputTensor[0].GetTensorTypeAndShapeInfo().GetShape();

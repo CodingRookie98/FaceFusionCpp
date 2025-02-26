@@ -24,7 +24,7 @@ public:
 
     Result classify(const cv::Mat &image, const Face::Landmarks &faceLandmark5) override;
 
-    void loadModel(const std::string &modelPath, const Options &options) override;
+    void LoadModel(const std::string &modelPath, const Options &options) override;
 
 private:
     face_helper::WarpTemplateType m_WarpTemplateType = face_helper::WarpTemplateType::Arcface_112_v2;

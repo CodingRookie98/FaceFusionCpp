@@ -24,8 +24,8 @@ InSwapper::InSwapper(const std::shared_ptr<Ort::Env>& env) :
     FaceSwapperBase(), InferenceSession(env) {
 }
 
-void InSwapper::loadModel(const std::string& modelPath, const Options& options) {
-    InferenceSession::loadModel(modelPath, options);
+void InSwapper::LoadModel(const std::string& modelPath, const Options& options) {
+    InferenceSession::LoadModel(modelPath, options);
     m_initializerArray.clear();
     init();
 }
@@ -35,13 +35,13 @@ std::string InSwapper::getProcessorName() const {
 }
 
 void InSwapper::init() {
-    m_inputWidth = m_inputNodeDims[0][2];
-    m_inputHeight = m_inputNodeDims[0][3];
+    m_inputWidth = input_node_dims_[0][2];
+    m_inputHeight = input_node_dims_[0][3];
     m_size = cv::Size(m_inputWidth, m_inputHeight);
 
     // Load ONNX model as a protobuf message
     onnx::ModelProto modelProto;
-    std::ifstream input(getModelPath(), std::ios::binary);
+    std::ifstream input(GetModelPath(), std::ios::binary);
     if (!modelProto.ParseFromIstream(&input)) {
         throw std::runtime_error("Failed to load model.");
     }
@@ -81,10 +81,10 @@ cv::Mat InSwapper::swapFace(const InSwapperInput& input) {
         return input.target_frame->clone();
     }
 
-    if (isModelLoaded() == false) {
+    if (IsModelLoaded() == false) {
         throw std::runtime_error(std::format("File: {}, Line: {}, Error: Model is not loaded!", __FILE__, __LINE__));
     }
-    if (isModelLoaded() == true && m_initializerArray.empty()) {
+    if (IsModelLoaded() == true && m_initializerArray.empty()) {
         init();
     }
 
@@ -103,8 +103,8 @@ cv::Mat InSwapper::swapFace(const InSwapperInput& input) {
     for (const auto& landmarks5 : input.target_faces_5_landmarks) {
         cv::Mat croppedTargetFrame, affineMat;
         std::tie(croppedTargetFrame, affineMat) = face_helper::warpFaceByFaceLandmarks5(targetFrame, landmarks5,
-                                                                                       face_helper::getWarpTemplate(m_warpTemplateType),
-                                                                                       m_size);
+                                                                                        face_helper::getWarpTemplate(m_warpTemplateType),
+                                                                                        m_size);
         croppedTargetFrames.emplace_back(croppedTargetFrame);
         affineMatrices.emplace_back(affineMat);
     }
@@ -133,19 +133,19 @@ cv::Mat InSwapper::swapFace(const InSwapperInput& input) {
 cv::Mat InSwapper::applySwap(const Face::Embeddings& sourceEmbedding, const cv::Mat& croppedTargetFrame) const {
     std::vector<Ort::Value> inputTensors;
     std::vector<float> inputImageData, inputEmbeddingData;
-    for (const auto& inputName : m_inputNames) {
+    for (const auto& inputName : input_names_) {
         if (std::string(inputName) == "source") {
             inputEmbeddingData = prepareSourceEmbedding(sourceEmbedding);
             std::vector<int64_t> inputEmbeddingShape{1, static_cast<int64_t>(inputEmbeddingData.size())};
-            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo, inputEmbeddingData.data(), inputEmbeddingData.size(), inputEmbeddingShape.data(), inputEmbeddingShape.size()));
+            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(memory_info_->GetConst(), inputEmbeddingData.data(), inputEmbeddingData.size(), inputEmbeddingShape.data(), inputEmbeddingShape.size()));
         } else if (std::string(inputName) == "target") {
             inputImageData = getInputImageData(croppedTargetFrame);
             std::vector<int64_t> inputImageShape = {1, 3, m_inputHeight, m_inputWidth};
-            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo, inputImageData.data(), inputImageData.size(), inputImageShape.data(), inputImageShape.size()));
+            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(memory_info_->GetConst(), inputImageData.data(), inputImageData.size(), inputImageShape.data(), inputImageShape.size()));
         }
     }
 
-    auto outputTensor = m_ortSession->Run(m_runOptions, m_inputNames.data(), inputTensors.data(), inputTensors.size(), m_outputNames.data(), m_outputNames.size());
+    auto outputTensor = ort_session_->Run(run_options_, input_names_.data(), inputTensors.data(), inputTensors.size(), output_names_.data(), output_names_.size());
 
     inputImageData.clear();
     inputEmbeddingData.clear();

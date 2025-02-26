@@ -40,13 +40,13 @@ FaceLandmarkerBase* FaceLandmarkerHub::getLandmarker(const FaceLandmarkerHub::La
     FaceLandmarkerBase* landmarker = nullptr;
     if (type == FaceLandmarkerHub::LandmarkerModel::_2DFAN) {
         landmarker = new T2dfan(m_env);
-        landmarker->loadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_landmarker_68), m_ISOptions);
+        landmarker->LoadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_landmarker_68), m_ISOptions);
     } else if (type == FaceLandmarkerHub::LandmarkerModel::_68By5) {
         landmarker = new T68By5(m_env);
-        landmarker->loadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_landmarker_68_5), m_ISOptions);
+        landmarker->LoadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_landmarker_68_5), m_ISOptions);
     } else if (type == FaceLandmarkerHub::LandmarkerModel::PEPPA_WUTZ) {
         landmarker = new Peppawutz(m_env);
-        landmarker->loadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_landmarker_peppawutz), m_ISOptions);
+        landmarker->LoadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_landmarker_peppawutz), m_ISOptions);
     }
     if (landmarker != nullptr) {
         m_landmarkers[type] = landmarker;

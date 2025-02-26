@@ -20,10 +20,10 @@ Occlusion::Occlusion(const std::shared_ptr<Ort::Env> &env) :
     FaceMaskerBase(env) {
 }
 
-void Occlusion::loadModel(const std::string &modelPath, const Options &options) {
-    FaceMaskerBase::loadModel(modelPath, options);
-    m_inputHeight = static_cast<int>(m_inputNodeDims[0][1]);
-    m_inputWidth = static_cast<int>(m_inputNodeDims[0][2]);
+void Occlusion::LoadModel(const std::string &modelPath, const Options &options) {
+    FaceMaskerBase::LoadModel(modelPath, options);
+    m_inputHeight = static_cast<int>(input_node_dims_[0][1]);
+    m_inputWidth = static_cast<int>(input_node_dims_[0][2]);
 }
 
 cv::Mat Occlusion::createOcclusionMask(const cv::Mat &cropVisionFrame) const {
@@ -31,14 +31,14 @@ cv::Mat Occlusion::createOcclusionMask(const cv::Mat &cropVisionFrame) const {
 
     std::vector<int64_t> inputImageShape{1, m_inputHeight, m_inputWidth, 3};
     std::vector<Ort::Value> inputTensors;
-    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memoryInfo, inputImageData.data(),
+    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(memory_info_->GetConst(), inputImageData.data(),
                                                               inputImageData.size(),
                                                               inputImageShape.data(),
                                                               inputImageShape.size()));
 
-    std::vector<Ort::Value> outputTensors = m_ortSession->Run(m_runOptions, m_inputNames.data(),
+    std::vector<Ort::Value> outputTensors = ort_session_->Run(run_options_, input_names_.data(),
                                                               inputTensors.data(), inputTensors.size(),
-                                                              m_outputNames.data(), m_outputNames.size());
+                                                              output_names_.data(), output_names_.size());
 
     auto *pdata = outputTensors[0].GetTensorMutableData<float>();
     const std::vector<int64_t> outsShape = outputTensors[0].GetTensorTypeAndShapeInfo().GetShape();

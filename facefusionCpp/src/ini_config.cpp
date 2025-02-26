@@ -492,14 +492,14 @@ void ini_config::faceAnalyser() {
             faceDetectorSize = maxSize;
         }
 
-        face_detector_options.faceDetectorSize = faceDetectorSize;
+        face_detector_options.face_detector_size = faceDetectorSize;
     }
 
-    face_detector_options.minScore = m_ini.GetDoubleValue("face_analyser", "face_detector_score", 0.5);
-    if (face_detector_options.minScore < 0.0f) {
-        face_detector_options.minScore = 0.0f;
-    } else if (face_detector_options.minScore > 1.0f) {
-        face_detector_options.minScore = 1.0f;
+    face_detector_options.min_score = m_ini.GetDoubleValue("face_analyser", "face_detector_score", 0.5);
+    if (face_detector_options.min_score < 0.0f) {
+        face_detector_options.min_score = 0.0f;
+    } else if (face_detector_options.min_score > 1.0f) {
+        face_detector_options.min_score = 1.0f;
     }
     core_task_.face_analyser_options = {FaceAnalyser::Options{}};
     core_task_.face_analyser_options->faceDetectorOptions = face_detector_options;
@@ -630,9 +630,9 @@ void ini_config::misc() {
 }
 
 void ini_config::execution() {
-    m_coreOptions.inference_session_options.executionDeviceId = m_ini.GetLongValue("execution", "execution_device_id", 0);
-    if (m_coreOptions.inference_session_options.executionDeviceId < 0) {
-        m_coreOptions.inference_session_options.executionDeviceId = 0;
+    m_coreOptions.inference_session_options.execution_device_id = m_ini.GetLongValue("execution", "execution_device_id", 0);
+    if (m_coreOptions.inference_session_options.execution_device_id < 0) {
+        m_coreOptions.inference_session_options.execution_device_id = 0;
     }
 
     std::string value = m_ini.GetValue("execution", "execution_providers", "cpu");
@@ -640,23 +640,23 @@ void ini_config::execution() {
     if (!value.empty()) {
         bool flag = false;
         if (value.find("cpu") != std::string::npos) {
-            m_coreOptions.inference_session_options.executionProviders.insert(InferenceSession::ExecutionProvider::CPU);
+            m_coreOptions.inference_session_options.execution_providers.insert(InferenceSession::ExecutionProvider::CPU);
             flag = true;
         }
         if (value.find("cuda") != std::string::npos) {
-            m_coreOptions.inference_session_options.executionProviders.insert(InferenceSession::ExecutionProvider::CUDA);
+            m_coreOptions.inference_session_options.execution_providers.insert(InferenceSession::ExecutionProvider::CUDA);
             flag = true;
         }
         if (value.find("tensorrt") != std::string::npos) {
-            m_coreOptions.inference_session_options.executionProviders.insert(InferenceSession::ExecutionProvider::TensorRT);
+            m_coreOptions.inference_session_options.execution_providers.insert(InferenceSession::ExecutionProvider::TensorRT);
             flag = true;
         }
         if (!flag) {
             m_logger->warn("[IniConfig] Invalid execution_providers: " + value + " Use default: cpu");
-            m_coreOptions.inference_session_options.executionProviders.insert(InferenceSession::ExecutionProvider::CPU);
+            m_coreOptions.inference_session_options.execution_providers.insert(InferenceSession::ExecutionProvider::CPU);
         }
     } else {
-        m_coreOptions.inference_session_options.executionProviders.insert(InferenceSession::ExecutionProvider::CPU);
+        m_coreOptions.inference_session_options.execution_providers.insert(InferenceSession::ExecutionProvider::CPU);
     }
 
     m_coreOptions.execution_thread_count = m_ini.GetLongValue("execution", "execution_thread_count", 1);
@@ -666,14 +666,14 @@ void ini_config::execution() {
 }
 
 void ini_config::tensorrt() {
-    m_coreOptions.inference_session_options.enableTensorrtCache = m_ini.GetBoolValue("tensorrt", "enable_engine_cache", true);
-    m_coreOptions.inference_session_options.enableTensorrtEmbedEngine = m_ini.GetBoolValue("tensorrt", "enable_embed_engine", true);
+    m_coreOptions.inference_session_options.enable_tensorrt_cache = m_ini.GetBoolValue("tensorrt", "enable_engine_cache", true);
+    m_coreOptions.inference_session_options.enable_tensorrt_embed_engine = m_ini.GetBoolValue("tensorrt", "enable_embed_engine", true);
 
     float gb = static_cast<float>(m_ini.GetLongValue("tensorrt", "per_session_gpu_mem_limit", 0));
     if (gb < 0) {
         gb = 0;
     }
-    m_coreOptions.inference_session_options.trtMaxWorkspaceSize = static_cast<size_t>(gb * static_cast<float>(1 << 30));
+    m_coreOptions.inference_session_options.trt_max_workspace_size = static_cast<size_t>(gb * static_cast<float>(1 << 30));
 }
 
 void ini_config::memory() {

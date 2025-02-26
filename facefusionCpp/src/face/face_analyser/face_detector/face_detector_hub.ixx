@@ -23,8 +23,8 @@ export namespace ffc::faceDetector {
 
 class FaceDetectorHub {
 public:
-    explicit FaceDetectorHub(const std::shared_ptr<Ort::Env> &env = nullptr,
-                             const InferenceSession::Options &ISOptions = InferenceSession::Options{});
+    explicit FaceDetectorHub(const std::shared_ptr<Ort::Env>& env = nullptr,
+                             const InferenceSession::Options& ISOptions = InferenceSession::Options{});
     ~FaceDetectorHub();
 
     enum class Type {
@@ -34,24 +34,24 @@ public:
     };
 
     struct Options {
-        cv::Size faceDetectorSize{640, 640};
+        cv::Size face_detector_size{640, 640};
         std::unordered_set<Type> types{Type::Yolo};
         double angle{0.0};
-        float minScore{0.5};
+        float min_score{0.5};
     };
     std::vector<FaceDetectorBase::Result>
-    detect(const cv::Mat& image, const Options& options = Options());
+    Detect(const cv::Mat& image, const Options& options = Options());
 
     static std::vector<cv::Size> GetSupportSizes(const Type& type);
     static std::vector<cv::Size> GetSupportCommonSizes(const std::unordered_set<Type>& types);
 
 private:
-    std::shared_ptr<Ort::Env> m_env;
-    std::unordered_map<Type, FaceDetectorBase *> m_faceDetectors;
-    std::shared_mutex m_sharedMutex;
-    InferenceSession::Options m_ISOptions;
+    std::shared_ptr<Ort::Env> env_;
+    std::unordered_map<Type, std::shared_ptr<FaceDetectorBase>> face_detectors_;
+    std::shared_mutex shared_mutex_;
+    InferenceSession::Options inference_session_options_;
 
-    FaceDetectorBase *getDetector(const Type &type);
+    std::shared_ptr<FaceDetectorBase> GetDetector(const Type& type);
 };
 
 } // namespace ffc::faceDetector

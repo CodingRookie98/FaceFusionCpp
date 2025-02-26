@@ -37,7 +37,7 @@ FaceRecognizerBase *FaceRecognizerHub::getRecognizer(const FaceRecognizerHub::Ty
     FaceRecognizerBase *recognizer = nullptr;
     if (type == Type::Arc_w600k_r50) {
         recognizer = new ArcW600kR50(m_env);
-        recognizer->loadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_recognizer_arcface_w600k_r50), m_ISOptions);
+        recognizer->LoadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_recognizer_arcface_w600k_r50), m_ISOptions);
     }
 
     if (recognizer != nullptr) {

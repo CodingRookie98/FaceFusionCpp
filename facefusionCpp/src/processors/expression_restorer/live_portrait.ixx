@@ -46,9 +46,9 @@ public:
                    const InferenceSession::Options& options);
 
     [[nodiscard]] bool isModelLoaded() const {
-        return m_featureExtractor.isModelLoaded()
-            && m_motionExtractor.isModelLoaded()
-            && m_generator.isModelLoaded();
+        return m_featureExtractor.IsModelLoaded()
+            && m_motionExtractor.IsModelLoaded()
+            && m_generator.IsModelLoaded();
     }
 
     [[nodiscard]] cv::Mat restoreExpression(const LivePortraitInput& input);
@@ -73,8 +73,8 @@ private:
                                             std::vector<float>& sourceMotionPoints,
                                             std::vector<float>& targetMotionPoints) const;
         [[nodiscard]] cv::Size getOutputSize() const {
-            int outputHeight = m_outputNodeDims[0][2];
-            int outputWidth = m_outputNodeDims[0][3];
+            int outputHeight = output_node_dims_[0][2];
+            int outputWidth = output_node_dims_[0][3];
             return {outputWidth, outputHeight};
         }
     };
