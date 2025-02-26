@@ -159,6 +159,13 @@ Range: 0 to 1 at 0.05
 Example: 0.7
 ```
 
+#### face_landmarker_model
+Set the face landmark model.
+```
+Default: 2dfan4
+Choices: many 2dfan4 peppa_wutz
+```
+
 #### face_landmarker_score
 Set the confidence of the face landmarker.
 ```

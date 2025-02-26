@@ -168,6 +168,13 @@ Range: 0 to 1 at 0.05
 Example: 0.7
 ```
 
+#### face_landmarker_model
+设置face landmarker的模型。
+```
+Default: 2dfan4
+Choices: many 2dfan4 peppa_wutz
+```
+
 #### face_landmarker_score
 设置face landmarker的置信度。
 ```
