@@ -29,7 +29,7 @@ public:
         return m_coreOptions;
     }
     [[nodiscard]] CoreTask getCoreRunOptions() const {
-        return m_coreRunOptions;
+        return core_task_;
     }
 
 private:
@@ -38,7 +38,7 @@ private:
     std::string m_configPath;
     std::shared_ptr<Logger> m_logger = Logger::getInstance();
     Core::Options m_coreOptions;
-    CoreTask m_coreRunOptions;
+    CoreTask core_task_;
 
     static std::array<int, 4> normalizePadding(const std::vector<int> &padding);
     static std::vector<int> parseStr2VecInt(const std::string &input);

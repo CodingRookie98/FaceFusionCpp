@@ -81,9 +81,12 @@ public:
     std::shared_ptr<Face> source_average_face;         // for inswapper
     bool show_progress_bar = true;
 
+    CoreTask() = default;
+    ~CoreTask() = default;
+
     [[nodiscard]] FaceSwapperInput
     GetFaceSwapperInput(const size_t& target_paths_index,
-                        const std::shared_ptr<FaceAnalyser>& face_analyser) const;
+                        const std::shared_ptr<FaceAnalyser>& face_analyser);
 
     [[nodiscard]] FaceEnhancerInput
     GetFaceEnhancerInput(const size_t& target_paths_index,

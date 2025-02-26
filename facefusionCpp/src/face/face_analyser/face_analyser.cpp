@@ -14,7 +14,6 @@ module;
 #include <iterator>
 #include <numeric>
 #include <stdexcept>
-#include <ranges>
 
 module face_analyser;
 import face_helper;

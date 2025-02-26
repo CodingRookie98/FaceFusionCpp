@@ -20,14 +20,15 @@ import :t68by5;
 import :peppawutz;
 import face_helper;
 import model_manager;
+import thread_pool;
 
 namespace ffc::faceLandmarker {
-FaceLandmarkerHub::FaceLandmarkerHub(const std::shared_ptr<Ort::Env> &env, const ffc::InferenceSession::Options &ISOptions) {
+FaceLandmarkerHub::FaceLandmarkerHub(const std::shared_ptr<Ort::Env>& env, const ffc::InferenceSession::Options& ISOptions) {
     m_env = env;
     m_ISOptions = ISOptions;
 }
 
-FaceLandmarkerBase *FaceLandmarkerHub::getLandmarker(const FaceLandmarkerHub::LandmarkerModel &type) {
+FaceLandmarkerBase* FaceLandmarkerHub::getLandmarker(const FaceLandmarkerHub::LandmarkerModel& type) {
     std::unique_lock lock(m_sharedMutex);
     if (m_landmarkers.contains(type)) {
         if (m_landmarkers[type] != nullptr) {
@@ -36,7 +37,7 @@ FaceLandmarkerBase *FaceLandmarkerHub::getLandmarker(const FaceLandmarkerHub::La
     }
 
     static std::shared_ptr<ffc::ModelManager> modelManager = ffc::ModelManager::getInstance();
-    FaceLandmarkerBase *landmarker = nullptr;
+    FaceLandmarkerBase* landmarker = nullptr;
     if (type == FaceLandmarkerHub::LandmarkerModel::_2DFAN) {
         landmarker = new T2dfan(m_env);
         landmarker->loadModel(modelManager->getModelPath(ffc::ModelManager::Model::Face_landmarker_68), m_ISOptions);
@@ -54,7 +55,7 @@ FaceLandmarkerBase *FaceLandmarkerHub::getLandmarker(const FaceLandmarkerHub::La
 }
 
 std::tuple<Face::Landmarks, float>
-FaceLandmarkerHub::detectLandmark68(const cv::Mat& visionFrame, const Face::BBox &bbox, const FaceLandmarkerHub::Options &options) {
+FaceLandmarkerHub::detectLandmark68(const cv::Mat& visionFrame, const Face::BBox& bbox, const FaceLandmarkerHub::Options& options) {
     std::vector<Face::Landmarks> landmarks;
     std::vector<float> scores;
     std::vector<std::future<std::tuple<Face::Landmarks, float>>> futures;
@@ -70,15 +71,19 @@ FaceLandmarkerHub::detectLandmark68(const cv::Mat& visionFrame, const Face::BBox
     }
 
     if (options.types.contains(Type::_2DFAN)) {
-        auto landmarker2dfan = dynamic_cast<T2dfan *>(getLandmarker(LandmarkerModel::_2DFAN));
-        futures.emplace_back(std::async(std::launch::async, &T2dfan::detect, landmarker2dfan, rotatedVisionFrame, bbox));
+        auto landmarker2dfan = dynamic_cast<T2dfan*>(getLandmarker(LandmarkerModel::_2DFAN));
+        futures.emplace_back(ThreadPool::Instance()->Enqueue([&] {
+            return landmarker2dfan->detect(rotatedVisionFrame, bbox);
+        }));
     }
     if (options.types.contains(Type::PEPPA_WUTZ)) {
-        auto landmarkerPeppawutz = dynamic_cast<Peppawutz *>(getLandmarker(LandmarkerModel::PEPPA_WUTZ));
-        futures.emplace_back(std::async(std::launch::async, &Peppawutz::detect, landmarkerPeppawutz, rotatedVisionFrame, bbox));
+        auto landmarkerPeppawutz = dynamic_cast<Peppawutz*>(getLandmarker(LandmarkerModel::PEPPA_WUTZ));
+        futures.emplace_back(ThreadPool::Instance()->Enqueue([&] {
+            return landmarkerPeppawutz->detect(rotatedVisionFrame, bbox);
+        }));
     }
 
-    for (auto &future : futures) {
+    for (auto& future : futures) {
         auto [tempLandmark, tempScore] = future.get();
         if (options.angle != 0) {
             tempLandmark = face_helper::transformPoints(tempLandmark, rotatedInverseMat);
@@ -96,14 +101,14 @@ FaceLandmarkerHub::detectLandmark68(const cv::Mat& visionFrame, const Face::BBox
     return {landmarks[0], scores[0]};
 }
 
-Face::Landmarks FaceLandmarkerHub::expandLandmark68By5(const Face::Landmarks &landmark5) {
-    auto landmarker68By5 = dynamic_cast<T68By5 *>(getLandmarker(LandmarkerModel::_68By5));
+Face::Landmarks FaceLandmarkerHub::expandLandmark68By5(const Face::Landmarks& landmark5) {
+    auto landmarker68By5 = dynamic_cast<T68By5*>(getLandmarker(LandmarkerModel::_68By5));
     return landmarker68By5->detect(landmark5);
 }
 
 FaceLandmarkerHub::~FaceLandmarkerHub() {
     std::unique_lock<std::shared_mutex> lock(m_sharedMutex);
-    for (auto &val : m_landmarkers | std::views::values) {
+    for (auto& val : m_landmarkers | std::views::values) {
         delete val;
     }
     m_landmarkers.clear();

@@ -33,15 +33,15 @@ std::vector<std::string> normalizeOutputPaths(const std::vector<std::string>& ta
 void createDir(const std::string& path);
 void removeDir(const std::string& path);
 void removeFile(const std::string& path);
-void removeFiles(const std::vector<std::string>& paths, const unsigned short& threadCnt = 1);
+void removeFiles(const std::vector<std::string>& paths, const bool& use_thread_pool = true);
 void copy(const std::string& source, const std::string& destination);
 void copyFiles(const std::vector<std::string>& sources,
-               const std::vector<std::string>& destination,
-               const unsigned short& threadCnt = 1);
+               const std::vector<std::string>& destinations,
+               const bool& use_thread_pool = true);
 void moveFile(const std::string& source, const std::string& destination);
 void moveFiles(const std::vector<std::string>& sources,
                const std::vector<std::string>& destination,
-               const unsigned short& threadCnt = 1);
+               const bool& use_thread_pool = true);
 std::string getTempPath();
 std::string parentPath(const std::string& path);
 
@@ -70,7 +70,8 @@ std::string utf8ToSysDefaultLocal(const std::string& utf8tsr);
 
 namespace hash {
 std::string SHA1(const std::string& file_path);
-std::string CombinedSHA1(std::unordered_set<std::string>& file_paths, const unsigned short& thread_num = 1);
+std::string CombinedSHA1(std::unordered_set<std::string>& file_paths,
+    const bool& use_thread_pool = true);
 } // namespace hash
 }
 

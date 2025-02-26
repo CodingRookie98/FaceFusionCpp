@@ -11,7 +11,7 @@
 module;
 #include <unordered_set>
 #include <filesystem>
-#include <thread_pool/thread_pool.h>
+#include <future>
 #include <opencv2/opencv.hpp>
 #include <onnxruntime_cxx_api.h>
 
@@ -26,6 +26,7 @@ import processor_hub;
 import face_swapper;
 import progress_bar;
 import metadata;
+import thread_pool;
 
 using namespace std;
 using namespace ffc;
@@ -40,7 +41,6 @@ Core::Core(const Options& options) :
     core_options_ = options;
     Logger::getInstance()->setLogLevel(core_options_.log_level);
     logger_ = Logger::getInstance();
-    thread_pool_ = std::make_unique<dp::thread_pool<>>(options.execution_thread_count);
 
     if (core_options_.force_download) {
         if (!ModelManager::getInstance()->downloadAllModel()) {
@@ -263,7 +263,7 @@ bool Core::ProcessVideos(const CoreTask& core_task, const bool& autoRemoveTarget
     return isAllSuccess;
 }
 
-bool Core::run(CoreTask core_task) {
+bool Core::Run(CoreTask core_task) {
     if (core_task.target_paths.size() != core_task.output_paths.size()) {
         logger_->error("[Core::Run] target_paths and output_paths size mismatch.");
         return false;
@@ -287,7 +287,7 @@ bool Core::run(CoreTask core_task) {
     if (core_task.processor_minor_types.contains(ProcessorMajorType::FaceSwapper)
         && core_task.processor_minor_types.at(ProcessorMajorType::FaceSwapper).face_swapper.value() == FaceSwapperType::InSwapper) {
         std::unordered_set<std::string> sourceImgPaths(core_task.source_paths->begin(), core_task.source_paths->end());
-        core_task.source_average_face_id = {FileSystem::hash::CombinedSHA1(sourceImgPaths, std::thread::hardware_concurrency())};
+        core_task.source_average_face_id = {FileSystem::hash::CombinedSHA1(sourceImgPaths)};
         core_task.source_average_face = std::make_shared<Face>(core_task.ProcessSourceAverageFace(face_analyser_));
     }
 
@@ -328,7 +328,7 @@ bool Core::run(CoreTask core_task) {
         if (!ProcessImages(tmpRunOptions)) {
             imagesAllOK = false;
         }
-        FileSystem::moveFiles(tmpTargetImgPaths, outputImgPaths, std::thread::hardware_concurrency());
+        FileSystem::moveFiles(tmpTargetImgPaths, outputImgPaths);
     }
 
     // process videos;
@@ -402,106 +402,105 @@ bool Core::ProcessImages(CoreTask core_task) {
         ++itr;
     }
 
+    std::unique_ptr<CoreTask> core_task_for_ER = nullptr;
     for (const auto& type : core_task.processor_list) {
         if (type == ProcessorMajorType::ExpressionRestorer) {
             if (originalTargetPaths.size() != core_task.target_paths.size()) {
                 logger_->error(std::string(__FUNCTION__) + std::format(" source Paths size is {}, but target paths size is {}!", originalTargetPaths.size(), core_task.target_paths.size()));
                 return false;
             }
+            if (core_task_for_ER == nullptr) {
+                core_task_for_ER = std::make_unique<CoreTask>(core_task);
+                core_task_for_ER->source_paths = originalTargetPaths;
+            }
         }
 
-        std::vector<std::future<bool>> futures;
-
-        for (size_t i = 0; i < core_task.target_paths.size(); ++i) {
-            auto func = [&](const size_t index) -> bool {
-                if (type == ProcessorMajorType::FaceSwapper) {
-                    return SwapFace(core_task.GetFaceSwapperInput(index, face_analyser_),
-                                    core_task.output_paths.at(index),
-                                    core_task.processor_minor_types[type].face_swapper.value(),
-                                    core_task.processor_model[type]);
-                }
-                if (type == ProcessorMajorType::FaceEnhancer) {
-                    return EnhanceFace(core_task.GetFaceEnhancerInput(index, face_analyser_),
-                                       core_task.output_paths.at(index),
-                                       core_task.processor_minor_types[type].face_enhancer.value(),
-                                       core_task.processor_model[type]);
-                }
-                if (type == ProcessorMajorType::ExpressionRestorer) {
-                    if (originalTargetPaths.empty()) {
-                        logger_->error("ExpressionRestorer need source!");
-                        return false;
-                    }
-                    CoreTask tmpCoreRunOptions = core_task;
-                    tmpCoreRunOptions.source_paths = originalTargetPaths;
-                    return RestoreExpression(tmpCoreRunOptions.GetExpressionRestorerInput(index, index, face_analyser_),
-                                             core_task.output_paths.at(index),
-                                             core_task.processor_minor_types[type].expression_restorer.value());
-                }
-                if (type == ProcessorMajorType::FrameEnhancer) {
-                    return EnhanceFrame(core_task.GetFrameEnhancerInput(index),
-                                        core_task.output_paths.at(index),
-                                        core_task.processor_minor_types[type].frame_enhancer.value(),
-                                        core_task.processor_model[type]);
-                }
-                return false;
-            };
-            futures.emplace_back(thread_pool_->enqueue(func, i));
-        }
-
-        if (core_task.show_progress_bar) {
-            std::string processorName;
+        auto func_to_process = [&](const size_t index) -> bool {
             if (type == ProcessorMajorType::FaceSwapper) {
-                processorName = processor_hub_.getProcessorPool().getFaceSwapper(core_task.processor_minor_types[type].face_swapper.value(), core_task.processor_model[type])->getProcessorName();
+                return SwapFace(core_task.GetFaceSwapperInput(index, face_analyser_),
+                                core_task.output_paths.at(index),
+                                core_task.processor_minor_types[type].face_swapper.value(),
+                                core_task.processor_model[type]);
             }
             if (type == ProcessorMajorType::FaceEnhancer) {
-                processorName = processor_hub_.getProcessorPool().getFaceEnhancer(core_task.processor_minor_types[type].face_enhancer.value(), core_task.processor_model[type])->getProcessorName();
+                return EnhanceFace(core_task.GetFaceEnhancerInput(index, face_analyser_),
+                                   core_task.output_paths.at(index),
+                                   core_task.processor_minor_types[type].face_enhancer.value(),
+                                   core_task.processor_model[type]);
             }
             if (type == ProcessorMajorType::ExpressionRestorer) {
-                processorName = processor_hub_.getProcessorPool().getExpressionRestorer(core_task.processor_minor_types[type].expression_restorer.value())->getProcessorName();
+                if (originalTargetPaths.empty()) {
+                    logger_->error("ExpressionRestorer need source!");
+                    return false;
+                }
+                CoreTask tmpCoreRunOptions = core_task;
+                tmpCoreRunOptions.source_paths = originalTargetPaths;
+                return RestoreExpression(tmpCoreRunOptions.GetExpressionRestorerInput(index, index, face_analyser_),
+                                         core_task.output_paths.at(index),
+                                         core_task.processor_minor_types[type].expression_restorer.value());
             }
             if (type == ProcessorMajorType::FrameEnhancer) {
-                processorName = processor_hub_.getProcessorPool().getFrameEnhancer(core_task.processor_minor_types[type].frame_enhancer.value(), core_task.processor_model[type])->getProcessorName();
+                return EnhanceFrame(core_task.GetFrameEnhancerInput(index),
+                                    core_task.output_paths.at(index),
+                                    core_task.processor_minor_types[type].frame_enhancer.value(),
+                                    core_task.processor_model[type]);
+            }
+            return false;
+        };
+
+        std::unique_ptr<ProgressBar> progress_bar{nullptr};
+        std::string processor_name;
+        if (core_task.show_progress_bar) {
+            progress_bar = std::make_unique<ProgressBar>();
+            if (type == ProcessorMajorType::FaceSwapper) {
+                processor_name = processor_hub_.getProcessorPool().getFaceSwapper(core_task.processor_minor_types[type].face_swapper.value(), core_task.processor_model[type])->getProcessorName();
+            }
+            if (type == ProcessorMajorType::FaceEnhancer) {
+                processor_name = processor_hub_.getProcessorPool().getFaceEnhancer(core_task.processor_minor_types[type].face_enhancer.value(), core_task.processor_model[type])->getProcessorName();
+            }
+            if (type == ProcessorMajorType::ExpressionRestorer) {
+                processor_name = processor_hub_.getProcessorPool().getExpressionRestorer(core_task.processor_minor_types[type].expression_restorer.value())->getProcessorName();
+            }
+            if (type == ProcessorMajorType::FrameEnhancer) {
+                processor_name = processor_hub_.getProcessorPool().getFrameEnhancer(core_task.processor_minor_types[type].frame_enhancer.value(), core_task.processor_model[type])->getProcessorName();
             }
 
             const size_t numTargetPaths = core_task.target_paths.size();
             ProgressBar::showConsoleCursor(false);
-            ProgressBar bar;
-            bar.setMaxProgress(100);
-            bar.setPrefixText(std::format("[{}] Processing ", processorName));
-            bar.setPostfixText(std::format("{}/{}", 0, numTargetPaths));
-            bar.setProgress(0);
-            int i = 0;
-            bool isAllWriteSuccess = true;
-            while (true) {
-                if (futures.size() <= i) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                    continue;
-                }
-                if (!futures[i].valid()) {
-                    isAllWriteSuccess = false;
-                    logger_->error(std::format("[{}] Failed to process image: {}", processorName, core_task.target_paths[i]));
-                    ++i;
-                    continue;
-                }
+            progress_bar->setMaxProgress(100);
+            progress_bar->setPrefixText(std::format("[{}] Processing ", processor_name));
+            progress_bar->setPostfixText(std::format("{}/{}", 0, numTargetPaths));
+            progress_bar->setProgress(0);
+        }
 
-                if (const auto writeIsSuccess = futures[i].get(); !writeIsSuccess) {
-                    isAllWriteSuccess = false;
-                    logger_->error(std::format("[{}] Failed to write image: {}", processorName, core_task.output_paths[i]));
+        std::vector<std::future<bool>> futures(core_task.target_paths.size());
+        bool is_all_success = true;
+        for (size_t index = 0; index < core_task.target_paths.size(); index += core_options_.execution_thread_count) {
+            for (size_t j = index; j < index + core_options_.execution_thread_count && j < futures.size(); ++j) {
+                futures.at(j) = ThreadPool::Instance()->Enqueue(func_to_process, j);
+            }
+            for (size_t k = index; k < index + core_options_.execution_thread_count && k < futures.size(); ++k) {
+                while (!futures.at(k).valid()) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                }
+                if (const auto is_success = futures[k].get(); !is_success) {
+                    is_all_success = false;
+                    logger_->error(std::format("[{}] Failed to write image: {}", processor_name, core_task.output_paths[k]));
                 }
 
-                bar.setPostfixText(std::format("{}/{}", i + 1, numTargetPaths));
-                const int progress = static_cast<int>(std::floor(static_cast<float>(i + 1) * 100.0f) / static_cast<float>(numTargetPaths));
-                bar.setProgress(progress);
-
-                ++i;
-                if (i >= core_task.output_paths.size()) {
-                    break;
+                if (core_task.show_progress_bar) {
+                    progress_bar->setPostfixText(std::format("{}/{}", k + 1, futures.size()));
+                    const int progress = static_cast<int>(std::floor(static_cast<float>(k + 1) * 100.0f) / static_cast<float>(futures.size()));
+                    progress_bar->setProgress(progress);
                 }
             }
+        }
+
+        if (core_task.show_progress_bar) {
             ProgressBar::showConsoleCursor(true);
-            if (!isAllWriteSuccess) {
-                logger_->error(std::format("[{}] Some images failed to process or write.", processorName));
-            }
+        }
+        if (!is_all_success) {
+            logger_->error(std::format("[{}] Some images failed to process or write.", processor_name));
         }
 
         if (core_options_.processor_memory_strategy == Options::MemoryStrategy::Strict) {
@@ -510,7 +509,7 @@ bool Core::ProcessImages(CoreTask core_task) {
     }
 
     if (core_task.processor_model.contains(ProcessorMajorType::ExpressionRestorer)) {
-        FileSystem::removeFiles(originalTargetPaths, std::thread::hardware_concurrency() / 2);
+        FileSystem::removeFiles(originalTargetPaths);
     }
     return true;
 }
@@ -530,11 +529,11 @@ bool Core::SwapFace(const FaceSwapperInput& face_swapper_input, const std::strin
     }
 
     if (!swapped_frame.empty()) {
-        vision::writeImage(swapped_frame, output_path);
+        std::ignore = ThreadPool::Instance()->Enqueue(vision::writeImage, swapped_frame, output_path);
     } else {
         logger_->error(std::format("Swap face failed! Result frame is empty. And target_frame is {}!",
-                                    target_frame->empty() ? "empty" : "not empty"));
-        vision::writeImage(*target_frame, output_path);
+                                   target_frame->empty() ? "empty" : "not empty"));
+        std::ignore = ThreadPool::Instance()->Enqueue(vision::writeImage, *target_frame, output_path);
     }
 
     return true;
@@ -560,11 +559,11 @@ bool Core::EnhanceFace(const FaceEnhancerInput& face_enhancer_input,
     }
 
     if (!enhanced_frame.empty()) {
-        vision::writeImage(enhanced_frame, output_path);
+        std::ignore = ThreadPool::Instance()->Enqueue(vision::writeImage, enhanced_frame, output_path);
     } else {
         logger_->error(std::format("Enhance face failed! Result frame is empty. And target_frame is {}!",
-                                    target_frame->empty() ? "empty" : "not empty"));
-        vision::writeImage(*target_frame, output_path);
+                                   target_frame->empty() ? "empty" : "not empty"));
+        std::ignore = ThreadPool::Instance()->Enqueue(vision::writeImage, *target_frame, output_path);
     }
 
     return true;
@@ -587,11 +586,11 @@ bool Core::RestoreExpression(const ExpressionRestorerInput& expression_restorer_
     }
 
     if (!restored_frame.empty()) {
-        vision::writeImage(restored_frame, output_path);
+        std::ignore = ThreadPool::Instance()->Enqueue(vision::writeImage, restored_frame, output_path);
     } else {
         logger_->error(std::format("Restore expression failed! Result frame is empty. And target_frame is {}!",
-                                    target_frame->empty() ? "empty" : "not empty"));
-        vision::writeImage(*target_frame, output_path);
+                                   target_frame->empty() ? "empty" : "not empty"));
+        std::ignore = ThreadPool::Instance()->Enqueue(vision::writeImage, *target_frame, output_path);
     }
 
     return true;
@@ -617,11 +616,11 @@ bool Core::EnhanceFrame(const FrameEnhancerInput& frame_enhancer_input,
     }
 
     if (!enhanced_frame.empty()) {
-        vision::writeImage(enhanced_frame, output_path);
+        std::ignore = ThreadPool::Instance()->Enqueue(vision::writeImage, enhanced_frame, output_path);
     } else {
         logger_->error(std::format("Enhance frame failed! Result frame is empty. And target_frame is {}!",
-                                    target_frame->empty() ? "empty" : "not empty"));
-        vision::writeImage(*target_frame, output_path);
+                                   target_frame->empty() ? "empty" : "not empty"));
+        std::ignore = ThreadPool::Instance()->Enqueue(vision::writeImage, *target_frame, output_path);
     }
 
     return true;

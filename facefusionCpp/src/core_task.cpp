@@ -11,7 +11,10 @@
 module;
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #include <format>
+#include <fstream>
+#include <opencv2/opencv.hpp>
 
 module core;
 import :core_task;
@@ -28,7 +31,7 @@ using namespace frameEnhancer;
 
 FaceSwapperInput
 CoreTask::GetFaceSwapperInput(const size_t& target_paths_index,
-                              const std::shared_ptr<FaceAnalyser>& face_analyser) const {
+                              const std::shared_ptr<FaceAnalyser>& face_analyser) {
     if (target_paths.empty()) {
         Logger::getInstance()->error("target_paths is empty");
         return {};

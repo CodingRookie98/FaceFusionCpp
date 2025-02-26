@@ -34,7 +34,7 @@ int main() {
     ini_config.loadConfig();
 
     const auto core = std::make_shared<ffc::Core>(ini_config.getCoreOptions());
-    const bool ok = core->run(ini_config.getCoreRunOptions());
+    const bool ok = core->Run(ini_config.getCoreRunOptions());
 
     if (!ok) {
         Logger::getInstance()->error("FaceFusionCpp failed to run. Maybe some of the tasks failed.");

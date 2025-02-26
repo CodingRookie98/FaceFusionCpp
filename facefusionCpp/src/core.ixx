@@ -10,7 +10,6 @@
 
 module;
 #include <onnxruntime_cxx_api.h>
-#include <thread_pool/thread_pool.h>
 #include <opencv2/opencv.hpp>
 
 export module core;
@@ -44,10 +43,9 @@ public:
     explicit Core(const Core::Options& options);
     ~Core();
 
-    [[nodiscard]] bool run(CoreTask core_task);
+    [[nodiscard]] bool Run(CoreTask core_task);
 
 private:
-    std::unique_ptr<dp::thread_pool<>> thread_pool_;
     std::shared_ptr<Logger> logger_;
     std::shared_ptr<Ort::Env> env_;
     std::shared_ptr<FaceAnalyser> face_analyser_;

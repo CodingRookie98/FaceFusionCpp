@@ -15,6 +15,7 @@ module;
 
 module expression_restorer;
 import :live_portrait;
+import thread_pool;
 
 namespace ffc::expressionRestore {
 LivePortrait::LivePortrait(const std::shared_ptr<Ort::Env>& env) :
@@ -95,8 +96,12 @@ cv::Mat LivePortrait::restoreExpression(const LivePortraitInput& input) {
 }
 
 cv::Mat LivePortrait::applyRestore(const cv::Mat& croppedSourceFrame, const cv::Mat& croppedTargetFrame) const {
-    std::future<std::vector<float>> featureVolumeFu = std::async(std::launch::async, &FeatureExtractor::extractFeature, &m_featureExtractor, croppedTargetFrame);
-    std::future<std::vector<std::vector<float>>> sourceMotionFu = std::async(std::launch::async, &MotionExtractor::extractMotion, &m_motionExtractor, croppedSourceFrame);
+    std::future<std::vector<float>> featureVolumeFu = ThreadPool::Instance()->Enqueue([&] {
+        return m_featureExtractor.extractFeature(croppedTargetFrame);
+    });
+    std::future<std::vector<std::vector<float>>> sourceMotionFu = ThreadPool::Instance()->Enqueue([&] {
+        return m_motionExtractor.extractMotion(croppedSourceFrame);
+    });
 
     std::vector<std::vector<float>> targetMotion = m_motionExtractor.extractMotion(croppedTargetFrame);
 

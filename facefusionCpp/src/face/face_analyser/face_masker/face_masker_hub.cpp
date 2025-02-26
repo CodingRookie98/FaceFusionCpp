@@ -15,6 +15,7 @@ module;
 
 module face_masker_hub;
 import model_manager;
+import thread_pool;
 
 namespace ffc::faceMasker {
 FaceMaskerHub::FaceMaskerHub(const std::shared_ptr<Ort::Env>& env,
@@ -60,21 +61,21 @@ cv::Mat FaceMaskerHub::getBestMask(const ArgsForGetBestMask& func_gbm_args) {
 
     if (func_gbm_args.faceMaskersTypes.contains(Type::Box) && func_gbm_args.boxSize.has_value()
         && func_gbm_args.boxMaskBlur.has_value() && func_gbm_args.boxMaskPadding.has_value()) {
-        futures.emplace_back(std::async(std::launch::async, &FaceMaskerHub::createStaticBoxMask, func_gbm_args.boxSize.value(), func_gbm_args.boxMaskBlur.value(), func_gbm_args.boxMaskPadding.value()));
+        futures.emplace_back(ThreadPool::Instance()->Enqueue(FaceMaskerHub::createStaticBoxMask, func_gbm_args.boxSize.value(), func_gbm_args.boxMaskBlur.value(), func_gbm_args.boxMaskPadding.value()));
     }
 
     if (func_gbm_args.faceMaskersTypes.contains(Type::Occlusion) && func_gbm_args.occlusionFrame.has_value()
         && func_gbm_args.occluder_model.has_value()) {
-        futures.emplace_back(std::async(std::launch::async, &FaceMaskerHub::createOcclusionMask, this,
-                                        *func_gbm_args.occlusionFrame.value(),
-                                        func_gbm_args.occluder_model.value()));
+        futures.emplace_back(ThreadPool::Instance()->Enqueue([&] {
+            return createOcclusionMask(*func_gbm_args.occlusionFrame.value(), func_gbm_args.occluder_model.value());
+        }));
     }
 
     if (func_gbm_args.faceMaskersTypes.contains(Type::Region) && func_gbm_args.regionFrame.has_value()) {
-        futures.emplace_back(std::async(std::launch::async, &FaceMaskerHub::createRegionMask, this,
-                                        *func_gbm_args.regionFrame.value(),
-                                        func_gbm_args.parser_model.value(),
-                                        func_gbm_args.faceMaskerRegions.value()));
+        futures.emplace_back(ThreadPool::Instance()->Enqueue([&] {
+            return createRegionMask(*func_gbm_args.regionFrame.value(), func_gbm_args.parser_model.value(),
+                                    func_gbm_args.faceMaskerRegions.value());
+        }));
     }
 
     for (auto& future : futures) {

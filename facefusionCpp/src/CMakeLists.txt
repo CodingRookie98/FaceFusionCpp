@@ -8,6 +8,7 @@ target_sources(${ProgramName} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/ini_config.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/core.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/progress_bar.ixx
+        ${CMAKE_CURRENT_SOURCE_DIR}/thread_pool.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg_runner.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/model_manager.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/metadata.ixx
@@ -23,6 +24,7 @@ target_sources(${ProgramName} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/ini_config.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/core.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/progress_bar.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/thread_pool.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg_runner.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/logger.cpp

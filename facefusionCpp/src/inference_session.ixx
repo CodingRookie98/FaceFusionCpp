@@ -19,7 +19,7 @@ import logger;
 namespace ffc {
 export class InferenceSession {
 public:
-    explicit InferenceSession(const std::shared_ptr<Ort::Env> &env = nullptr);
+    explicit InferenceSession(const std::shared_ptr<Ort::Env>& env = nullptr);
     virtual ~InferenceSession() = default;
 
     enum class ExecutionProvider {
@@ -36,7 +36,7 @@ public:
         bool enableTensorrtCache = true;
     };
 
-    virtual void loadModel(const std::string &modelPath, const Options &options);
+    virtual void loadModel(const std::string& modelPath, const Options& options);
     [[nodiscard]] bool isModelLoaded() const;
     [[nodiscard]] std::string getModelPath() const;
 
@@ -45,8 +45,8 @@ protected:
     Ort::SessionOptions m_sessionOptions;
     Ort::RunOptions m_runOptions;
     std::unique_ptr<OrtCUDAProviderOptions> m_cudaProviderOptions = nullptr;
-    std::vector<const char *> m_inputNames;
-    std::vector<const char *> m_outputNames;
+    std::vector<const char*> m_inputNames;
+    std::vector<const char*> m_outputNames;
     std::vector<std::vector<int64_t>> m_inputNodeDims;  // >=1 outputs
     std::vector<std::vector<int64_t>> m_outputNodeDims; // >=1 outputs
     Ort::MemoryInfo m_memoryInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
@@ -61,7 +61,7 @@ private:
     Options m_options;
     std::vector<Ort::AllocatedStringPtr> m_inputNamesPtrs;
     std::vector<Ort::AllocatedStringPtr> m_outputNamesPtrs;
-    std::shared_ptr<Logger> m_logger;;
+    std::shared_ptr<Logger> m_logger;
     bool m_isModelLoaded = false;
     std::string m_modelPath;
 };

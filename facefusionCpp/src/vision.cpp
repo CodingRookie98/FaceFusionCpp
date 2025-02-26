@@ -9,38 +9,43 @@
  */
 
 module;
-#include <thread_pool/thread_pool.h>
+#include <future>
 #include <opencv2/opencv.hpp>
 
 module vision;
 import file_system;
+import thread_pool;
 
 namespace ffc {
-std::vector<cv::Mat> vision::readStaticImages(const std::unordered_set<std::string> &imagePaths,
-                                              unsigned short threadCnt) {
-    if (threadCnt > std::thread::hardware_concurrency()) {
-        threadCnt = std::thread::hardware_concurrency();
-    }
+std::vector<cv::Mat> vision::readStaticImages(const std::unordered_set<std::string>& imagePaths,
+                                              const bool& use_thread_pool) {
     std::vector<cv::Mat> images;
-    dp::thread_pool pool(threadCnt);
-    std::vector<std::future<cv::Mat>> futures;
-    for (const auto &imagePath : imagePaths) {
-        futures.emplace_back(pool.enqueue([imagePath]() {
-            cv::Mat image = readStaticImage(imagePath);
-            return image;
-        }));
-    }
+    if (use_thread_pool) {
+        std::vector<std::future<cv::Mat>> futures;
+        for (const auto& imagePath : imagePaths) {
+            futures.emplace_back(ThreadPool::Instance()->Enqueue([imagePath]() {
+                cv::Mat image = readStaticImage(imagePath);
+                return image;
+            }));
+        }
 
-    for (auto &future : futures) {
-        if (cv::Mat image = future.get(); !image.empty()) {
-            images.emplace_back(image);
+        for (auto& future : futures) {
+            if (cv::Mat image = future.get(); !image.empty()) {
+                images.emplace_back(image);
+            }
+        }
+    } else {
+        for (const auto& imagePath : imagePaths) {
+            if (cv::Mat image = readStaticImage(imagePath); !image.empty()) {
+                images.emplace_back(image);
+            }
         }
     }
 
     return images;
 }
 
-cv::Mat vision::readStaticImage(const std::string &imagePath) {
+cv::Mat vision::readStaticImage(const std::string& imagePath) {
     //    BGR
     if (!FileSystem::isImage(imagePath)) {
         throw std::invalid_argument("Path is not an image file: " + imagePath);
@@ -48,7 +53,7 @@ cv::Mat vision::readStaticImage(const std::string &imagePath) {
     return cv::imread(imagePath, cv::IMREAD_COLOR);
 }
 
-cv::Mat vision::resizeFrame(const cv::Mat &visionFrame, const cv::Size &cropSize) {
+cv::Mat vision::resizeFrame(const cv::Mat& visionFrame, const cv::Size& cropSize) {
     const int height = visionFrame.rows;
     const int width = visionFrame.cols;
     cv::Mat tempImage = visionFrame.clone();
@@ -60,7 +65,7 @@ cv::Mat vision::resizeFrame(const cv::Mat &visionFrame, const cv::Size &cropSize
     return tempImage;
 }
 
-bool vision::writeImage(const cv::Mat &image, const std::string &imagePath) {
+bool vision::writeImage(const cv::Mat& image, const std::string& imagePath) {
     if (image.empty()) {
         return false;
     }
@@ -71,7 +76,7 @@ bool vision::writeImage(const cv::Mat &image, const std::string &imagePath) {
     return false;
 }
 
-cv::Size vision::unpackResolution(const std::string &resolution) {
+cv::Size vision::unpackResolution(const std::string& resolution) {
     int width = 0;
     int height = 0;
     char delimiter = 'x';
@@ -86,13 +91,13 @@ cv::Size vision::unpackResolution(const std::string &resolution) {
     return {width, height};
 }
 
-cv::Size vision::restrictResolution(const cv::Size &resolution1, const cv::Size &resolution2) {
+cv::Size vision::restrictResolution(const cv::Size& resolution1, const cv::Size& resolution2) {
     uint64_t area1 = static_cast<uint64_t>(resolution1.width) * resolution1.height;
     uint64_t area2 = static_cast<uint64_t>(resolution2.width) * resolution2.height;
     return area1 < area2 ? resolution1 : resolution2;
 }
 
-std::tuple<std::vector<cv::Mat>, int, int> vision::createTileFrames(const cv::Mat &visionFrame, const std::vector<int> &size) {
+std::tuple<std::vector<cv::Mat>, int, int> vision::createTileFrames(const cv::Mat& visionFrame, const std::vector<int>& size) {
     // Step 1: Initial padding
     cv::Mat paddedFrame;
     copyMakeBorder(visionFrame, paddedFrame, size[1], size[1], size[1], size[1], cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
@@ -129,7 +134,7 @@ std::tuple<std::vector<cv::Mat>, int, int> vision::createTileFrames(const cv::Ma
     return make_tuple(tileFrames, padWidth, padHeight);
 }
 
-cv::Mat vision::mergeTileFrames(const std::vector<cv::Mat> &tileFrames, int tempWidth, int tempHeight, int padWidth, int padHeight, const std::vector<int> &size) {
+cv::Mat vision::mergeTileFrames(const std::vector<cv::Mat>& tileFrames, int tempWidth, int tempHeight, int padWidth, int padHeight, const std::vector<int>& size) {
     // Step 1: Initialize the merged frame with zeros (black background)
     cv::Mat mergedFrame = cv::Mat::zeros(padHeight, padWidth, CV_8UC3);
 

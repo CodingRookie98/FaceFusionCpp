@@ -20,18 +20,18 @@ import vision;
 
 namespace ffc::faceDetector {
 
-Yolo::Yolo(const std::shared_ptr<Ort::Env> &env) :
+Yolo::Yolo(const std::shared_ptr<Ort::Env>& env) :
     FaceDetectorBase(env) {
 }
 
-void Yolo::loadModel(const std::string &modelPath, const Options &options) {
+void Yolo::loadModel(const std::string& modelPath, const Options& options) {
     FaceDetectorBase::loadModel(modelPath, options);
     m_inputHeight = m_inputNodeDims[0][2];
     m_inputWidth = m_inputNodeDims[0][3];
 }
 
 std::tuple<std::vector<float>, float, float>
-Yolo::preProcess(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize) {
+Yolo::preProcess(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize) {
     const int faceDetectorHeight = faceDetectorSize.height;
     const int faceDetectorWidth = faceDetectorSize.width;
 
@@ -54,24 +54,24 @@ Yolo::preProcess(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize) {
     std::vector<float> inputData;
     inputData.resize(3 * imageArea);
     const size_t singleChnSize = imageArea * sizeof(float);
-    memcpy(inputData.data(), (float *)bgrChannels[0].data, singleChnSize);
-    memcpy(inputData.data() + imageArea, (float *)bgrChannels[1].data, singleChnSize);
-    memcpy(inputData.data() + imageArea * 2, (float *)bgrChannels[2].data, singleChnSize);
+    memcpy(inputData.data(), (float*)bgrChannels[0].data, singleChnSize);
+    memcpy(inputData.data() + imageArea, (float*)bgrChannels[1].data, singleChnSize);
+    memcpy(inputData.data() + imageArea * 2, (float*)bgrChannels[2].data, singleChnSize);
     return std::make_tuple(inputData, ratioHeight, ratioWidth);
 }
 
 Yolo::Result
-Yolo::detectFaces(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize,
-                  const float &scoreThreshold) {
+Yolo::detectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
+                  const float& scoreThreshold) {
     if (visionFrame.empty()) {
         throw std::runtime_error("Input image is empty");
     }
     if (const std::vector<cv::Size>& supportSizes = GetSupportSizes();
-        !std::ranges::any_of(supportSizes, [faceDetectorSize](const cv::Size& size){ return size == faceDetectorSize;})) {
+        !std::ranges::any_of(supportSizes, [faceDetectorSize](const cv::Size& size) { return size == faceDetectorSize; })) {
         throw std::runtime_error("Face detector size is not supported");
     }
 
-    auto [inputData, ratioHeight, ratioWidth] = this->preProcess(visionFrame, faceDetectorSize);
+    auto [inputData, ratioHeight, ratioWidth] = preProcess(visionFrame, faceDetectorSize);
 
     const std::vector<int64_t> inputImgShape = {1, 3, faceDetectorSize.height, faceDetectorSize.width};
     const Ort::Value inputTensor = Ort::Value::CreateTensor<float>(m_memoryInfo, inputData.data(), inputData.size(), inputImgShape.data(), inputImgShape.size());
@@ -81,7 +81,7 @@ Yolo::detectFaces(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize,
                                                            m_outputNames.size());
 
     // 不需要手动释放 pdata，它由 Ort::Value 管理
-    float *pdata = ortOutputs[0].GetTensorMutableData<float>(); /// 形状是(1, 20, 8400),不考虑第0维batchsize，每一列的长度20,前4个元素是检测框坐标(cx,cy,w,h)，第4个元素是置信度，剩下的15个元素是5个关键点坐标x,y和置信度
+    float* pdata = ortOutputs[0].GetTensorMutableData<float>(); /// 形状是(1, 20, 8400),不考虑第0维batchsize，每一列的长度20,前4个元素是检测框坐标(cx,cy,w,h)，第4个元素是置信度，剩下的15个元素是5个关键点坐标x,y和置信度
     const int numBox = ortOutputs[0].GetTensorTypeAndShapeInfo().GetShape()[2];
 
     std::vector<Face::BBox> bBoxRaw;
@@ -123,4 +123,4 @@ Yolo::detectFaces(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize,
 
     return result;
 }
-}
+} // namespace ffc::faceDetector

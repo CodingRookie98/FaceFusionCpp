@@ -113,19 +113,19 @@ void ini_config::frameProcessors() {
         bool flag = false;
         for (const auto& item : result) {
             if (item == "face_swapper") {
-                m_coreRunOptions.processor_list.emplace_back(ProcessorMajorType::FaceSwapper);
+                core_task_.processor_list.emplace_back(ProcessorMajorType::FaceSwapper);
                 flag = true;
             }
             if (item == "face_enhancer") {
-                m_coreRunOptions.processor_list.emplace_back(ProcessorMajorType::FaceEnhancer);
+                core_task_.processor_list.emplace_back(ProcessorMajorType::FaceEnhancer);
                 flag = true;
             }
             if (item == "expression_restorer") {
-                m_coreRunOptions.processor_list.emplace_back(ProcessorMajorType::ExpressionRestorer);
+                core_task_.processor_list.emplace_back(ProcessorMajorType::ExpressionRestorer);
                 flag = true;
             }
             if (item == "frame_enhancer") {
-                m_coreRunOptions.processor_list.emplace_back(ProcessorMajorType::FrameEnhancer);
+                core_task_.processor_list.emplace_back(ProcessorMajorType::FrameEnhancer);
                 flag = true;
             }
         }
@@ -137,31 +137,31 @@ void ini_config::frameProcessors() {
         m_logger->error("[IniConfig] No frame processors specified.");
         std::exit(1);
     }
-    if (m_coreRunOptions.processor_list.empty()) {
+    if (core_task_.processor_list.empty()) {
         m_logger->error("[IniConfig] No frame processors specified.");
         std::exit(1);
     }
 
-    if (std::ranges::find(m_coreRunOptions.processor_list.begin(), m_coreRunOptions.processor_list.end(), ProcessorMajorType::FaceEnhancer)
-        != m_coreRunOptions.processor_list.end()) {
+    if (std::ranges::find(core_task_.processor_list.begin(), core_task_.processor_list.end(), ProcessorMajorType::FaceEnhancer)
+        != core_task_.processor_list.end()) {
         value = m_ini.GetValue("frame_processors", "face_enhancer_model", "gfpgan_1.4");
         tolower(value);
         if (value == "codeformer") {
-            m_coreRunOptions.processor_model[ProcessorMajorType::FaceEnhancer] = ModelManager::Model::Codeformer;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType{.face_enhancer = FaceEnhancerType::CodeFormer};
+            core_task_.processor_model[ProcessorMajorType::FaceEnhancer] = ModelManager::Model::Codeformer;
+            core_task_.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType{.face_enhancer = FaceEnhancerType::CodeFormer};
         } else if (value == "gfpgan_1.2") {
-            m_coreRunOptions.processor_model[ProcessorMajorType::FaceEnhancer] = ModelManager::Model::Gfpgan_12;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType{.face_enhancer = FaceEnhancerType::GFP_GAN};
+            core_task_.processor_model[ProcessorMajorType::FaceEnhancer] = ModelManager::Model::Gfpgan_12;
+            core_task_.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType{.face_enhancer = FaceEnhancerType::GFP_GAN};
         } else if (value == "gfpgan_1.3") {
-            m_coreRunOptions.processor_model[ProcessorMajorType::FaceEnhancer] = ModelManager::Model::Gfpgan_13;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType{.face_enhancer = FaceEnhancerType::GFP_GAN};
+            core_task_.processor_model[ProcessorMajorType::FaceEnhancer] = ModelManager::Model::Gfpgan_13;
+            core_task_.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType{.face_enhancer = FaceEnhancerType::GFP_GAN};
         } else if (value == "gfpgan_1.4") {
-            m_coreRunOptions.processor_model[ProcessorMajorType::FaceEnhancer] = ModelManager::Model::Gfpgan_14;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType{.face_enhancer = FaceEnhancerType::GFP_GAN};
+            core_task_.processor_model[ProcessorMajorType::FaceEnhancer] = ModelManager::Model::Gfpgan_14;
+            core_task_.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType{.face_enhancer = FaceEnhancerType::GFP_GAN};
         } else {
             m_logger->warn(std::format("Invalid face enhancer model: {}, Use Default: gfpgan_1.4", value));
-            m_coreRunOptions.processor_model[ProcessorMajorType::FaceEnhancer] = ModelManager::Model::Gfpgan_14;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType{.face_enhancer = FaceEnhancerType::GFP_GAN};
+            core_task_.processor_model[ProcessorMajorType::FaceEnhancer] = ModelManager::Model::Gfpgan_14;
+            core_task_.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType{.face_enhancer = FaceEnhancerType::GFP_GAN};
         }
 
         unsigned short face_enhancer_blend = m_ini.GetLongValue("frame_processors", "face_enhancer_blend", 80);
@@ -171,35 +171,35 @@ void ini_config::frameProcessors() {
         if (face_enhancer_blend > 100) {
             face_enhancer_blend = 100;
         }
-        m_coreRunOptions.face_enhancer_blend = face_enhancer_blend;
+        core_task_.face_enhancer_blend = face_enhancer_blend;
     }
 
-    if (std::ranges::find(m_coreRunOptions.processor_list.begin(), m_coreRunOptions.processor_list.end(), ProcessorMajorType::FaceSwapper)
-        != m_coreRunOptions.processor_list.end()) {
+    if (std::ranges::find(core_task_.processor_list.begin(), core_task_.processor_list.end(), ProcessorMajorType::FaceSwapper)
+        != core_task_.processor_list.end()) {
         value = m_ini.GetValue("frame_processors", "face_swapper_model", "inswapper_128_fp16");
         tolower(value);
         if (value == "inswapper_128_fp16") {
-            m_coreRunOptions.processor_model[ProcessorMajorType::FaceSwapper] = ModelManager::Model::Inswapper_128_fp16;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FaceSwapper] = ProcessorMinorType{.face_swapper = FaceSwapperType::InSwapper};
+            core_task_.processor_model[ProcessorMajorType::FaceSwapper] = ModelManager::Model::Inswapper_128_fp16;
+            core_task_.processor_minor_types[ProcessorMajorType::FaceSwapper] = ProcessorMinorType{.face_swapper = FaceSwapperType::InSwapper};
         } else if (value == "inswapper_128") {
-            m_coreRunOptions.processor_model[ProcessorMajorType::FaceSwapper] = ModelManager::Model::Inswapper_128;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FaceSwapper] = ProcessorMinorType{.face_swapper = FaceSwapperType::InSwapper};
+            core_task_.processor_model[ProcessorMajorType::FaceSwapper] = ModelManager::Model::Inswapper_128;
+            core_task_.processor_minor_types[ProcessorMajorType::FaceSwapper] = ProcessorMinorType{.face_swapper = FaceSwapperType::InSwapper};
         } else {
             m_logger->warn(std::format("[IniConfig] Invalid face swapper model: {}, Use Default: inswapper_128_fp16", value));
-            m_coreRunOptions.processor_model[ProcessorMajorType::FaceSwapper] = ModelManager::Model::Inswapper_128_fp16;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FaceSwapper] = ProcessorMinorType{.face_swapper = FaceSwapperType::InSwapper};
+            core_task_.processor_model[ProcessorMajorType::FaceSwapper] = ModelManager::Model::Inswapper_128_fp16;
+            core_task_.processor_minor_types[ProcessorMajorType::FaceSwapper] = ProcessorMinorType{.face_swapper = FaceSwapperType::InSwapper};
         }
     }
 
-    if (std::ranges::find(m_coreRunOptions.processor_list.begin(), m_coreRunOptions.processor_list.end(), ProcessorMajorType::ExpressionRestorer)
-        != m_coreRunOptions.processor_list.end()) {
+    if (std::ranges::find(core_task_.processor_list.begin(), core_task_.processor_list.end(), ProcessorMajorType::ExpressionRestorer)
+        != core_task_.processor_list.end()) {
         value = m_ini.GetValue("frame_processors", "expression_restorer_model", "live_portrait");
         tolower(value);
         if (value == "live_portrait") {
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::ExpressionRestorer] = ProcessorMinorType{.expression_restorer = ExpressionRestorerType::LivePortrait};
+            core_task_.processor_minor_types[ProcessorMajorType::ExpressionRestorer] = ProcessorMinorType{.expression_restorer = ExpressionRestorerType::LivePortrait};
         } else {
             m_logger->warn(std::format("[IniConfig] Invalid expression restorer model: {}, Use Default: live_portrait", value));
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::ExpressionRestorer] = ProcessorMinorType{.expression_restorer = ExpressionRestorerType::LivePortrait};
+            core_task_.processor_minor_types[ProcessorMajorType::ExpressionRestorer] = ProcessorMinorType{.expression_restorer = ExpressionRestorerType::LivePortrait};
         }
 
         unsigned short expression_restorer_factor = m_ini.GetLongValue("frame_processors", "expression_restorer_factor", 80);
@@ -210,38 +210,38 @@ void ini_config::frameProcessors() {
             expression_restorer_factor = 100;
         }
         expression_restorer_factor = expression_restorer_factor / 100.0f * 1.2f;
-        m_coreRunOptions.expression_restorer_factor = expression_restorer_factor;
+        core_task_.expression_restorer_factor = expression_restorer_factor;
     }
 
-    if (std::ranges::find(m_coreRunOptions.processor_list.begin(), m_coreRunOptions.processor_list.end(), ProcessorMajorType::FrameEnhancer)
-        != m_coreRunOptions.processor_list.end()) {
+    if (std::ranges::find(core_task_.processor_list.begin(), core_task_.processor_list.end(), ProcessorMajorType::FrameEnhancer)
+        != core_task_.processor_list.end()) {
         value = m_ini.GetValue("frame_processors", "frame_enhancer_model", "real_hatgan_x4");
         tolower(value);
         if (value == "real_esrgan_x2") {
-            m_coreRunOptions.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x2;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
+            core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x2;
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
         } else if (value == "real_esrgan_x2_fp16") {
-            m_coreRunOptions.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x2_fp16;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
+            core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x2_fp16;
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
         } else if (value == "real_esrgan_x4") {
-            m_coreRunOptions.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x4;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
+            core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x4;
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
         } else if (value == "real_esrgan_x4_fp16") {
-            m_coreRunOptions.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x4_fp16;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
+            core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x4_fp16;
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
         } else if (value == "real_esrgan_x8") {
-            m_coreRunOptions.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x8;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
+            core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x8;
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
         } else if (value == "real_esrgan_x8_fp16") {
-            m_coreRunOptions.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x8_fp16;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
+            core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x8_fp16;
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
         } else if (value == "real_hatgan_x4") {
-            m_coreRunOptions.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_hatgan_x4;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_hat_gan};
+            core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_hatgan_x4;
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_hat_gan};
         } else {
             m_logger->warn(std::format("[IniConfig] Invalid frame enhancer: {}, Use Default: real_hatgan_x4", value));
-            m_coreRunOptions.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_hatgan_x4;
-            m_coreRunOptions.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_hat_gan};
+            core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_hatgan_x4;
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_hat_gan};
         }
 
         unsigned short frame_enhancer_blend = m_ini.GetLongValue("frame_processors", "frame_enhancer_blend", 80);
@@ -251,7 +251,7 @@ void ini_config::frameProcessors() {
         if (frame_enhancer_blend > 100) {
             frame_enhancer_blend = 100;
         }
-        m_coreRunOptions.frame_enhancer_blend = frame_enhancer_blend;
+        core_task_.frame_enhancer_blend = frame_enhancer_blend;
     }
 }
 
@@ -264,7 +264,7 @@ void ini_config::image() {
     if (output_image_quality > 100) {
         output_image_quality = 100;
     }
-    m_coreRunOptions.output_image_quality = output_image_quality;
+    core_task_.output_image_quality = output_image_quality;
 
     cv::Size output_image_size;
     if (const std::string value = m_ini.GetValue("image", "output_image_resolution", "");
@@ -273,111 +273,111 @@ void ini_config::image() {
     } else {
         output_image_size = cv::Size(0, 0);
     }
-    m_coreRunOptions.output_image_size = output_image_size;
+    core_task_.output_image_size = output_image_size;
 }
 
 void ini_config::faceMasker() {
     const std::string section_name{"face_masker"};
     std::string value = m_ini.GetValue(section_name.c_str(), "face_mask_types", "box");
     if (!value.empty()) {
-        m_coreRunOptions.face_mask_types = std::make_optional<std::unordered_set<FaceMaskerHub::Type>>();
+        core_task_.face_mask_types = std::make_optional<std::unordered_set<FaceMaskerHub::Type>>();
         if (value.find("box") != std::string::npos) {
-            m_coreRunOptions.face_mask_types->insert(FaceMaskerHub::Type::Box);
+            core_task_.face_mask_types->insert(FaceMaskerHub::Type::Box);
         }
         if (value.find("occlusion") != std::string::npos) {
-            m_coreRunOptions.face_mask_types->insert(FaceMaskerHub::Type::Occlusion);
+            core_task_.face_mask_types->insert(FaceMaskerHub::Type::Occlusion);
         }
         if (value.find("region") != std::string::npos) {
-            m_coreRunOptions.face_mask_types->insert(FaceMaskerHub::Type::Region);
+            core_task_.face_mask_types->insert(FaceMaskerHub::Type::Region);
         }
     } else {
-        m_coreRunOptions.face_mask_types->insert(FaceMaskerHub::Type::Box);
+        core_task_.face_mask_types->insert(FaceMaskerHub::Type::Box);
     }
 
-    if (m_coreRunOptions.face_mask_types.value().contains(FaceMaskerHub::Type::Occlusion)) {
+    if (core_task_.face_mask_types.value().contains(FaceMaskerHub::Type::Occlusion)) {
         value = m_ini.GetValue(section_name.c_str(), "face_occluder_model", "xseg_1");
         if (value == "xseg_1") {
-            m_coreRunOptions.face_occluder_model = ModelManager::Model::xseg_1;
+            core_task_.face_occluder_model = ModelManager::Model::xseg_1;
         } else if (value == "xseg_2") {
-            m_coreRunOptions.face_occluder_model = ModelManager::Model::xseg_2;
+            core_task_.face_occluder_model = ModelManager::Model::xseg_2;
         } else {
-            m_coreRunOptions.face_occluder_model = ModelManager::Model::xseg_1;
+            core_task_.face_occluder_model = ModelManager::Model::xseg_1;
         }
     }
 
-    if (m_coreRunOptions.face_mask_types.value().contains(FaceMaskerHub::Type::Region)) {
+    if (core_task_.face_mask_types.value().contains(FaceMaskerHub::Type::Region)) {
         value = m_ini.GetValue(section_name.c_str(), "face_parser_model", "bisenet_resnet_34");
         if (value == "bisenet_resnet_34") {
-            m_coreRunOptions.face_parser_model = ModelManager::Model::bisenet_resnet_34;
+            core_task_.face_parser_model = ModelManager::Model::bisenet_resnet_34;
         } else if (value == "bisenet_resnet_18") {
-            m_coreRunOptions.face_parser_model = ModelManager::Model::bisenet_resnet_18;
+            core_task_.face_parser_model = ModelManager::Model::bisenet_resnet_18;
         } else {
-            m_coreRunOptions.face_parser_model = ModelManager::Model::bisenet_resnet_34;
+            core_task_.face_parser_model = ModelManager::Model::bisenet_resnet_34;
         }
     }
 
-    m_coreRunOptions.face_mask_blur = m_ini.GetDoubleValue("face_mask", "face_mask_blur", 0.3);
-    if (m_coreRunOptions.face_mask_blur < 0) {
-        m_coreRunOptions.face_mask_blur = 0;
-    } else if (m_coreRunOptions.face_mask_blur > 1) {
-        m_coreRunOptions.face_mask_blur = 1;
+    core_task_.face_mask_blur = m_ini.GetDoubleValue("face_mask", "face_mask_blur", 0.3);
+    if (core_task_.face_mask_blur < 0) {
+        core_task_.face_mask_blur = 0;
+    } else if (core_task_.face_mask_blur > 1) {
+        core_task_.face_mask_blur = 1;
     }
 
     value = m_ini.GetValue("face_masker", "face_mask_padding", "0 0 0 0");
     if (!value.empty()) {
-        m_coreRunOptions.face_mask_padding = normalizePadding(parseStr2VecInt(value));
+        core_task_.face_mask_padding = normalizePadding(parseStr2VecInt(value));
     } else {
-        m_coreRunOptions.face_mask_padding = {0, 0, 0, 0};
+        core_task_.face_mask_padding = {0, 0, 0, 0};
     }
 
     value = m_ini.GetValue("face_masker", "face_mask_region", "All");
     tolower(value);
     if (value == "all") {
-        m_coreRunOptions.face_mask_regions = FaceMaskerRegion::getAllRegions();
+        core_task_.face_mask_regions = FaceMaskerRegion::getAllRegions();
     } else if (value == "skin") {
-        m_coreRunOptions.face_mask_regions->insert(FaceMaskerRegion::Region::Skin);
+        core_task_.face_mask_regions->insert(FaceMaskerRegion::Region::Skin);
     } else if (value == "nose") {
-        m_coreRunOptions.face_mask_regions->insert(FaceMaskerRegion::Region::Nose);
+        core_task_.face_mask_regions->insert(FaceMaskerRegion::Region::Nose);
     } else if (value == "left-eyebrow") {
-        m_coreRunOptions.face_mask_regions->insert(FaceMaskerRegion::Region::LeftEyebrow);
+        core_task_.face_mask_regions->insert(FaceMaskerRegion::Region::LeftEyebrow);
     } else if (value == "right-eyebrow") {
-        m_coreRunOptions.face_mask_regions->insert(FaceMaskerRegion::Region::RightEyebrow);
+        core_task_.face_mask_regions->insert(FaceMaskerRegion::Region::RightEyebrow);
     } else if (value == "mouth") {
-        m_coreRunOptions.face_mask_regions->insert(FaceMaskerRegion::Region::Mouth);
+        core_task_.face_mask_regions->insert(FaceMaskerRegion::Region::Mouth);
     } else if (value == "right-eye") {
-        m_coreRunOptions.face_mask_regions->insert(FaceMaskerRegion::Region::RightEye);
+        core_task_.face_mask_regions->insert(FaceMaskerRegion::Region::RightEye);
     } else if (value == "left-eye") {
-        m_coreRunOptions.face_mask_regions->insert(FaceMaskerRegion::Region::LeftEye);
+        core_task_.face_mask_regions->insert(FaceMaskerRegion::Region::LeftEye);
     } else if (value == "glasses") {
-        m_coreRunOptions.face_mask_regions->insert(FaceMaskerRegion::Region::Glasses);
+        core_task_.face_mask_regions->insert(FaceMaskerRegion::Region::Glasses);
     } else if (value == "upper-lip") {
-        m_coreRunOptions.face_mask_regions->insert(FaceMaskerRegion::Region::UpperLip);
+        core_task_.face_mask_regions->insert(FaceMaskerRegion::Region::UpperLip);
     } else if (value == "lower-lip") {
-        m_coreRunOptions.face_mask_regions->insert(FaceMaskerRegion::Region::LowerLip);
+        core_task_.face_mask_regions->insert(FaceMaskerRegion::Region::LowerLip);
     } else {
         m_logger->warn("[IniConfig] Invalid face mask region: " + value + " Use default: All");
-        m_coreRunOptions.face_mask_regions = FaceMaskerRegion::getAllRegions();
+        core_task_.face_mask_regions = FaceMaskerRegion::getAllRegions();
     }
 }
 void ini_config::faceSelector() {
     // face_selector
     std::string value = m_ini.GetValue("face_selector", "face_selector_mode", "reference");
-    if (!value.empty() && m_coreRunOptions.reference_face_path->empty()) {
+    if (!value.empty() && core_task_.reference_face_path->empty()) {
         if (value == "reference") {
-            m_coreRunOptions.face_selector_mode = FaceSelector::SelectorMode::Reference;
+            core_task_.face_selector_mode = FaceSelector::SelectorMode::Reference;
         } else if (value == "one") {
-            m_coreRunOptions.face_selector_mode = FaceSelector::SelectorMode::One;
+            core_task_.face_selector_mode = FaceSelector::SelectorMode::One;
         } else if (value == "many") {
-            m_coreRunOptions.face_selector_mode = FaceSelector::SelectorMode::Many;
+            core_task_.face_selector_mode = FaceSelector::SelectorMode::Many;
         } else {
             m_logger->warn("[IniConfig] Invalid face selector mode: " + value + " Use default: reference");
-            m_coreRunOptions.face_selector_mode = FaceSelector::SelectorMode::Many;
+            core_task_.face_selector_mode = FaceSelector::SelectorMode::Many;
         }
     } else {
-        if (m_coreRunOptions.reference_face_path.has_value() && !m_coreRunOptions.reference_face_path->empty()) {
-            m_coreRunOptions.face_selector_mode = FaceSelector::SelectorMode::Reference;
+        if (core_task_.reference_face_path.has_value() && !core_task_.reference_face_path->empty()) {
+            core_task_.face_selector_mode = FaceSelector::SelectorMode::Reference;
         } else {
-            m_coreRunOptions.face_selector_mode = FaceSelector::SelectorMode::Many;
+            core_task_.face_selector_mode = FaceSelector::SelectorMode::Many;
         }
     }
 
@@ -421,23 +421,23 @@ void ini_config::faceSelector() {
     if (face_selector_options.ageEnd < 0 || face_selector_options.ageEnd > 100) {
         face_selector_options.ageEnd = 100;
     }
-    m_coreRunOptions.face_analyser_options->faceSelectorOptions = face_selector_options;
+    core_task_.face_analyser_options->faceSelectorOptions = face_selector_options;
 
-    m_coreRunOptions.reference_face_position = m_ini.GetLongValue("face_selector", "reference_face_position", 0);
-    if (m_coreRunOptions.reference_face_position < 0) {
-        m_coreRunOptions.reference_face_position = 0;
+    core_task_.reference_face_position = m_ini.GetLongValue("face_selector", "reference_face_position", 0);
+    if (core_task_.reference_face_position < 0) {
+        core_task_.reference_face_position = 0;
     }
 
-    m_coreRunOptions.reference_face_distance = m_ini.GetDoubleValue("face_selector", "reference_face_distance", 0.6);
-    if (m_coreRunOptions.reference_face_distance < 0) {
-        m_coreRunOptions.reference_face_distance = 0;
-    } else if (m_coreRunOptions.reference_face_distance > 1.5) {
-        m_coreRunOptions.reference_face_distance = 1.5;
+    core_task_.reference_face_distance = m_ini.GetDoubleValue("face_selector", "reference_face_distance", 0.6);
+    if (core_task_.reference_face_distance < 0) {
+        core_task_.reference_face_distance = 0;
+    } else if (core_task_.reference_face_distance > 1.5) {
+        core_task_.reference_face_distance = 1.5;
     }
 
-    m_coreRunOptions.reference_frame_number = m_ini.GetLongValue("face_selector", "reference_frame_number", 0);
-    if (m_coreRunOptions.reference_frame_number < 0) {
-        m_coreRunOptions.reference_frame_number = 0;
+    core_task_.reference_frame_number = m_ini.GetLongValue("face_selector", "reference_frame_number", 0);
+    if (core_task_.reference_frame_number < 0) {
+        core_task_.reference_frame_number = 0;
     }
 }
 
@@ -501,8 +501,8 @@ void ini_config::faceAnalyser() {
     } else if (face_detector_options.minScore > 1.0f) {
         face_detector_options.minScore = 1.0f;
     }
-    m_coreRunOptions.face_analyser_options = {FaceAnalyser::Options{}};
-    m_coreRunOptions.face_analyser_options->faceDetectorOptions = face_detector_options;
+    core_task_.face_analyser_options = {FaceAnalyser::Options{}};
+    core_task_.face_analyser_options->faceDetectorOptions = face_detector_options;
 
     value = m_ini.GetValue("face_analyser", "face_landmarker_model", "2dfan4");
     FaceLandmarkerHub::Options face_landmarker_options;
@@ -529,23 +529,23 @@ void ini_config::faceAnalyser() {
     } else if (face_landmarker_options.minScore > 1.0f) {
         face_landmarker_options.minScore = 1.0f;
     }
-    m_coreRunOptions.face_analyser_options->faceLandMarkerOptions = face_landmarker_options;
+    core_task_.face_analyser_options->faceLandMarkerOptions = face_landmarker_options;
 }
 
 void ini_config::general() {
     // general
     std::string value;
-    if (std::ranges::find(m_coreRunOptions.processor_list, ProcessorMajorType::FaceSwapper) != m_coreRunOptions.processor_list.end()
-        || std::ranges::find(m_coreRunOptions.processor_list, ProcessorMajorType::ExpressionRestorer) != m_coreRunOptions.processor_list.end()) {
+    if (std::ranges::find(core_task_.processor_list, ProcessorMajorType::FaceSwapper) != core_task_.processor_list.end()
+        || std::ranges::find(core_task_.processor_list, ProcessorMajorType::ExpressionRestorer) != core_task_.processor_list.end()) {
         value = m_ini.GetValue("general", "source_path", "");
         if (!value.empty()) {
-            m_coreRunOptions.source_paths = std::make_optional(std::vector<std::string>{});
+            core_task_.source_paths = std::make_optional(std::vector<std::string>{});
             if (FileSystem::fileExists(value) && FileSystem::isFile(value)) {
-                m_coreRunOptions.source_paths->emplace_back(value);
+                core_task_.source_paths->emplace_back(value);
             } else if (FileSystem::isDir(value)) {
                 std::unordered_set<std::string> filePaths = FileSystem::listFilesInDir(value);
                 for (const auto& filePath : filePaths) {
-                    m_coreRunOptions.source_paths->emplace_back(filePath);
+                    core_task_.source_paths->emplace_back(filePath);
                 }
             } else {
                 m_logger->warn("[IniConfig] source_path is not a valid path or directory.");
@@ -558,11 +558,11 @@ void ini_config::general() {
     value = m_ini.GetValue("general", "target_path", "");
     if (!value.empty()) {
         if (FileSystem::isFile(value)) {
-            m_coreRunOptions.target_paths.emplace_back(value);
+            core_task_.target_paths.emplace_back(value);
         } else if (FileSystem::isDir(value)) {
             std::unordered_set<std::string> filePaths = FileSystem::listFilesInDir(value);
             for (const auto& filePath : filePaths) {
-                m_coreRunOptions.target_paths.emplace_back(filePath);
+                core_task_.target_paths.emplace_back(filePath);
             }
         } else {
             m_logger->error("[IniConfig] target_path is not a valid path or directory.");
@@ -576,8 +576,8 @@ void ini_config::general() {
     value = m_ini.GetValue("general", "reference_face_path", "");
     if (!value.empty()) {
         if (FileSystem::fileExists(value) && FileSystem::isFile(value) && FileSystem::isImage(value)) {
-            m_coreRunOptions.reference_face_path = value;
-            m_coreRunOptions.face_selector_mode = FaceSelector::SelectorMode::Reference;
+            core_task_.reference_face_path = value;
+            core_task_.face_selector_mode = FaceSelector::SelectorMode::Reference;
         } else {
             m_logger->warn("[IniConfig] reference_face_path is not a valid path or file.");
         }
@@ -599,7 +599,7 @@ void ini_config::general() {
     if (!FileSystem::dirExists(output_path)) {
         FileSystem::createDir(output_path);
     }
-    m_coreRunOptions.output_paths = FileSystem::normalizeOutputPaths(m_coreRunOptions.target_paths, output_path);
+    core_task_.output_paths = FileSystem::normalizeOutputPaths(core_task_.target_paths, output_path);
 }
 
 void ini_config::misc() {
@@ -697,7 +697,7 @@ void ini_config::memory() {
 
 void ini_config::video() {
     unsigned long video_segment_duration = m_ini.GetLongValue("video", "video_segment_duration", 0);
-    m_coreRunOptions.video_segment_duration = video_segment_duration;
+    core_task_.video_segment_duration = video_segment_duration;
 
     std::string value = m_ini.GetValue("video", "output_video_encoder", "libx264");
     const std::unordered_set<std::string> encoders = {"libx264", "libx265", "libvpx-vp9", "h264_nvenc", "hevc_nvenc", "h264_amf", "hevc_amf"};
@@ -712,7 +712,7 @@ void ini_config::video() {
     } else {
         output_video_encoder = "libx264";
     }
-    m_coreRunOptions.output_video_encoder = output_video_encoder;
+    core_task_.output_video_encoder = output_video_encoder;
 
     value = m_ini.GetValue("video", "output_video_preset", "veryfast");
     const std::unordered_set<std::string> presets = {"ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"};
@@ -727,7 +727,7 @@ void ini_config::video() {
     } else {
         output_video_preset = "veryfast";
     }
-    m_coreRunOptions.output_video_preset = output_video_preset;
+    core_task_.output_video_preset = output_video_preset;
 
     unsigned short output_video_quality = m_ini.GetLongValue("video", "output_video_quality", 80);
     if (output_video_quality < 0) {
@@ -736,7 +736,7 @@ void ini_config::video() {
     if (output_video_quality > 100) {
         output_video_quality = 100;
     }
-    m_coreRunOptions.output_video_quality = output_video_quality;
+    core_task_.output_video_quality = output_video_quality;
 
     value = m_ini.GetValue("video", "output_audio_encoder", "aac");
     const std::unordered_set<std::string> audioEncoders = {"aac", "libmp3lame", "libopus", "libvorbis"};
@@ -751,7 +751,7 @@ void ini_config::video() {
     } else {
         output_audio_encoder = "aac";
     }
-    m_coreRunOptions.output_audio_encoder = output_audio_encoder;
+    core_task_.output_audio_encoder = output_audio_encoder;
 
     m_ini.GetBoolValue("video", "skip_audio", false);
 
@@ -768,7 +768,7 @@ void ini_config::video() {
     } else {
         temp_frame_format = "png";
     }
-    m_coreRunOptions.temp_frame_format = temp_frame_format;
+    core_task_.temp_frame_format = temp_frame_format;
 }
 
 void ini_config::tolower(std::string& str) {

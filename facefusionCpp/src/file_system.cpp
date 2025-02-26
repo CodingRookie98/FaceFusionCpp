@@ -13,16 +13,17 @@ module;
 #include <filesystem>
 #include <fstream>
 #include <ranges>
+#include <future>
 #ifdef _WIN32
 #include <windows.h>
 #endif
-#include <thread_pool/thread_pool.h>
 #include <opencv2/opencv.hpp>
 #include <openssl/sha.h>
 
 module file_system;
 import vision;
 import ffmpeg_runner;
+import thread_pool;
 
 namespace ffc {
 
@@ -149,10 +150,9 @@ std::string FileSystem::normalizeOutputPath(const std::string& targetPath, const
 }
 
 std::vector<std::string> FileSystem::normalizeOutputPaths(const std::vector<std::string>& targetPaths, const std::string& outputPath) {
-    dp::thread_pool pool(std::thread::hardware_concurrency());
     std::vector<std::future<std::string>> futures;
     for (const auto& targetPath : targetPaths) {
-        futures.emplace_back(pool.enqueue([targetPath, outputPath] {
+        futures.emplace_back(ThreadPool::Instance()->Enqueue([targetPath, outputPath] {
             return normalizeOutputPath(targetPath, outputPath);
         }));
     }
@@ -255,14 +255,11 @@ bool FileSystem::copyImages(const std::vector<std::string>& imagePaths, const st
         return false;
     }
 
-    // use multi-thread
-    dp::thread_pool pool(std::thread::hardware_concurrency());
-
     std::vector<std::future<bool>> futures;
     for (size_t i = 0; i < imagePaths.size(); ++i) {
         const std::string& imagePath = imagePaths[i];
         const std::string& destination = destinations[i];
-        futures.emplace_back(pool.enqueue([imagePath, destination, size]() {
+        futures.emplace_back(ThreadPool::Instance()->Enqueue([imagePath, destination, size]() {
             return copyImage(imagePath, destination, size);
         }));
     }
@@ -328,10 +325,9 @@ bool FileSystem::finalizeImages(const std::vector<std::string>& imagePaths, cons
         throw std::invalid_argument("Input and output paths must have the same size");
     }
 
-    dp::thread_pool pool(std::thread::hardware_concurrency());
     std::vector<std::future<bool>> futures;
     for (size_t i = 0; i < imagePaths.size(); ++i) {
-        futures.emplace_back(pool.enqueue([imagePath = imagePaths[i], outputPath = outputPaths[i], size, outputImageQuality]() {
+        futures.emplace_back(ThreadPool::Instance()->Enqueue([imagePath = imagePaths[i], outputPath = outputPaths[i], size, outputImageQuality]() {
             try {
                 return finalizeImage(imagePath, outputPath, size, outputImageQuality);
             } catch (const std::exception& e) {
@@ -373,16 +369,21 @@ void FileSystem::removeFile(const std::string& path) {
     }
 }
 
-void FileSystem::removeFiles(const std::vector<std::string>& paths, const unsigned short& threadCnt) {
-    dp::thread_pool pool(threadCnt);
-    std::vector<std::future<void>> futures;
-    for (const auto& path : paths) {
-        futures.emplace_back(pool.enqueue([path]() {
+void FileSystem::removeFiles(const std::vector<std::string>& paths, const bool& use_thread_pool) {
+    if (use_thread_pool) {
+        std::vector<std::future<void>> futures;
+        for (const auto& path : paths) {
+            futures.emplace_back(ThreadPool::Instance()->Enqueue([path]() {
+                removeFile(path);
+            }));
+        }
+        for (auto& future : futures) {
+            future.get();
+        }
+    } else {
+        for (const auto& path : paths) {
             removeFile(path);
-        }));
-    }
-    for (auto& future : futures) {
-        future.get();
+        }
     }
 }
 
@@ -398,21 +399,26 @@ void FileSystem::copy(const std::string& source, const std::string& destination)
 }
 
 void FileSystem::copyFiles(const std::vector<std::string>& sources,
-                           const std::vector<std::string>& destination,
-                           const unsigned short& threadCnt) {
-    if (sources.size() != destination.size()) {
+                           const std::vector<std::string>& destinations,
+                           const bool& use_thread_pool) {
+    if (sources.size() != destinations.size()) {
         throw std::invalid_argument("Source and destination paths must have the same size");
     }
 
-    dp::thread_pool pool(threadCnt);
-    std::vector<std::future<void>> futures;
-    for (size_t i = 0; i < sources.size(); ++i) {
-        futures.emplace_back(pool.enqueue([sources, destination, i]() {
-            copy(sources[i], destination[i]);
-        }));
-    }
-    for (auto& future : futures) {
-        future.get();
+    if (use_thread_pool) {
+        std::vector<std::future<void>> futures;
+        for (size_t i = 0; i < sources.size(); ++i) {
+            futures.emplace_back(ThreadPool::Instance()->Enqueue([sources, destinations, i]() {
+                copy(sources[i], destinations[i]);
+            }));
+        }
+        for (auto& future : futures) {
+            future.get();
+        }
+    } else {
+        for (size_t i = 0; i < sources.size(); ++i) {
+            copy(sources[i], destinations[i]);
+        }
     }
 }
 
@@ -432,20 +438,25 @@ void FileSystem::moveFile(const std::string& source, const std::string& destinat
 
 void FileSystem::moveFiles(const std::vector<std::string>& sources,
                            const std::vector<std::string>& destination,
-                           const unsigned short& threadCnt) {
+                           const bool& use_thread_pool) {
     if (sources.size() != destination.size()) {
         throw std::invalid_argument("Source and destination paths must have the same size");
     }
 
-    dp::thread_pool pool(threadCnt);
-    std::vector<std::future<void>> futures;
-    for (size_t i = 0; i < sources.size(); ++i) {
-        futures.emplace_back(pool.enqueue([sources, destination, i]() {
+    if (use_thread_pool) {
+        std::vector<std::future<void>> futures;
+        for (size_t i = 0; i < sources.size(); ++i) {
+            futures.emplace_back(ThreadPool::Instance()->Enqueue([sources, destination, i]() {
+                moveFile(sources[i], destination[i]);
+            }));
+        }
+        for (auto& future : futures) {
+            future.get();
+        }
+    } else {
+        for (size_t i = 0; i < sources.size(); ++i) {
             moveFile(sources[i], destination[i]);
-        }));
-    }
-    for (auto& future : futures) {
-        future.get();
+        }
     }
 }
 
@@ -545,22 +556,27 @@ std::string SHA1(const std::string& file_path) {
 }
 
 std::string CombinedSHA1(std::unordered_set<std::string>& file_paths,
-                         const unsigned short& thread_num) {
+                         const bool& use_thread_pool) {
     if (file_paths.empty()) {
         return {};
     }
 
-    dp::thread_pool pool(thread_num);
-    std::vector<std::future<std::string>> futures;
-    for (auto& file_path : file_paths) {
-        futures.emplace_back(pool.enqueue([file_path]() {
-            return SHA1(file_path);
-        }));
-    }
-
     std::vector<std::string> sha1_vec;
-    for (auto& future : futures) {
-        sha1_vec.emplace_back(future.get());
+    if (use_thread_pool) {
+        std::vector<std::future<std::string>> futures;
+        for (auto& file_path : file_paths) {
+            futures.emplace_back(ThreadPool::Instance()->Enqueue([file_path]() {
+                return SHA1(file_path);
+            }));
+        }
+
+        for (auto& future : futures) {
+            sha1_vec.emplace_back(future.get());
+        }
+    } else {
+        for (auto& file_path : file_paths) {
+            sha1_vec.emplace_back(SHA1(file_path));
+        }
     }
     std::ranges::sort(sha1_vec);
 
@@ -583,6 +599,5 @@ std::string CombinedSHA1(std::unordered_set<std::string>& file_paths,
     return oss.str();
 }
 
-}
-// namespace FileSystem::hash
+} // namespace FileSystem::hash
 } // namespace ffc
