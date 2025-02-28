@@ -75,13 +75,9 @@ FaceDetectorHub::Detect(const cv::Mat& image, const Options& options) {
         const auto retina = std::dynamic_pointer_cast<Retina>(GetDetector(Type::Retina));
         if (retina != nullptr) {
             if (options.angle > 0) {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue([retina, image, options] {
-                    return retina->detectRotatedFaces(image, options.face_detector_size, options.angle, options.min_score);
-                }));
+                futures.emplace_back(ThreadPool::Instance()->Enqueue(std::bind(&Retina::detectRotatedFaces, retina, image, options.face_detector_size, options.angle, options.min_score)));
             } else {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue([retina, image, options] {
-                    return retina->detectFaces(image, options.face_detector_size, options.min_score);
-                }));
+                futures.emplace_back(ThreadPool::Instance()->Enqueue(std::bind(&Retina::detectFaces, retina, image, options.face_detector_size, options.min_score)));
             }
         }
     }
@@ -90,13 +86,9 @@ FaceDetectorHub::Detect(const cv::Mat& image, const Options& options) {
         const auto scrfd = std::dynamic_pointer_cast<Scrfd>(GetDetector(Type::Scrfd));
         if (scrfd != nullptr) {
             if (options.angle > 0) {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue([scrfd, image, options] {
-                    return scrfd->detectRotatedFaces(image, options.face_detector_size, options.angle, options.min_score);
-                }));
+                futures.emplace_back(ThreadPool::Instance()->Enqueue(std::bind(&Scrfd::detectRotatedFaces, scrfd, image, options.face_detector_size, options.angle, options.min_score)));
             } else {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue([scrfd, image, options] {
-                    return scrfd->detectFaces(image, options.face_detector_size, options.min_score);
-                }));
+                futures.emplace_back(ThreadPool::Instance()->Enqueue(std::bind(&Scrfd::detectFaces, scrfd, image, options.face_detector_size, options.min_score)));
             }
         }
     }
@@ -104,17 +96,10 @@ FaceDetectorHub::Detect(const cv::Mat& image, const Options& options) {
     if (options.types.contains(Type::Yolo)) {
         const auto yolo = std::dynamic_pointer_cast<Yolo>(GetDetector(Type::Yolo));
         if (yolo != nullptr) {
-            // TODO BUG FIX: I don't know why there is a bug when using the thread pool
             if (options.angle > 0) {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue([yolo, image, options] {
-                    return yolo->detectRotatedFaces(image, options.face_detector_size, options.angle, options.min_score);
-                }));
-                // futures.emplace_back(std::async(std::launch::async, &Yolo::detectRotatedFaces, yolo, image, options.faceDetectorSize, options.angle, options.minScore));
+                futures.emplace_back(ThreadPool::Instance()->Enqueue(std::bind(&Yolo::detectRotatedFaces, yolo, image, options.face_detector_size, options.angle, options.min_score)));
             } else {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue([yolo, image, options] {
-                    return yolo->detectFaces(image, options.face_detector_size, options.min_score);
-                }));
-                // futures.emplace_back(std::async(std::launch::async, &Yolo::detectFaces, yolo, image, options.faceDetectorSize, options.minScore));
+                futures.emplace_back(ThreadPool::Instance()->Enqueue(std::bind(&Yolo::detectFaces, yolo, image, options.face_detector_size, options.min_score)));
             }
         }
     }
