@@ -22,7 +22,7 @@ public:
     explicit Scrfd(const std::shared_ptr<Ort::Env>& env);
     ~Scrfd() override = default;
 
-    Result detectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
+    Result DetectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
                        const float& detectorScore) override;
 
     void LoadModel(const std::string& modelPath, const Options& options) override;

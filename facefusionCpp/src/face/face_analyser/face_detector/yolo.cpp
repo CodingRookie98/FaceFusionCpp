@@ -11,7 +11,7 @@
 module;
 #include <opencv2/opencv.hpp>
 #include <onnxruntime_cxx_api.h>
-#include <common_macros.h>
+#include <common_macros.h> // don't remove this line.
 
 module face_detector_hub;
 import :yolo;
@@ -26,8 +26,8 @@ Yolo::Yolo(const std::shared_ptr<Ort::Env>& env) :
 
 void Yolo::LoadModel(const std::string& modelPath, const Options& options) {
     FaceDetectorBase::LoadModel(modelPath, options);
-    m_inputHeight = input_node_dims_[0][2];
-    m_inputWidth = input_node_dims_[0][3];
+    input_height_ = input_node_dims_[0][2];
+    input_width_ = input_node_dims_[0][3];
 }
 
 std::tuple<std::vector<float>, float, float>
@@ -61,7 +61,7 @@ Yolo::preProcess(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize) {
 }
 
 Yolo::Result
-Yolo::detectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
+Yolo::DetectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
                   const float& scoreThreshold) {
     if (visionFrame.empty()) {
         throw std::runtime_error("Input image is empty");

@@ -22,14 +22,14 @@ FaceDetectorBase::FaceDetectorBase(const std::shared_ptr<Ort::Env> &env) :
 }
 
 FaceDetectorBase::Result
-FaceDetectorBase::detectRotatedFaces(const cv::Mat &visionFrame,
+FaceDetectorBase::DetectRotatedFaces(const cv::Mat &visionFrame,
                                      const cv::Size &faceDetectorSize,
                                      const double &angle, const float &detectorScore) {
     cv::Mat rotatedVisionFrame, rotatedInverseMat;
     auto [rotatedMat, rotatedSize] = face_helper::createRotatedMatAndSize(angle, visionFrame.size());
     cv::warpAffine(visionFrame, rotatedVisionFrame, rotatedMat, rotatedSize);
     cv::invertAffineTransform(rotatedMat, rotatedInverseMat);
-    Result result = detectFaces(rotatedVisionFrame, faceDetectorSize, detectorScore);
+    Result result = DetectFaces(rotatedVisionFrame, faceDetectorSize, detectorScore);
     for (auto &bbox : result.bboxes) {
         bbox = face_helper::transformBBox(bbox, rotatedInverseMat);
     }

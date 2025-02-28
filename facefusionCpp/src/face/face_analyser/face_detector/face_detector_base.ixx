@@ -19,7 +19,7 @@ export import inference_session;
 export namespace ffc::faceDetector {
 class FaceDetectorBase : public InferenceSession {
 public:
-    explicit FaceDetectorBase(const std::shared_ptr<Ort::Env> &env = nullptr);
+    explicit FaceDetectorBase(const std::shared_ptr<Ort::Env>& env = nullptr);
     ~FaceDetectorBase() override = default;
 
     struct Result {
@@ -28,9 +28,9 @@ public:
         std::vector<float> scores;
     };
 
-    virtual Result detectFaces(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize,
-                               const float &detectorScore) = 0;
-    Result detectRotatedFaces(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize,
-                              const double &angle, const float &detectorScore = 0.5);
+    virtual Result DetectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
+                               const float& detectorScore) = 0;
+    Result DetectRotatedFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
+                              const double& angle, const float& detectorScore = 0.5);
 };
 } // namespace ffc::faceDetector

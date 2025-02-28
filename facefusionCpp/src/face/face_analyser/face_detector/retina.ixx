@@ -21,7 +21,7 @@ public:
     explicit Retina(const std::shared_ptr<Ort::Env>& env);
     ~Retina() override = default;
 
-    Result detectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
+    Result DetectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
                        const float& scoreThreshold) override;
 
     void LoadModel(const std::string& modelPath, const Options& options) override;

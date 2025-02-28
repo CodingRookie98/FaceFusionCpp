@@ -19,10 +19,10 @@ namespace ffc::faceDetector {
 
 export class Yolo final : public FaceDetectorBase {
 public:
-    explicit Yolo(const std::shared_ptr<Ort::Env> &env);
+    explicit Yolo(const std::shared_ptr<Ort::Env>& env);
     ~Yolo() override = default;
 
-    Result detectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
+    Result DetectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
                        const float& scoreThreshold) override;
     void LoadModel(const std::string& modelPath, const Options& options) override;
 
@@ -31,9 +31,9 @@ public:
     }
 
 private:
-    static std::tuple<std::vector<float>, float, float> preProcess(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize);
-    int m_inputHeight{0};
-    int m_inputWidth{0};
+    static std::tuple<std::vector<float>, float, float> preProcess(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize);
+    int input_height_{0};
+    int input_width_{0};
 };
 
 } // namespace ffc::faceDetector

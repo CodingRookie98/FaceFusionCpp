@@ -18,23 +18,23 @@ import face_helper;
 import vision;
 
 namespace ffc::faceDetector {
-Retina::Retina(const std::shared_ptr<Ort::Env> &env) :
+Retina::Retina(const std::shared_ptr<Ort::Env>& env) :
     FaceDetectorBase(env) {
 }
 
-void Retina::LoadModel(const std::string &modelPath, const Options &options) {
+void Retina::LoadModel(const std::string& modelPath, const Options& options) {
     FaceDetectorBase::LoadModel(modelPath, options);
     m_inputHeight = input_node_dims_[0][2];
     m_inputWidth = input_node_dims_[0][3];
 }
 
-Retina::Result Retina::detectFaces(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize,
-                                                           const float &scoreThreshold) {
+Retina::Result Retina::DetectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
+                                   const float& scoreThreshold) {
     if (visionFrame.empty()) {
         throw std::runtime_error("Input image is empty");
     }
     if (const std::vector<cv::Size>& supportSizes = GetSupportSizes();
-        !std::ranges::any_of(supportSizes, [faceDetectorSize](const cv::Size& size){ return size == faceDetectorSize;})) {
+        !std::ranges::any_of(supportSizes, [faceDetectorSize](const cv::Size& size) { return size == faceDetectorSize; })) {
         throw std::runtime_error("Face detector size is not supported");
     }
     std::vector<float> inputData;
@@ -54,7 +54,7 @@ Retina::Result Retina::detectFaces(const cv::Mat &visionFrame, const cv::Size &f
         int featureStride = m_featureStrides[index];
         std::vector<int> keepIndices;
         int size = ortOutputs[index].GetTensorTypeAndShapeInfo().GetShape()[0];
-        float *pdataScoreRaw = ortOutputs[index].GetTensorMutableData<float>();
+        float* pdataScoreRaw = ortOutputs[index].GetTensorMutableData<float>();
         for (size_t j = 0; j < size; ++j) {
             float tempScore = *(pdataScoreRaw + j);
             if (tempScore >= scoreThreshold) {
@@ -70,19 +70,19 @@ Retina::Result Retina::detectFaces(const cv::Mat &visionFrame, const cv::Size &f
         int strideWidth = std::floor(faceDetectorSize.width / featureStride);
 
         std::vector<std::array<int, 2>> anchors = face_helper::createStaticAnchors(m_featureStrides[index],
-                                                                                  m_anchorTotal,
-                                                                                  strideHeight,
-                                                                                  strideWidth);
+                                                                                   m_anchorTotal,
+                                                                                   strideHeight,
+                                                                                   strideWidth);
 
         std::vector<Face::BBox> boundingBoxesRaw;
         std::vector<Face::Landmarks> faceLandmarksRaw;
 
-        float *pdataBbox = ortOutputs[index + m_featureMapChannel].GetTensorMutableData<float>();
-        float *pdataLandmark = ortOutputs[index + 2 * m_featureMapChannel].GetTensorMutableData<float>();
-        float *pdataScore = ortOutputs[index].GetTensorMutableData<float>();
+        float* pdataBbox = ortOutputs[index + m_featureMapChannel].GetTensorMutableData<float>();
+        float* pdataLandmark = ortOutputs[index + 2 * m_featureMapChannel].GetTensorMutableData<float>();
+        float* pdataScore = ortOutputs[index].GetTensorMutableData<float>();
 
         size_t pdataBboxSize = ortOutputs[index + m_featureMapChannel].GetTensorTypeAndShapeInfo().GetShape()[0]
-                               * ortOutputs[index + m_featureMapChannel].GetTensorTypeAndShapeInfo().GetShape()[1];
+                             * ortOutputs[index + m_featureMapChannel].GetTensorTypeAndShapeInfo().GetShape()[1];
         for (size_t k = 0; k < pdataBboxSize; k += 4) {
             Face::BBox tempBbox;
             tempBbox.xMin = *(pdataBbox + k) * featureStride;
@@ -93,7 +93,7 @@ Retina::Result Retina::detectFaces(const cv::Mat &visionFrame, const cv::Size &f
         }
 
         size_t pdataLandmarkSize = ortOutputs[index + 2 * m_featureMapChannel].GetTensorTypeAndShapeInfo().GetShape()[0]
-                                   * ortOutputs[index + 2 * m_featureMapChannel].GetTensorTypeAndShapeInfo().GetShape()[1];
+                                 * ortOutputs[index + 2 * m_featureMapChannel].GetTensorTypeAndShapeInfo().GetShape()[1];
         for (size_t k = 0; k < pdataLandmarkSize; k += 10) {
             Face::Landmarks tempLandmark;
             tempLandmark.emplace_back(cv::Point2f(*(pdataLandmark + k), *(pdataLandmark + k + 1)));
@@ -101,14 +101,14 @@ Retina::Result Retina::detectFaces(const cv::Mat &visionFrame, const cv::Size &f
             tempLandmark.emplace_back(cv::Point2f(*(pdataLandmark + k + 4), *(pdataLandmark + k + 5)));
             tempLandmark.emplace_back(cv::Point2f(*(pdataLandmark + k + 6), *(pdataLandmark + k + 7)));
             tempLandmark.emplace_back(cv::Point2f(*(pdataLandmark + k + 8), *(pdataLandmark + k + 9)));
-            for (auto &point : tempLandmark) {
+            for (auto& point : tempLandmark) {
                 point.x *= featureStride;
                 point.y *= featureStride;
             }
             faceLandmarksRaw.emplace_back(tempLandmark);
         }
 
-        for (const auto &keepIndex : keepIndices) {
+        for (const auto& keepIndex : keepIndices) {
             auto tempBbox = face_helper::distance2BBox(anchors[keepIndex], boundingBoxesRaw[keepIndex]);
             tempBbox.xMin *= ratioWidth;
             tempBbox.yMin *= ratioHeight;
@@ -117,7 +117,7 @@ Retina::Result Retina::detectFaces(const cv::Mat &visionFrame, const cv::Size &f
             resultBoundingBoxes.emplace_back(tempBbox);
 
             auto tempLandmark = face_helper::distance2FaceLandmark5(anchors[keepIndex], faceLandmarksRaw[keepIndex]);
-            for (auto &point : tempLandmark) {
+            for (auto& point : tempLandmark) {
                 point.x *= ratioWidth;
                 point.y *= ratioHeight;
             }
@@ -135,7 +135,7 @@ Retina::Result Retina::detectFaces(const cv::Mat &visionFrame, const cv::Size &f
 }
 
 std::tuple<std::vector<float>, float, float>
-Retina::preProcess(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize) {
+Retina::preProcess(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize) {
     const int faceDetectorHeight = faceDetectorSize.height;
     const int faceDetectorWidth = faceDetectorSize.width;
 
@@ -158,10 +158,10 @@ Retina::preProcess(const cv::Mat &visionFrame, const cv::Size &faceDetectorSize)
     std::vector<float> inputData;
     inputData.resize(3 * imageArea);
     const size_t singleChnSize = imageArea * sizeof(float);
-    memcpy(inputData.data(), (float *)bgrChannels[0].data, singleChnSize);
-    memcpy(inputData.data() + imageArea, (float *)bgrChannels[1].data, singleChnSize);
-    memcpy(inputData.data() + imageArea * 2, (float *)bgrChannels[2].data, singleChnSize);
+    memcpy(inputData.data(), (float*)bgrChannels[0].data, singleChnSize);
+    memcpy(inputData.data() + imageArea, (float*)bgrChannels[1].data, singleChnSize);
+    memcpy(inputData.data() + imageArea * 2, (float*)bgrChannels[2].data, singleChnSize);
 
     return std::make_tuple(inputData, ratioHeight, ratioWidth);
 }
-}
+} // namespace ffc::faceDetector
