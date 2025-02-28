@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.30)
 project(FaceFusionCpp
-        VERSION 0.32.1
+        VERSION 0.33.0
         DESCRIPTION "This project is the C++ version of the open-source project FaceFusion."
 )
 
