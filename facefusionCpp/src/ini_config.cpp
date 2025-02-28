@@ -50,7 +50,7 @@ bool ini_config::loadConfig(const std::string& configPath) {
     }
 
     frameProcessors();
-    general();
+    paths();
     misc();
     execution();
     tensorrt();
@@ -532,12 +532,11 @@ void ini_config::faceAnalyser() {
     core_task_.face_analyser_options->faceLandMarkerOptions = face_landmarker_options;
 }
 
-void ini_config::general() {
-    // general
+void ini_config::paths() {
     std::string value;
     if (std::ranges::find(core_task_.processor_list, ProcessorMajorType::FaceSwapper) != core_task_.processor_list.end()
         || std::ranges::find(core_task_.processor_list, ProcessorMajorType::ExpressionRestorer) != core_task_.processor_list.end()) {
-        value = ini_.GetValue("general", "source_path", "");
+        value = ini_.GetValue("paths", "source_path", "");
         if (!value.empty()) {
             core_task_.source_paths = std::make_optional(std::vector<std::string>{});
             if (FileSystem::fileExists(value) && FileSystem::isFile(value)) {
@@ -555,7 +554,7 @@ void ini_config::general() {
         }
     }
 
-    value = ini_.GetValue("general", "target_path", "");
+    value = ini_.GetValue("paths", "target_path", "");
     if (!value.empty()) {
         if (FileSystem::isFile(value)) {
             core_task_.target_paths.emplace_back(value);
@@ -573,7 +572,7 @@ void ini_config::general() {
         std::exit(1);
     }
 
-    value = ini_.GetValue("general", "reference_face_path", "");
+    value = ini_.GetValue("paths", "reference_face_path", "");
     if (!value.empty()) {
         if (FileSystem::fileExists(value) && FileSystem::isFile(value) && FileSystem::isImage(value)) {
             core_task_.reference_face_path = value;
@@ -583,7 +582,7 @@ void ini_config::general() {
         }
     }
 
-    value = ini_.GetValue("general", "output_path", "./output");
+    value = ini_.GetValue("paths", "output_path", "./output");
     std::string output_path;
     if (!value.empty()) {
         output_path = FileSystem::absolutePath(value);

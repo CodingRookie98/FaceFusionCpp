@@ -43,7 +43,7 @@ private:
     static std::array<int, 4> normalizePadding(const std::vector<int>& padding);
     static std::vector<int> parseStr2VecInt(const std::string& input);
 
-    void general();
+    void paths();
     void misc();
     void execution();
     void tensorrt();
