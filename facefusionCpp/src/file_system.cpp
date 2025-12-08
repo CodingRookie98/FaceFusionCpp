@@ -531,21 +531,36 @@ std::string SHA1(const std::string& file_path) {
         return "";
     }
 
-    // 获取文件大小
-    file.seekg(0, std::ios::end);
-    const size_t file_size = file.tellg();
-    file.seekg(0, std::ios::beg);
+    SHA_CTX sha1_ctx;
+    if (!SHA1_Init(&sha1_ctx)) {
+        std::cerr << "SHA1_Init failed" << std::endl;
+        return "";
+    }
 
-    std::vector<unsigned char> file_data;
-    file_data.resize(file_size);
-    file.read(reinterpret_cast<char*>(file_data.data()), file_size);
+    constexpr size_t buffer_size = 8192; // 8KB chunks
+    std::vector<char> buffer(buffer_size);
 
-    // 计算文件的 SHA1 值
+    while (file.read(buffer.data(), buffer_size)) {
+        if (!SHA1_Update(&sha1_ctx, buffer.data(), file.gcount())) {
+             std::cerr << "SHA1_Update failed" << std::endl;
+             return "";
+        }
+    }
+    // Handle remaining bytes
+    if (file.gcount() > 0) {
+        if (!SHA1_Update(&sha1_ctx, buffer.data(), file.gcount())) {
+             std::cerr << "SHA1_Update failed" << std::endl;
+             return "";
+        }
+    }
+
     unsigned char sha1[SHA_DIGEST_LENGTH];
-    // CryptoPP::SHA1().CalculateDigest(sha1.data(), reinterpret_cast<const unsigned char*>(file_path.c_str()), file_path.length());
-    ::SHA1(file_data.data(), file_data.size(), sha1);
+    if (!SHA1_Final(sha1, &sha1_ctx)) {
+        std::cerr << "SHA1_Final failed" << std::endl;
+        return "";
+    }
 
-    // 将 SHA1 值转换为十六进制字符串
+    // Convert to hex string
     std::ostringstream oss;
     oss << std::hex << std::setfill('0');
     for (const auto& byte : sha1) {

@@ -56,13 +56,14 @@ cv::Mat vision::readStaticImage(const std::string& imagePath) {
 cv::Mat vision::resizeFrame(const cv::Mat& visionFrame, const cv::Size& cropSize) {
     const int height = visionFrame.rows;
     const int width = visionFrame.cols;
-    cv::Mat tempImage = visionFrame.clone();
     if (height > cropSize.height || width > cropSize.width) {
         const float scale = std::min(static_cast<float>(cropSize.height) / static_cast<float>(height), static_cast<float>(cropSize.width) / static_cast<float>(width));
         const cv::Size newSize = cv::Size(static_cast<int>(static_cast<float>(width) * scale), static_cast<int>(static_cast<float>(height) * scale));
+        cv::Mat tempImage;
         cv::resize(visionFrame, tempImage, newSize);
+        return tempImage;
     }
-    return tempImage;
+    return visionFrame.clone();
 }
 
 bool vision::writeImage(const cv::Mat& image, const std::string& imagePath) {
@@ -126,7 +127,7 @@ std::tuple<std::vector<cv::Mat>, int, int> vision::createTileFrames(const cv::Ma
             const int right = col + size[2] + tileWidth;
 
             // Step 6: Extract the tile and store in the tileFrames vector
-            tileFrames.push_back(fullyPaddedFrame(cv::Range(top, bottom), cv::Range(left, right)).clone());
+            tileFrames.push_back(fullyPaddedFrame(cv::Range(top, bottom), cv::Range(left, right)));
         }
     }
 

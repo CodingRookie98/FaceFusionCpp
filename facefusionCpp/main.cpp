@@ -26,9 +26,7 @@ int main() {
     std::cout << std::format("OpenCV v{}", cv::getVersionString()) << std::endl;
 
     const std::string tmpPath = FileSystem::getTempPath() + "/" + metadata::name;
-    if (FileSystem::dirExists(tmpPath)) {
-        FileSystem::removeDir(tmpPath);
-    }
+    FileSystem::removeDir(tmpPath);
 
     ini_config ini_config;
     ini_config.loadConfig();
@@ -39,8 +37,6 @@ int main() {
     if (!ok) {
         Logger::getInstance()->error("FaceFusionCpp failed to run. Maybe some of the tasks failed.");
     }
-    if (FileSystem::dirExists(tmpPath)) {
-        FileSystem::removeDir(tmpPath);
-    }
+    FileSystem::removeDir(tmpPath);
     return 0;
 }

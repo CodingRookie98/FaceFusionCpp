@@ -303,9 +303,7 @@ bool Core::Run(CoreTask core_task) {
             outputImgPaths.emplace_back(outputPath);
         } else if (FileSystem::isVideo(targetPath)) {
             const std::string file_symlink_path = tmpPath + "/videos/" + FileSystem::getFileName(targetPath);
-            if (!FileSystem::dirExists(tmpPath + "/videos")) {
-                FileSystem::createDir(tmpPath + "/videos");
-            }
+            FileSystem::createDir(tmpPath + "/videos");
             try {
                 std::filesystem::create_symlink(targetPath, file_symlink_path);
             } catch (std::filesystem::filesystem_error& e) {
