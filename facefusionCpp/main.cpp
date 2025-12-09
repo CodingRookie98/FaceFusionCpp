@@ -11,10 +11,11 @@ import ini_config;
 import logger;
 import metadata;
 import file_system;
+import cli_config;
 
 using namespace ffc;
 
-int main() {
+int main(int argc, char** argv) {
     FileSystem::setLocalToUTF8();
 
 #ifdef _WIN32
@@ -31,8 +32,16 @@ int main() {
     ini_config ini_config;
     ini_config.loadConfig();
 
-    const auto core = std::make_shared<ffc::Core>(ini_config.getCoreOptions());
-    const bool ok = core->Run(ini_config.getCoreRunOptions());
+    auto coreOptions = ini_config.getCoreOptions();
+    auto coreTask = ini_config.getCoreRunOptions();
+
+    CliConfig cliConfig;
+    if (!cliConfig.parse(argc, argv, coreOptions, coreTask)) {
+        return 0;
+    }
+
+    const auto core = std::make_shared<ffc::Core>(coreOptions);
+    const bool ok = core->Run(coreTask);
 
     if (!ok) {
         Logger::getInstance()->error("FaceFusionCpp failed to run. Maybe some of the tasks failed.");

@@ -4,6 +4,7 @@
   "dependencies": [
     "boost-process",
     "boost-system",
+    "cli11",
     "curl",
     "dp-thread-pool",
     "ffmpeg",

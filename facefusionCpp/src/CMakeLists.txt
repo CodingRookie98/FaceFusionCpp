@@ -8,6 +8,7 @@ target_sources(${ProgramName} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/ini_config.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/core.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/core_options.ixx
+        ${CMAKE_CURRENT_SOURCE_DIR}/cli_config.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/progress_bar.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/progress_observer.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/thread_pool.ixx
