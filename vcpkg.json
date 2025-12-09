@@ -3,6 +3,7 @@
   "version": "0.33.0",
   "dependencies": [
     "boost-process",
+    "boost-system",
     "curl",
     "dp-thread-pool",
     "ffmpeg",
