@@ -38,6 +38,7 @@ public:
 
     [[nodiscard]] auto Size() const;
     size_t ClearTasks();
+    void Reset(const unsigned int& thread_num);
 
 private:
     std::unique_ptr<dp::thread_pool<>> thread_pool_;

@@ -69,7 +69,9 @@ std::shared_ptr<FaceSwapperBase>
 ProcessorPool::getFaceSwapper(const FaceSwapperType &_faceSwapperType, const ModelManager::Model &_model) {
     std::lock_guard lock(mutex4FaceSwappers_);
     if (faceSwappers_.contains(_faceSwapperType)) {
-        return faceSwappers_[_faceSwapperType];
+        if (faceSwappers_[_faceSwapperType].second == _model) {
+            return faceSwappers_[_faceSwapperType].first;
+        }
     }
     if (faceMaskerHub_ == nullptr) {
         faceMaskerHub_ = std::make_shared<FaceMaskerHub>(env_, is_options_);
@@ -89,7 +91,7 @@ ProcessorPool::getFaceSwapper(const FaceSwapperType &_faceSwapperType, const Mod
     }
 
     if (ptr) {
-        faceSwappers_.insert({_faceSwapperType, ptr});
+        faceSwappers_[_faceSwapperType] = {ptr, _model};
     }
     return ptr;
 }
@@ -99,7 +101,9 @@ ProcessorPool::getFaceEnhancer(const FaceEnhancerType &_faceEnhancerType,
                                const ModelManager::Model &_model) {
     std::lock_guard lock(mutex4FaceEnhancers_);
     if (faceEnhancers_.contains(_faceEnhancerType)) {
-        return faceEnhancers_[_faceEnhancerType];
+        if (faceEnhancers_[_faceEnhancerType].second == _model) {
+             return faceEnhancers_[_faceEnhancerType].first;
+        }
     }
     if (faceMaskerHub_ == nullptr) {
         faceMaskerHub_ = std::make_shared<FaceMaskerHub>(env_, is_options_);
@@ -113,7 +117,7 @@ ProcessorPool::getFaceEnhancer(const FaceEnhancerType &_faceEnhancerType,
         const auto codeFormer = std::make_shared<CodeFormer>(env_);
         codeFormer->LoadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
         if (!codeFormer->hasFaceMaskerHub()) {
-            codeFormer->setFaceMaskerHub(faceMaskerHub_);
+             codeFormer->setFaceMaskerHub(faceMaskerHub_);
         }
         ptr = codeFormer;
     }
@@ -131,7 +135,7 @@ ProcessorPool::getFaceEnhancer(const FaceEnhancerType &_faceEnhancerType,
     }
 
     if (ptr) {
-        faceEnhancers_.insert({_faceEnhancerType, ptr});
+        faceEnhancers_[_faceEnhancerType] = {ptr, _model};
     }
     return ptr;
 }
@@ -187,7 +191,9 @@ ProcessorPool::getFrameEnhancer(const FrameEnhancerType &_frameEnhancerType,
                                 const ModelManager::Model &_model) {
     std::lock_guard lock(mutex4FrameEnhancers_);
     if (frameEnhancers_.contains(_frameEnhancerType)) {
-        return frameEnhancers_[_frameEnhancerType];
+        if (frameEnhancers_[_frameEnhancerType].second == _model) {
+            return frameEnhancers_[_frameEnhancerType].first;
+        }
     }
 
     std::shared_ptr<FrameEnhancerBase> ptr = nullptr;
@@ -236,7 +242,7 @@ ProcessorPool::getFrameEnhancer(const FrameEnhancerType &_frameEnhancerType,
     }
 
     if (ptr) {
-        frameEnhancers_.insert({_frameEnhancerType, ptr});
+        frameEnhancers_[_frameEnhancerType] = {ptr, _model};
     }
     return ptr;
 }

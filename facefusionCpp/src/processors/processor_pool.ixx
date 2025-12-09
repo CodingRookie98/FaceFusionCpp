@@ -86,13 +86,13 @@ public:
                      const ModelManager::Model &_model);
 
 private:
-    std::unordered_map<FaceSwapperType, std::shared_ptr<FaceSwapperBase>> faceSwappers_;
+    std::unordered_map<FaceSwapperType, std::pair<std::shared_ptr<FaceSwapperBase>, ModelManager::Model>> faceSwappers_;
     std::mutex mutex4FaceSwappers_;
-    std::unordered_map<FaceEnhancerType, std::shared_ptr<FaceEnhancerBase>> faceEnhancers_;
+    std::unordered_map<FaceEnhancerType, std::pair<std::shared_ptr<FaceEnhancerBase>, ModelManager::Model>> faceEnhancers_;
     std::mutex mutex4FaceEnhancers_;
     std::unordered_map<ExpressionRestorerType, std::shared_ptr<ExpressionRestorerBase>> expressionRestorers_;
     std::mutex mutex4ExpressionRestorers_;
-    std::unordered_map<FrameEnhancerType, std::shared_ptr<FrameEnhancerBase>> frameEnhancers_;
+    std::unordered_map<FrameEnhancerType, std::pair<std::shared_ptr<FrameEnhancerBase>, ModelManager::Model>> frameEnhancers_;
     std::mutex mutex4FrameEnhancers_;
     std::shared_ptr<FaceMaskerHub> faceMaskerHub_;
     std::shared_ptr<Ort::Env> env_;

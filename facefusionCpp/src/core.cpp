@@ -42,6 +42,7 @@ Core::Core(const CoreOptions& options) :
     core_options_ = options;
     Logger::getInstance()->setLogLevel(core_options_.log_level);
     logger_ = Logger::getInstance();
+    thread_pool_.Reset(core_options_.execution_thread_count);
 
     if (core_options_.force_download) {
         if (!ModelManager::getInstance()->downloadAllModel()) {
@@ -476,30 +477,29 @@ bool Core::ProcessImages(CoreTask core_task) {
             observer_->onStart(core_task.target_paths.size());
         }
 
-        std::vector<std::future<bool>> futures(core_task.target_paths.size());
+        std::vector<std::future<bool>> futures;
+        futures.reserve(core_task.target_paths.size());
+
+        for (size_t index = 0; index < core_task.target_paths.size(); ++index) {
+             futures.push_back(thread_pool_.Enqueue(func_to_process, index));
+        }
+
         bool is_all_success = true;
-        for (size_t index = 0; index < core_task.target_paths.size(); index += core_options_.execution_thread_count) {
-            for (size_t j = index; j < index + core_options_.execution_thread_count && j < futures.size(); ++j) {
-                futures.at(j) = ThreadPool::Instance()->Enqueue(func_to_process, j);
+        for (size_t k = 0; k < futures.size(); ++k) {
+            // Wait for result
+            if (const auto is_success = futures[k].get(); !is_success) {
+                is_all_success = false;
+                logger_->error(std::format("[{}] Failed to write image: {}", processor_name, core_task.output_paths[k]));
             }
-            for (size_t k = index; k < index + core_options_.execution_thread_count && k < futures.size(); ++k) {
-                while (!futures.at(k).valid()) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                }
-                if (const auto is_success = futures[k].get(); !is_success) {
-                    is_all_success = false;
-                    logger_->error(std::format("[{}] Failed to write image: {}", processor_name, core_task.output_paths[k]));
-                }
 
-                if (core_task.show_progress_bar) {
-                    progress_bar->setPostfixText(std::format("{}/{}", k + 1, futures.size()));
-                    const int progress = static_cast<int>(std::floor(static_cast<float>(k + 1) * 100.0f) / static_cast<float>(futures.size()));
-                    progress_bar->setProgress(progress);
-                }
+            if (core_task.show_progress_bar) {
+                progress_bar->setPostfixText(std::format("{}/{}", k + 1, futures.size()));
+                const int progress = static_cast<int>(std::floor(static_cast<float>(k + 1) * 100.0f) / static_cast<float>(futures.size()));
+                progress_bar->setProgress(progress);
+            }
 
-                if (observer_) {
-                    observer_->onProgress(k + 1, std::format("Processing {}/{}", k + 1, futures.size()));
-                }
+            if (observer_) {
+                observer_->onProgress(k + 1, std::format("Processing {}/{}", k + 1, futures.size()));
             }
         }
 

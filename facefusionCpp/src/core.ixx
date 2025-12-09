@@ -19,6 +19,7 @@ import logger;
 import processor_hub;
 import core_options;
 import progress_observer;
+import thread_pool;
 
 namespace ffc {
 using namespace faceMasker;
@@ -41,6 +42,7 @@ private:
     ProcessorHub processor_hub_;
     CoreOptions core_options_;
     std::shared_ptr<IProgressObserver> observer_{nullptr};
+    ThreadPool thread_pool_;
 
     bool ProcessImages(CoreTask core_task);
     bool ProcessVideos(const CoreTask& core_task, const bool& autoRemoveTarget = false);

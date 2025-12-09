@@ -47,4 +47,13 @@ size_t ThreadPool::ClearTasks() {
     return thread_pool_->clear_tasks();
 }
 
+void ThreadPool::Reset(const unsigned int& thread_num) {
+    WaitForTasks();
+    if (thread_num <= 0 || thread_num > std::thread::hardware_concurrency()) {
+        thread_pool_ = std::make_unique<dp::thread_pool<>>(std::thread::hardware_concurrency());
+    } else {
+        thread_pool_ = std::make_unique<dp::thread_pool<>>(thread_num);
+    }
+}
+
 } // namespace ffc
