@@ -15,6 +15,7 @@ module;
 
 export module ini_config;
 import core;
+import core_options;
 import logger;
 
 export namespace ffc {
@@ -25,7 +26,7 @@ public:
 
     bool loadConfig(const std::string& configPath = "./FaceFusionCpp.ini");
 
-    [[nodiscard]] Core::Options getCoreOptions() const {
+    [[nodiscard]] CoreOptions getCoreOptions() const {
         return core_options_;
     }
     [[nodiscard]] CoreTask getCoreRunOptions() const {
@@ -37,7 +38,7 @@ private:
     std::shared_mutex shared_mutex_;
     std::string config_path_;
     std::shared_ptr<Logger> logger_ = Logger::getInstance();
-    Core::Options core_options_;
+    CoreOptions core_options_;
     CoreTask core_task_;
 
     static std::array<int, 4> normalizePadding(const std::vector<int>& padding);

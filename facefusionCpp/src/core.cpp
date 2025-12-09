@@ -16,6 +16,7 @@ module;
 #include <onnxruntime_cxx_api.h>
 
 module core;
+import core_options;
 import :core_task;
 import face_store;
 import face_selector;
@@ -36,7 +37,7 @@ using namespace expressionRestore;
 using namespace frameEnhancer;
 
 namespace ffc {
-Core::Core(const Options& options) :
+Core::Core(const CoreOptions& options) :
     processor_hub_(options.inference_session_options) {
     core_options_ = options;
     Logger::getInstance()->setLogLevel(core_options_.log_level);
@@ -471,6 +472,10 @@ bool Core::ProcessImages(CoreTask core_task) {
             progress_bar->setProgress(0);
         }
 
+        if (observer_) {
+            observer_->onStart(core_task.target_paths.size());
+        }
+
         std::vector<std::future<bool>> futures(core_task.target_paths.size());
         bool is_all_success = true;
         for (size_t index = 0; index < core_task.target_paths.size(); index += core_options_.execution_thread_count) {
@@ -491,6 +496,10 @@ bool Core::ProcessImages(CoreTask core_task) {
                     const int progress = static_cast<int>(std::floor(static_cast<float>(k + 1) * 100.0f) / static_cast<float>(futures.size()));
                     progress_bar->setProgress(progress);
                 }
+
+                if (observer_) {
+                    observer_->onProgress(k + 1, std::format("Processing {}/{}", k + 1, futures.size()));
+                }
             }
         }
 
@@ -501,7 +510,12 @@ bool Core::ProcessImages(CoreTask core_task) {
             logger_->error(std::format("[{}] Some images failed to process or write.", processor_name));
         }
 
-        if (core_options_.processor_memory_strategy == Options::MemoryStrategy::Strict) {
+        if (observer_) {
+            if (is_all_success) observer_->onComplete();
+            else observer_->onError("Some images failed to process");
+        }
+
+        if (core_options_.processor_memory_strategy == CoreOptions::MemoryStrategy::Strict) {
             processor_hub_.getProcessorPool().removeProcessors(type);
         }
     }

@@ -15,6 +15,7 @@ module;
 #include <opencv2/opencv.hpp>
 
 module ini_config;
+import core_options;
 import file_system;
 import vision;
 import face_selector;
@@ -678,18 +679,18 @@ void ini_config::tensorrt() {
 void ini_config::memory() {
     std::string value = ini_.GetValue("memory", "processor_memory_strategy", "moderate");
     tolower(value);
-    Core::Options::MemoryStrategy processorMemoryStrategy;
+    CoreOptions::MemoryStrategy processorMemoryStrategy;
     if (!value.empty()) {
         if (value == "strict") {
-            processorMemoryStrategy = Core::Options::MemoryStrategy::Strict;
+            processorMemoryStrategy = CoreOptions::MemoryStrategy::Strict;
         } else if (value == "tolerant") {
-            processorMemoryStrategy = Core::Options::MemoryStrategy::Tolerant;
+            processorMemoryStrategy = CoreOptions::MemoryStrategy::Tolerant;
         } else {
             logger_->warn("[IniConfig] Invalid processor_memory_strategy: " + value + " Use default: tolerant");
-            processorMemoryStrategy = Core::Options::MemoryStrategy::Tolerant;
+            processorMemoryStrategy = CoreOptions::MemoryStrategy::Tolerant;
         }
     } else {
-        processorMemoryStrategy = Core::Options::MemoryStrategy::Tolerant;
+        processorMemoryStrategy = CoreOptions::MemoryStrategy::Tolerant;
     }
     core_options_.processor_memory_strategy = processorMemoryStrategy;
 }

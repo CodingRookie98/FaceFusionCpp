@@ -7,7 +7,9 @@ target_sources(${ProgramName} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/file_system.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/ini_config.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/core.ixx
+        ${CMAKE_CURRENT_SOURCE_DIR}/core_options.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/progress_bar.ixx
+        ${CMAKE_CURRENT_SOURCE_DIR}/progress_observer.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/thread_pool.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg_runner.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/model_manager.ixx
@@ -30,6 +32,7 @@ target_sources(${ProgramName} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/logger.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/common_macros.h
         ${CMAKE_CURRENT_SOURCE_DIR}/core_task.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/boost_impl.cpp
 )
 
 target_include_directories(${ProgramName} PRIVATE

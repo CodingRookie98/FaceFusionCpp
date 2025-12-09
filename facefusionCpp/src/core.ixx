@@ -17,6 +17,8 @@ import face_analyser;
 export import :core_task;
 import logger;
 import processor_hub;
+import core_options;
+import progress_observer;
 
 namespace ffc {
 using namespace faceMasker;
@@ -24,33 +26,21 @@ using namespace std;
 
 export class Core {
 public:
-    struct Options {
-        // misc
-        bool force_download{true};
-        bool skip_download{false};
-        Logger::LogLevel log_level{Logger::LogLevel::Trace};
-        // execution
-        unsigned short execution_thread_count{1};
-        // memory
-        enum class MemoryStrategy {
-            Strict,
-            Tolerant,
-        };
-        MemoryStrategy processor_memory_strategy{MemoryStrategy::Tolerant};
-        InferenceSession::Options inference_session_options{};
-    };
-
-    explicit Core(const Core::Options& options);
+    explicit Core(const CoreOptions& options);
     ~Core();
 
     [[nodiscard]] bool Run(CoreTask core_task);
+    void RegisterObserver(std::shared_ptr<IProgressObserver> observer) {
+        observer_ = observer;
+    }
 
 private:
     std::shared_ptr<Logger> logger_;
     std::shared_ptr<Ort::Env> env_;
     std::shared_ptr<FaceAnalyser> face_analyser_;
     ProcessorHub processor_hub_;
-    Options core_options_;
+    CoreOptions core_options_;
+    std::shared_ptr<IProgressObserver> observer_{nullptr};
 
     bool ProcessImages(CoreTask core_task);
     bool ProcessVideos(const CoreTask& core_task, const bool& autoRemoveTarget = false);
