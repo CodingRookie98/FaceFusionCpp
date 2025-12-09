@@ -38,6 +38,7 @@ find_package(CURL REQUIRED)
 find_package(indicators CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(thread-pool CONFIG REQUIRED)
+find_package(CLI11 CONFIG REQUIRED)
 cmake_policy(SET CMP0167 NEW) # 抑制FindBoost 模块已被移除的警告
 find_package(Boost REQUIRED COMPONENTS process system)
 target_link_libraries(${ProgramName} PRIVATE Boost::process Boost::system)
@@ -72,6 +73,7 @@ target_link_libraries(${ProgramName} PRIVATE indicators::indicators)
 target_link_libraries(${ProgramName} PRIVATE OpenSSL::Crypto)
 target_link_libraries(${ProgramName} PRIVATE dp::thread-pool)
 target_link_libraries(${ProgramName} PRIVATE Boost::process)
+target_link_libraries(${ProgramName} PRIVATE CLI11::CLI11)
 
 set(${ProgramName}_ini_file_name "FaceFusionCpp.ini")
 list(APPEND RESOURCE_FILES

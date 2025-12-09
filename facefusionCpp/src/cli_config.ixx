@@ -9,12 +9,15 @@ module;
 #include <vector>
 #include <string>
 #include <filesystem>
+#include <onnxruntime_cxx_api.h>
+#include <opencv2/opencv.hpp>
 
 export module cli_config;
 import core;
 import core_options;
 import file_system;
 import logger;
+import metadata;
 
 namespace ffc {
 
@@ -33,6 +36,9 @@ public:
     bool parse(int argc, char** argv, CoreOptions& coreOptions, CoreTask& coreTask) {
         CLI::App app{"FaceFusionCpp - Next generation face swapper and enhancer"};
         app.set_help_all_flag("--help-all", "Show all help");
+
+        bool show_version = false;
+        app.add_flag("-v,--version", show_version, "Show version information");
 
         // General
         bool headless = false;
@@ -66,6 +72,13 @@ public:
         // Apply Headless (not currently used in CoreOptions explicitly but can be logic in main)
         // If headless, we might want to suppress some GUIs if they existed, but currently it's console app mostly.
         // However, CoreTask has `show_progress_bar`.
+        if (show_version) {
+            std::cout << std::format("{} v{} {} By {}", metadata::name, metadata::version, metadata::url, metadata::author) << std::endl;
+            std::cout << std::format("onnxruntime v{}", Ort::GetVersionString()) << std::endl;
+            std::cout << std::format("OpenCV v{}", cv::getVersionString()) << std::endl;
+            return false;
+        }
+
         if (headless) {
             // Maybe disable progress bar? Or just ensure no windows pop up (Core::ProcessImages uses cv::imshow if debug? No.)
             // CoreTask has show_progress_bar defaults to true.
