@@ -59,7 +59,8 @@ public:
         try {
             app.parse(argc, argv);
         } catch (const CLI::ParseError& e) {
-            return app.exit(e) == 0;
+            app.exit(e);
+            return false;
         }
 
         // Apply Headless (not currently used in CoreOptions explicitly but can be logic in main)
