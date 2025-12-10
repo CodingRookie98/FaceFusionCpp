@@ -56,12 +56,36 @@ export enum class FrameEnhancerType {
     Real_hat_gan,
 };
 
-export struct ProcessorMinorType {
-    std::optional<FaceSwapperType> face_swapper;
-    std::optional<FaceEnhancerType> face_enhancer;
-    std::optional<ExpressionRestorerType> expression_restorer;
-    std::optional<FrameEnhancerType> frame_enhancer;
+export enum class ProcessorMinorType {
+    FaceSwapper_InSwapper,
+    FaceEnhancer_GfpGan,
+    FaceEnhancer_CodeFormer,
+    ExpressionRestorer_LivePortrait,
+    FrameEnhancer_RealEsrgan,
+    FrameEnhancer_RealHatgan,
 };
+
+export std::optional<FaceSwapperType> GetFaceSwapperType(ProcessorMinorType type) {
+    if (type == ProcessorMinorType::FaceSwapper_InSwapper) return FaceSwapperType::InSwapper;
+    return std::nullopt;
+}
+
+export std::optional<FaceEnhancerType> GetFaceEnhancerType(ProcessorMinorType type) {
+    if (type == ProcessorMinorType::FaceEnhancer_GfpGan) return FaceEnhancerType::GFP_GAN;
+    if (type == ProcessorMinorType::FaceEnhancer_CodeFormer) return FaceEnhancerType::CodeFormer;
+    return std::nullopt;
+}
+
+export std::optional<ExpressionRestorerType> GetExpressionRestorerType(ProcessorMinorType type) {
+    if (type == ProcessorMinorType::ExpressionRestorer_LivePortrait) return ExpressionRestorerType::LivePortrait;
+    return std::nullopt;
+}
+
+export std::optional<FrameEnhancerType> GetFrameEnhancerType(ProcessorMinorType type) {
+    if (type == ProcessorMinorType::FrameEnhancer_RealEsrgan) return FrameEnhancerType::Real_esr_gan;
+    if (type == ProcessorMinorType::FrameEnhancer_RealHatgan) return FrameEnhancerType::Real_hat_gan;
+    return std::nullopt;
+}
 
 export class ProcessorPool {
 public:

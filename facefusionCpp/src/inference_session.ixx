@@ -34,6 +34,14 @@ public:
         size_t trt_max_workspace_size = 0;
         bool enable_tensorrt_embed_engine = true;
         bool enable_tensorrt_cache = true;
+
+        bool operator==(const Options& other) const {
+            return execution_providers == other.execution_providers &&
+                   execution_device_id == other.execution_device_id &&
+                   trt_max_workspace_size == other.trt_max_workspace_size &&
+                   enable_tensorrt_embed_engine == other.enable_tensorrt_embed_engine &&
+                   enable_tensorrt_cache == other.enable_tensorrt_cache;
+        }
     };
 
     virtual void LoadModel(const std::string& model_path, const Options& options);

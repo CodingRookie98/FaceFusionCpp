@@ -149,20 +149,20 @@ void ini_config::frameProcessors() {
         tolower(value);
         if (value == "codeformer") {
             core_task_.processor_model[ProcessorMajorType::FaceEnhancer] = ModelManager::Model::Codeformer;
-            core_task_.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType{.face_enhancer = FaceEnhancerType::CodeFormer};
+            core_task_.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType::FaceEnhancer_CodeFormer;
         } else if (value == "gfpgan_1.2") {
             core_task_.processor_model[ProcessorMajorType::FaceEnhancer] = ModelManager::Model::Gfpgan_12;
-            core_task_.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType{.face_enhancer = FaceEnhancerType::GFP_GAN};
+            core_task_.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType::FaceEnhancer_GfpGan;
         } else if (value == "gfpgan_1.3") {
             core_task_.processor_model[ProcessorMajorType::FaceEnhancer] = ModelManager::Model::Gfpgan_13;
-            core_task_.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType{.face_enhancer = FaceEnhancerType::GFP_GAN};
+            core_task_.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType::FaceEnhancer_GfpGan;
         } else if (value == "gfpgan_1.4") {
             core_task_.processor_model[ProcessorMajorType::FaceEnhancer] = ModelManager::Model::Gfpgan_14;
-            core_task_.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType{.face_enhancer = FaceEnhancerType::GFP_GAN};
+            core_task_.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType::FaceEnhancer_GfpGan;
         } else {
             logger_->warn(std::format("Invalid face enhancer model: {}, Use Default: gfpgan_1.4", value));
             core_task_.processor_model[ProcessorMajorType::FaceEnhancer] = ModelManager::Model::Gfpgan_14;
-            core_task_.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType{.face_enhancer = FaceEnhancerType::GFP_GAN};
+            core_task_.processor_minor_types[ProcessorMajorType::FaceEnhancer] = ProcessorMinorType::FaceEnhancer_GfpGan;
         }
 
         unsigned short face_enhancer_blend = ini_.GetLongValue("frame_processors", "face_enhancer_blend", 80);
@@ -181,14 +181,14 @@ void ini_config::frameProcessors() {
         tolower(value);
         if (value == "inswapper_128_fp16") {
             core_task_.processor_model[ProcessorMajorType::FaceSwapper] = ModelManager::Model::Inswapper_128_fp16;
-            core_task_.processor_minor_types[ProcessorMajorType::FaceSwapper] = ProcessorMinorType{.face_swapper = FaceSwapperType::InSwapper};
+            core_task_.processor_minor_types[ProcessorMajorType::FaceSwapper] = ProcessorMinorType::FaceSwapper_InSwapper;
         } else if (value == "inswapper_128") {
             core_task_.processor_model[ProcessorMajorType::FaceSwapper] = ModelManager::Model::Inswapper_128;
-            core_task_.processor_minor_types[ProcessorMajorType::FaceSwapper] = ProcessorMinorType{.face_swapper = FaceSwapperType::InSwapper};
+            core_task_.processor_minor_types[ProcessorMajorType::FaceSwapper] = ProcessorMinorType::FaceSwapper_InSwapper;
         } else {
             logger_->warn(std::format("[IniConfig] Invalid face swapper model: {}, Use Default: inswapper_128_fp16", value));
             core_task_.processor_model[ProcessorMajorType::FaceSwapper] = ModelManager::Model::Inswapper_128_fp16;
-            core_task_.processor_minor_types[ProcessorMajorType::FaceSwapper] = ProcessorMinorType{.face_swapper = FaceSwapperType::InSwapper};
+            core_task_.processor_minor_types[ProcessorMajorType::FaceSwapper] = ProcessorMinorType::FaceSwapper_InSwapper;
         }
     }
 
@@ -197,10 +197,10 @@ void ini_config::frameProcessors() {
         value = ini_.GetValue("frame_processors", "expression_restorer_model", "live_portrait");
         tolower(value);
         if (value == "live_portrait") {
-            core_task_.processor_minor_types[ProcessorMajorType::ExpressionRestorer] = ProcessorMinorType{.expression_restorer = ExpressionRestorerType::LivePortrait};
+            core_task_.processor_minor_types[ProcessorMajorType::ExpressionRestorer] = ProcessorMinorType::ExpressionRestorer_LivePortrait;
         } else {
             logger_->warn(std::format("[IniConfig] Invalid expression restorer model: {}, Use Default: live_portrait", value));
-            core_task_.processor_minor_types[ProcessorMajorType::ExpressionRestorer] = ProcessorMinorType{.expression_restorer = ExpressionRestorerType::LivePortrait};
+            core_task_.processor_minor_types[ProcessorMajorType::ExpressionRestorer] = ProcessorMinorType::ExpressionRestorer_LivePortrait;
         }
 
         unsigned short expression_restorer_factor = ini_.GetLongValue("frame_processors", "expression_restorer_factor", 80);
@@ -220,29 +220,29 @@ void ini_config::frameProcessors() {
         tolower(value);
         if (value == "real_esrgan_x2") {
             core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x2;
-            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = ProcessorMinorType::FrameEnhancer_RealEsrgan;
         } else if (value == "real_esrgan_x2_fp16") {
             core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x2_fp16;
-            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = ProcessorMinorType::FrameEnhancer_RealEsrgan;
         } else if (value == "real_esrgan_x4") {
             core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x4;
-            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = ProcessorMinorType::FrameEnhancer_RealEsrgan;
         } else if (value == "real_esrgan_x4_fp16") {
             core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x4_fp16;
-            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = ProcessorMinorType::FrameEnhancer_RealEsrgan;
         } else if (value == "real_esrgan_x8") {
             core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x8;
-            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = ProcessorMinorType::FrameEnhancer_RealEsrgan;
         } else if (value == "real_esrgan_x8_fp16") {
             core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_esrgan_x8_fp16;
-            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_esr_gan};
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = ProcessorMinorType::FrameEnhancer_RealEsrgan;
         } else if (value == "real_hatgan_x4") {
             core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_hatgan_x4;
-            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_hat_gan};
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = ProcessorMinorType::FrameEnhancer_RealHatgan;
         } else {
             logger_->warn(std::format("[IniConfig] Invalid frame enhancer: {}, Use Default: real_hatgan_x4", value));
             core_task_.processor_model[ProcessorMajorType::FrameEnhancer] = ModelManager::Model::Real_hatgan_x4;
-            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = {.frame_enhancer = FrameEnhancerType::Real_hat_gan};
+            core_task_.processor_minor_types[ProcessorMajorType::FrameEnhancer] = ProcessorMinorType::FrameEnhancer_RealHatgan;
         }
 
         unsigned short frame_enhancer_blend = ini_.GetLongValue("frame_processors", "frame_enhancer_blend", 80);

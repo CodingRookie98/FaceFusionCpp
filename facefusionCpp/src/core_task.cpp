@@ -43,8 +43,8 @@ CoreTask::GetFaceSwapperInput(const size_t& target_paths_index,
 
     FaceSwapperInput face_swapper_input;
 
-    if (processor_minor_types.at(ProcessorMajorType::FaceSwapper).face_swapper.value()
-        == FaceSwapperType::InSwapper) {
+    if (processor_minor_types.at(ProcessorMajorType::FaceSwapper)
+        == ProcessorMinorType::FaceSwapper_InSwapper) {
         face_swapper_input.in_swapper_input = std::make_unique<InSwapperInput>();
         face_swapper_input.in_swapper_input->target_frame = std::make_shared<cv::Mat>(vision::readStaticImage(target_paths.at(target_paths_index)));
         for (const std::vector<Face> target_faces = GetTargetFaces(*face_swapper_input.in_swapper_input->target_frame, face_analyser);
@@ -162,8 +162,8 @@ CoreTask::GetFaceEnhancerInput(const size_t& target_paths_index,
     FaceEnhancerInput face_enhancer_input;
     const auto target_frame = std::make_shared<cv::Mat>(vision::readStaticImage(target_paths.at(target_paths_index)));
 
-    if (processor_minor_types.at(ProcessorMajorType::FaceEnhancer).face_enhancer.value()
-        == FaceEnhancerType::CodeFormer) {
+    if (processor_minor_types.at(ProcessorMajorType::FaceEnhancer)
+        == ProcessorMinorType::FaceEnhancer_CodeFormer) {
         face_enhancer_input.code_former_input = std::make_unique<CodeFormerInput>();
         face_enhancer_input.code_former_input->target_frame = target_frame;
         for (const std::vector<Face> target_faces = GetTargetFaces(*face_enhancer_input.code_former_input->target_frame, face_analyser);
@@ -172,8 +172,8 @@ CoreTask::GetFaceEnhancerInput(const size_t& target_paths_index,
         }
         face_enhancer_input.code_former_input->args_for_get_best_mask = GetArgsForGetBestMask();
     }
-    if (processor_minor_types.at(ProcessorMajorType::FaceEnhancer).face_enhancer.value()
-        == FaceEnhancerType::GFP_GAN) {
+    if (processor_minor_types.at(ProcessorMajorType::FaceEnhancer)
+        == ProcessorMinorType::FaceEnhancer_GfpGan) {
         face_enhancer_input.gfp_gan_input = std::make_unique<GFP_GAN_Input>();
         face_enhancer_input.gfp_gan_input->target_frame = target_frame;
         for (const std::vector<Face> target_faces = GetTargetFaces(*face_enhancer_input.gfp_gan_input->target_frame, face_analyser);
@@ -212,8 +212,8 @@ CoreTask::GetExpressionRestorerInput(const size_t& source_paths_index,
     const auto source_frame = std::make_shared<cv::Mat>(vision::readStaticImage(source_paths.value().at(source_paths_index)));
     const auto target_frame = std::make_shared<cv::Mat>(vision::readStaticImage(target_paths.at(target_paths_index)));
 
-    if (processor_minor_types.at(ProcessorMajorType::ExpressionRestorer).expression_restorer.value()
-        == ExpressionRestorerType::LivePortrait) {
+    if (processor_minor_types.at(ProcessorMajorType::ExpressionRestorer)
+        == ProcessorMinorType::ExpressionRestorer_LivePortrait) {
         expression_restorer_input.live_portrait_input = std::make_unique<LivePortraitInput>();
         expression_restorer_input.live_portrait_input->source_frame = source_frame;
         expression_restorer_input.live_portrait_input->target_frame = target_frame;
@@ -249,14 +249,14 @@ CoreTask::GetFrameEnhancerInput(const size_t& target_paths_index) const {
 
     FrameEnhancerInput frame_enhancer_input;
 
-    if (processor_minor_types.at(ProcessorMajorType::FrameEnhancer).frame_enhancer.value()
-        == FrameEnhancerType::Real_esr_gan) {
+    if (processor_minor_types.at(ProcessorMajorType::FrameEnhancer)
+        == ProcessorMinorType::FrameEnhancer_RealEsrgan) {
         frame_enhancer_input.real_esr_gan_input = std::make_unique<RealEsrGanInput>();
         frame_enhancer_input.real_esr_gan_input->target_frame = std::make_shared<cv::Mat>(vision::readStaticImage(target_paths.at(target_paths_index)));
         frame_enhancer_input.real_esr_gan_input->blend = frame_enhancer_blend.value();
     }
-    if (processor_minor_types.at(ProcessorMajorType::FrameEnhancer).frame_enhancer.value()
-        == FrameEnhancerType::Real_hat_gan) {
+    if (processor_minor_types.at(ProcessorMajorType::FrameEnhancer)
+        == ProcessorMinorType::FrameEnhancer_RealHatgan) {
         frame_enhancer_input.real_hat_gan_input = std::make_unique<RealHatGanInput>();
         frame_enhancer_input.real_hat_gan_input->target_frame = std::make_shared<cv::Mat>(vision::readStaticImage(target_paths.at(target_paths_index)));
         frame_enhancer_input.real_hat_gan_input->blend = frame_enhancer_blend.value();

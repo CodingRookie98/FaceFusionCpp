@@ -287,7 +287,7 @@ bool Core::Run(CoreTask core_task) {
     } while (FileSystem::dirExists(tmpPath));
 
     if (core_task.processor_minor_types.contains(ProcessorMajorType::FaceSwapper)
-        && core_task.processor_minor_types.at(ProcessorMajorType::FaceSwapper).face_swapper.value() == FaceSwapperType::InSwapper) {
+        && core_task.processor_minor_types.at(ProcessorMajorType::FaceSwapper) == ProcessorMinorType::FaceSwapper_InSwapper) {
         std::unordered_set<std::string> sourceImgPaths(core_task.source_paths->begin(), core_task.source_paths->end());
         core_task.source_average_face_id = {FileSystem::hash::CombinedSHA1(sourceImgPaths)};
         core_task.source_average_face = std::make_shared<Face>(core_task.ProcessSourceAverageFace(face_analyser_));
@@ -362,7 +362,7 @@ bool Core::ProcessImages(CoreTask core_task) {
     }
 
     if (core_task.processor_model.contains(ProcessorMajorType::FaceSwapper)
-        && core_task.processor_minor_types[ProcessorMajorType::FaceSwapper].face_swapper.value() == FaceSwapperType::InSwapper) {
+        && core_task.processor_minor_types[ProcessorMajorType::FaceSwapper] == ProcessorMinorType::FaceSwapper_InSwapper) {
         if (core_task.source_average_face == nullptr) {
             core_task.source_average_face = std::make_shared<Face>(core_task.ProcessSourceAverageFace(face_analyser_));
         }
@@ -419,13 +419,13 @@ bool Core::ProcessImages(CoreTask core_task) {
             if (type == ProcessorMajorType::FaceSwapper) {
                 return SwapFace(core_task.GetFaceSwapperInput(index, face_analyser_),
                                 core_task.output_paths.at(index),
-                                core_task.processor_minor_types[type].face_swapper.value(),
+                                GetFaceSwapperType(core_task.processor_minor_types[type]).value(),
                                 core_task.processor_model[type]);
             }
             if (type == ProcessorMajorType::FaceEnhancer) {
                 return EnhanceFace(core_task.GetFaceEnhancerInput(index, face_analyser_),
                                    core_task.output_paths.at(index),
-                                   core_task.processor_minor_types[type].face_enhancer.value(),
+                                   GetFaceEnhancerType(core_task.processor_minor_types[type]).value(),
                                    core_task.processor_model[type]);
             }
             if (type == ProcessorMajorType::ExpressionRestorer) {
@@ -437,12 +437,12 @@ bool Core::ProcessImages(CoreTask core_task) {
                 tmpCoreRunOptions.source_paths = originalTargetPaths;
                 return RestoreExpression(tmpCoreRunOptions.GetExpressionRestorerInput(index, index, face_analyser_),
                                          core_task.output_paths.at(index),
-                                         core_task.processor_minor_types[type].expression_restorer.value());
+                                         GetExpressionRestorerType(core_task.processor_minor_types[type]).value());
             }
             if (type == ProcessorMajorType::FrameEnhancer) {
                 return EnhanceFrame(core_task.GetFrameEnhancerInput(index),
                                     core_task.output_paths.at(index),
-                                    core_task.processor_minor_types[type].frame_enhancer.value(),
+                                    GetFrameEnhancerType(core_task.processor_minor_types[type]).value(),
                                     core_task.processor_model[type]);
             }
             return false;
@@ -453,16 +453,23 @@ bool Core::ProcessImages(CoreTask core_task) {
         if (core_task.show_progress_bar) {
             progress_bar = std::make_unique<ProgressBar>();
             if (type == ProcessorMajorType::FaceSwapper) {
-                processor_name = processor_hub_.getProcessorPool().getFaceSwapper(core_task.processor_minor_types[type].face_swapper.value(), core_task.processor_model[type])->getProcessorName();
+                processor_name = processor_hub_.getProcessorPool().getFaceSwapper(
+                    GetFaceSwapperType(core_task.processor_minor_types[type]).value(),
+                    core_task.processor_model[type])->getProcessorName();
             }
             if (type == ProcessorMajorType::FaceEnhancer) {
-                processor_name = processor_hub_.getProcessorPool().getFaceEnhancer(core_task.processor_minor_types[type].face_enhancer.value(), core_task.processor_model[type])->getProcessorName();
+                processor_name = processor_hub_.getProcessorPool().getFaceEnhancer(
+                    GetFaceEnhancerType(core_task.processor_minor_types[type]).value(),
+                    core_task.processor_model[type])->getProcessorName();
             }
             if (type == ProcessorMajorType::ExpressionRestorer) {
-                processor_name = processor_hub_.getProcessorPool().getExpressionRestorer(core_task.processor_minor_types[type].expression_restorer.value())->getProcessorName();
+                processor_name = processor_hub_.getProcessorPool().getExpressionRestorer(
+                  GetExpressionRestorerType(core_task.processor_minor_types[type]).value())->getProcessorName();
             }
             if (type == ProcessorMajorType::FrameEnhancer) {
-                processor_name = processor_hub_.getProcessorPool().getFrameEnhancer(core_task.processor_minor_types[type].frame_enhancer.value(), core_task.processor_model[type])->getProcessorName();
+                processor_name = processor_hub_.getProcessorPool().getFrameEnhancer(
+                   GetFrameEnhancerType(core_task.processor_minor_types[type]).value(),
+                   core_task.processor_model[type])->getProcessorName();
             }
 
             const size_t numTargetPaths = core_task.target_paths.size();
@@ -481,7 +488,7 @@ bool Core::ProcessImages(CoreTask core_task) {
         futures.reserve(core_task.target_paths.size());
 
         for (size_t index = 0; index < core_task.target_paths.size(); ++index) {
-             futures.push_back(thread_pool_.Enqueue(func_to_process, index));
+            futures.push_back(thread_pool_.Enqueue(func_to_process, index));
         }
 
         bool is_all_success = true;
