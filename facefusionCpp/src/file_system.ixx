@@ -58,7 +58,6 @@ bool copyImage(const std::string& imagePath, const std::string& destination, con
 bool copyImages(const std::vector<std::string>& imagePaths, const std::vector<std::string>& destinations, const cv::Size& size = cv::Size(0, 0));
 bool finalizeImage(const std::string& imagePath, const std::string& outputPath, const cv::Size& size = cv::Size(0, 0), const int& outputImageQuality = 100);
 bool finalizeImages(const std::vector<std::string>& imagePaths, const std::vector<std::string>& outputPaths, const cv::Size& size = cv::Size(0, 0), const int& outputImageQuality = 100);
-std::string generateRandomString(const size_t& length);
 
 // This function can be called multiple times.
 // It is recommended to call it only once at the program entry.

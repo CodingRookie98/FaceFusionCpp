@@ -28,6 +28,7 @@ import face_swapper;
 import progress_bar;
 import metadata;
 import thread_pool;
+import utils;
 
 using namespace std;
 using namespace ffc;
@@ -281,7 +282,7 @@ bool Core::Run(CoreTask core_task) {
 
     std::string tmpPath;
     do {
-        std::string id = FileSystem::generateRandomString(10);
+        std::string id = utils::generateRandomString(10);
         tmpPath = FileSystem::getTempPath() + "/" + metadata::name + "/" + id;
         core_task.source_average_face_id = id;
     } while (FileSystem::dirExists(tmpPath));

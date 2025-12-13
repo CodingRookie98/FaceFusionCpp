@@ -24,6 +24,7 @@ module file_system;
 import vision;
 import ffmpeg_runner;
 import thread_pool;
+import utils;
 
 namespace ffc {
 
@@ -134,7 +135,7 @@ std::string FileSystem::normalizeOutputPath(const std::string& targetPath, const
         if (isDir(outputPath)) {
             std::string normedPath = absolutePath(outputPath + "/" + targetBaseName + targetExtension);
             while (fileExists(normedPath)) {
-                std::string suffix = generateRandomString(8);
+                std::string suffix = utils::generateRandomString(8);
                 normedPath = absolutePath(outputPath + "/" + targetBaseName + "-" + suffix + targetExtension);
             }
             return normedPath;
@@ -458,23 +459,6 @@ void FileSystem::moveFiles(const std::vector<std::string>& sources,
             moveFile(sources[i], destination[i]);
         }
     }
-}
-
-std::string FileSystem::generateRandomString(const size_t& length) {
-    if (length == 0) {
-        return "";
-    }
-    const std::string characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    std::random_device rd;
-    std::default_random_engine generator(rd());
-    std::uniform_int_distribution<size_t> distribution(0, characters.size() - 1);
-
-    std::string randomString;
-    for (size_t i = 0; i < length; ++i) {
-        randomString += characters[distribution(generator)];
-    }
-
-    return randomString;
 }
 
 void FileSystem::setLocalToUTF8() {
