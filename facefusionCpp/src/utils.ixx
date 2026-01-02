@@ -29,8 +29,6 @@ export bool save_json_file(const std::string& json_file_path, const json& j, int
 export json yaml_file_to_json(const std::string& yaml_file_path);
 export std::string generate_random_str(const size_t& length);
 export std::string generate_uuid();
-// export std::initializer_list<Gender> get_all_genders();
-// export std::initializer_list<Race> get_all_races();
 
 /**
  * @brief 获取枚举类的所有值
