@@ -19,21 +19,21 @@ module downloader;
 import file_system;
 import logger;
 
-namespace ffc {
+namespace ffc::downloader {
 
-size_t Downloader::writeData(void *ptr, size_t size, size_t nmemb, std::ofstream *stream) {
-    stream->write(static_cast<char *>(ptr), static_cast<long long>(size * nmemb));
+size_t write_data(void* ptr, size_t size, size_t nmemb, std::ofstream* stream) {
+    stream->write(static_cast<char*>(ptr), static_cast<long long>(size * nmemb));
     return size * nmemb;
 }
 
-size_t Downloader::emptyWriteFunc(void *ptr, size_t size, size_t nmemb, void *userdata) {
+size_t empty_write_fn(void* ptr, size_t size, size_t nmemb, void* userdata) {
     return size * nmemb;
 }
 
-long Downloader::getFileSize(const std::string &url) {
+long get_file_size_from_url(const std::string& url) {
     double fileSize = 0.0;
 
-    if (CURL *curl = curl_easy_init()) {
+    if (CURL* curl = curl_easy_init()) {
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_NOBODY, 1L); // 不下载内容
         curl_easy_setopt(curl, CURLOPT_HEADER, 1L); // 只获取头部信息
@@ -53,7 +53,7 @@ long Downloader::getFileSize(const std::string &url) {
         //        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, headerCallback);
 
         // 用于设置响应头在控制台输出
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, emptyWriteFunc);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, empty_write_fn);
 
         if (CURLcode res = curl_easy_perform(curl);
             res == CURLE_OK) {
@@ -63,7 +63,7 @@ long Downloader::getFileSize(const std::string &url) {
                 return static_cast<long>(fileSize);
             }
         } else {
-            Logger::getInstance()->error(std::format("curl_easy_perform() failed: {}", curl_easy_strerror(res)));
+            Logger::get_instance()->error(std::format("curl_easy_perform() failed: {}", curl_easy_strerror(res)));
         }
 
         curl_easy_cleanup(curl);
@@ -72,54 +72,65 @@ long Downloader::getFileSize(const std::string &url) {
     return -1;
 }
 
-size_t Downloader::headerCallback(char *buffer, size_t size, size_t nitems, void *userdata) {
+size_t header_callback(char* buffer, size_t size, size_t nitems, void* userdata) {
     return size * nitems;
 }
 
-bool Downloader::isDownloadDone(const std::string &Url, const std::string &filePath) {
-    if (FileSystem::fileExists(filePath) && FileSystem::getFileSize(filePath) == getFileSize(Url)) {
+bool is_downloaded(const std::string& url, const std::string& file_path) {
+    if (file_system::file_exists(file_path) && file_system::get_file_size(file_path) == get_file_size_from_url(url)) {
         return true;
     }
     return false;
 }
 
-bool Downloader::batchDownload(const std::unordered_set<std::string> &urls, const std::string &outPutDirectory) {
-    const std::string outputDir = FileSystem::absolutePath(outPutDirectory);
-    for (const auto &url : urls) {
-        if (!download(url, outputDir)) {
-            return false;
-        }
-    }
-    return true;
+bool is_valid_url(const std::string& url) {
+    return url.find("http") == 0 || url.find("https") == 0;
 }
 
-bool Downloader::download(const std::string &url, const std::string &outPutDirectory) {
-    std::string outputDir = FileSystem::absolutePath(outPutDirectory);
+std::vector<bool> batch_download(const std::vector<std::string>& urls, const std::string& output_dir_path) {
+    const std::string outputDir = file_system::absolute_path(output_dir_path);
+    std::vector results(urls.size(), false);
+    for (size_t i = 0; i < urls.size(); ++i) {
+        if (!is_valid_url(urls[i])) {
+            results[i] = false;
+            continue;
+        }
+        if (!download(urls[i], outputDir)) {
+            results[i] = false;
+        } else {
+            results[i] = true;
+        }
+    }
+    return results;
+}
+
+bool download(const std::string& url, const std::string& outPutDirectory) {
+    std::string outputDir = file_system::absolute_path(outPutDirectory);
     if (!std::filesystem::exists(outputDir)) {
         if (!std::filesystem::create_directories(outputDir)) {
-            Logger::getInstance()->error(std::format("Failed to create output directory: {}", outputDir));
+            Logger::get_instance()->error(std::format("Failed to create output directory: {}", outputDir));
             return false;
         }
     }
 
     //  获取文件大小
-    const long fileSize = getFileSize(url);
+    const long fileSize = get_file_size_from_url(url);
     if (fileSize == -1) {
-        Logger::getInstance()->error("Failed to get file size.");
+        Logger::get_instance()->error("Failed to get file size.");
         return false;
     }
 
     // 获取文件路径
-    std::string outputFileName = getFileNameFromUrl(url);
-    std::string outputFilePath = FileSystem::absolutePath(outputDir + "/" + outputFileName);
+    std::string outputFileName = get_file_name_from_url(url);
+    std::string outputFilePath = file_system::absolute_path(outputDir + "/" + outputFileName);
     const std::string tempFilePath = outputFilePath + ".downloading";
     std::ofstream output(tempFilePath, std::ios::binary);
     if (!output.is_open()) {
-        Logger::getInstance()->error(std::format("Failed to open output file: {}", outputFilePath));
+        Logger::get_instance()->error(std::format("Failed to open output file: {}", outputFilePath));
         return false;
     }
 
-    if (CURL *curl = curl_easy_init()) {
+    if (CURL* curl = curl_easy_init()) {
         // 设置URL
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 
@@ -131,7 +142,7 @@ bool Downloader::download(const std::string &url, const std::string &outPutDirec
         // 关闭详细调试信息
         curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
         // 设置写入数据的回调函数
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeData);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &output);
 
         // 设置进度回调函数
@@ -150,7 +161,7 @@ bool Downloader::download(const std::string &url, const std::string &outPutDirec
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L); // 验证服务器的SSL证书
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L); // 验证证书上的主机名
 
-        Logger::getInstance()->info(std::format("Downloading {}", outputFileName));
+        Logger::get_instance()->info(std::format("Downloading {}", outputFileName));
         // 执行请求
         const CURLcode res = curl_easy_perform(curl);
 
@@ -159,28 +170,28 @@ bool Downloader::download(const std::string &url, const std::string &outPutDirec
         output.close();
 
         if (res != CURLE_OK) {
-            Logger::getInstance()->error(std::format("curl_easy_perform() failed: {}", curl_easy_strerror(res)));
+            Logger::get_instance()->error(std::format("curl_easy_perform() failed: {}", curl_easy_strerror(res)));
             // remove temp file
             std::filesystem::remove(tempFilePath);
             return false;
         }
         // rename temp file to output file
         std::filesystem::rename(tempFilePath, outputFilePath);
-        Logger::getInstance()->info(std::format("Download completed: {}", outputFileName));
+        Logger::get_instance()->info(std::format("Download completed: {}", outputFileName));
         return true;
     }
-    Logger::getInstance()->error("Failed to initialize curl.");
+    Logger::get_instance()->error("Failed to initialize curl.");
     return false;
 }
 
-std::string Downloader::getFileNameFromUrl(const std::string &url) {
+std::string get_file_name_from_url(const std::string& url) {
     if (const std::string::size_type pos = url.find_last_of("/\\"); pos != std::string::npos) {
         return url.substr(pos + 1);
     }
     return {};
 }
 
-int Downloader::progressCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
+int progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
     // dltotal: 总下载数据量
     // dlnow: 当前已下载的数据量
     // ultotal: 总上传数据量（对上传请求有用）
@@ -190,8 +201,8 @@ int Downloader::progressCallback(void *clientp, curl_off_t dltotal, curl_off_t d
     return 0;
 }
 
-std::string Downloader::humanReadableSize(const long &size) {
-    const char *units[] = {"B", "KB", "MB", "GB", "TB"};
+std::string human_readable_size(const long& size) {
+    const char* units[] = {"B", "KB", "MB", "GB", "TB"};
     int i = 0;
     double size_d = size;
 
@@ -201,4 +212,4 @@ std::string Downloader::humanReadableSize(const long &size) {
     }
     return std::format("{:.2f} {}", size_d, units[i]);
 }
-} // namespace Ffc
+} // namespace ffc::downloader

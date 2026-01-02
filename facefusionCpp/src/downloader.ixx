@@ -12,29 +12,24 @@ module;
 #include <curl/curl.h>
 #include <string>
 #include <unordered_set>
-#include "common_macros.h"// don't remove
+#include "common_macros.h" // don't remove
 
 export module downloader;
 
-namespace ffc {
+namespace ffc::downloader {
 
-export class Downloader {
-public:
-    static bool download(const std::string &url, const std::string &outPutDirectory);
-    static bool batchDownload(const std::unordered_set<std::string> &urls, const std::string &outPutDirectory);
-    static bool isDownloadDone(const std::string &Url, const std::string &filePath);
-    static std::string getFileNameFromUrl(const std::string &url);
-
-private:
-    static long getFileSize(const std::string &url);
-    // 写入数据的回调函数
-    static size_t writeData(void *ptr, size_t size, size_t nmemb, std::ofstream *stream);
-    // 进度回调函数
-    static int progressCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
-    // 将数据丢弃的函数
-    static size_t emptyWriteFunc(void *ptr, size_t size, size_t nmemb, void *userdata);
-    static std::string humanReadableSize(const long &size);
-    static size_t headerCallback(char *buffer, size_t size, size_t nitems, void *userdata);
-};
-
-} // namespace Ffc
+export bool download(const std::string& url, const std::string& outPutDirectory);
+export std::vector<bool> batch_download(const std::vector<std::string>& urls, const std::string& output_dir_path);
+export bool is_downloaded(const std::string& url, const std::string& file_path);
+export std::string get_file_name_from_url(const std::string& url);
+export long get_file_size_from_url(const std::string& url);
+// 写入数据的回调函数
+size_t write_data(void* ptr, size_t size, size_t nmemb, std::ofstream* stream);
+// 进度回调函数
+int progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
+// 将数据丢弃的函数
+size_t empty_write_fn(void* ptr, size_t size, size_t nmemb, void* userdata);
+std::string human_readable_size(const long& size);
+size_t header_callback(char* buffer, size_t size, size_t nitems, void* userdata);
+bool is_url_valid(const std::string& url);
+} // namespace ffc::downloader
