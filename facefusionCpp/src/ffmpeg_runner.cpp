@@ -29,6 +29,7 @@ extern "C" {
 module ffmpeg_runner;
 import logger;
 import file_system;
+import vision;
 
 namespace ffc {
 namespace bp = boost::process;
@@ -73,7 +74,7 @@ std::vector<std::string> FfmpegRunner::childProcess(const std::string &command) 
 }
 
 bool FfmpegRunner::isVideo(const std::string &videoPath) {
-    if (file_system::is_image(videoPath)) {
+    if (vision::is_image(videoPath)) {
         return false;
     }
 
