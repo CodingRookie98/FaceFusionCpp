@@ -36,42 +36,40 @@ public:
         bool enable_tensorrt_cache = true;
 
         bool operator==(const Options& other) const {
-            return execution_providers == other.execution_providers &&
-                   execution_device_id == other.execution_device_id &&
-                   trt_max_workspace_size == other.trt_max_workspace_size &&
-                   enable_tensorrt_embed_engine == other.enable_tensorrt_embed_engine &&
-                   enable_tensorrt_cache == other.enable_tensorrt_cache;
+            return execution_providers == other.execution_providers && execution_device_id == other.execution_device_id && trt_max_workspace_size == other.trt_max_workspace_size && enable_tensorrt_embed_engine == other.enable_tensorrt_embed_engine && enable_tensorrt_cache == other.enable_tensorrt_cache;
         }
     };
 
-    virtual void load_model(const std::string& model_path, const Options& options);
-    [[nodiscard]] bool IsModelLoaded() const;
-    [[nodiscard]] std::string GetModelPath() const;
-
 protected:
-    std::unique_ptr<Ort::Session> ort_session_;
-    Ort::SessionOptions session_options_;
-    Ort::RunOptions run_options_;
-    std::unique_ptr<OrtCUDAProviderOptions> cuda_provider_options_{nullptr};
-    std::vector<const char*> input_names_;
-    std::vector<const char*> output_names_;
-    std::vector<std::vector<int64_t>> input_node_dims_;  // >=1 outputs
-    std::vector<std::vector<int64_t>> output_node_dims_; // >=1 outputs
-    std::unique_ptr<Ort::MemoryInfo> memory_info_;
+    std::unique_ptr<Ort::Session> m_ort_session;
+    Ort::SessionOptions m_session_options;
+    Ort::RunOptions m_run_options;
+    std::unique_ptr<OrtCUDAProviderOptions> m_cuda_provider_options{nullptr};
+    std::vector<const char*> m_input_names;
+    std::vector<const char*> m_output_names;
+    std::vector<std::vector<int64_t>> m_input_node_dims;  // >=1 outputs
+    std::vector<std::vector<int64_t>> m_output_node_dims; // >=1 outputs
+    std::unique_ptr<Ort::MemoryInfo> m_memory_info;
 
 private:
-    void AppendProviderCuda();
-    void AppendProviderTensorrt();
+    std::mutex m_mutex;
+    std::shared_ptr<Ort::Env> m_ort_env;
+    std::unordered_set<std::string> m_available_providers;
+    Options m_options;
+    std::vector<Ort::AllocatedStringPtr> m_input_names_ptrs;
+    std::vector<Ort::AllocatedStringPtr> m_output_names_ptrs;
+    std::shared_ptr<Logger> m_logger;
+    bool m_is_model_loaded = false;
+    std::string m_model_path;
 
-    std::mutex mutex_;
-    std::shared_ptr<Ort::Env> ort_env_;
-    std::unordered_set<std::string> available_providers_;
-    Options options_;
-    std::vector<Ort::AllocatedStringPtr> input_names_ptrs_;
-    std::vector<Ort::AllocatedStringPtr> output_names_ptrs_;
-    std::shared_ptr<Logger> logger_;
-    bool is_model_loaded_ = false;
-    std::string model_path_;
+public:
+    virtual void load_model(const std::string& model_path, const Options& options);
+    [[nodiscard]] bool is_model_loaded() const;
+    [[nodiscard]] std::string get_loaded_model_path() const;
+
+private:
+    void append_provider_cuda();
+    void append_provider_tensorrt();
 };
 
 } // namespace ffc
