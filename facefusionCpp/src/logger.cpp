@@ -17,14 +17,14 @@ module;
 module logger;
 
 namespace ffc {
-std::shared_ptr<Logger> Logger::getInstance() {
+std::shared_ptr<Logger> Logger::get_instance() {
     static std::shared_ptr<Logger> instance;
     static std::once_flag flag;
     std::call_once(flag, [&]() { instance = std::make_shared<Logger>(); });
     return instance;
 }
 
-void Logger::setLogLevel(const Logger::LogLevel &level) {
+void Logger::setLogLevel(const Logger::LogLevel& level) {
     m_level = level;
     switch (m_level) {
     case LogLevel::Trace:
@@ -48,7 +48,7 @@ void Logger::setLogLevel(const Logger::LogLevel &level) {
     }
 }
 
-void Logger::log(const Logger::LogLevel &level, const std::string &message) const {
+void Logger::log(const Logger::LogLevel& level, const std::string& message) const {
     switch (level) {
     case LogLevel::Trace:
         trace(message);
@@ -71,27 +71,27 @@ void Logger::log(const Logger::LogLevel &level, const std::string &message) cons
     }
 }
 
-void Logger::trace(const std::string &message) const {
+void Logger::trace(const std::string& message) const {
     m_logger->trace(message);
 }
 
-void Logger::debug(const std::string &message) const {
+void Logger::debug(const std::string& message) const {
     m_logger->debug(message);
 }
 
-void Logger::info(const std::string &message) const {
+void Logger::info(const std::string& message) const {
     m_logger->info(message);
 }
 
-void Logger::warn(const std::string &message) const {
+void Logger::warn(const std::string& message) const {
     m_logger->warn(message);
 }
 
-void Logger::error(const std::string &message) const {
+void Logger::error(const std::string& message) const {
     m_logger->error(message);
 }
 
-void Logger::critical(const std::string &message) const {
+void Logger::critical(const std::string& message) const {
     m_logger->critical(message);
 }
 
@@ -113,22 +113,22 @@ Logger::LogLevel Logger::getLogLevel() const {
     return m_level;
 }
 
-void Logger::log(const std::string &level, const std::string &msg) {
+void Logger::log(const std::string& level, const std::string& msg) {
     // level to lower
     std::string level_t = level;
-    std::ranges::for_each(level_t, [](char &c) { c = std::tolower(c); });
+    std::ranges::for_each(level_t, [](char& c) { c = static_cast<char>(std::tolower(c)); });
     if (level_t == "trace") {
-        getInstance()->trace(msg);
+        get_instance()->trace(msg);
     } else if (level_t == "debug") {
-        getInstance()->debug(msg);
+        get_instance()->debug(msg);
     } else if (level_t == "info") {
-        getInstance()->info(msg);
+        get_instance()->info(msg);
     } else if (level_t == "warn") {
-        getInstance()->warn(msg);
+        get_instance()->warn(msg);
     } else if (level_t == "error") {
-        getInstance()->error(msg);
+        get_instance()->error(msg);
     } else if (level_t == "critical") {
-        getInstance()->critical(msg);
+        get_instance()->critical(msg);
     }
 }
 } // namespace ffc

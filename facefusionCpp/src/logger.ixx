@@ -26,11 +26,11 @@ public:
         Critical
     };
 
-    static std::shared_ptr<Logger> getInstance();
+    static std::shared_ptr<Logger> get_instance();
 
-    void setLogLevel(const Logger::LogLevel &level);
+    void setLogLevel(const LogLevel &level);
     [[nodiscard]] LogLevel getLogLevel() const;
-    void log(const Logger::LogLevel &level, const std::string &message) const;
+    void log(const LogLevel &level, const std::string &message) const;
     static void log(const std::string &level, const std::string &msg);
     void trace(const std::string &message) const;
     void debug(const std::string &message) const;
