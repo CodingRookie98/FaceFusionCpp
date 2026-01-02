@@ -26,39 +26,39 @@ import ffmpeg_runner;
 import thread_pool;
 import utils;
 
-namespace ffc {
+namespace ffc::file_system {
 
-bool FileSystem::fileExists(const std::string& path) {
+bool file_system::file_exists(const std::string& path) {
     return std::filesystem::exists(path);
 }
 
-bool FileSystem::dirExists(const std::string& path) {
+bool file_system::dir_exists(const std::string& path) {
     return std::filesystem::exists(path);
 }
 
-bool FileSystem::isDir(const std::string& path) {
+bool file_system::is_dir(const std::string& path) {
     return std::filesystem::is_directory(path);
 }
 
-bool FileSystem::isFile(const std::string& path) {
+bool file_system::is_file(const std::string& path) {
     return std::filesystem::is_regular_file(path);
 }
 
-bool FileSystem::isImage(const std::string& path) {
-    if (!isFile(path) || !fileExists(path)) {
+bool file_system::is_image(const std::string& path) {
+    if (!is_file(path) || !file_exists(path)) {
         return false;
     }
     return cv::haveImageReader(path);
 }
 
-bool FileSystem::isVideo(const std::string& path) {
-    if (!isFile(path) || !fileExists(path)) {
+bool file_system::is_video(const std::string& path) {
+    if (!is_file(path) || !file_exists(path)) {
         return false;
     }
     return FfmpegRunner::isVideo(path);
 }
 
-std::string FileSystem::getFileNameFromURL(const std::string& url) {
+std::string file_system::get_file_name_from_url(const std::string& url) {
     std::size_t lastSlashPos = url.find_last_of('/');
     if (lastSlashPos == std::string::npos) {
         return url;
@@ -68,20 +68,20 @@ std::string FileSystem::getFileNameFromURL(const std::string& url) {
     return fileName;
 }
 
-uintmax_t FileSystem::getFileSize(const std::string& path) {
-    if (isFile(path) && fileExists(path)) {
+uintmax_t file_system::get_file_size(const std::string& path) {
+    if (is_file(path) && file_exists(path)) {
         return std::filesystem::file_size(path);
     }
     return 0;
 }
 
-std::unordered_set<std::string> FileSystem::listFilesInDir(const std::string& path) {
+std::unordered_set<std::string> file_system::list_files(const std::string& path) {
     std::unordered_set<std::string> filePaths;
 
-    if (!isDir(path)) {
+    if (!is_dir(path)) {
         throw std::invalid_argument("Path is not a directory");
     }
-    if (!dirExists(path)) {
+    if (!dir_exists(path)) {
         throw std::invalid_argument("Directory does not exist");
     }
 
@@ -100,16 +100,16 @@ std::unordered_set<std::string> FileSystem::listFilesInDir(const std::string& pa
     return filePaths;
 }
 
-std::string FileSystem::absolutePath(const std::string& path) {
+std::string file_system::absolute_path(const std::string& path) {
     return std::filesystem::absolute(path).string();
 }
 
-bool FileSystem::hasImage(const std::unordered_set<std::string>& paths) {
+bool file_system::has_image(const std::unordered_set<std::string>& paths) {
     std::unordered_set<std::string> imagePaths;
 
     const bool isImg = std::ranges::all_of(paths.begin(), paths.end(), [](const std::string& path) {
-        const std::string absPath = absolutePath(path);
-        return isImage(path);
+        const std::string absPath = absolute_path(path);
+        return is_image(path);
     });
     if (!isImg) {
         return false;
@@ -117,44 +117,44 @@ bool FileSystem::hasImage(const std::unordered_set<std::string>& paths) {
     return true;
 }
 
-std::unordered_set<std::string> FileSystem::filterImagePaths(const std::unordered_set<std::string>& paths) {
+std::unordered_set<std::string> file_system::filter_image_paths(const std::unordered_set<std::string>& paths) {
     std::unordered_set<std::string> imagePaths;
     for (auto& path : paths) {
-        if (auto absPath = absolutePath(path); isImage(absPath)) {
+        if (auto absPath = absolute_path(path); is_image(absPath)) {
             imagePaths.insert(absPath);
         }
     }
     return imagePaths;
 }
 
-std::string FileSystem::normalizeOutputPath(const std::string& targetPath, const std::string& outputPath) {
-    if (!targetPath.empty() && !outputPath.empty()) {
-        const std::string targetBaseName = getBaseName(targetPath);
-        const std::string targetExtension = getExtension(targetPath);
+std::string file_system::normalize_output_path(const std::string& target_file_path, const std::string& output_dir) {
+    if (!target_file_path.empty() && !output_dir.empty()) {
+        const std::string targetBaseName = get_base_name(target_file_path);
+        const std::string targetExtension = get_file_ext(target_file_path);
 
-        if (isDir(outputPath)) {
-            std::string normedPath = absolutePath(outputPath + "/" + targetBaseName + targetExtension);
-            while (fileExists(normedPath)) {
-                std::string suffix = utils::generateRandomString(8);
-                normedPath = absolutePath(outputPath + "/" + targetBaseName + "-" + suffix + targetExtension);
+        if (is_dir(output_dir)) {
+            std::string normedPath = absolute_path(output_dir + "/" + targetBaseName + targetExtension);
+            while (file_exists(normedPath)) {
+                std::string suffix = utils::generate_random_str(8);
+                normedPath = absolute_path(output_dir + "/" + targetBaseName + "-" + suffix + targetExtension);
             }
             return normedPath;
         }
-        const std::string outputDir = parentPath(outputPath);
-        const std::string outputBaseName = getBaseName(outputPath);
-        const std::string outputExtension = getExtension(outputPath);
-        if (isDir(outputDir) && !outputBaseName.empty() && !outputExtension.empty()) {
-            return absolutePath(outputDir + "/" + outputBaseName + outputExtension);
+        const std::string outputDir = parent_path(output_dir);
+        const std::string outputBaseName = get_base_name(output_dir);
+        const std::string outputExtension = get_file_ext(output_dir);
+        if (is_dir(outputDir) && !outputBaseName.empty() && !outputExtension.empty()) {
+            return absolute_path(outputDir + "/" + outputBaseName + outputExtension);
         }
     }
     return {};
 }
 
-std::vector<std::string> FileSystem::normalizeOutputPaths(const std::vector<std::string>& targetPaths, const std::string& outputPath) {
+std::vector<std::string> file_system::normalize_output_paths(const std::vector<std::string>& target_paths, const std::string& output_dir) {
     std::vector<std::future<std::string>> futures;
-    for (const auto& targetPath : targetPaths) {
-        futures.emplace_back(ThreadPool::Instance()->Enqueue([targetPath, outputPath] {
-            return normalizeOutputPath(targetPath, outputPath);
+    for (const auto& targetPath : target_paths) {
+        futures.emplace_back(ThreadPool::Instance()->Enqueue([targetPath, output_dir] {
+            return normalize_output_path(targetPath, output_dir);
         }));
     }
     std::vector<std::string> normedPaths;
@@ -164,35 +164,35 @@ std::vector<std::string> FileSystem::normalizeOutputPaths(const std::vector<std:
     return normedPaths;
 }
 
-void FileSystem::createDir(const std::string& path) {
+void file_system::create_dir(const std::string& path) {
     static std::mutex mutex;
     std::lock_guard<std::mutex> lock(mutex);
-    if (!dirExists(path)) {
+    if (!dir_exists(path)) {
         if (std::error_code ec; !std::filesystem::create_directories(path, ec)) {
             std::cerr << __FUNCTION__ << " Failed to create directory: " + path + " Error: " + ec.message() << std::endl;
         }
     }
 }
 
-std::string FileSystem::getTempPath() {
+std::string file_system::get_temp_path() {
     return std::filesystem::temp_directory_path().string();
 }
 
-std::string FileSystem::parentPath(const std::string& path) {
+std::string file_system::parent_path(const std::string& path) {
     return std::filesystem::path(path).parent_path().string();
 }
 
-std::string FileSystem::getFileName(const std::string& filePath) {
-    std::filesystem::path pathObj(filePath);
+std::string file_system::get_file_name(const std::string& file_path) {
+    std::filesystem::path pathObj(file_path);
     return pathObj.filename().string();
 }
 
-std::string FileSystem::getExtension(const std::string& filePath) {
-    std::filesystem::path pathObj(filePath);
+std::string file_system::get_file_ext(const std::string& file_path) {
+    std::filesystem::path pathObj(file_path);
     return pathObj.extension().string();
 }
 
-std::string FileSystem::getBaseName(const std::string& path) {
+std::string file_system::get_base_name(const std::string& path) {
     std::filesystem::path pathObj(path);
     if (std::filesystem::is_regular_file(path)) {
         return pathObj.stem().string();
@@ -202,18 +202,18 @@ std::string FileSystem::getBaseName(const std::string& path) {
     return "";
 }
 
-bool FileSystem::copyImage(const std::string& imagePath, const std::string& destination, const cv::Size& size) {
+bool file_system::copy_image(const std::string& image_path, const std::string& destination, const cv::Size& size) {
     // 读取输入图片
-    const cv::Mat inputImage = cv::imread(imagePath, cv::IMREAD_UNCHANGED);
+    const cv::Mat inputImage = cv::imread(image_path, cv::IMREAD_UNCHANGED);
     if (inputImage.empty()) {
-        std::cerr << "Could not open or find the image: " << imagePath << std::endl;
+        std::cerr << "Could not open or find the image: " << image_path << std::endl;
         return false;
     }
 
     // 获取临时文件路径
     std::filesystem::path destinationPath = destination;
-    if (!dirExists(destinationPath.parent_path().string())) {
-        createDir(destinationPath.parent_path().string());
+    if (!dir_exists(destinationPath.parent_path().string())) {
+        create_dir(destinationPath.parent_path().string());
     }
 
     // 调整图片尺寸
@@ -227,7 +227,7 @@ bool FileSystem::copyImage(const std::string& imagePath, const std::string& dest
         cv::resize(inputImage, resizedImage, outputSize);
     } else {
         if (destinationPath.extension() != ".webp") {
-            copy(imagePath, destinationPath.string());
+            copy(image_path, destinationPath.string());
             return true;
         }
         resizedImage = inputImage;
@@ -246,22 +246,22 @@ bool FileSystem::copyImage(const std::string& imagePath, const std::string& dest
     return true;
 }
 
-bool FileSystem::copyImages(const std::vector<std::string>& imagePaths, const std::vector<std::string>& destinations, const cv::Size& size) {
-    if (imagePaths.size() != destinations.size()) {
+bool file_system::copy_images(const std::vector<std::string>& image_paths, const std::vector<std::string>& destinations, const cv::Size& size) {
+    if (image_paths.size() != destinations.size()) {
         std::cerr << __FUNCTION__ << " The number of image paths and destinations must be equal." << std::endl;
         return false;
     }
-    if (imagePaths.empty() || destinations.empty()) {
+    if (image_paths.empty() || destinations.empty()) {
         std::cerr << __FUNCTION__ << " No image paths or destination paths provided." << std::endl;
         return false;
     }
 
     std::vector<std::future<bool>> futures;
-    for (size_t i = 0; i < imagePaths.size(); ++i) {
-        const std::string& imagePath = imagePaths[i];
+    for (size_t i = 0; i < image_paths.size(); ++i) {
+        const std::string& imagePath = image_paths[i];
         const std::string& destination = destinations[i];
         futures.emplace_back(ThreadPool::Instance()->Enqueue([imagePath, destination, size]() {
-            return copyImage(imagePath, destination, size);
+            return copy_image(imagePath, destination, size);
         }));
     }
     for (auto& future : futures) {
@@ -272,9 +272,9 @@ bool FileSystem::copyImages(const std::vector<std::string>& imagePaths, const st
     return true;
 }
 
-bool FileSystem::finalizeImage(const std::string& imagePath, const std::string& outputPath, const cv::Size& size, const int& outputImageQuality) {
+bool file_system::finalize_image(const std::string& image_path, const std::string& output_path, const cv::Size& size, const int& output_image_quality) {
     // 读取输入图像
-    cv::Mat inputImage = cv::imread(imagePath, cv::IMREAD_UNCHANGED);
+    cv::Mat inputImage = cv::imread(image_path, cv::IMREAD_UNCHANGED);
     if (inputImage.empty()) {
         return false;
     }
@@ -291,8 +291,8 @@ bool FileSystem::finalizeImage(const std::string& imagePath, const std::string& 
     if (outputSize.width != inputImage.size().width || outputSize.height != inputImage.size().height) {
         cv::resize(inputImage, resizedImage, outputSize);
     } else {
-        if (outputImageQuality == 100) {
-            copy(imagePath, outputPath);
+        if (output_image_quality == 100) {
+            copy(image_path, output_path);
             return true;
         }
         resizedImage = inputImage;
@@ -300,37 +300,37 @@ bool FileSystem::finalizeImage(const std::string& imagePath, const std::string& 
 
     // 设置保存参数，默认无压缩
     std::vector<int> compressionParams;
-    const std::string extension = std::filesystem::path(outputPath).extension().string();
+    const std::string extension = std::filesystem::path(output_path).extension().string();
 
     if (extension == ".webp") {
         compressionParams.push_back(cv::IMWRITE_WEBP_QUALITY);
-        compressionParams.push_back(std::clamp(outputImageQuality, 1, 100));
+        compressionParams.push_back(std::clamp(output_image_quality, 1, 100));
     } else if (extension == ".jpg" || extension == ".jpeg") {
         compressionParams.push_back(cv::IMWRITE_JPEG_QUALITY);
-        compressionParams.push_back(std::clamp(outputImageQuality, 0, 100));
+        compressionParams.push_back(std::clamp(output_image_quality, 0, 100));
     } else if (extension == ".png") {
         compressionParams.push_back(cv::IMWRITE_PNG_COMPRESSION);
-        compressionParams.push_back(std::clamp((outputImageQuality / 10), 0, 9));
+        compressionParams.push_back(std::clamp((output_image_quality / 10), 0, 9));
     }
 
     // 保存调整后的图像
-    if (!cv::imwrite(outputPath, resizedImage, compressionParams)) {
+    if (!cv::imwrite(output_path, resizedImage, compressionParams)) {
         return false;
     }
 
     return true;
 }
 
-bool FileSystem::finalizeImages(const std::vector<std::string>& imagePaths, const std::vector<std::string>& outputPaths, const cv::Size& size, const int& outputImageQuality) {
-    if (imagePaths.size() != outputPaths.size()) {
+bool file_system::finalize_images(const std::vector<std::string>& image_paths, const std::vector<std::string>& output_paths, const cv::Size& size, const int& output_image_quality) {
+    if (image_paths.size() != output_paths.size()) {
         throw std::invalid_argument("Input and output paths must have the same size");
     }
 
     std::vector<std::future<bool>> futures;
-    for (size_t i = 0; i < imagePaths.size(); ++i) {
-        futures.emplace_back(ThreadPool::Instance()->Enqueue([imagePath = imagePaths[i], outputPath = outputPaths[i], size, outputImageQuality]() {
+    for (size_t i = 0; i < image_paths.size(); ++i) {
+        futures.emplace_back(ThreadPool::Instance()->Enqueue([imagePath = image_paths[i], outputPath = output_paths[i], size, output_image_quality]() {
             try {
-                return finalizeImage(imagePath, outputPath, size, outputImageQuality);
+                return finalize_image(imagePath, outputPath, size, output_image_quality);
             } catch (const std::exception& e) {
                 // 记录异常或处理异常
                 std::cerr << "Exception caught: " << e.what() << std::endl;
@@ -354,7 +354,7 @@ bool FileSystem::finalizeImages(const std::vector<std::string>& imagePaths, cons
     return allSuccess;
 }
 
-void FileSystem::removeDir(const std::string& path) {
+void file_system::remove_dir(const std::string& path) {
     try {
         std::filesystem::remove_all(path);
     } catch (const std::filesystem::filesystem_error& e) {
@@ -362,7 +362,7 @@ void FileSystem::removeDir(const std::string& path) {
     }
 }
 
-void FileSystem::removeFile(const std::string& path) {
+void file_system::remove_file(const std::string& path) {
     try {
         std::filesystem::remove(path);
     } catch (const std::filesystem::filesystem_error& e) {
@@ -370,12 +370,12 @@ void FileSystem::removeFile(const std::string& path) {
     }
 }
 
-void FileSystem::removeFiles(const std::vector<std::string>& paths, const bool& use_thread_pool) {
+void file_system::remove_files(const std::vector<std::string>& paths, const bool& use_thread_pool) {
     if (use_thread_pool) {
         std::vector<std::future<void>> futures;
         for (const auto& path : paths) {
             futures.emplace_back(ThreadPool::Instance()->Enqueue([path]() {
-                removeFile(path);
+                remove_file(path);
             }));
         }
         for (auto& future : futures) {
@@ -383,25 +383,25 @@ void FileSystem::removeFiles(const std::vector<std::string>& paths, const bool& 
         }
     } else {
         for (const auto& path : paths) {
-            removeFile(path);
+            remove_file(path);
         }
     }
 }
 
-void FileSystem::copy(const std::string& source, const std::string& destination) {
+void file_system::copy(const std::string& source, const std::string& destination) {
     if (source == destination) return;
 
     // parent path of destination is not exist
-    if (!isDir(std::filesystem::path(destination).parent_path().string())) {
-        createDir(std::filesystem::path(destination).parent_path().string());
+    if (!is_dir(std::filesystem::path(destination).parent_path().string())) {
+        create_dir(std::filesystem::path(destination).parent_path().string());
     }
 
     std::filesystem::copy(source, destination, std::filesystem::copy_options::overwrite_existing);
 }
 
-void FileSystem::copyFiles(const std::vector<std::string>& sources,
-                           const std::vector<std::string>& destinations,
-                           const bool& use_thread_pool) {
+void file_system::copy_files(const std::vector<std::string>& sources,
+                            const std::vector<std::string>& destinations,
+                            const bool& use_thread_pool) {
     if (sources.size() != destinations.size()) {
         throw std::invalid_argument("Source and destination paths must have the same size");
     }
@@ -423,23 +423,23 @@ void FileSystem::copyFiles(const std::vector<std::string>& sources,
     }
 }
 
-void FileSystem::moveFile(const std::string& source, const std::string& destination) {
+void file_system::move_file(const std::string& source, const std::string& destination) {
     // if parent path of destination is not exist
-    if (!isDir(std::filesystem::path(destination).parent_path().string())) {
-        createDir(std::filesystem::path(destination).parent_path().string());
+    if (!is_dir(std::filesystem::path(destination).parent_path().string())) {
+        create_dir(std::filesystem::path(destination).parent_path().string());
     }
 
     // if destination is existed
-    if (fileExists(destination)) {
-        removeFile(destination);
+    if (file_exists(destination)) {
+        remove_file(destination);
     }
 
     std::filesystem::rename(source, destination);
 }
 
-void FileSystem::moveFiles(const std::vector<std::string>& sources,
-                           const std::vector<std::string>& destination,
-                           const bool& use_thread_pool) {
+void file_system::move_files(const std::vector<std::string>& sources,
+                            const std::vector<std::string>& destination,
+                            const bool& use_thread_pool) {
     if (sources.size() != destination.size()) {
         throw std::invalid_argument("Source and destination paths must have the same size");
     }
@@ -448,7 +448,7 @@ void FileSystem::moveFiles(const std::vector<std::string>& sources,
         std::vector<std::future<void>> futures;
         for (size_t i = 0; i < sources.size(); ++i) {
             futures.emplace_back(ThreadPool::Instance()->Enqueue([sources, destination, i]() {
-                moveFile(sources[i], destination[i]);
+                move_file(sources[i], destination[i]);
             }));
         }
         for (auto& future : futures) {
@@ -456,12 +456,12 @@ void FileSystem::moveFiles(const std::vector<std::string>& sources,
         }
     } else {
         for (size_t i = 0; i < sources.size(); ++i) {
-            moveFile(sources[i], destination[i]);
+            move_file(sources[i], destination[i]);
         }
     }
 }
 
-void FileSystem::setLocalToUTF8() {
+void file_system::set_local_to_utf8() {
     static std::once_flag onceFlag;
     std::call_once(onceFlag, []() {
         try {
@@ -474,9 +474,9 @@ void FileSystem::setLocalToUTF8() {
 }
 
 #ifdef _WIN32
-std::string FileSystem::utf8ToSysDefaultLocal(const std::string& utf8tsr) {
+std::string file_system::utf8_to_sys_default_local(const std::string& utf8_tsr) {
     // 计算转换为宽字符所需的缓冲区大小
-    const int wideCharSize = MultiByteToWideChar(CP_UTF8, 0, utf8tsr.c_str(), -1, nullptr, 0);
+    const int wideCharSize = MultiByteToWideChar(CP_UTF8, 0, utf8_tsr.c_str(), -1, nullptr, 0);
     if (wideCharSize == 0) {
         // 处理错误
         return {};
@@ -484,7 +484,7 @@ std::string FileSystem::utf8ToSysDefaultLocal(const std::string& utf8tsr) {
 
     // 分配缓冲区
     std::wstring wideStr(wideCharSize, 0);
-    MultiByteToWideChar(CP_UTF8, 0, utf8tsr.c_str(), -1, &wideStr[0], wideCharSize);
+    MultiByteToWideChar(CP_UTF8, 0, utf8_tsr.c_str(), -1, &wideStr[0], wideCharSize);
     // 计算转换为 Local 所需的缓冲区大小
     const int LocalSize = WideCharToMultiByte(CP_ACP, 0, wideStr.c_str(), -1, nullptr, 0, nullptr, nullptr);
     if (LocalSize == 0) {
@@ -499,13 +499,17 @@ std::string FileSystem::utf8ToSysDefaultLocal(const std::string& utf8tsr) {
 }
 #endif
 
-namespace FileSystem::hash {
+std::string get_current_path() {
+    return std::filesystem::current_path().string();
+}
 
-std::string SHA1(const std::string& file_path) {
+namespace hash {
+
+std::string sha1(const std::string& file_path) {
     if (file_path.empty()) {
         return {};
     }
-    if (!fileExists(file_path)) {
+    if (!file_exists(file_path)) {
         return {};
     }
 
@@ -526,15 +530,15 @@ std::string SHA1(const std::string& file_path) {
 
     while (file.read(buffer.data(), buffer_size)) {
         if (!SHA1_Update(&sha1_ctx, buffer.data(), file.gcount())) {
-             std::cerr << "SHA1_Update failed" << std::endl;
-             return "";
+            std::cerr << "SHA1_Update failed" << std::endl;
+            return "";
         }
     }
     // Handle remaining bytes
     if (file.gcount() > 0) {
         if (!SHA1_Update(&sha1_ctx, buffer.data(), file.gcount())) {
-             std::cerr << "SHA1_Update failed" << std::endl;
-             return "";
+            std::cerr << "SHA1_Update failed" << std::endl;
+            return "";
         }
     }
 
@@ -554,7 +558,7 @@ std::string SHA1(const std::string& file_path) {
     return oss.str();
 }
 
-std::string CombinedSHA1(std::unordered_set<std::string>& file_paths,
+std::string combined_sha1(std::unordered_set<std::string>& file_paths,
                          const bool& use_thread_pool) {
     if (file_paths.empty()) {
         return {};
@@ -565,7 +569,7 @@ std::string CombinedSHA1(std::unordered_set<std::string>& file_paths,
         std::vector<std::future<std::string>> futures;
         for (auto& file_path : file_paths) {
             futures.emplace_back(ThreadPool::Instance()->Enqueue([file_path]() {
-                return SHA1(file_path);
+                return sha1(file_path);
             }));
         }
 
@@ -574,7 +578,7 @@ std::string CombinedSHA1(std::unordered_set<std::string>& file_paths,
         }
     } else {
         for (auto& file_path : file_paths) {
-            sha1_vec.emplace_back(SHA1(file_path));
+            sha1_vec.emplace_back(sha1(file_path));
         }
     }
     std::ranges::sort(sha1_vec);
@@ -584,11 +588,11 @@ std::string CombinedSHA1(std::unordered_set<std::string>& file_paths,
         combined_sha1 += sha1;
     }
 
-    // 计算 SHA1 值
+    // 计算 sha1 值
     unsigned char sha1[SHA_DIGEST_LENGTH];
     ::SHA1(reinterpret_cast<const unsigned char*>(combined_sha1.c_str()), combined_sha1.length(), sha1);
 
-    // 将 SHA1 值转换为十六进制字符串
+    // 将 sha1 值转换为十六进制字符串
     std::ostringstream oss;
     oss << std::hex << std::setfill('0');
     for (const auto& byte : sha1) {
@@ -598,5 +602,5 @@ std::string CombinedSHA1(std::unordered_set<std::string>& file_paths,
     return oss.str();
 }
 
-} // namespace FileSystem::hash
-} // namespace ffc
+} // namespace file_system::hash
+} // namespace ffc::file_system
