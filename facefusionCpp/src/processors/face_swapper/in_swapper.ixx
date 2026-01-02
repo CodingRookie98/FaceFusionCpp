@@ -22,10 +22,10 @@ import inference_session;
 
 export namespace ffc::faceSwapper {
 
-using namespace faceMasker;
+using namespace face_masker;
 
 struct InSwapperInput {
-    Face::Embeddings source_average_embeddings;
+    Face::Embedding source_average_embeddings;
     std::vector<Face::Landmarks> target_faces_5_landmarks;
     std::shared_ptr<cv::Mat> target_frame = nullptr;
     FaceMaskerHub::ArgsForGetBestMask args_for_get_best_mask{
@@ -42,9 +42,9 @@ public:
     // must loadModel before swapFace
     cv::Mat swapFace(const InSwapperInput& input);
 
-    void LoadModel(const std::string& modelPath, const Options& options) override;
+    void load_model(const std::string& modelPath, const Options& options) override;
 
-    [[nodiscard]] std::string getProcessorName() const override;
+    [[nodiscard]] std::string get_processor_name() const override;
 
 private:
     cv::Size m_size{0, 0};
@@ -55,8 +55,8 @@ private:
     int m_inputWidth{0};
     std::vector<float> m_initializerArray;
 
-    [[nodiscard]] cv::Mat applySwap(const Face::Embeddings& sourceEmbedding, const cv::Mat& croppedTargetFrame) const;
-    [[nodiscard]] std::vector<float> prepareSourceEmbedding(const Face::Embeddings& sourceEmbedding) const;
+    [[nodiscard]] cv::Mat applySwap(const Face::Embedding& sourceEmbedding, const cv::Mat& croppedTargetFrame) const;
+    [[nodiscard]] std::vector<float> prepareSourceEmbedding(const Face::Embedding& sourceEmbedding) const;
     [[nodiscard]] std::vector<float> getInputImageData(const cv::Mat& croppedTargetFrame) const;
     void init();
 };
