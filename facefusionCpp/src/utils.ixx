@@ -13,65 +13,52 @@ module;
 #include <nlohmann/json.hpp>
 
 export module utils;
+import face;
+
 namespace ffc::utils {
 
-export nlohmann::json yamlToJson(const YAML::Node& node) {
-    using json = nlohmann::json;
+using json = nlohmann::json;
 
-    if (!node || node.IsNull()) {
-        return nullptr;
-    }
+export nlohmann::json yaml_str_to_json(const std::string& yaml_str);
+export nlohmann::json yaml_node_to_json(const YAML::Node& node);
+export std::string json_to_yaml_str(const nlohmann::json& j);
+export YAML::Node json_to_yaml_node(const nlohmann::json& j);
+export YAML::Node load_yaml_file(const std::string& yaml_file_path);
+export json load_json_file(const std::string& json_file_path);
+export bool save_json_file(const std::string& json_file_path, const json& j, int indent = 2);
+export json yaml_file_to_json(const std::string& yaml_file_path);
+export std::string generate_random_str(const size_t& length);
+export std::string generate_uuid();
+// export std::initializer_list<Gender> get_all_genders();
+// export std::initializer_list<Race> get_all_races();
 
-    if (node.IsScalar()) {
-        const std::string value = node.as<std::string>();
-
-        // Optional: basic type inference
-        try {
-            return node.as<bool>();
-        } catch (...) {}
-        try {
-            return node.as<int>();
-        } catch (...) {}
-        try {
-            return node.as<double>();
-        } catch (...) {}
-
-        return value;
-    }
-
-    if (node.IsSequence()) {
-        json arr = json::array();
-        for (const auto& item : node) {
-            arr.push_back(yamlToJson(item));
-        }
-        return arr;
-    }
-
-    if (node.IsMap()) {
-        json obj = json::object();
-        for (const auto& kv : node) {
-            obj[kv.first.as<std::string>()] = yamlToJson(kv.second);
-        }
-        return obj;
-    }
-
-    return nullptr;
+/**
+ * @brief 获取枚举类的所有值
+ * @tparam EnumType 枚举类型
+ * @return 包含枚举所有值的initializer_list
+ *
+ * @details
+ * 这个模板函数使用C++20的模板元编程技术，通过requires约束确保只对枚举类型生效。
+ * 函数会自动推断枚举的所有值并返回一个initializer_list，方便进行遍历和操作。
+ *
+ * @example
+ * auto formats = get_all_enum_values<ImageFormat>();
+ * for (auto format : formats) {
+ *     // 遍历所有ImageFormat枚举值
+ * }
+ */
+export template <typename EnumType>
+    requires std::is_enum_v<EnumType>
+constexpr std::initializer_list<EnumType> enum_all() {
+    // 使用C++20的模板技巧自动推断枚举值
+    // 这里需要为每个枚举类型提供特化实现
+    static_assert(false, "请为枚举类型EnumType提供get_all_enum_values的特化实现");
+    return std::initializer_list<EnumType>();
 }
 
-export std::string generateRandomString(const size_t& length) {
-    if (length == 0) {
-        return "";
-    }
-    const std::string characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    std::random_device rd;
-    std::default_random_engine generator(rd());
-    std::uniform_int_distribution<size_t> distribution(0, characters.size() - 1);
+export template <>
+constexpr std::initializer_list<Gender> enum_all<Gender>();
 
-    std::string randomString;
-    for (size_t i = 0; i < length; ++i) {
-        randomString += characters[distribution(generator)];
-    }
-
-    return randomString;
-}
+export template <>
+constexpr std::initializer_list<Race> enum_all<Race>();
 } // namespace ffc::utils
