@@ -44,7 +44,7 @@ public:
         }
     };
 
-    virtual void LoadModel(const std::string& model_path, const Options& options);
+    virtual void load_model(const std::string& model_path, const Options& options);
     [[nodiscard]] bool IsModelLoaded() const;
     [[nodiscard]] std::string GetModelPath() const;
 

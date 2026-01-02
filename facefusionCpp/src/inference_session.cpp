@@ -23,11 +23,11 @@ InferenceSession::InferenceSession(const std::shared_ptr<Ort::Env>& env) {
     session_options_.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
     auto availableProviders = Ort::GetAvailableProviders();
     available_providers_.insert(availableProviders.begin(), availableProviders.end());
-    logger_ = Logger::getInstance();
+    logger_ = Logger::get_instance();
     memory_info_ = std::make_unique<Ort::MemoryInfo>(Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault));
 }
 
-void InferenceSession::LoadModel(const std::string& model_path, const Options& options) {
+void InferenceSession::load_model(const std::string& model_path, const Options& options) {
     if (model_path.empty()) {
         throw std::runtime_error("modelPath is empty");
     }
