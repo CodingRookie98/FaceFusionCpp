@@ -23,25 +23,25 @@ module file_system;
 import thread_pool;
 import utils;
 
-namespace ffc::file_system {
+namespace ffc::infra::file_system {
 
-bool file_system::file_exists(const std::string& path) {
+bool file_exists(const std::string& path) {
     return std::filesystem::exists(path);
 }
 
-bool file_system::dir_exists(const std::string& path) {
+bool dir_exists(const std::string& path) {
     return std::filesystem::exists(path);
 }
 
-bool file_system::is_dir(const std::string& path) {
+bool is_dir(const std::string& path) {
     return std::filesystem::is_directory(path);
 }
 
-bool file_system::is_file(const std::string& path) {
+bool is_file(const std::string& path) {
     return std::filesystem::is_regular_file(path);
 }
 
-std::string file_system::get_file_name_from_url(const std::string& url) {
+std::string get_file_name_from_url(const std::string& url) {
     std::size_t lastSlashPos = url.find_last_of('/');
     if (lastSlashPos == std::string::npos) {
         return url;
@@ -51,14 +51,14 @@ std::string file_system::get_file_name_from_url(const std::string& url) {
     return fileName;
 }
 
-uintmax_t file_system::get_file_size(const std::string& path) {
+uintmax_t get_file_size(const std::string& path) {
     if (is_file(path) && file_exists(path)) {
         return std::filesystem::file_size(path);
     }
     return 0;
 }
 
-std::unordered_set<std::string> file_system::list_files(const std::string& path) {
+std::unordered_set<std::string> list_files(const std::string& path) {
     std::unordered_set<std::string> filePaths;
 
     if (!is_dir(path)) {
@@ -83,11 +83,11 @@ std::unordered_set<std::string> file_system::list_files(const std::string& path)
     return filePaths;
 }
 
-std::string file_system::absolute_path(const std::string& path) {
+std::string absolute_path(const std::string& path) {
     return std::filesystem::absolute(path).string();
 }
 
-std::string file_system::normalize_output_path(const std::string& target_file_path, const std::string& output_dir) {
+std::string normalize_output_path(const std::string& target_file_path, const std::string& output_dir) {
     if (!target_file_path.empty() && !output_dir.empty()) {
         const std::string targetBaseName = get_base_name(target_file_path);
         const std::string targetExtension = get_file_ext(target_file_path);
@@ -110,7 +110,7 @@ std::string file_system::normalize_output_path(const std::string& target_file_pa
     return {};
 }
 
-std::vector<std::string> file_system::normalize_output_paths(const std::vector<std::string>& target_paths, const std::string& output_dir) {
+std::vector<std::string> normalize_output_paths(const std::vector<std::string>& target_paths, const std::string& output_dir) {
     std::vector<std::future<std::string>> futures;
     for (const auto& targetPath : target_paths) {
         futures.emplace_back(ThreadPool::Instance()->Enqueue([targetPath, output_dir] {
@@ -124,7 +124,7 @@ std::vector<std::string> file_system::normalize_output_paths(const std::vector<s
     return normedPaths;
 }
 
-void file_system::create_dir(const std::string& path) {
+void create_dir(const std::string& path) {
     static std::mutex mutex;
     std::lock_guard<std::mutex> lock(mutex);
     if (!dir_exists(path)) {
@@ -134,25 +134,25 @@ void file_system::create_dir(const std::string& path) {
     }
 }
 
-std::string file_system::get_temp_path() {
+std::string get_temp_path() {
     return std::filesystem::temp_directory_path().string();
 }
 
-std::string file_system::parent_path(const std::string& path) {
+std::string parent_path(const std::string& path) {
     return std::filesystem::path(path).parent_path().string();
 }
 
-std::string file_system::get_file_name(const std::string& file_path) {
+std::string get_file_name(const std::string& file_path) {
     std::filesystem::path pathObj(file_path);
     return pathObj.filename().string();
 }
 
-std::string file_system::get_file_ext(const std::string& file_path) {
+std::string get_file_ext(const std::string& file_path) {
     std::filesystem::path pathObj(file_path);
     return pathObj.extension().string();
 }
 
-std::string file_system::get_base_name(const std::string& path) {
+std::string get_base_name(const std::string& path) {
     std::filesystem::path pathObj(path);
     if (std::filesystem::is_regular_file(path)) {
         return pathObj.stem().string();
@@ -162,7 +162,7 @@ std::string file_system::get_base_name(const std::string& path) {
     return "";
 }
 
-void file_system::remove_dir(const std::string& path) {
+void remove_dir(const std::string& path) {
     try {
         std::filesystem::remove_all(path);
     } catch (const std::filesystem::filesystem_error& e) {
@@ -170,7 +170,7 @@ void file_system::remove_dir(const std::string& path) {
     }
 }
 
-void file_system::remove_file(const std::string& path) {
+void remove_file(const std::string& path) {
     try {
         std::filesystem::remove(path);
     } catch (const std::filesystem::filesystem_error& e) {
@@ -178,7 +178,7 @@ void file_system::remove_file(const std::string& path) {
     }
 }
 
-void file_system::remove_files(const std::vector<std::string>& paths, const bool& use_thread_pool) {
+void remove_files(const std::vector<std::string>& paths, const bool& use_thread_pool) {
     if (use_thread_pool) {
         std::vector<std::future<void>> futures;
         for (const auto& path : paths) {
@@ -196,7 +196,7 @@ void file_system::remove_files(const std::vector<std::string>& paths, const bool
     }
 }
 
-void file_system::copy(const std::string& source, const std::string& destination) {
+void copy(const std::string& source, const std::string& destination) {
     if (source == destination) return;
 
     // parent path of destination is not exist
@@ -207,9 +207,9 @@ void file_system::copy(const std::string& source, const std::string& destination
     std::filesystem::copy(source, destination, std::filesystem::copy_options::overwrite_existing);
 }
 
-void file_system::copy_files(const std::vector<std::string>& sources,
-                            const std::vector<std::string>& destinations,
-                            const bool& use_thread_pool) {
+void copy_files(const std::vector<std::string>& sources,
+                const std::vector<std::string>& destinations,
+                const bool& use_thread_pool) {
     if (sources.size() != destinations.size()) {
         throw std::invalid_argument("Source and destination paths must have the same size");
     }
@@ -231,7 +231,7 @@ void file_system::copy_files(const std::vector<std::string>& sources,
     }
 }
 
-void file_system::move_file(const std::string& source, const std::string& destination) {
+void move_file(const std::string& source, const std::string& destination) {
     // if parent path of destination is not exist
     if (!is_dir(std::filesystem::path(destination).parent_path().string())) {
         create_dir(std::filesystem::path(destination).parent_path().string());
@@ -245,9 +245,9 @@ void file_system::move_file(const std::string& source, const std::string& destin
     std::filesystem::rename(source, destination);
 }
 
-void file_system::move_files(const std::vector<std::string>& sources,
-                            const std::vector<std::string>& destination,
-                            const bool& use_thread_pool) {
+void move_files(const std::vector<std::string>& sources,
+                const std::vector<std::string>& destination,
+                const bool& use_thread_pool) {
     if (sources.size() != destination.size()) {
         throw std::invalid_argument("Source and destination paths must have the same size");
     }
@@ -269,7 +269,7 @@ void file_system::move_files(const std::vector<std::string>& sources,
     }
 }
 
-void file_system::set_local_to_utf8() {
+void set_local_to_utf8() {
     static std::once_flag onceFlag;
     std::call_once(onceFlag, []() {
         try {
@@ -282,7 +282,7 @@ void file_system::set_local_to_utf8() {
 }
 
 #ifdef _WIN32
-std::string file_system::utf8_to_sys_default_local(const std::string& utf8_tsr) {
+std::string utf8_to_sys_default_local(const std::string& utf8_tsr) {
     // 计算转换为宽字符所需的缓冲区大小
     const int wideCharSize = MultiByteToWideChar(CP_UTF8, 0, utf8_tsr.c_str(), -1, nullptr, 0);
     if (wideCharSize == 0) {
@@ -311,4 +311,4 @@ std::string get_current_path() {
     return std::filesystem::current_path().string();
 }
 
-} // namespace ffc::file_system
+} // namespace ffc::infra::file_system

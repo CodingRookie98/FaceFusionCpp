@@ -22,7 +22,7 @@ module crypto;
 import file_system;
 import thread_pool;
 
-namespace ffc::crypto {
+namespace ffc::infra::crypto {
 
 std::string sha1(const std::string& file_path) {
     if (file_path.empty()) {

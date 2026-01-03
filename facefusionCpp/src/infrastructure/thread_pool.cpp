@@ -14,7 +14,7 @@ module;
 
 module thread_pool;
 
-namespace ffc {
+namespace ffc::infra {
 
 ThreadPool::ThreadPool(const unsigned int& thread_num) {
     if (thread_num <= 0 || thread_num > std::thread::hardware_concurrency()) {
@@ -56,4 +56,4 @@ void ThreadPool::Reset(const unsigned int& thread_num) {
     }
 }
 
-} // namespace ffc
+} // namespace ffc::infra

@@ -19,7 +19,7 @@ import face;
 
 using json = nlohmann::json;
 
-namespace ffc::utils {
+namespace ffc::infra::utils {
 
 json yaml_str_to_json(const std::string& yaml_str) {
     if (yaml_str.empty()) {
@@ -272,4 +272,4 @@ template <>
 constexpr std::initializer_list<Race> enum_all<Race>() {
     return {Race::Black, Race::Latino, Race::Indian, Race::Asian, Race::Arabic, Race::White};
 }
-} // namespace ffc::utils
+} // namespace ffc::infra::utils

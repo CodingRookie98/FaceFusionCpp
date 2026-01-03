@@ -15,7 +15,7 @@ module;
 export module utils;
 import face;
 
-namespace ffc::utils {
+namespace ffc::infra::utils {
 
 using json = nlohmann::json;
 
@@ -59,4 +59,4 @@ constexpr std::initializer_list<Gender> enum_all<Gender>();
 
 export template <>
 constexpr std::initializer_list<Race> enum_all<Race>();
-} // namespace ffc::utils
+} // namespace ffc::infra::utils

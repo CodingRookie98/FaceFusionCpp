@@ -15,8 +15,8 @@ module;
 
 export module file_system;
 
-namespace ffc {
-export namespace file_system {
+namespace ffc::infra {
+export namespace file_system { // namespace ffc::infra::file_system
 bool file_exists(const std::string& path);
 bool dir_exists(const std::string& path);
 bool is_dir(const std::string& path);
@@ -63,4 +63,4 @@ std::string utf8_to_sys_default_local(const std::string& utf8_tsr);
 std::string get_current_path();
 }
 
-} // namespace ffc::file_system
+} // namespace ffc::infra::file_system

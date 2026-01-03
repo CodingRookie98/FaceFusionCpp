@@ -14,10 +14,10 @@ module;
 
 export module crypto;
 
-namespace ffc {
+namespace ffc::infra {
 export namespace crypto {
 std::string sha1(const std::string& file_path);
 std::string combined_sha1(std::unordered_set<std::string>& file_paths,
                           const bool& use_thread_pool = true);
 } // namespace crypto
-} // namespace ffc
+} // namespace ffc::infra

@@ -13,7 +13,7 @@ module;
 
 export module thread_pool;
 
-namespace ffc {
+namespace ffc::infra {
 export class ThreadPool {
 public:
     explicit ThreadPool(const unsigned int& thread_num = std::thread::hardware_concurrency());
@@ -43,4 +43,4 @@ public:
 private:
     std::unique_ptr<dp::thread_pool<>> thread_pool_;
 };
-} // namespace ffc
+} // namespace ffc::infra

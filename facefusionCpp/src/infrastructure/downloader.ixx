@@ -12,11 +12,10 @@ module;
 #include <curl/curl.h>
 #include <string>
 #include <unordered_set>
-#include "common_macros.h" // don't remove
 
 export module downloader;
 
-namespace ffc::downloader {
+namespace ffc::infra::downloader {
 
 export bool download(const std::string& url, const std::string& outPutDirectory);
 export std::vector<bool> batch_download(const std::vector<std::string>& urls, const std::string& output_dir_path);
@@ -32,4 +31,4 @@ size_t empty_write_fn(void* ptr, size_t size, size_t nmemb, void* userdata);
 std::string human_readable_size(const long& size);
 size_t header_callback(char* buffer, size_t size, size_t nitems, void* userdata);
 bool is_url_valid(const std::string& url);
-} // namespace ffc::downloader
+} // namespace ffc::infra::downloader

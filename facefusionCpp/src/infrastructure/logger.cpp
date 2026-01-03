@@ -16,7 +16,7 @@ module;
 
 module logger;
 
-namespace ffc {
+namespace ffc::infra {
 std::shared_ptr<Logger> Logger::get_instance() {
     static std::shared_ptr<Logger> instance;
     static std::once_flag flag;
@@ -131,4 +131,4 @@ void Logger::log(const std::string& level, const std::string& msg) {
         get_instance()->critical(msg);
     }
 }
-} // namespace ffc
+} // namespace ffc::infra

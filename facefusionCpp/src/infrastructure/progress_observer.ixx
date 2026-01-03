@@ -8,7 +8,7 @@ module;
 
 export module progress_observer;
 
-namespace ffc {
+namespace ffc::infra {
 
 export struct IProgressObserver {
     virtual ~IProgressObserver() = default;
@@ -18,4 +18,4 @@ export struct IProgressObserver {
     virtual void onComplete() = 0;
 };
 
-} // namespace ffc
+} // namespace ffc::infra

@@ -27,12 +27,14 @@ import core_options;
 import logger;
 import model_manager;
 
+export namespace ffc::infra {
+
 using namespace ffc::face_detector;
-using namespace ffc::faceLandmarker;
+using namespace ffc::face_landmarker;
 using json = nlohmann::json;
 using namespace ffc::face_masker;
-
-export namespace ffc {
+using namespace ffc::core;
+using namespace task;
 
 NLOHMANN_JSON_SERIALIZE_ENUM(
     model_manager::Model,
@@ -132,10 +134,10 @@ void from_json(json& j, FaceDetectorHub::Options& options) {
 }
 
 NLOHMANN_JSON_SERIALIZE_ENUM(
-    faceLandmarker::FaceLandmarkerHub::Type,
+    face_landmarker::FaceLandmarkerHub::Type,
     {
-        {faceLandmarker::FaceLandmarkerHub::Type::_2DFAN, "2dfan4"},
-        {faceLandmarker::FaceLandmarkerHub::Type::PEPPA_WUTZ, "peppa_wutz"},
+        {face_landmarker::FaceLandmarkerHub::Type::_2DFAN, "2dfan4"},
+        {face_landmarker::FaceLandmarkerHub::Type::PEPPA_WUTZ, "peppa_wutz"},
     });
 void to_json(json& j, std::unordered_set<FaceLandmarkerHub::Type>& v) {
     for (auto& type : v) {
@@ -593,4 +595,4 @@ void from_json(json& j, CoreOptions& core_options) {
     from_json(j.at("memory"), core_options.memory_options);
     from_json(j.at("inference_session"), core_options.inference_session_options);
 }
-} // namespace ffc
+} // namespace ffc::infra

@@ -19,7 +19,7 @@ module downloader;
 import file_system;
 import logger;
 
-namespace ffc::downloader {
+namespace ffc::infra::downloader {
 
 size_t write_data(void* ptr, size_t size, size_t nmemb, std::ofstream* stream) {
     stream->write(static_cast<char*>(ptr), static_cast<long long>(size * nmemb));
@@ -95,7 +95,7 @@ std::vector<bool> batch_download(const std::vector<std::string>& urls, const std
             results[i] = false;
             continue;
         }
-        if (!download(urls[i], outputDir)) {
+        if (!downloader::download(urls[i], outputDir)) {
             results[i] = false;
         } else {
             results[i] = true;
@@ -121,7 +121,7 @@ bool download(const std::string& url, const std::string& outPutDirectory) {
     }
 
     // 获取文件路径
-    std::string outputFileName = get_file_name_from_url(url);
+    std::string outputFileName = file_system::get_file_name_from_url(url);
     std::string outputFilePath = file_system::absolute_path(outputDir + "/" + outputFileName);
     const std::string tempFilePath = outputFilePath + ".downloading";
     std::ofstream output(tempFilePath, std::ios::binary);
@@ -212,4 +212,4 @@ std::string human_readable_size(const long& size) {
     }
     return std::format("{:.2f} {}", size_d, units[i]);
 }
-} // namespace ffc::downloader
+} // namespace ffc::infra::downloader
