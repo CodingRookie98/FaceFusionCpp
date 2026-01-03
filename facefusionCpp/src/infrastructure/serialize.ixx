@@ -1,11 +1,9 @@
 /**
- ******************************************************************************
- * @file           : serialize.ixx
- * @author         : CodingRookie
- * @brief          : None
- * @attention      : None
- * @date           : 2025/12/14
- ******************************************************************************
+ * @file serialize.ixx
+ * @brief Serialization module for JSON serialization/deserialization
+ * @author CodingRookie
+ * @date 2026-01-04
+ * @note This module provides JSON serialization functionality using nlohmann-json library
  */
 module;
 #include <unordered_set>
@@ -36,6 +34,10 @@ using namespace ffc::face_masker;
 using namespace ffc::core;
 using namespace task;
 
+/**
+ * @brief Serialize Model enum to JSON
+ * @note This macro enables JSON serialization for model_manager::Model enum
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     model_manager::Model,
     {
@@ -69,6 +71,11 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {model_manager::Model::Real_hatgan_x4, "real_hatgan_x4"},
     });
 
+/**
+ * @brief Serialize ModelInfo to JSON
+ * @param j JSON object to write to
+ * @param model_info ModelInfo object to serialize
+ */
 void to_json(json& j, model_manager::ModelInfo& model_info) {
     j = json{
         {"name", model_info.name},
@@ -76,6 +83,12 @@ void to_json(json& j, model_manager::ModelInfo& model_info) {
         {"url", model_info.url},
     };
 }
+
+/**
+ * @brief Deserialize ModelInfo from JSON
+ * @param j JSON object to read from
+ * @param model_info ModelInfo object to deserialize
+ */
 void from_json(json& j, model_manager::ModelInfo& model_info) {
     model_info.name = j.value("name", model_info.name);
     model_info.path = j.value("path", model_info.path);
@@ -83,6 +96,9 @@ void from_json(json& j, model_manager::ModelInfo& model_info) {
     from_json(model_info.name, model_info.model);
 }
 
+/**
+ * @brief Serialize FaceDetectorHub::Type enum to JSON
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     face_detector::FaceDetectorHub::Type,
     {
@@ -91,16 +107,33 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {face_detector::FaceDetectorHub::Type::Scrfd, "scrfd"},
     });
 
+/**
+ * @brief Serialize cv::Size to JSON
+ * @param j JSON object to write to
+ * @param v cv::Size object to serialize
+ */
 void to_json(json& j, cv::Size& v) {
     j = json{
         {"width", v.width},
         {"height", v.width},
     };
 }
+
+/**
+ * @brief Deserialize cv::Size from JSON
+ * @param j JSON object to read from
+ * @param v cv::Size object to deserialize
+ */
 void from_json(json& j, cv::Size& v) {
     j.at("width").get_to(v.width);
     j.at("height").get_to(v.height);
 }
+
+/**
+ * @brief Serialize unordered_set of FaceDetectorHub::Type to JSON
+ * @param j JSON object to write to
+ * @param v Set of FaceDetectorHub::Type to serialize
+ */
 void to_json(json& j, std::unordered_set<FaceDetectorHub::Type>& v) {
     for (auto& type : v) {
         json j_type;
@@ -108,6 +141,12 @@ void to_json(json& j, std::unordered_set<FaceDetectorHub::Type>& v) {
         j.push_back(j_type);
     }
 }
+
+/**
+ * @brief Deserialize unordered_set of FaceDetectorHub::Type from JSON
+ * @param j JSON object to read from
+ * @param v Set of FaceDetectorHub::Type to deserialize
+ */
 void from_json(json& j, std::unordered_set<FaceDetectorHub::Type>& v) {
     for (auto& j_type : j) {
         FaceDetectorHub::Type type;
@@ -115,6 +154,12 @@ void from_json(json& j, std::unordered_set<FaceDetectorHub::Type>& v) {
         v.insert(type);
     }
 }
+
+/**
+ * @brief Serialize FaceDetectorHub::Options to JSON
+ * @param j JSON object to write to
+ * @param options FaceDetectorHub::Options object to serialize
+ */
 void to_json(json& j, FaceDetectorHub::Options& options) {
     json sz_json, types_json;
     to_json(sz_json, options.size);
@@ -126,6 +171,12 @@ void to_json(json& j, FaceDetectorHub::Options& options) {
         {"min_score", options.min_score},
     };
 }
+
+/**
+ * @brief Deserialize FaceDetectorHub::Options from JSON
+ * @param j JSON object to read from
+ * @param options FaceDetectorHub::Options object to deserialize
+ */
 void from_json(json& j, FaceDetectorHub::Options& options) {
     from_json(j.at("size"), options.size);
     from_json(j.at("models"), options.types);
@@ -133,12 +184,21 @@ void from_json(json& j, FaceDetectorHub::Options& options) {
     j.at("min_score").get_to(options.min_score);
 }
 
+/**
+ * @brief Serialize FaceLandmarkerHub::Type enum to JSON
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     face_landmarker::FaceLandmarkerHub::Type,
     {
         {face_landmarker::FaceLandmarkerHub::Type::_2DFAN, "2dfan4"},
         {face_landmarker::FaceLandmarkerHub::Type::PEPPA_WUTZ, "peppa_wutz"},
     });
+
+/**
+ * @brief Serialize unordered_set of FaceLandmarkerHub::Type to JSON
+ * @param j JSON object to write to
+ * @param v Set of FaceLandmarkerHub::Type to serialize
+ */
 void to_json(json& j, std::unordered_set<FaceLandmarkerHub::Type>& v) {
     for (auto& type : v) {
         json j_type;
@@ -146,6 +206,12 @@ void to_json(json& j, std::unordered_set<FaceLandmarkerHub::Type>& v) {
         j.push_back(j_type);
     }
 }
+
+/**
+ * @brief Deserialize unordered_set of FaceLandmarkerHub::Type from JSON
+ * @param j JSON object to read from
+ * @param v Set of FaceLandmarkerHub::Type to deserialize
+ */
 void from_json(json& j, std::unordered_set<FaceLandmarkerHub::Type>& v) {
     for (auto& j_type : j) {
         FaceLandmarkerHub::Type type;
@@ -153,6 +219,12 @@ void from_json(json& j, std::unordered_set<FaceLandmarkerHub::Type>& v) {
         v.insert(type);
     }
 }
+
+/**
+ * @brief Serialize FaceLandmarkerHub::Options to JSON
+ * @param j JSON object to write to
+ * @param options FaceLandmarkerHub::Options object to serialize
+ */
 void to_json(json& j, FaceLandmarkerHub::Options& options) {
     json types_json;
     to_json(types_json, options.types);
@@ -162,12 +234,21 @@ void to_json(json& j, FaceLandmarkerHub::Options& options) {
         {"min_score", options.minScore},
     };
 }
+
+/**
+ * @brief Deserialize FaceLandmarkerHub::Options from JSON
+ * @param j JSON object to read from
+ * @param options FaceLandmarkerHub::Options object to deserialize
+ */
 void from_json(json& j, FaceLandmarkerHub::Options& options) {
     from_json(j.at("models"), options.types);
     // j.at("angle").get_to(options.angle);
     j.at("min_score").get_to(options.minScore);
 }
 
+/**
+ * @brief Serialize FaceSelector::FaceSelectorOrder enum to JSON
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     FaceSelector::FaceSelectorOrder,
     {
@@ -180,12 +261,20 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {FaceSelector::FaceSelectorOrder::Best_Worst, "best_worst"},
         {FaceSelector::FaceSelectorOrder::Worst_Best, "worst_best"},
     });
+
+/**
+ * @brief Serialize Gender enum to JSON
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     Gender,
     {
         {Gender::Male, "male"},
         {Gender::Female, "female"},
     });
+
+/**
+ * @brief Serialize Race enum to JSON
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     Race,
     {
@@ -196,6 +285,12 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {Race::Arabic, "arabic"},
         {Race::White, "white"},
     });
+
+/**
+ * @brief Serialize FaceSelector::Options to JSON
+ * @param j JSON object to write to
+ * @param options FaceSelector::Options object to serialize
+ */
 void to_json(json& j, FaceSelector::Options& options) {
     j = json{
         {"order", options.order},
@@ -205,6 +300,12 @@ void to_json(json& j, FaceSelector::Options& options) {
         {"age_end", options.age_end},
     };
 }
+
+/**
+ * @brief Deserialize FaceSelector::Options from JSON
+ * @param j JSON object to read from
+ * @param options FaceSelector::Options object to deserialize
+ */
 void from_json(json& j, FaceSelector::Options& options) {
     j.at("order").get_to(options.order);
     j.at("gender").get_to(options.genders);
@@ -213,6 +314,11 @@ void from_json(json& j, FaceSelector::Options& options) {
     j.at("age_end").is_null() ? options.age_end : j.at("age_end").get_to<unsigned int>(options.age_end);
 }
 
+/**
+ * @brief Serialize FaceAnalyser::Options to JSON
+ * @param j JSON object to write to
+ * @param options FaceAnalyser::Options object to serialize
+ */
 void to_json(nlohmann::json& j, FaceAnalyser::Options& options) {
     json fd_json, fl_json, fs_json;
     to_json(fd_json, options.faceDetectorOptions);
@@ -224,12 +330,21 @@ void to_json(nlohmann::json& j, FaceAnalyser::Options& options) {
         {"face_selector", fs_json},
     };
 }
+
+/**
+ * @brief Deserialize FaceAnalyser::Options from JSON
+ * @param j JSON object to read from
+ * @param options FaceAnalyser::Options object to deserialize
+ */
 void from_json(json& j, FaceAnalyser::Options& options) {
     from_json(j.at("face_detector"), options.faceDetectorOptions);
     from_json(j.at("face_landmarker"), options.faceLandMarkerOptions);
     from_json(j.at("face_selector"), options.faceSelectorOptions);
 }
 
+/**
+ * @brief Serialize ProcessorMajorType enum to JSON
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     ProcessorMajorType,
     {
@@ -239,18 +354,34 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {ProcessorMajorType::FaceEnhancer, "face_enhancer"},
     });
 
+/**
+ * @brief Serialize Task::Output to JSON
+ * @param j JSON object to write to
+ * @param output Task::Output object to serialize
+ */
 void to_json(json& j, Task::Output& output) {
     j = {
         {"path", output.path},
         {"prefix", output.prefix},
         {"subfix", output.subfix}};
 }
+
+/**
+ * @brief Deserialize Task::Output from JSON
+ * @param j JSON object to read from
+ * @param output Task::Output object to deserialize
+ */
 void from_json(json& j, Task::Output& output) {
     j.at("path").get_to(output.path);
     j.at("prefix").get_to(output.prefix);
     j.at("subfix").get_to(output.subfix);
 }
 
+/**
+ * @brief Serialize Task::ProcessorInfo to JSON
+ * @param j JSON object to write to
+ * @param info Task::ProcessorInfo object to serialize
+ */
 void to_json(json& j, Task::ProcessorInfo& info) {
     j = json{
         {"type", info.type},
@@ -259,25 +390,34 @@ void to_json(json& j, Task::ProcessorInfo& info) {
     };
 }
 
+/**
+ * @brief Deserialize Task::ProcessorInfo from JSON
+ * @param j JSON object to read from
+ * @param info Task::ProcessorInfo object to deserialize
+ * @note Special handling for ExpressionRestorer with live_portrait model
+ */
 void from_json(json& j, Task::ProcessorInfo& info) {
     j.at("type").get_to(info.type);
     if (info.type == ProcessorMajorType::ExpressionRestorer) {
         if (j.contains("model") && j.at("model") == "live_portrait") {
-            // 因为模型名称不同，所以这里需要特殊处理
-            // live_portrait 模型名称为 unknown, 因为live_portrait 使用的模型有三个
+            // Because model names are different, special handling is required here
+            // live_portrait model name is unknown, because live_portrait uses three models
             info.model = model_manager::Model::Unknown;
         }
     } else {
         j.at("model").get_to(info.model);
     }
     if (info.type != ProcessorMajorType::FaceSwapper && j.contains("parameters")) {
-        // parameters 是一个json数组，每个元素都是一个key-value对
+        // parameters is a json array, each element is a key-value pair
         for (auto& [key, value] : j.at("parameters").items()) {
             info.parameters[key] = value.dump();
         }
     }
 }
 
+/**
+ * @brief Serialize ImageFormat enum to JSON
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     ImageFormat,
     {
@@ -285,6 +425,10 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {ImageFormat::PNG, "png"},
         {ImageFormat::JPG, "jpg"},
     });
+
+/**
+ * @brief Serialize VideoEncoder enum to JSON
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     VideoEncoder,
     {
@@ -296,6 +440,10 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {VideoEncoder::h264_amf, "h264_amf"},
         {VideoEncoder::hevc_nvenc, "hevc_nvenc"},
     });
+
+/**
+ * @brief Serialize VideoPreset enum to JSON
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     VideoPreset,
     {
@@ -310,6 +458,9 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {VideoPreset::veryslow, "veryslow"},
     });
 
+/**
+ * @brief Serialize AudioEncoder enum to JSON
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     AudioEncoder,
     {
@@ -319,6 +470,11 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {AudioEncoder::libvorbis, "libvorbis"},
     })
 
+/**
+ * @brief Serialize Task::ImageInfo to JSON
+ * @param j JSON object to write to
+ * @param info Task::ImageInfo object to serialize
+ */
 void to_json(json& j, Task::ImageInfo& info) {
     json size_json;
     to_json(size_json, info.output_resolution);
@@ -329,12 +485,22 @@ void to_json(json& j, Task::ImageInfo& info) {
     };
 }
 
+/**
+ * @brief Deserialize Task::ImageInfo from JSON
+ * @param j JSON object to read from
+ * @param info Task::ImageInfo object to deserialize
+ */
 void from_json(json& j, Task::ImageInfo& info) {
     j.at("output_quality").get_to<unsigned short>(info.output_quality);
     from_json(j.at("output_resolution"), info.output_resolution);
     j.at("output_format").get_to(info.output_format);
 }
 
+/**
+ * @brief Serialize Task::VideoInfo to JSON
+ * @param j JSON object to write to
+ * @param info Task::VideoInfo object to serialize
+ */
 void to_json(json& j, Task::VideoInfo& info) {
     j = json{
         {"segment_duration", info.segment_duration},
@@ -347,6 +513,11 @@ void to_json(json& j, Task::VideoInfo& info) {
     };
 }
 
+/**
+ * @brief Deserialize Task::VideoInfo from JSON
+ * @param j JSON object to read from
+ * @param info Task::VideoInfo object to deserialize
+ */
 void from_json(json& j, Task::VideoInfo& info) {
     j.at("segment_duration").get_to(info.segment_duration);
     j.at("video_encoder").get_to(info.video_encoder);
@@ -357,6 +528,9 @@ void from_json(json& j, Task::VideoInfo& info) {
     j.at("frame_format").get_to(info.frame_format);
 }
 
+/**
+ * @brief Serialize FaceMaskerHub::Type enum to JSON
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     face_masker::FaceMaskerHub::Type,
     {
@@ -365,6 +539,9 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {face_masker::FaceMaskerHub::Type::Region, "region"},
     });
 
+/**
+ * @brief Serialize FaceMaskerRegion::Region enum to JSON
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     face_masker::FaceMaskerRegion::Region,
     {
@@ -380,6 +557,11 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {face_masker::FaceMaskerRegion::Region::LowerLip, "lower_lip"},
     });
 
+/**
+ * @brief Serialize unordered_set of FaceMaskerRegion::Region to JSON
+ * @param j JSON object to write to
+ * @param regions Set of FaceMaskerRegion::Region to serialize
+ */
 void to_json(json& j, std::unordered_set<FaceMaskerRegion::Region>& regions) {
     j = json::array();
     for (auto region : regions) {
@@ -388,6 +570,12 @@ void to_json(json& j, std::unordered_set<FaceMaskerRegion::Region>& regions) {
         j.push_back(region_json);
     }
 }
+
+/**
+ * @brief Deserialize unordered_set of FaceMaskerRegion::Region from JSON
+ * @param j JSON object to read from
+ * @param regions Set of FaceMaskerRegion::Region to deserialize
+ */
 void from_json(json& j, std::unordered_set<FaceMaskerRegion::Region>& regions) {
     for (auto& region_json : j) {
         FaceMaskerRegion::Region region;
@@ -396,6 +584,11 @@ void from_json(json& j, std::unordered_set<FaceMaskerRegion::Region>& regions) {
     }
 }
 
+/**
+ * @brief Serialize Task::FaceMasker to JSON
+ * @param j JSON object to write to
+ * @param face_masker Task::FaceMasker object to serialize
+ */
 void to_json(json& j, Task::FaceMasker& face_masker) {
     json regions_json;
     to_json(regions_json, face_masker.mask_regions);
@@ -408,6 +601,13 @@ void to_json(json& j, Task::FaceMasker& face_masker) {
         {"mask_regions", regions_json},
     };
 }
+
+/**
+ * @brief Deserialize Task::FaceMasker from JSON
+ * @param j JSON object to read from
+ * @param face_masker Task::FaceMasker object to deserialize
+ * @note Special handling for "all" regions which expands to all available regions
+ */
 void from_json(json& j, Task::FaceMasker& face_masker) {
     if (j.contains("occluder_model")) {
         from_json(j.at("occluder_model"), face_masker.occluder_model);
@@ -425,7 +625,7 @@ void from_json(json& j, Task::FaceMasker& face_masker) {
         from_json(j.at("mask_padding"), face_masker.mask_padding);
     }
     if (j.at("mask_regions").is_array() == true) {
-        // 如果包含all region, 则解析为所有region
+        // If contains all region, parse as all regions
         if (j.at("mask_regions").contains("all")) {
             face_masker.mask_regions = FaceMaskerRegion::getAllRegions();
         } else {
@@ -436,6 +636,11 @@ void from_json(json& j, Task::FaceMasker& face_masker) {
     }
 }
 
+/**
+ * @brief Serialize Task to JSON
+ * @param j JSON object to write to
+ * @param task Task object to serialize
+ */
 void to_json(json& j, Task& task) {
     json output_json, processors_info_json, image_info_json, video_info_json, face_analyser_json, face_masker_json;
     to_json(output_json, task.output);
@@ -459,6 +664,12 @@ void to_json(json& j, Task& task) {
         {"face_masker", face_masker_json},
     };
 }
+
+/**
+ * @brief Deserialize Task from JSON
+ * @param j JSON object to read from
+ * @param task Task object to deserialize
+ */
 void from_json(json& j, Task& task) {
     from_json(j.at("source_paths"), task.source_paths);
     from_json(j.at("target_paths"), task.target_paths);
@@ -474,17 +685,31 @@ void from_json(json& j, Task& task) {
     from_json(j.at("face_masker"), task.face_masker);
 }
 
+/**
+ * @brief Serialize CoreOptions::ModelOptions to JSON
+ * @param j JSON object to write to
+ * @param model_options CoreOptions::ModelOptions object to serialize
+ */
 void to_json(json& j, CoreOptions::ModelOptions& model_options) {
     j = json{
         {"force_download", model_options.force_download},
         {"skip_download", model_options.skip_download},
     };
 }
+
+/**
+ * @brief Deserialize CoreOptions::ModelOptions from JSON
+ * @param j JSON object to read from
+ * @param model_options CoreOptions::ModelOptions object to deserialize
+ */
 void from_json(json& j, CoreOptions::ModelOptions& model_options) {
     j.at("force_download").get_to(model_options.force_download);
     j.at("skip_download").get_to(model_options.skip_download);
 }
 
+/**
+ * @brief Serialize Logger::LogLevel enum to JSON
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     Logger::LogLevel,
     {
@@ -496,6 +721,11 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {Logger::LogLevel::Critical, "critical"},
     })
 
+/**
+ * @brief Serialize CoreOptions::LoggerOptions to JSON
+ * @param j JSON object to write to
+ * @param logger_options CoreOptions::LoggerOptions object to serialize
+ */
 void to_json(json& j, CoreOptions::LoggerOptions& logger_options) {
     json log_level_json;
     to_json(log_level_json, logger_options.log_level);
@@ -503,19 +733,39 @@ void to_json(json& j, CoreOptions::LoggerOptions& logger_options) {
         {"log_level", log_level_json},
     };
 }
+
+/**
+ * @brief Deserialize CoreOptions::LoggerOptions from JSON
+ * @param j JSON object to read from
+ * @param logger_options CoreOptions::LoggerOptions object to deserialize
+ */
 void from_json(json& j, CoreOptions::LoggerOptions& logger_options) {
     from_json(j.at("log_level"), logger_options.log_level);
 }
 
+/**
+ * @brief Serialize CoreOptions::TaskOptions to JSON
+ * @param j JSON object to write to
+ * @param task_options CoreOptions::TaskOptions object to serialize
+ */
 void to_json(json& j, CoreOptions::TaskOptions& task_options) {
     j = json{
         {"per_task_thread_count", task_options.per_task_thread_count},
     };
 }
+
+/**
+ * @brief Deserialize CoreOptions::TaskOptions from JSON
+ * @param j JSON object to read from
+ * @param task_options CoreOptions::TaskOptions object to deserialize
+ */
 void from_json(json& j, CoreOptions::TaskOptions& task_options) {
     j.at("per_task_thread_count").get_to(task_options.per_task_thread_count);
 }
 
+/**
+ * @brief Serialize InferenceSession::ExecutionProvider enum to JSON
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     InferenceSession::ExecutionProvider,
     {
@@ -523,6 +773,12 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {InferenceSession::ExecutionProvider::CUDA, "cuda"},
         {InferenceSession::ExecutionProvider::TensorRT, "tensor_rt"},
     });
+
+/**
+ * @brief Serialize unordered_set of InferenceSession::ExecutionProvider to JSON
+ * @param j JSON object to write to
+ * @param execution_providers Set of InferenceSession::ExecutionProvider to serialize
+ */
 void to_json(json& j, std::unordered_set<InferenceSession::ExecutionProvider>& execution_providers) {
     for (auto provider : execution_providers) {
         json provider_json;
@@ -530,6 +786,12 @@ void to_json(json& j, std::unordered_set<InferenceSession::ExecutionProvider>& e
         j.push_back(provider_json);
     }
 }
+
+/**
+ * @brief Deserialize unordered_set of InferenceSession::ExecutionProvider from JSON
+ * @param j JSON object to read from
+ * @param execution_providers Set of InferenceSession::ExecutionProvider to deserialize
+ */
 void from_json(json& j, std::unordered_set<InferenceSession::ExecutionProvider>& execution_providers) {
     for (auto& provider_json : j) {
         InferenceSession::ExecutionProvider provider;
@@ -538,6 +800,9 @@ void from_json(json& j, std::unordered_set<InferenceSession::ExecutionProvider>&
     }
 }
 
+/**
+ * @brief Serialize CoreOptions::MemoryStrategy enum to JSON
+ */
 NLOHMANN_JSON_SERIALIZE_ENUM(
     CoreOptions::MemoryStrategy,
     {
@@ -545,16 +810,32 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {CoreOptions::MemoryStrategy::Tolerant, "tolerant"},
     });
 
+/**
+ * @brief Serialize CoreOptions::MemoryOptions to JSON
+ * @param j JSON object to write to
+ * @param memory_options CoreOptions::MemoryOptions object to serialize
+ */
 void to_json(json& j, CoreOptions::MemoryOptions& memory_options) {
     j = json{
         {"processor_memory_strategy", memory_options.processor_memory_strategy},
     };
 }
 
+/**
+ * @brief Deserialize CoreOptions::MemoryOptions from JSON
+ * @param j JSON object to read from
+ * @param memory_options CoreOptions::MemoryOptions object to deserialize
+ */
 void from_json(json& j, CoreOptions::MemoryOptions& memory_options) {
     memory_options.processor_memory_strategy = j.value("processor_memory_strategy", memory_options.processor_memory_strategy);
 }
 
+/**
+ * @brief Serialize InferenceSession::Options to JSON
+ * @param j JSON object to write to
+ * @param inference_session_options InferenceSession::Options object to serialize
+ * @note TensorRT workspace size is converted from bytes to GB
+ */
 void to_json(json& j, InferenceSession::Options& inference_session_options) {
     j = json{
         {"device_id", inference_session_options.execution_device_id},
@@ -564,6 +845,13 @@ void to_json(json& j, InferenceSession::Options& inference_session_options) {
         {"trt_max_workspace_size", inference_session_options.trt_max_workspace_size / (2 << 30)},
     };
 }
+
+/**
+ * @brief Deserialize InferenceSession::Options from JSON
+ * @param j JSON object to read from
+ * @param inference_session_options InferenceSession::Options object to deserialize
+ * @note TensorRT workspace size is converted from GB to bytes
+ */
 void from_json(json& j, InferenceSession::Options& inference_session_options) {
     j.at("device_id").get_to(inference_session_options.execution_device_id);
     from_json(j.at("providers"), inference_session_options.execution_providers);

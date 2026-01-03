@@ -1,11 +1,9 @@
 /**
- ******************************************************************************
- * @file           : progress_m_bar->cpp
- * @author         : CodingRookie
- * @brief          : None
- * @attention      : None
- * @date           : 24-7-28
- ******************************************************************************
+ * @file progress_bar.cpp
+ * @brief Progress bar module implementation
+ * @author CodingRookie
+ * @date 2026-01-04
+ * @note This file contains the implementation of the progress bar module
  */
 
 module;

@@ -1,11 +1,9 @@
 /**
- ******************************************************************************
- * @file           : file_system.cpp
- * @author         : CodingRookie
- * @brief          : None
- * @attention      : None
- * @date           : 24-7-15
- ******************************************************************************
+ * @file file_system.cpp
+ * @brief File system operations module implementation
+ * @author CodingRookie
+ * @date 2026-01-04
+ * @note This file contains the implementation of the file system operations module
  */
 
 module;

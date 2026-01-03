@@ -1,11 +1,9 @@
 /**
- ******************************************************************************
- * @file           : thread_pool.cpp
- * @author         : CodingRookie
- * @brief          : None
- * @attention      : None
- * @date           : 25-2-24
- ******************************************************************************
+ * @file thread_pool.cpp
+ * @brief Thread pool module implementation
+ * @author CodingRookie
+ * @date 2026-01-04
+ * @note This file contains the implementation of the thread pool module
  */
 
 module;

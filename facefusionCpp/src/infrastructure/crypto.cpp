@@ -1,11 +1,9 @@
 /**
- ******************************************************************************
- * @file           : crypto.cpp
- * @author         : CodingRookie
- * @brief          : Cryptographic functions implementation
- * @attention      : None
- * @date           : 2025-01-02
- ******************************************************************************
+ * @file crypto.cpp
+ * @brief Cryptographic functions module implementation
+ * @author CodingRookie
+ * @date 2026-01-04
+ * @note This file contains the implementation of the cryptographic functions module
  */
 
 module;

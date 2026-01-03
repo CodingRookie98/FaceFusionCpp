@@ -1,11 +1,9 @@
 /**
- ******************************************************************************
- * @file           : logger.cpp
- * @author         : CodingRookie
- * @brief          : None
- * @attention      : None
- * @date           : 24-7-19
- ******************************************************************************
+ * @file logger.cpp
+ * @brief Logger module implementation
+ * @author CodingRookie
+ * @date 2026-01-04
+ * @note This file contains the implementation of the logger module
  */
 
 module;

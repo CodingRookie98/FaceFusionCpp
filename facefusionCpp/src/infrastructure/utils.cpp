@@ -1,11 +1,9 @@
 /**
- ******************************************************************************
- * @file           : utils.cpp
- * @author         : CodingRookie
- * @brief          : None
- * @attention      : None
- * @date           : 2025/12/25
- ******************************************************************************
+ * @file utils.cpp
+ * @brief Utility functions module implementation
+ * @author CodingRookie
+ * @date 2026-01-04
+ * @note This file contains the implementation of the utility functions module
  */
 module;
 #include <random>
@@ -34,27 +32,21 @@ json yaml_str_to_json(const std::string& yaml_str) {
     }
 }
 
-// 辅助函数：智能推断标量类型
 json infer_scalar_type(const std::string& value) {
-    // 检查是否为整数
     if (std::regex_match(value, std::regex(R"(^-?\d+$)"))) {
         try {
             return std::stoll(value);
         } catch (...) {
-            // 如果转换失败，回退到字符串
         }
     }
 
-    // 检查是否为浮点数（包含小数点和科学计数法）
     if (std::regex_match(value, std::regex(R"(^-?\d+(\.\d+)?([eE][+-]?\d+)?$)"))) {
         try {
             return std::stod(value);
         } catch (...) {
-            // 如果转换失败，回退到字符串
         }
     }
 
-    // 默认返回字符串
     return value;
 }
 

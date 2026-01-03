@@ -1,11 +1,9 @@
 /**
- ******************************************************************************
- * @file           : downloader.cpp
- * @author         : CodingRookie
- * @brief          : None
- * @attention      : None
- * @date           : 24-7-13
- ******************************************************************************
+ * @file downloader.cpp
+ * @brief Downloader module implementation
+ * @author CodingRookie
+ * @date 2026-01-04
+ * @note This file contains the implementation of the downloader module
  */
 
 module;
@@ -35,24 +33,15 @@ long get_file_size_from_url(const std::string& url) {
 
     if (CURL* curl = curl_easy_init()) {
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_NOBODY, 1L); // 不下载内容
-        curl_easy_setopt(curl, CURLOPT_HEADER, 1L); // 只获取头部信息
+        curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
+        curl_easy_setopt(curl, CURLOPT_HEADER, 1L);
 
-        // 忽略响应头
-        //        curl_easy_setopt(curl, CURLOPT_HEADER, 0L);
-        // 关闭详细调试信息
         curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
-        // 跟随重定向
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
-        // 设置SSL选项
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L); // 验证服务器的SSL证书
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L); // 验证证书上的主机名
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
 
-        // 自定义处理头部数据
-        //        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, headerCallback);
-
-        // 用于设置响应头在控制台输出
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, empty_write_fn);
 
         if (CURLcode res = curl_easy_perform(curl);
