@@ -85,7 +85,7 @@ std::string combined_sha1(std::unordered_set<std::string>& file_paths,
     if (use_thread_pool) {
         std::vector<std::future<std::string>> futures;
         for (auto& file_path : file_paths) {
-            futures.emplace_back(ThreadPool::Instance()->Enqueue([file_path]() {
+            futures.emplace_back(ThreadPool::instance()->enqueue([file_path]() {
                 return sha1(file_path);
             }));
         }

@@ -22,14 +22,14 @@ public:
     ProgressBar();
     ~ProgressBar();
 
-    void setMaxProgress(const int64_t& max) const;
-    void setPrefixText(const std::string& text) const;
-    void setPostfixText(const std::string& text) const;
-    void setProgress(const unsigned int& progress) const;
+    void set_max_progress(const int64_t& max) const;
+    void set_prefix_text(const std::string& text) const;
+    void set_postfix_text(const std::string& text) const;
+    void set_progress(const unsigned int& progress) const;
     void tick() const;
-    void markAsCompleted() const;
-    static void showConsoleCursor(const bool& show);
-    [[nodiscard]] bool isCompleted() const;
+    void mark_as_completed() const;
+    static void show_console_cursor(const bool& show);
+    [[nodiscard]] bool is_completed() const;
 
 private:
     indicators::ProgressBar* m_bar;

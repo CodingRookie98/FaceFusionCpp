@@ -28,8 +28,8 @@ public:
 
     static std::shared_ptr<Logger> get_instance();
 
-    void setLogLevel(const LogLevel& level);
-    [[nodiscard]] LogLevel getLogLevel() const;
+    void set_log_level(const LogLevel& level);
+    [[nodiscard]] LogLevel get_log_level() const;
     void log(const LogLevel& level, const std::string& message) const;
     static void log(const std::string& level, const std::string& msg);
     void trace(const std::string& message) const;

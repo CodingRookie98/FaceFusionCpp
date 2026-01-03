@@ -113,7 +113,7 @@ std::string normalize_output_path(const std::string& target_file_path, const std
 std::vector<std::string> normalize_output_paths(const std::vector<std::string>& target_paths, const std::string& output_dir) {
     std::vector<std::future<std::string>> futures;
     for (const auto& targetPath : target_paths) {
-        futures.emplace_back(ThreadPool::Instance()->Enqueue([targetPath, output_dir] {
+        futures.emplace_back(ThreadPool::instance()->enqueue([targetPath, output_dir] {
             return normalize_output_path(targetPath, output_dir);
         }));
     }
@@ -182,7 +182,7 @@ void remove_files(const std::vector<std::string>& paths, const bool& use_thread_
     if (use_thread_pool) {
         std::vector<std::future<void>> futures;
         for (const auto& path : paths) {
-            futures.emplace_back(ThreadPool::Instance()->Enqueue([path]() {
+            futures.emplace_back(ThreadPool::instance()->enqueue([path]() {
                 remove_file(path);
             }));
         }
@@ -217,7 +217,7 @@ void copy_files(const std::vector<std::string>& sources,
     if (use_thread_pool) {
         std::vector<std::future<void>> futures;
         for (size_t i = 0; i < sources.size(); ++i) {
-            futures.emplace_back(ThreadPool::Instance()->Enqueue([sources, destinations, i]() {
+            futures.emplace_back(ThreadPool::instance()->enqueue([sources, destinations, i]() {
                 copy(sources[i], destinations[i]);
             }));
         }
@@ -255,7 +255,7 @@ void move_files(const std::vector<std::string>& sources,
     if (use_thread_pool) {
         std::vector<std::future<void>> futures;
         for (size_t i = 0; i < sources.size(); ++i) {
-            futures.emplace_back(ThreadPool::Instance()->Enqueue([sources, destination, i]() {
+            futures.emplace_back(ThreadPool::instance()->enqueue([sources, destination, i]() {
                 move_file(sources[i], destination[i]);
             }));
         }

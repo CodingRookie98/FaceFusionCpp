@@ -36,7 +36,7 @@ ProgressBar::~ProgressBar() {
     delete m_bar;
 }
 
-void ProgressBar::setMaxProgress(const int64_t& max) const {
+void ProgressBar::set_max_progress(const int64_t& max) const {
     int64_t setMax = max;
     if (max < 0) {
         setMax = 0;
@@ -46,15 +46,15 @@ void ProgressBar::setMaxProgress(const int64_t& max) const {
     m_bar->set_option(option::MaxProgress{setMax});
 }
 
-void ProgressBar::setPrefixText(const std::string& text) const {
+void ProgressBar::set_prefix_text(const std::string& text) const {
     m_bar->set_option(option::PrefixText{text});
 }
 
-void ProgressBar::setPostfixText(const std::string& text) const {
+void ProgressBar::set_postfix_text(const std::string& text) const {
     m_bar->set_option(option::PostfixText{text});
 }
 
-void ProgressBar::setProgress(const unsigned int& progress) const {
+void ProgressBar::set_progress(const unsigned int& progress) const {
     unsigned int setProgress = progress;
     if (progress < 0) {
         setProgress = 0;
@@ -69,15 +69,15 @@ void ProgressBar::tick() const {
     m_bar->tick();
 }
 
-void ProgressBar::markAsCompleted() const {
+void ProgressBar::mark_as_completed() const {
     m_bar->mark_as_completed();
 }
 
-void ProgressBar::showConsoleCursor(const bool& show) {
+void ProgressBar::show_console_cursor(const bool& show) {
     show_console_cursor(show);
 }
 
-bool ProgressBar::isCompleted() const {
+bool ProgressBar::is_completed() const {
     return m_bar->is_completed();
 }
 } // namespace ffc::infra

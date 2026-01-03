@@ -24,7 +24,7 @@ std::shared_ptr<Logger> Logger::get_instance() {
     return instance;
 }
 
-void Logger::setLogLevel(const Logger::LogLevel& level) {
+void Logger::set_log_level(const Logger::LogLevel& level) {
     m_level = level;
     switch (m_level) {
     case LogLevel::Trace:
@@ -109,7 +109,7 @@ Logger::Logger() {
     m_level = LogLevel::Trace;
 }
 
-Logger::LogLevel Logger::getLogLevel() const {
+Logger::LogLevel Logger::get_log_level() const {
     return m_level;
 }
 
