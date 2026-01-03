@@ -73,6 +73,7 @@ public:
 private:
     void append_provider_cuda();
     void append_provider_tensorrt();
+    void reset();
 };
 
 } // namespace ffc::ai

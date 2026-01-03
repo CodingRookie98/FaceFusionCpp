@@ -43,6 +43,7 @@ void InferenceSession::load_model(const std::string& model_path, const Options& 
         m_ort_env = std::make_shared<Ort::Env>(Ort::Env(ORT_LOGGING_LEVEL_WARNING, typeid(*this).name()));
     }
 
+    reset();
     m_options = options;
     if (m_options.execution_providers.contains(ExecutionProvider::TensorRT)) {
         append_provider_tensorrt();
@@ -51,25 +52,23 @@ void InferenceSession::load_model(const std::string& model_path, const Options& 
         append_provider_cuda();
     }
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
-    // windows
-    const std::wstring wideModelPath(model_path.begin(), model_path.end());
     try {
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+        auto wideModelPath = std::filesystem::path(model_path).wstring();
         m_ort_session = std::make_unique<Ort::Session>(*m_ort_env, wideModelPath.c_str(), m_session_options);
+#else
+        m_ort_session = std::make_unique<Ort::Session>(*m_ort_env, model_path.c_str(), m_session_options);
+#endif
     } catch (const Ort::Exception& e) {
         m_logger->error(std::format("CreateSession: Ort::Exception: {}", e.what()));
-        return;
+        throw std::runtime_error(e.what());
     } catch (const std::exception& e) {
         m_logger->error(std::format("CreateSession: std::exception: {}", e.what()));
-        return;
+        throw std::runtime_error(e.what());
     } catch (...) {
         m_logger->error("CreateSession: Unknown exception occurred.");
-        return;
+        throw std::runtime_error("CreateSession: Unknown exception occurred.");
     }
-#else
-    // linux
-    m_ort_session = std::make_unique<Ort::Session>(Ort::Session(*m_env, modelPath.c_str(), session_options_));
-#endif
 
     const size_t numInputNodes = m_ort_session->GetInputCount();
     const size_t numOutputNodes = m_ort_session->GetOutputCount();
@@ -212,5 +211,23 @@ bool InferenceSession::is_model_loaded() const {
 
 std::string InferenceSession::get_loaded_model_path() const {
     return m_model_path;
+}
+
+void InferenceSession::reset() {
+    m_is_model_loaded = false;
+    m_model_path.clear();
+    m_ort_session.reset();
+    m_input_names.clear();
+    m_output_names.clear();
+    m_input_names_ptrs.clear();
+    m_output_names_ptrs.clear();
+    m_input_node_dims.clear();
+    m_output_node_dims.clear();
+    // Note: m_session_options and m_cuda_provider_options are usually re-configured in load_model if needed.
+    // However, since load_model appends providers to m_session_options, we should probably reset m_session_options too
+    // to avoid accumulating providers.
+    m_session_options = Ort::SessionOptions();
+    m_session_options.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
+    m_cuda_provider_options.reset();
 }
 } // namespace ffc::ai
