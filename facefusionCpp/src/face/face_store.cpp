@@ -15,9 +15,10 @@ module;
 
 module face_store;
 
+namespace ffc {
 FaceStore::FaceStore() = default;
 
-void FaceStore::InsertFaces(const cv::Mat &frame, const std::vector<Face> &faces) {
+void FaceStore::InsertFaces(const cv::Mat& frame, const std::vector<Face>& faces) {
     if (faces.empty()) {
         return;
     }
@@ -25,7 +26,7 @@ void FaceStore::InsertFaces(const cv::Mat &frame, const std::vector<Face> &faces
     m_facesMap[CreateFrameHash(frame)] = faces;
 }
 
-std::vector<Face> FaceStore::GetFaces(const cv::Mat &frame) {
+std::vector<Face> FaceStore::GetFaces(const cv::Mat& frame) {
     std::shared_lock<std::shared_mutex> lock(m_rwMutex);
     const auto it = m_facesMap.find(CreateFrameHash(frame));
     if (it != m_facesMap.end()) {
@@ -39,34 +40,34 @@ void FaceStore::ClearFaces() {
     m_facesMap.clear();
 }
 
-std::string FaceStore::CreateFrameHash(const cv::Mat &frame) {
+std::string FaceStore::CreateFrameHash(const cv::Mat& frame) {
     // 获取 Mat 数据的指针和大小
-    const uchar *data = frame.data;
+    const uchar* data = frame.data;
     const size_t dataSize = frame.total() * frame.elemSize();
 
     // 最终计算并获取结果
     unsigned char hash[SHA_DIGEST_LENGTH];
-    SHA1(reinterpret_cast<const unsigned char *>(data), dataSize, hash);
+    SHA1(reinterpret_cast<const unsigned char*>(data), dataSize, hash);
     // 将哈希结果转换为十六进制字符串
     std::ostringstream oss;
-    for (const unsigned char &i : hash) {
+    for (const unsigned char& i : hash) {
         oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(i);
     }
 
     return oss.str();
 }
 
-void FaceStore::RemoveFaces(const std::string &facesName) {
+void FaceStore::RemoveFaces(const std::string& facesName) {
     std::unique_lock<std::shared_mutex> lock(m_rwMutex);
     m_facesMap.erase(facesName);
 }
 
-void FaceStore::RemoveFaces(const cv::Mat &frame) {
+void FaceStore::RemoveFaces(const cv::Mat& frame) {
     std::unique_lock<std::shared_mutex> lock(m_rwMutex);
     m_facesMap.erase(CreateFrameHash(frame));
 }
 
-void FaceStore::InsertFaces(const std::string &facesName, const std::vector<Face> &faces) {
+void FaceStore::InsertFaces(const std::string& facesName, const std::vector<Face>& faces) {
     if (faces.empty()) {
         return;
     }
@@ -74,7 +75,7 @@ void FaceStore::InsertFaces(const std::string &facesName, const std::vector<Face
     m_facesMap[facesName] = faces;
 }
 
-std::vector<Face> FaceStore::GetFaces(const std::string &facesName) {
+std::vector<Face> FaceStore::GetFaces(const std::string& facesName) {
     std::shared_lock<std::shared_mutex> lock(m_rwMutex);
     if (m_facesMap.contains(facesName)) {
         return m_facesMap[facesName];
@@ -86,12 +87,13 @@ FaceStore::~FaceStore() {
     ClearFaces();
 }
 
-bool FaceStore::IsContains(const cv::Mat &frame) {
+bool FaceStore::IsContains(const cv::Mat& frame) {
     std::shared_lock<std::shared_mutex> lock(m_rwMutex);
     return m_facesMap.contains(CreateFrameHash(frame));
 }
 
-bool FaceStore::IsContains(const std::string &facesName) {
+bool FaceStore::IsContains(const std::string& facesName) {
     std::shared_lock<std::shared_mutex> lock(m_rwMutex);
     return m_facesMap.contains(facesName);
 }
+} // namespace ffc

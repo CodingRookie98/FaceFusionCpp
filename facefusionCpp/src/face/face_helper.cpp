@@ -14,23 +14,24 @@ module;
 module face_helper;
 import face;
 
-float face_helper::getIoU(const Face::BBox &box1, const Face::BBox &box2) {
-    const float x1 = std::max(box1.xMin, box2.xMin);
-    const float y1 = std::max(box1.yMin, box2.yMin);
-    const float x2 = std::min(box1.xMax, box2.xMax);
-    const float y2 = std::min(box1.yMax, box2.yMax);
+namespace ffc {
+float face_helper::getIoU(const BBox& box1, const BBox& box2) {
+    const float x1 = std::max(box1.x1, box2.x1);
+    const float y1 = std::max(box1.y1, box2.y1);
+    const float x2 = std::min(box1.x2, box2.x2);
+    const float y2 = std::min(box1.y2, box2.y2);
     const float w = std::max(0.f, x2 - x1);
     const float h = std::max(0.f, y2 - y1);
     const float overArea = w * h;
     if (overArea == 0)
         return 0.0;
-    const float unionArea = (box1.xMax - box1.xMin) * (box1.yMax - box1.yMin) + (box2.xMax - box2.xMin) * (box2.yMax - box2.yMin) - overArea;
+    const float unionArea = (box1.x2 - box1.x1) * (box1.y2 - box1.y1) + (box2.x2 - box2.x1) * (box2.y2 - box2.y1) - overArea;
     return overArea / unionArea;
 }
 
-std::vector<int> face_helper::applyNms(const std::vector<Face::BBox> &boxes,
-                                      std::vector<float> confidences,
-                                      const float nmsThresh) {
+std::vector<int> face_helper::applyNms(const std::vector<BBox>& boxes,
+                                       std::vector<float> confidences,
+                                       const float nmsThresh) {
     std::ranges::sort(confidences, [&confidences](const size_t index1, const size_t index2) {
         return confidences[index1] > confidences[index2];
     });
@@ -61,26 +62,26 @@ std::vector<int> face_helper::applyNms(const std::vector<Face::BBox> &boxes,
 }
 
 std::tuple<cv::Mat, cv::Mat>
-face_helper::warpFaceByFaceLandmarks5(const cv::Mat &tempVisionFrame,
-                                     const Face::Landmarks &faceLandmark5,
-                                     const std::vector<cv::Point2f> &warpTemplate,
-                                     const cv::Size &cropSize) {
+face_helper::warpFaceByFaceLandmarks5(const cv::Mat& tempVisionFrame,
+                                      const Face::Landmarks& faceLandmark5,
+                                      const std::vector<cv::Point2f>& warpTemplate,
+                                      const cv::Size& cropSize) {
     cv::Mat affineMatrix = estimateMatrixByFaceLandmark5(faceLandmark5, warpTemplate, cropSize);
     cv::Mat cropVision;
     cv::warpAffine(tempVisionFrame, cropVision, affineMatrix, cropSize, cv::INTER_AREA, cv::BORDER_REPLICATE);
     return std::make_tuple(cropVision, affineMatrix);
 }
 
-std::tuple<cv::Mat, cv::Mat> face_helper::warpFaceByFaceLandmarks5(const cv::Mat &tempVisionFrame, const Face::Landmarks &faceLandmark5, const face_helper::WarpTemplateType &warpTemplateType, const cv::Size &cropSize) {
-    std::vector<cv::Point2f> warpTemplate = getWarpTemplate(warpTemplateType);
+std::tuple<cv::Mat, cv::Mat> face_helper::warpFaceByFaceLandmarks5(const cv::Mat& tempVisionFrame, const Face::Landmarks& faceLandmark5, const face_helper::WarpTemplateType& warpTemplateType, const cv::Size& cropSize) {
+    const std::vector<cv::Point2f> warpTemplate = getWarpTemplate(warpTemplateType);
     return warpFaceByFaceLandmarks5(tempVisionFrame, faceLandmark5, warpTemplate, cropSize);
 }
 
-cv::Mat face_helper::estimateMatrixByFaceLandmark5(const Face::Landmarks &landmark5,
-                                                  const std::vector<cv::Point2f> &warpTemplate,
-                                                  const cv::Size &cropSize) {
+cv::Mat face_helper::estimateMatrixByFaceLandmark5(const Face::Landmarks& landmark5,
+                                                   const std::vector<cv::Point2f>& warpTemplate,
+                                                   const cv::Size& cropSize) {
     std::vector<cv::Point2f> normedWarpTemplate = warpTemplate;
-    for (auto &point : normedWarpTemplate) {
+    for (auto& point : normedWarpTemplate) {
         point.x *= static_cast<float>(cropSize.width);
         point.y *= static_cast<float>(cropSize.height);
     }
@@ -90,9 +91,9 @@ cv::Mat face_helper::estimateMatrixByFaceLandmark5(const Face::Landmarks &landma
 }
 
 std::tuple<cv::Mat, cv::Mat>
-face_helper::warpFaceByTranslation(const cv::Mat &tempVisionFrame,
-                                  const std::vector<float> &translation,
-                                  const float &scale, const cv::Size &cropSize) {
+face_helper::warpFaceByTranslation(const cv::Mat& tempVisionFrame,
+                                   const std::vector<float>& translation,
+                                   const float& scale, const cv::Size& cropSize) {
     cv::Mat affineMatrix = (cv::Mat_<float>(2, 3) << scale, 0.f, translation[0], 0.f, scale, translation[1]);
     cv::Mat cropImg;
     warpAffine(tempVisionFrame, cropImg, affineMatrix, cropSize);
@@ -100,7 +101,7 @@ face_helper::warpFaceByTranslation(const cv::Mat &tempVisionFrame,
 }
 
 Face::Landmarks
-face_helper::convertFaceLandmark68To5(const Face::Landmarks &faceLandmark68) {
+face_helper::convertFaceLandmark68To5(const Face::Landmarks& faceLandmark68) {
     Face::Landmarks faceLandmark5_68(5);
     faceLandmark5_68.resize(5);
     float x = 0, y = 0;
@@ -128,8 +129,8 @@ face_helper::convertFaceLandmark68To5(const Face::Landmarks &faceLandmark68) {
     return faceLandmark5_68;
 }
 
-cv::Mat face_helper::pasteBack(const cv::Mat &tempVisionFrame, const cv::Mat &cropVisionFrame,
-                              const cv::Mat &cropMask, const cv::Mat &affineMatrix) {
+cv::Mat face_helper::pasteBack(const cv::Mat& tempVisionFrame, const cv::Mat& cropVisionFrame,
+                               const cv::Mat& cropMask, const cv::Mat& affineMatrix) {
     cv::Mat inverseMatrix;
     cv::invertAffineTransform(affineMatrix, inverseMatrix);
     cv::Mat inverseMask;
@@ -161,8 +162,8 @@ cv::Mat face_helper::pasteBack(const cv::Mat &tempVisionFrame, const cv::Mat &cr
 }
 
 std::vector<std::array<int, 2>>
-face_helper::createStaticAnchors(const int &featureStride, const int &anchorTotal,
-                                const int &strideHeight, const int &strideWidth) {
+face_helper::createStaticAnchors(const int& featureStride, const int& anchorTotal,
+                                 const int& strideHeight, const int& strideWidth) {
     std::vector<std::array<int, 2>> anchors;
 
     // Create a grid of (y, x) coordinates
@@ -182,17 +183,17 @@ face_helper::createStaticAnchors(const int &featureStride, const int &anchorTota
     return anchors;
 }
 
-Face::BBox face_helper::distance2BBox(const std::array<int, 2> &anchor, const Face::BBox &bBox) {
-    Face::BBox result;
-    result.xMin = static_cast<float>(anchor[1]) - bBox.xMin;
-    result.yMin = static_cast<float>(anchor[0]) - bBox.yMin;
-    result.xMax = static_cast<float>(anchor[1]) + bBox.xMax;
-    result.yMax = static_cast<float>(anchor[0]) + bBox.yMax;
+BBox face_helper::distance2BBox(const std::array<int, 2>& anchor, const BBox& bBox) {
+    BBox result;
+    result.x1 = static_cast<float>(anchor[1]) - bBox.x1;
+    result.y1 = static_cast<float>(anchor[0]) - bBox.y1;
+    result.x2 = static_cast<float>(anchor[1]) + bBox.x2;
+    result.y2 = static_cast<float>(anchor[0]) + bBox.y2;
     return result;
 }
 
 Face::Landmarks
-face_helper::distance2FaceLandmark5(const std::array<int, 2> &anchor, const Face::Landmarks &faceLandmark5) {
+face_helper::distance2FaceLandmark5(const std::array<int, 2>& anchor, const Face::Landmarks& faceLandmark5) {
     Face::Landmarks faceLandmark5_;
     faceLandmark5_.resize(5);
     for (int i = 0; i < 5; ++i) {
@@ -202,7 +203,7 @@ face_helper::distance2FaceLandmark5(const std::array<int, 2> &anchor, const Face
     return faceLandmark5_;
 }
 
-std::vector<cv::Point2f> face_helper::getWarpTemplate(const WarpTemplateType &warpTemplateType) {
+std::vector<cv::Point2f> face_helper::getWarpTemplate(const WarpTemplateType& warpTemplateType) {
     static std::unique_ptr<std::map<WarpTemplateType, std::vector<cv::Point2f>>> warpTemplates = nullptr;
     if (warpTemplates == nullptr) {
         warpTemplates = std::make_unique<std::map<WarpTemplateType, std::vector<cv::Point2f>>>(std::map<WarpTemplateType, std::vector<cv::Point2f>>(
@@ -214,20 +215,20 @@ std::vector<cv::Point2f> face_helper::getWarpTemplate(const WarpTemplateType &wa
     return warpTemplates->at(warpTemplateType);
 }
 
-std::vector<float> face_helper::calcAverageEmbedding(const std::vector<std::vector<float>> &embeddings) {
+std::vector<float> face_helper::calcAverageEmbedding(const std::vector<std::vector<float>>& embeddings) {
     std::vector<float> averageEmbedding(embeddings[0].size(), 0.0);
-    for (const auto &embedding : embeddings) {
+    for (const auto& embedding : embeddings) {
         for (size_t i = 0; i < embedding.size(); ++i) {
             averageEmbedding[i] += embedding[i];
         }
     }
-    for (float &value : averageEmbedding) {
+    for (float& value : averageEmbedding) {
         value /= static_cast<float>(embeddings.size());
     }
     return averageEmbedding;
 }
 
-std::tuple<cv::Mat, cv::Size> face_helper::createRotatedMatAndSize(const double &angle, const cv::Size &srcSize) {
+std::tuple<cv::Mat, cv::Size> face_helper::createRotatedMatAndSize(const double& angle, const cv::Size& srcSize) {
     cv::Mat rotatedMat = cv::getRotationMatrix2D(cv::Point2f(static_cast<float>(srcSize.width) / 2.f, static_cast<float>(srcSize.height) / 2.f), angle, 1.0);
     const cv::Rect2f bbox = cv::RotatedRect(cv::Point2f(), srcSize, static_cast<float>(angle)).boundingRect2f();
     rotatedMat.at<double>(0, 2) += (bbox.width - static_cast<float>(srcSize.width)) * 0.5;
@@ -236,24 +237,24 @@ std::tuple<cv::Mat, cv::Size> face_helper::createRotatedMatAndSize(const double 
     return std::make_tuple(rotatedMat, rotatedSize);
 }
 
-std::vector<cv::Point2f> face_helper::transformPoints(const std::vector<cv::Point2f> &points, const cv::Mat &affineMatrix) {
+std::vector<cv::Point2f> face_helper::transformPoints(const std::vector<cv::Point2f>& points, const cv::Mat& affineMatrix) {
     std::vector<cv::Point2f> transformedPoints;
     cv::transform(points, transformedPoints, affineMatrix);
     return transformedPoints;
 }
 
-Face::BBox face_helper::transformBBox(const Face::BBox &bBox, const cv::Mat &affineMatrix) {
-    const std::vector<cv::Point2f> points = {{bBox.xMin, bBox.yMin}, {bBox.xMax, bBox.yMax}};
+BBox face_helper::transformBBox(const BBox& bBox, const cv::Mat& affineMatrix) {
+    const std::vector<cv::Point2f> points = {{bBox.x1, bBox.y1}, {bBox.x2, bBox.y2}};
     const std::vector<cv::Point2f> transformedPoints = transformPoints(points, affineMatrix);
     const float newXMin = std::min(transformedPoints[0].x, transformedPoints[1].x);
     const float newYMin = std::min(transformedPoints[0].y, transformedPoints[1].y);
     const float newXMax = std::max(transformedPoints[0].x, transformedPoints[1].x);
     const float newYMax = std::max(transformedPoints[0].y, transformedPoints[1].y);
-    const Face::BBox transformedBBox{newXMin, newYMin, newXMax, newYMax};
+    const BBox transformedBBox{newXMin, newYMin, newXMax, newYMax};
     return transformedBBox;
 }
 
-std::vector<float> face_helper::interp(const std::vector<float> &x, const std::vector<float> &xp, const std::vector<float> &fp) {
+std::vector<float> face_helper::interp(const std::vector<float>& x, const std::vector<float>& xp, const std::vector<float>& fp) {
     std::vector<float> result;
     result.reserve(x.size());
 
@@ -275,3 +276,4 @@ std::vector<float> face_helper::interp(const std::vector<float> &x, const std::v
 
     return result;
 }
+} // namespace ffc

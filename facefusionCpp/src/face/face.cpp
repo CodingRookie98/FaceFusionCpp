@@ -12,9 +12,11 @@ module;
 
 module face;
 
-bool Face::isEmpty() const {
-    if (m_bBox.isEmpty() || m_landmark5.empty()) {
+namespace ffc {
+bool Face::is_empty() const {
+    if (m_box.is_empty() || m_landmark5.empty()) {
         return true;
     }
     return false;
 }
+} // namespace ffc

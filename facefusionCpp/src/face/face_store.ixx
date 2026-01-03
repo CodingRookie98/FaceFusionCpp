@@ -15,6 +15,7 @@ module;
 export module face_store;
 export import face;
 
+namespace ffc {
 export class FaceStore {
 public:
     FaceStore();
@@ -35,3 +36,4 @@ private:
     std::unordered_map<std::string, std::vector<Face>> m_facesMap;
     std::shared_mutex m_rwMutex;
 };
+} // namespace ffc
