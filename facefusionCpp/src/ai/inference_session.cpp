@@ -16,11 +16,14 @@ module;
 
 module inference_session;
 
-namespace ffc {
+namespace ffc::ai {
+
+using namespace ffc::infra;
+
 InferenceSession::InferenceSession(const std::shared_ptr<Ort::Env>& env) {
     m_ort_env = env;
-    session_options_ = Ort::SessionOptions();
-    session_options_.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
+    m_session_options = Ort::SessionOptions();
+    m_session_options.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
     auto availableProviders = Ort::GetAvailableProviders();
     m_available_providers.insert(availableProviders.begin(), availableProviders.end());
     m_logger = Logger::get_instance();
@@ -52,7 +55,7 @@ void InferenceSession::load_model(const std::string& model_path, const Options& 
     // windows
     const std::wstring wideModelPath(model_path.begin(), model_path.end());
     try {
-        m_ort_session = std::make_unique<Ort::Session>(*m_ort_env, wideModelPath.c_str(), session_options_);
+        m_ort_session = std::make_unique<Ort::Session>(*m_ort_env, wideModelPath.c_str(), m_session_options);
     } catch (const Ort::Exception& e) {
         m_logger->error(std::format("CreateSession: Ort::Exception: {}", e.what()));
         return;
@@ -83,7 +86,7 @@ void InferenceSession::load_model(const std::string& model_path, const Options& 
         Ort::TypeInfo inputTypeInfo = m_ort_session->GetInputTypeInfo(i);
         auto inputTensorInfo = inputTypeInfo.GetTensorTypeAndShapeInfo();
         auto inputDims = inputTensorInfo.GetShape();
-        input_node_dims_.push_back(inputDims);
+        m_input_node_dims.push_back(inputDims);
     }
     for (size_t i = 0; i < numOutputNodes; i++) {
         m_output_names_ptrs.push_back(std::move(m_ort_session->GetOutputNameAllocated(i, allocator)));
@@ -127,7 +130,7 @@ void InferenceSession::append_provider_cuda() {
         m_cuda_provider_options->gpu_mem_limit = m_options.trt_max_workspace_size * (1 << 30);
     }
     try {
-        session_options_.AppendExecutionProvider_CUDA(*m_cuda_provider_options);
+        m_session_options.AppendExecutionProvider_CUDA(*m_cuda_provider_options);
     } catch (const Ort::Exception& e) {
         m_logger->error(std::format("AppendExecutionProvider_CUDA: Ort::Exception: {}", e.what()));
         throw std::runtime_error(e.what());
@@ -189,7 +192,7 @@ void InferenceSession::append_provider_tensorrt() {
     try {
         Ort::ThrowOnError(api.UpdateTensorRTProviderOptions(tensorrtProviderOptionsV2,
                                                             keys.data(), values.data(), keys.size()));
-        session_options_.AppendExecutionProvider_TensorRT_V2(*tensorrtProviderOptionsV2);
+        m_session_options.AppendExecutionProvider_TensorRT_V2(*tensorrtProviderOptionsV2);
     } catch (const Ort::Exception& e) {
         m_logger->warn(std::format("Failed to append TensorRT execution provider: {}", e.what()));
         throw std::runtime_error(e.what());
@@ -210,4 +213,4 @@ bool InferenceSession::is_model_loaded() const {
 std::string InferenceSession::get_loaded_model_path() const {
     return m_model_path;
 }
-} // namespace ffc
+} // namespace ffc::ai

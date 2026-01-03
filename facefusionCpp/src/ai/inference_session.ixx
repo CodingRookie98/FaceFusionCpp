@@ -16,7 +16,10 @@ module;
 export module inference_session;
 import logger;
 
-namespace ffc {
+namespace ffc::ai {
+
+using namespace infra;
+
 export class InferenceSession {
 public:
     explicit InferenceSession(const std::shared_ptr<Ort::Env>& env = nullptr);
@@ -72,4 +75,4 @@ private:
     void append_provider_tensorrt();
 };
 
-} // namespace ffc
+} // namespace ffc::ai
