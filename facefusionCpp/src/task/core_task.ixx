@@ -19,15 +19,18 @@ import face_masker_hub;
 import face_analyser;
 import processor_hub;
 
-using namespace ffc::faceMasker;
+using namespace ffc::face_masker;
 
-namespace ffc {
+namespace ffc::task {
+
+using namespace ai;
+
 export class CoreTask {
 public:
     // Processors
     std::list<ProcessorMajorType> processor_list;
     std::unordered_map<ProcessorMajorType, ProcessorMinorType> processor_minor_types;
-    std::unordered_map<ProcessorMajorType, ModelManager::Model> processor_model;
+    std::unordered_map<ProcessorMajorType, model_manager::Model> processor_model;
     std::optional<unsigned short> face_enhancer_blend;
     std::optional<float> expression_restorer_factor;
     std::optional<unsigned short> frame_enhancer_blend;
@@ -48,8 +51,8 @@ public:
 
     // face masker
     std::optional<std::unordered_set<FaceMaskerHub::Type>> face_mask_types;
-    std::optional<ModelManager::Model> face_occluder_model;
-    std::optional<ModelManager::Model> face_parser_model;
+    std::optional<model_manager::Model> face_occluder_model;
+    std::optional<model_manager::Model> face_parser_model;
     std::optional<float> face_mask_blur;
     std::optional<std::array<int, 4>> face_mask_padding;
     std::optional<std::unordered_set<FaceMaskerRegion::Region>> face_mask_regions;
@@ -108,4 +111,4 @@ private:
                    const std::shared_ptr<FaceAnalyser>& face_analyser) const;
 };
 
-} // namespace ffc
+} // namespace ffc::task
