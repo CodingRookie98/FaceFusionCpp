@@ -4,7 +4,6 @@
   "dependencies": [
     "boost-process",
     "boost-system",
-    "cli11",
     "curl",
     "dp-thread-pool",
     "ffmpeg",
@@ -19,8 +18,8 @@
       ]
     },
     "openssl",
-    "simpleini",
-    "spdlog"
+    "spdlog",
+    "yaml-cpp"
   ],
   "builtin-baseline": "b7a701cb475805c27e29ddf635a3b16c37ba51fb"
 }
