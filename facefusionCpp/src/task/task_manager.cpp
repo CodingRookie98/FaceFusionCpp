@@ -16,12 +16,17 @@ module;
 module task_manager;
 import utils;
 import file_system;
+import vision;
 import processor_hub;
 import model_manager;
 
-namespace ffc::task_manager {
+namespace ffc::task::task_manager {
+using namespace core;
+using namespace ai;
+using namespace infra;
+using namespace media;
 
-using namespace model_manager;
+using namespace ffc::ai::model_manager;
 
 TaskManager& TaskManager::get_instance() {
     static TaskManager instance;
@@ -68,7 +73,7 @@ std::string TaskManager::submit_task(Task task) {
     return task_id;
 }
 
-bool TaskManager::prepare_task(Task& task) {
+bool TaskManager::prepare_task(Task& task) const {
     if (task.target_paths.empty()) {
         m_logger->error("TaskManager.prepare_task: target_paths is empty.");
         return false;
@@ -85,7 +90,7 @@ bool TaskManager::prepare_task(Task& task) {
     std::vector<std::string> target_paths;
     for (const auto& path : task.target_paths) {
         if (file_system::is_file(path)) {
-            if (file_system::is_image(path) || file_system::is_video(path)) {
+            if (vision::is_image(path) || vision::is_video(path)) {
                 target_paths.push_back(path);
             }
         } else {
@@ -181,4 +186,4 @@ void TaskManager::run_tasks() {
         }
     }
 }
-} // namespace ffc::task_manager
+} // namespace ffc::task::task_manager

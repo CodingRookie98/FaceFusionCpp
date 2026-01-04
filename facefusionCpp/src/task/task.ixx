@@ -24,7 +24,11 @@ import face_analyser;
 import face_masker_hub;
 import logger;
 
-namespace ffc {
+namespace ffc::task {
+
+using namespace infra;
+using namespace ai;
+using namespace core;
 
 using Json = nlohmann::json;
 
@@ -76,10 +80,10 @@ public:
 };
 
 export void prepare_task(Task& task) {
-   auto logger = Logger::get_instance();
+    auto logger = Logger::get_instance();
     if (task.target_paths.empty()) {
         logger->error("[Task] No target path.");
         return;
     }
 }
-} // namespace ffc
+} // namespace ffc::task

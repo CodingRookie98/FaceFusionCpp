@@ -19,7 +19,11 @@ import task;
 import logger;
 import core;
 
-namespace ffc::task_manager {
+namespace ffc::task::task_manager {
+
+using namespace ffc::core;
+using namespace ffc::infra;
+
 class TaskManager {
 public:
     TaskManager(const TaskManager&) = delete;
@@ -37,7 +41,7 @@ private:
     ~TaskManager() = default;
 
     // 准备任务, 并且检查任务是否合法, 合法则返回true, 否则返回false。
-    bool prepare_task(Task& task);
+    bool prepare_task(Task& task) const;
     // 运行任务队列中的任务。每次运行一个任务，就会从任务队列中取出一个任务，并运行。
     // 这个函数会在单独的线程中运行, 直到程序退出时才会结束。
     [[noreturn]] void run_tasks();
@@ -58,4 +62,4 @@ private:
     std::string m_current_task_id;
     std::mutex m_mutex_current_task_id;
 };
-} // namespace ffc::task_manager
+} // namespace ffc::task::task_manager
