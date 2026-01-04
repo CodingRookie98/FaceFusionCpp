@@ -27,9 +27,9 @@ namespace ffc {
 
 using namespace faceSwapper;
 using namespace faceEnhancer;
-using namespace faceMasker;
+using namespace face_masker;
 using namespace expressionRestore;
-using namespace frameEnhancer;
+using namespace frame_enhancer;
 
 export enum class ProcessorMajorType {
     FaceSwapper,
@@ -65,23 +65,23 @@ export enum class ProcessorMinorType {
     FrameEnhancer_RealHatgan,
 };
 
-export std::optional<FaceSwapperType> GetFaceSwapperType(ProcessorMinorType type) {
+export std::optional<FaceSwapperType> get_face_swapper_type(ProcessorMinorType type) {
     if (type == ProcessorMinorType::FaceSwapper_InSwapper) return FaceSwapperType::InSwapper;
     return std::nullopt;
 }
 
-export std::optional<FaceEnhancerType> GetFaceEnhancerType(ProcessorMinorType type) {
+export std::optional<FaceEnhancerType> get_face_enhancer_type(ProcessorMinorType type) {
     if (type == ProcessorMinorType::FaceEnhancer_GfpGan) return FaceEnhancerType::GFP_GAN;
     if (type == ProcessorMinorType::FaceEnhancer_CodeFormer) return FaceEnhancerType::CodeFormer;
     return std::nullopt;
 }
 
-export std::optional<ExpressionRestorerType> GetExpressionRestorerType(ProcessorMinorType type) {
+export std::optional<ExpressionRestorerType> get_expression_restorer_type(ProcessorMinorType type) {
     if (type == ProcessorMinorType::ExpressionRestorer_LivePortrait) return ExpressionRestorerType::LivePortrait;
     return std::nullopt;
 }
 
-export std::optional<FrameEnhancerType> GetFrameEnhancerType(ProcessorMinorType type) {
+export std::optional<FrameEnhancerType> get_frame_enhancer_type(ProcessorMinorType type) {
     if (type == ProcessorMinorType::FrameEnhancer_RealEsrgan) return FrameEnhancerType::Real_esr_gan;
     if (type == ProcessorMinorType::FrameEnhancer_RealHatgan) return FrameEnhancerType::Real_hat_gan;
     return std::nullopt;
@@ -89,38 +89,38 @@ export std::optional<FrameEnhancerType> GetFrameEnhancerType(ProcessorMinorType 
 
 export class ProcessorPool {
 public:
-    explicit ProcessorPool(const InferenceSession::Options &_options);
+    explicit ProcessorPool(const ai::InferenceSession::Options& options);
     ~ProcessorPool();
 
-    void removeProcessors(const ProcessorMajorType &_majorType);
+    void remove_processors(const ProcessorMajorType& major_type);
 
     std::shared_ptr<FaceSwapperBase>
-    getFaceSwapper(const FaceSwapperType &_faceSwapperType,
-                   const ModelManager::Model &_model);
+    get_face_swapper(const FaceSwapperType& face_swapper_type,
+                     const ai::model_manager::Model& model);
 
     std::shared_ptr<FaceEnhancerBase>
-    getFaceEnhancer(const FaceEnhancerType &_faceEnhancerType,
-                    const ModelManager::Model &_model);
+    get_face_enhancer(const FaceEnhancerType& face_enhancer_type,
+                      const ai::model_manager::Model& model);
 
     std::shared_ptr<ExpressionRestorerBase>
-    getExpressionRestorer(const ExpressionRestorerType &_expressionRestorer);
+    get_expression_restorer(const ExpressionRestorerType& expression_restorer);
 
     std::shared_ptr<FrameEnhancerBase>
-    getFrameEnhancer(const FrameEnhancerType &_frameEnhancerType,
-                     const ModelManager::Model &_model);
+    get_frame_enhancer(const FrameEnhancerType& frame_enhancer_type,
+                       const ai::model_manager::Model& model);
 
 private:
-    std::unordered_map<FaceSwapperType, std::pair<std::shared_ptr<FaceSwapperBase>, ModelManager::Model>> faceSwappers_;
-    std::mutex mutex4FaceSwappers_;
-    std::unordered_map<FaceEnhancerType, std::pair<std::shared_ptr<FaceEnhancerBase>, ModelManager::Model>> faceEnhancers_;
+    std::unordered_map<FaceSwapperType, std::pair<std::shared_ptr<FaceSwapperBase>, ai::model_manager::Model>> m_face_swappers;
+    std::mutex m_mutex_face_swappers;
+    std::unordered_map<FaceEnhancerType, std::pair<std::shared_ptr<FaceEnhancerBase>, ai::model_manager::Model>> m_face_enhancers;
     std::mutex mutex4FaceEnhancers_;
     std::unordered_map<ExpressionRestorerType, std::shared_ptr<ExpressionRestorerBase>> expressionRestorers_;
     std::mutex mutex4ExpressionRestorers_;
-    std::unordered_map<FrameEnhancerType, std::pair<std::shared_ptr<FrameEnhancerBase>, ModelManager::Model>> frameEnhancers_;
+    std::unordered_map<FrameEnhancerType, std::pair<std::shared_ptr<FrameEnhancerBase>, ai::model_manager::Model>> frameEnhancers_;
     std::mutex mutex4FrameEnhancers_;
     std::shared_ptr<FaceMaskerHub> faceMaskerHub_;
     std::shared_ptr<Ort::Env> env_;
-    InferenceSession::Options is_options_;
+    ai::InferenceSession::Options is_options_;
 
     std::shared_ptr<LivePortrait> getLivePortrait();
 };

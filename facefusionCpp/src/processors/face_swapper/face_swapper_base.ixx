@@ -18,28 +18,28 @@ import face_masker_hub;
 
 export namespace ffc::faceSwapper {
 
-using namespace faceMasker;
+using namespace face_masker;
 
 class FaceSwapperBase : public ProcessorBase {
 public:
     explicit FaceSwapperBase() = default;
     ~FaceSwapperBase() override = default;
 
-    [[nodiscard]] std::string getProcessorName() const override = 0;
+    [[nodiscard]] std::string get_processor_name() const override = 0;
 
-    void setFaceMaskerHub(const std::shared_ptr<FaceMaskerHub> &_faceMaskerHub) {
-        m_faceMaskerHub = _faceMaskerHub;
+    void set_face_masker_hub(const std::shared_ptr<FaceMaskerHub>& face_masker_hub) {
+        m_face_masker_hub = face_masker_hub;
     }
 
-    [[nodiscard]] bool hasFaceMaskerHub() const {
-        if (m_faceMaskerHub == nullptr) {
+    [[nodiscard]] bool has_face_masker_hub() const {
+        if (m_face_masker_hub == nullptr) {
             return false;
         }
         return true;
     }
 
 protected:
-    std::shared_ptr<FaceMaskerHub> m_faceMaskerHub;
+    std::shared_ptr<FaceMaskerHub> m_face_masker_hub;
 };
 
 }; // namespace ffc::faceSwapper

@@ -18,6 +18,6 @@ public:
     ProcessorBase() = default;
     virtual ~ProcessorBase() = default;
 
-    [[nodiscard]] virtual std::string getProcessorName() const = 0;
+    [[nodiscard]] virtual std::string get_processor_name() const = 0;
 };
 } // namespace ffc

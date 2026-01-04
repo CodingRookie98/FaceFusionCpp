@@ -20,6 +20,8 @@ import inference_session;
 
 namespace ffc {
 
+using namespace ai;
+
 export struct FaceSwapperInput {
     std::unique_ptr<InSwapperInput> in_swapper_input{nullptr};
 };
@@ -48,18 +50,18 @@ public:
     }
 
     cv::Mat swapFace(const FaceSwapperType& _faceSwapperType,
-                     const ModelManager::Model& _model,
+                     const model_manager::Model& _model,
                      const FaceSwapperInput& _faceSwapperInput);
 
     cv::Mat enhanceFace(const FaceEnhancerType& _faceEnhancerType,
-                        const ModelManager::Model& _model,
+                        const model_manager::Model& _model,
                         const FaceEnhancerInput& _faceEnhancerInput);
 
     cv::Mat restoreExpression(const ExpressionRestorerType& _type,
                               const ExpressionRestorerInput& input);
 
     cv::Mat enhanceFrame(const FrameEnhancerType& _frameEnhancerType,
-                         const ModelManager::Model& _model,
+                         const model_manager::Model& _model,
                          const FrameEnhancerInput& _input);
 
 private:

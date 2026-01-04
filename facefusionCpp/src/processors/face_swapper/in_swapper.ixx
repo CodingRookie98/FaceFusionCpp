@@ -34,7 +34,7 @@ struct InSwapperInput {
         .boxMaskPadding = std::array<int, 4>{0, 0, 0, 0}};
 };
 
-class InSwapper final : public FaceSwapperBase, public InferenceSession {
+class InSwapper final : public FaceSwapperBase, public ai::InferenceSession {
 public:
     explicit InSwapper(const std::shared_ptr<Ort::Env>& env);
     ~InSwapper() override = default;

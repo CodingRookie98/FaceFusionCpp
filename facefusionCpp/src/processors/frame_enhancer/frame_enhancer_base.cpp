@@ -14,9 +14,9 @@ module;
 module frame_enhancer;
 import :frame_enhancer_base;
 
-namespace ffc::frameEnhancer {
+namespace ffc::frame_enhancer {
 
-cv::Mat FrameEnhancerBase::blendFrame(const cv::Mat &tempFrame, const cv::Mat &mergedFrame, const int &blend) {
+cv::Mat FrameEnhancerBase::blend_frame(const cv::Mat& tempFrame, const cv::Mat& mergedFrame, const int& blend) {
     const float blendFactor = 1 - static_cast<float>(blend) / 100.f;
     cv::Mat result;
     cv::resize(tempFrame, result, mergedFrame.size());
@@ -24,7 +24,7 @@ cv::Mat FrameEnhancerBase::blendFrame(const cv::Mat &tempFrame, const cv::Mat &m
     return result;
 }
 
-std::vector<float> FrameEnhancerBase::getInputImageData(const cv::Mat &frame) {
+std::vector<float> FrameEnhancerBase::get_input_data(const cv::Mat& frame) {
     std::vector<cv::Mat> bgrChannels(3);
     split(frame, bgrChannels);
     for (int c = 0; c < 3; c++) {
@@ -34,18 +34,18 @@ std::vector<float> FrameEnhancerBase::getInputImageData(const cv::Mat &frame) {
     const int imageArea = frame.rows * frame.cols;
     std::vector<float> inputImageData(3 * imageArea);
     const size_t singleChnSize = imageArea * sizeof(float);
-    memcpy(inputImageData.data(), (float *)bgrChannels[2].data, singleChnSize);                 // R
-    memcpy(inputImageData.data() + imageArea, (float *)bgrChannels[1].data, singleChnSize);     // G
-    memcpy(inputImageData.data() + imageArea * 2, (float *)bgrChannels[0].data, singleChnSize); // B
+    memcpy(inputImageData.data(), (float*)bgrChannels[2].data, singleChnSize);                 // R
+    memcpy(inputImageData.data() + imageArea, (float*)bgrChannels[1].data, singleChnSize);     // G
+    memcpy(inputImageData.data() + imageArea * 2, (float*)bgrChannels[0].data, singleChnSize); // B
     return inputImageData;
 }
 
-cv::Mat FrameEnhancerBase::getOutputImage(const float *outputData, const cv::Size &size) {
+cv::Mat FrameEnhancerBase::get_output_data(const float* outputData, const cv::Size& size) {
     const long long channelStep = size.width * size.height;
     cv::Mat outputImage(size, CV_32FC3);
 
     // Direct memory copy and processing
-    auto *outputPtr = outputImage.ptr<float>();
+    auto* outputPtr = outputImage.ptr<float>();
 #pragma omp parallel for
     for (long long i = 0; i < channelStep; ++i) {
         // B, G, R order for OpenCV
@@ -56,4 +56,4 @@ cv::Mat FrameEnhancerBase::getOutputImage(const float *outputData, const cv::Siz
 
     return outputImage;
 }
-} // namespace frameEnhancer
+} // namespace ffc::frame_enhancer

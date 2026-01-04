@@ -20,7 +20,7 @@ import :face_enhancer_base;
 import face_helper;
 
 export namespace ffc::faceEnhancer {
-using namespace faceMasker;
+using namespace face_masker;
 
 struct CodeFormerInput {
     std::vector<Face::Landmarks> target_faces_5_landmarks;
@@ -32,14 +32,14 @@ struct CodeFormerInput {
         .boxMaskPadding = std::array{0, 0, 0, 0}};
 };
 
-class CodeFormer final : public FaceEnhancerBase, public ffc::InferenceSession {
+class CodeFormer final : public FaceEnhancerBase, public ai::InferenceSession {
 public:
     explicit CodeFormer(const std::shared_ptr<Ort::Env>& env);
     ~CodeFormer() override = default;
 
-    [[nodiscard]] std::string getProcessorName() const override;
+    [[nodiscard]] std::string get_processor_name() const override;
 
-    void LoadModel(const std::string& modelPath, const Options& options) override;
+    void load_model(const std::string& modelPath, const Options& options) override;
 
     cv::Mat enhanceFace(const CodeFormerInput& input) const;
 

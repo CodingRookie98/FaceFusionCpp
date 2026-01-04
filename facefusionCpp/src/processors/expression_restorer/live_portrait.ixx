@@ -18,9 +18,9 @@ import :expression_restorer_basee;
 import face_helper;
 
 export namespace ffc::expressionRestore {
-using namespace faceMasker;
+using namespace face_masker;
 
-// You need to ensure that the source_faces5_landmarks.size == target_faces_5_landmarks.size
+// You need to ensure that the source_faces_5_landmarks.size == target_faces_5_landmarks.size
 // otherwise the returned value is target_frame.clone()
 struct LivePortraitInput {
     std::shared_ptr<cv::Mat> source_frame{nullptr};
@@ -38,43 +38,43 @@ public:
     explicit LivePortrait(const std::shared_ptr<Ort::Env>& env);
     ~LivePortrait() override = default;
 
-    [[nodiscard]] std::string getProcessorName() const override;
+    [[nodiscard]] std::string get_processor_name() const override;
 
     void loadModel(const std::string& featureExtractorPath,
                    const std::string& motionExtractorPath,
                    const std::string& generatorPath,
-                   const InferenceSession::Options& options);
+                   const ai::InferenceSession::Options& options);
 
     [[nodiscard]] bool isModelLoaded() const {
-        return m_featureExtractor.IsModelLoaded()
-            && m_motionExtractor.IsModelLoaded()
-            && m_generator.IsModelLoaded();
+        return m_featureExtractor.is_model_loaded()
+            && m_motionExtractor.is_model_loaded()
+            && m_generator.is_model_loaded();
     }
 
     [[nodiscard]] cv::Mat restoreExpression(const LivePortraitInput& input);
 
 private:
-    class FeatureExtractor final : public ffc::InferenceSession {
+    class FeatureExtractor final : public ai::InferenceSession {
     public:
         explicit FeatureExtractor(const std::shared_ptr<Ort::Env>& env);
         [[nodiscard]] std::vector<float> extractFeature(const cv::Mat& frame) const;
     };
 
-    class MotionExtractor final : public ffc::InferenceSession {
+    class MotionExtractor final : public ai::InferenceSession {
     public:
         explicit MotionExtractor(const std::shared_ptr<Ort::Env>& env);
         [[nodiscard]] std::vector<std::vector<float>> extractMotion(const cv::Mat& frame) const;
     };
 
-    class Generator final : public InferenceSession {
+    class Generator final : public ai::InferenceSession {
     public:
         explicit Generator(const std::shared_ptr<Ort::Env>& env);
         [[nodiscard]] cv::Mat generateFrame(std::vector<float>& featureVolume,
                                             std::vector<float>& sourceMotionPoints,
                                             std::vector<float>& targetMotionPoints) const;
         [[nodiscard]] cv::Size getOutputSize() const {
-            int outputHeight = output_node_dims_[0][2];
-            int outputWidth = output_node_dims_[0][3];
+            int outputHeight = m_output_node_dims[0][2];
+            int outputWidth = m_output_node_dims[0][3];
             return {outputWidth, outputHeight};
         }
     };

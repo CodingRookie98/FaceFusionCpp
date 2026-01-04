@@ -20,7 +20,7 @@ import face_masker_hub;
 import face_helper;
 
 export namespace ffc::faceEnhancer {
-using namespace faceMasker;
+using namespace face_masker;
 
 struct GFP_GAN_Input {
     std::vector<Face::Landmarks> target_faces_5_landmarks;
@@ -32,14 +32,14 @@ struct GFP_GAN_Input {
         .boxMaskPadding = std::array{0, 0, 0, 0}};
 };
 
-class GFP_GAN final : public FaceEnhancerBase, public ffc::InferenceSession {
+class GFP_GAN final : public FaceEnhancerBase, public ai::InferenceSession {
 public:
     explicit GFP_GAN(const std::shared_ptr<Ort::Env>& env);
     ~GFP_GAN() override = default;
 
-    [[nodiscard]] std::string getProcessorName() const override;
+    [[nodiscard]] std::string get_processor_name() const override;
 
-    void LoadModel(const std::string& modelPath, const Options& options) override;
+    void load_model(const std::string& modelPath, const Options& options) override;
 
     [[nodiscard]] cv::Mat enhanceFace(const GFP_GAN_Input& input) const;
 

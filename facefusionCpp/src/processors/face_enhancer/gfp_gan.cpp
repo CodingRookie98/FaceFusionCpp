@@ -21,13 +21,13 @@ GFP_GAN::GFP_GAN(const std::shared_ptr<Ort::Env>& env) :
     InferenceSession(env) {
 }
 
-std::string GFP_GAN::getProcessorName() const {
+std::string GFP_GAN::get_processor_name() const {
     return "FaceEnhancer.GFP_GAN";
 }
-void GFP_GAN::LoadModel(const std::string& modelPath, const Options& options) {
-    InferenceSession::LoadModel(modelPath, options);
-    m_inputHeight = static_cast<int>(input_node_dims_[0][2]);
-    m_inputWidth = static_cast<int>(input_node_dims_[0][3]);
+void GFP_GAN::load_model(const std::string& modelPath, const Options& options) {
+    InferenceSession::load_model(modelPath, options);
+    m_inputHeight = static_cast<int>(m_input_node_dims[0][2]);
+    m_inputWidth = static_cast<int>(m_input_node_dims[0][3]);
     m_size = cv::Size(m_inputWidth, m_inputHeight);
 }
 
@@ -41,7 +41,7 @@ cv::Mat GFP_GAN::enhanceFace(const GFP_GAN_Input& input) const {
     if (input.target_faces_5_landmarks.empty()) {
         return input.target_frame->clone();
     }
-    if (!IsModelLoaded()) {
+    if (!is_model_loaded()) {
         throw std::runtime_error("model is not loaded");
     }
     if (!hasFaceMaskerHub()) {
@@ -68,7 +68,7 @@ cv::Mat GFP_GAN::enhanceFace(const GFP_GAN_Input& input) const {
         }
         args4_get_best_mask.boxSize = {m_size};
         args4_get_best_mask.occlusionFrame = {&croppedTargetFrame};
-        bestMasks.emplace_back(m_faceMaskerHub->getBestMask(args4_get_best_mask));
+        bestMasks.emplace_back(m_faceMaskerHub->get_best_mask(args4_get_best_mask));
     }
     if (croppedTargetFrames.size() != affineMatrices.size() || croppedTargetFrames.size() != croppedResultFrames.size() || croppedTargetFrames.size() != bestMasks.size()) {
         throw std::runtime_error("The size of croppedTargetFrames, affineMatrices, croppedResultFrames, and bestMasks must be equal.");
@@ -89,13 +89,13 @@ cv::Mat GFP_GAN::applyEnhance(const cv::Mat& croppedFrame) const {
     std::vector<float> inputImageData = getInputImageData(croppedFrame);
     const std::vector<int64_t> inputDataShape{1, 3, m_inputHeight, m_inputWidth};
     std::vector<Ort::Value> inputTensors;
-    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(memory_info_->GetConst(),
+    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memory_info->GetConst(),
                                                               inputImageData.data(), inputImageData.size(),
                                                               inputDataShape.data(), inputDataShape.size()));
 
-    std::vector<Ort::Value> outputTensor = ort_session_->Run(run_options_, input_names_.data(),
-                                                             inputTensors.data(), inputTensors.size(),
-                                                             output_names_.data(), output_names_.size());
+    std::vector<Ort::Value> outputTensor = m_ort_session->Run(m_run_options, m_input_names.data(),
+                                                              inputTensors.data(), inputTensors.size(),
+                                                              m_output_names.data(), m_output_names.size());
 
     auto* pdata = outputTensor[0].GetTensorMutableData<float>();
     std::vector<int64_t> outsShape = outputTensor[0].GetTensorTypeAndShapeInfo().GetShape();

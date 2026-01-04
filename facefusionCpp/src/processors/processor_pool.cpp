@@ -19,9 +19,12 @@ using namespace ffc::faceSwapper;
 
 namespace ffc {
 
-ProcessorPool::ProcessorPool(const InferenceSession::Options &_options) {
+using namespace ffc::ai;
+using namespace ffc::ai::model_manager;
+
+ProcessorPool::ProcessorPool(const InferenceSession::Options& options) {
     env_ = std::make_shared<Ort::Env>(Ort::Env(ORT_LOGGING_LEVEL_ERROR, "faceFusionCpp"));
-    is_options_ = _options;
+    is_options_ = options;
 }
 
 ProcessorPool::~ProcessorPool() {
@@ -29,12 +32,12 @@ ProcessorPool::~ProcessorPool() {
         faceMaskerHub_.reset();
     }
     {
-        std::lock_guard lock(mutex4FaceSwappers_);
-        faceSwappers_.clear();
+        std::lock_guard lock(m_mutex_face_swappers);
+        m_face_swappers.clear();
     }
     {
         std::lock_guard lock(mutex4FaceEnhancers_);
-        faceEnhancers_.clear();
+        m_face_enhancers.clear();
     }
     {
         std::lock_guard lock(mutex4ExpressionRestorers_);
@@ -46,31 +49,31 @@ ProcessorPool::~ProcessorPool() {
     }
 }
 
-void ProcessorPool::removeProcessors(const ProcessorMajorType &_majorType) {
-    if (_majorType == ProcessorMajorType::FaceSwapper) {
-        std::lock_guard lock(mutex4FaceSwappers_);
-        faceSwappers_.clear();
+void ProcessorPool::remove_processors(const ProcessorMajorType& major_type) {
+    if (major_type == ProcessorMajorType::FaceSwapper) {
+        std::lock_guard lock(m_mutex_face_swappers);
+        m_face_swappers.clear();
     }
-    if (_majorType == ProcessorMajorType::FaceEnhancer) {
+    if (major_type == ProcessorMajorType::FaceEnhancer) {
         std::lock_guard lock(mutex4FaceEnhancers_);
-        faceEnhancers_.clear();
+        m_face_enhancers.clear();
     }
-    if (_majorType == ProcessorMajorType::ExpressionRestorer) {
+    if (major_type == ProcessorMajorType::ExpressionRestorer) {
         std::lock_guard lock(mutex4ExpressionRestorers_);
         expressionRestorers_.clear();
     }
-    if (_majorType == ProcessorMajorType::FrameEnhancer) {
+    if (major_type == ProcessorMajorType::FrameEnhancer) {
         std::lock_guard lock(mutex4FrameEnhancers_);
         frameEnhancers_.clear();
     }
 }
 
 std::shared_ptr<FaceSwapperBase>
-ProcessorPool::getFaceSwapper(const FaceSwapperType &_faceSwapperType, const ModelManager::Model &_model) {
-    std::lock_guard lock(mutex4FaceSwappers_);
-    if (faceSwappers_.contains(_faceSwapperType)) {
-        if (faceSwappers_[_faceSwapperType].second == _model) {
-            return faceSwappers_[_faceSwapperType].first;
+ProcessorPool::get_face_swapper(const FaceSwapperType& face_swapper_type, const model_manager::Model& model) {
+    std::lock_guard lock(m_mutex_face_swappers);
+    if (m_face_swappers.contains(face_swapper_type)) {
+        if (m_face_swappers[face_swapper_type].second == model) {
+            return m_face_swappers[face_swapper_type].first;
         }
     }
     if (faceMaskerHub_ == nullptr) {
@@ -78,31 +81,31 @@ ProcessorPool::getFaceSwapper(const FaceSwapperType &_faceSwapperType, const Mod
     }
 
     std::shared_ptr<FaceSwapperBase> ptr = nullptr;
-    if (_faceSwapperType == FaceSwapperType::InSwapper) {
-        if (_model != ModelManager::Model::Inswapper_128 && _model != ModelManager::Model::Inswapper_128_fp16) {
+    if (face_swapper_type == FaceSwapperType::InSwapper) {
+        if (model != model_manager::Model::Inswapper_128 && model != model_manager::Model::Inswapper_128_fp16) {
             throw std::invalid_argument("model is not supported for inswapper!");
         }
         const auto inSwapper = std::make_shared<InSwapper>(env_);
-        inSwapper->LoadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
-        if (!inSwapper->hasFaceMaskerHub()) {
-            inSwapper->setFaceMaskerHub(faceMaskerHub_);
+        inSwapper->load_model(ModelManager::get_instance()->get_model_path(model), is_options_);
+        if (!inSwapper->has_face_masker_hub()) {
+            inSwapper->set_face_masker_hub(faceMaskerHub_);
         }
         ptr = inSwapper;
     }
 
     if (ptr) {
-        faceSwappers_[_faceSwapperType] = {ptr, _model};
+        m_face_swappers[face_swapper_type] = {ptr, model};
     }
     return ptr;
 }
 
 std::shared_ptr<FaceEnhancerBase>
-ProcessorPool::getFaceEnhancer(const FaceEnhancerType &_faceEnhancerType,
-                               const ModelManager::Model &_model) {
+ProcessorPool::get_face_enhancer(const FaceEnhancerType& face_enhancer_type,
+                                 const model_manager::Model& model) {
     std::lock_guard lock(mutex4FaceEnhancers_);
-    if (faceEnhancers_.contains(_faceEnhancerType)) {
-        if (faceEnhancers_[_faceEnhancerType].second == _model) {
-             return faceEnhancers_[_faceEnhancerType].first;
+    if (m_face_enhancers.contains(face_enhancer_type)) {
+        if (m_face_enhancers[face_enhancer_type].second == model) {
+            return m_face_enhancers[face_enhancer_type].first;
         }
     }
     if (faceMaskerHub_ == nullptr) {
@@ -110,24 +113,24 @@ ProcessorPool::getFaceEnhancer(const FaceEnhancerType &_faceEnhancerType,
     }
 
     std::shared_ptr<FaceEnhancerBase> ptr = nullptr;
-    if (_faceEnhancerType == FaceEnhancerType::CodeFormer) {
-        if (_model != ModelManager::Model::Codeformer) {
+    if (face_enhancer_type == FaceEnhancerType::CodeFormer) {
+        if (model != model_manager::Model::Codeformer) {
             throw std::invalid_argument("model is not supported for codeformer!");
         }
         const auto codeFormer = std::make_shared<CodeFormer>(env_);
-        codeFormer->LoadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
+        codeFormer->load_model(ModelManager::get_instance()->get_model_path(model), is_options_);
         if (!codeFormer->hasFaceMaskerHub()) {
-             codeFormer->setFaceMaskerHub(faceMaskerHub_);
+            codeFormer->setFaceMaskerHub(faceMaskerHub_);
         }
         ptr = codeFormer;
     }
 
-    if (_faceEnhancerType == FaceEnhancerType::GFP_GAN) {
-        if (_model != ModelManager::Model::Gfpgan_12 && _model != ModelManager::Model::Gfpgan_13 && _model != ModelManager::Model::Gfpgan_14) {
+    if (face_enhancer_type == FaceEnhancerType::GFP_GAN) {
+        if (model != model_manager::Model::Gfpgan_12 && model != model_manager::Model::Gfpgan_13 && model != model_manager::Model::Gfpgan_14) {
             throw std::invalid_argument("model is not supported for gfpgan!");
         }
         const auto gfpgan = std::make_shared<GFP_GAN>(env_);
-        gfpgan->LoadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
+        gfpgan->load_model(ModelManager::get_instance()->get_model_path(model), is_options_);
         if (!gfpgan->hasFaceMaskerHub()) {
             gfpgan->setFaceMaskerHub(faceMaskerHub_);
         }
@@ -135,7 +138,7 @@ ProcessorPool::getFaceEnhancer(const FaceEnhancerType &_faceEnhancerType,
     }
 
     if (ptr) {
-        faceEnhancers_[_faceEnhancerType] = {ptr, _model};
+        m_face_enhancers[face_enhancer_type] = {ptr, model};
     }
     return ptr;
 }
@@ -151,9 +154,9 @@ std::shared_ptr<LivePortrait> ProcessorPool::getLivePortrait() {
     }
     const auto ptr = std::make_shared<LivePortrait>(env_);
     if (!ptr->isModelLoaded()) {
-        ptr->loadModel(ModelManager::getInstance()->getModelPath(ModelManager::Model::Feature_extractor),
-                       ModelManager::getInstance()->getModelPath(ModelManager::Model::Motion_extractor),
-                       ModelManager::getInstance()->getModelPath(ModelManager::Model::Generator),
+        ptr->loadModel(ModelManager::get_instance()->get_model_path(model_manager::Model::Feature_extractor),
+                       ModelManager::get_instance()->get_model_path(model_manager::Model::Motion_extractor),
+                       ModelManager::get_instance()->get_model_path(model_manager::Model::Generator),
                        is_options_);
     }
     if (!ptr->hasFaceMaskers()) {
@@ -166,61 +169,61 @@ std::shared_ptr<LivePortrait> ProcessorPool::getLivePortrait() {
 }
 
 std::shared_ptr<ExpressionRestorerBase>
-ProcessorPool::getExpressionRestorer(const ExpressionRestorerType &_expressionRestorer) {
+ProcessorPool::get_expression_restorer(const ExpressionRestorerType& expression_restorer) {
     std::lock_guard lock(mutex4ExpressionRestorers_);
-    if (expressionRestorers_.contains(_expressionRestorer)) {
-        return expressionRestorers_[_expressionRestorer];
+    if (expressionRestorers_.contains(expression_restorer)) {
+        return expressionRestorers_[expression_restorer];
     }
     if (faceMaskerHub_ == nullptr) {
         faceMaskerHub_ = std::make_shared<FaceMaskerHub>(env_, is_options_);
     }
 
     std::shared_ptr<ExpressionRestorerBase> ptr = nullptr;
-    if (_expressionRestorer == ExpressionRestorerType::LivePortrait) {
+    if (expression_restorer == ExpressionRestorerType::LivePortrait) {
         ptr = getLivePortrait();
     }
 
     if (ptr) {
-        expressionRestorers_.insert({_expressionRestorer, ptr});
+        expressionRestorers_.insert({expression_restorer, ptr});
     }
     return ptr;
 }
 
 std::shared_ptr<FrameEnhancerBase>
-ProcessorPool::getFrameEnhancer(const FrameEnhancerType &_frameEnhancerType,
-                                const ModelManager::Model &_model) {
+ProcessorPool::get_frame_enhancer(const FrameEnhancerType& frame_enhancer_type,
+                                  const model_manager::Model& model) {
     std::lock_guard lock(mutex4FrameEnhancers_);
-    if (frameEnhancers_.contains(_frameEnhancerType)) {
-        if (frameEnhancers_[_frameEnhancerType].second == _model) {
-            return frameEnhancers_[_frameEnhancerType].first;
+    if (frameEnhancers_.contains(frame_enhancer_type)) {
+        if (frameEnhancers_[frame_enhancer_type].second == model) {
+            return frameEnhancers_[frame_enhancer_type].first;
         }
     }
 
     std::shared_ptr<FrameEnhancerBase> ptr = nullptr;
-    if (_frameEnhancerType == FrameEnhancerType::Real_esr_gan) {
-        if (_model != ModelManager::Model::Real_esrgan_x2
-            && _model != ModelManager::Model::Real_esrgan_x2_fp16
-            && _model != ModelManager::Model::Real_esrgan_x4
-            && _model != ModelManager::Model::Real_esrgan_x4_fp16
-            && _model != ModelManager::Model::Real_esrgan_x8
-            && _model != ModelManager::Model::Real_esrgan_x8_fp16) {
+    if (frame_enhancer_type == FrameEnhancerType::Real_esr_gan) {
+        if (model != model_manager::Model::Real_esrgan_x2
+            && model != model_manager::Model::Real_esrgan_x2_fp16
+            && model != model_manager::Model::Real_esrgan_x4
+            && model != model_manager::Model::Real_esrgan_x4_fp16
+            && model != model_manager::Model::Real_esrgan_x8
+            && model != model_manager::Model::Real_esrgan_x8_fp16) {
             throw std::invalid_argument("model is not supported for real_esrgan!");
         }
 
         const auto realEsrGan = std::make_shared<RealEsrGan>(env_);
-        realEsrGan->LoadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
-        if (_model == ModelManager::Model::Real_esrgan_x2
-            || _model == ModelManager::Model::Real_esrgan_x2_fp16) {
+        realEsrGan->load_model(ModelManager::get_instance()->get_model_path(model), is_options_);
+        if (model == model_manager::Model::Real_esrgan_x2
+            || model == model_manager::Model::Real_esrgan_x2_fp16) {
             realEsrGan->setModelScale(2);
             realEsrGan->setTileSize({256, 16, 8});
         }
-        if (_model == ModelManager::Model::Real_esrgan_x4
-            || _model == ModelManager::Model::Real_esrgan_x4_fp16) {
+        if (model == model_manager::Model::Real_esrgan_x4
+            || model == model_manager::Model::Real_esrgan_x4_fp16) {
             realEsrGan->setModelScale(4);
             realEsrGan->setTileSize({256, 16, 8});
         }
-        if (_model == ModelManager::Model::Real_esrgan_x8
-            || _model == ModelManager::Model::Real_esrgan_x8_fp16) {
+        if (model == model_manager::Model::Real_esrgan_x8
+            || model == model_manager::Model::Real_esrgan_x8_fp16) {
             realEsrGan->setModelScale(8);
             realEsrGan->setTileSize({256, 16, 8});
         }
@@ -228,13 +231,13 @@ ProcessorPool::getFrameEnhancer(const FrameEnhancerType &_frameEnhancerType,
         ptr = realEsrGan;
     }
 
-    if (_frameEnhancerType == FrameEnhancerType::Real_hat_gan) {
-        if (_model != ModelManager::Model::Real_hatgan_x4) {
+    if (frame_enhancer_type == FrameEnhancerType::Real_hat_gan) {
+        if (model != model_manager::Model::Real_hatgan_x4) {
             throw std::invalid_argument("model is not supported for real_hat_gan!");
         }
         const auto realHatGAN = std::make_shared<RealHatGan>(env_);
-        realHatGAN->LoadModel(ModelManager::getInstance()->getModelPath(_model), is_options_);
-        if (_model == ModelManager::Model::Real_hatgan_x4) {
+        realHatGAN->load_model(ModelManager::get_instance()->get_model_path(model), is_options_);
+        if (model == model_manager::Model::Real_hatgan_x4) {
             realHatGAN->setModelScale(4);
             realHatGAN->setTileSize({256, 16, 8});
         }
@@ -242,7 +245,7 @@ ProcessorPool::getFrameEnhancer(const FrameEnhancerType &_frameEnhancerType,
     }
 
     if (ptr) {
-        frameEnhancers_[_frameEnhancerType] = {ptr, _model};
+        frameEnhancers_[frame_enhancer_type] = {ptr, model};
     }
     return ptr;
 }

@@ -18,16 +18,16 @@ import processor_base;
 
 namespace ffc::expressionRestore {
 
-using namespace faceMasker;
+using namespace face_masker;
 
 export class ExpressionRestorerBase : public ProcessorBase {
 public:
     explicit ExpressionRestorerBase() = default;
     ~ExpressionRestorerBase() override = default;
 
-    [[nodiscard]] std::string getProcessorName() const override = 0;
+    [[nodiscard]] std::string get_processor_name() const override = 0;
 
-    void setFaceMaskers(const std::shared_ptr<FaceMaskerHub> &faceMaskerHub) {
+    void setFaceMaskers(const std::shared_ptr<FaceMaskerHub>& faceMaskerHub) {
         m_faceMaskerHub = faceMaskerHub;
     };
 
