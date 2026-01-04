@@ -89,20 +89,20 @@ bool Core::ProcessVideo(CoreTask core_task) {
 
     std::string audiosDir = file_system::absolute_path(file_system::parent_path(videoPath) + "/audios");
     if (!core_task.skip_audio) {
-        FfmpegRunner::Audio_Codec audioCodec = FfmpegRunner::getAudioCodec(core_task.output_audio_encoder.value());
-        if (audioCodec == FfmpegRunner::Audio_Codec::Codec_UNKNOWN) {
+        Audio_Codec audioCodec = getAudioCodec(core_task.output_audio_encoder.value());
+        if (audioCodec == Audio_Codec::Codec_UNKNOWN) {
             m_logger->warn("[Core] Unsupported audio codec. Use Default: aac");
-            audioCodec = FfmpegRunner::Audio_Codec::Codec_AAC;
+            audioCodec = Audio_Codec::Codec_AAC;
         }
         m_logger->info(std::format("[Core] Extract Audios for {}", videoPath));
-        FfmpegRunner::extractAudios(videoPath, audiosDir, audioCodec);
+        extractAudios(videoPath, audiosDir, audioCodec);
     }
 
     m_logger->info(std::format("[Core] Extract Frames for {}", videoPath));
     std::string pattern = "frame_%06d." + core_task.temp_frame_format.value();
     std::string videoFramesOutputDir = file_system::absolute_path(file_system::parent_path(videoPath) + "/" + file_system::get_base_name(videoPath));
     std::string outputPattern = videoFramesOutputDir + "/" + pattern;
-    FfmpegRunner::extractFrames(videoPath, outputPattern);
+    extractFrames(videoPath, outputPattern);
     std::unordered_set<std::string> framePaths = file_system::list_files(videoFramesOutputDir);
     framePaths = vision::filter_image_paths(framePaths);
     std::vector<std::string> framePathsVec(framePaths.begin(), framePaths.end());
@@ -112,7 +112,7 @@ bool Core::ProcessVideo(CoreTask core_task) {
     tmpCoreRunOptions.output_paths = framePathsVec;
     ProcessImages(tmpCoreRunOptions);
 
-    FfmpegRunner::VideoPrams videoPrams(videoPath);
+    VideoPrams videoPrams(videoPath);
     videoPrams.quality = core_task.output_video_quality.value();
     videoPrams.preset = core_task.output_video_preset.value();
     videoPrams.videoCodec = core_task.output_video_encoder.value();
@@ -125,7 +125,7 @@ bool Core::ProcessVideo(CoreTask core_task) {
     std::string inputImagePattern = videoFramesOutputDir + "/" + pattern;
     std::string outputVideo_NA_Path = file_system::parent_path(videoPath) + "/" + file_system::get_base_name(videoPath) + "_processed_NA" + file_system::get_file_ext(videoPath);
     Logger::get_instance()->info("[Core] Images to video : " + file_system::absolute_path(outputVideo_NA_Path));
-    if (!FfmpegRunner::imagesToVideo(inputImagePattern, outputVideo_NA_Path, videoPrams)) {
+    if (!imagesToVideo(inputImagePattern, outputVideo_NA_Path, videoPrams)) {
         Logger::get_instance()->error("[Core] images to video failed!");
         file_system::remove_dir(videoFramesOutputDir);
         file_system::remove_file(outputVideo_NA_Path);
@@ -134,11 +134,11 @@ bool Core::ProcessVideo(CoreTask core_task) {
 
     if (!core_task.skip_audio) {
         std::unordered_set<std::string> audioPaths = file_system::list_files(audiosDir);
-        audioPaths = FfmpegRunner::filterAudioPaths(audioPaths);
+        audioPaths = filterAudioPaths(audioPaths);
         std::vector<std::string> audioPathsVec(audioPaths.begin(), audioPaths.end());
 
         Logger::get_instance()->info("[Core] Add audios to video : " + file_system::absolute_path(core_task.output_paths.front()));
-        if (!FfmpegRunner::addAudiosToVideo(outputVideo_NA_Path, audioPathsVec, core_task.output_paths.front())) {
+        if (!addAudiosToVideo(outputVideo_NA_Path, audioPathsVec, core_task.output_paths.front())) {
             Logger::get_instance()->warn("[Core] Add audios to Video failed. The output video will be without audio.");
         }
     } else {
@@ -161,27 +161,27 @@ bool Core::ProcessVideoInSegments(CoreTask core_task) {
 
     std::string audiosDir = file_system::absolute_path(file_system::parent_path(videoPath) + "/audios");
     if (!core_task.skip_audio) {
-        FfmpegRunner::Audio_Codec audioCodec = FfmpegRunner::getAudioCodec(core_task.output_audio_encoder.value());
-        if (audioCodec == FfmpegRunner::Audio_Codec::Codec_UNKNOWN) {
+        Audio_Codec audioCodec = getAudioCodec(core_task.output_audio_encoder.value());
+        if (audioCodec == Audio_Codec::Codec_UNKNOWN) {
             m_logger->warn("[Core] Unsupported audio codec. Use Default: aac");
-            audioCodec = FfmpegRunner::Audio_Codec::Codec_AAC;
+            audioCodec = Audio_Codec::Codec_AAC;
         }
         m_logger->info(std::format("[Core] Extract Audios for {}", videoPath));
-        FfmpegRunner::extractAudios(videoPath, audiosDir, audioCodec);
+        extractAudios(videoPath, audiosDir, audioCodec);
     }
 
     std::string videoSegmentsDir = file_system::parent_path(videoPath) + "/videoSegments";
     std::string videoSegmentPattern = "segment_%03d" + file_system::get_file_ext(videoPath);
     Logger::get_instance()->info(std::format("[Core] Divide the video into segments of {} seconds each....", core_task.video_segment_duration.value()));
-    if (!FfmpegRunner::cutVideoIntoSegments(videoPath, videoSegmentsDir,
-                                            core_task.video_segment_duration.value(), videoSegmentPattern)) {
+    if (!cutVideoIntoSegments(videoPath, videoSegmentsDir,
+                              core_task.video_segment_duration.value(), videoSegmentPattern)) {
         Logger::get_instance()->error("The attempt to cut the video into segments was failed!");
         file_system::remove_dir(audiosDir);
         return false;
     }
 
     std::unordered_set<std::string> videoSegmentsPathsSet = file_system::list_files(videoSegmentsDir);
-    videoSegmentsPathsSet = FfmpegRunner::filterVideoPaths(videoSegmentsPathsSet);
+    videoSegmentsPathsSet = filterVideoPaths(videoSegmentsPathsSet);
 
     std::vector<std::string> processedVideoSegmentsPaths;
     std::string processedVideoSegmentsDir = file_system::parent_path(videoPath) + "/videoSegments_processed";
@@ -210,14 +210,14 @@ bool Core::ProcessVideoInSegments(CoreTask core_task) {
     }
     file_system::remove_dir(videoSegmentsDir);
 
-    FfmpegRunner::VideoPrams videoPrams(processedVideoSegmentsPaths[0]);
+    VideoPrams videoPrams(processedVideoSegmentsPaths[0]);
     videoPrams.quality = core_task.output_image_quality.value();
     videoPrams.preset = core_task.output_video_preset.value();
     videoPrams.videoCodec = core_task.output_video_encoder.value();
 
     std::string outputVideo_NA_Path = file_system::parent_path(videoPath) + "/" + file_system::get_base_name(videoPath) + "_processed_NA" + file_system::get_file_ext(videoPath);
     Logger::get_instance()->info("[Core] concat video segments...");
-    if (!FfmpegRunner::concatVideoSegments(processedVideoSegmentsPaths, outputVideo_NA_Path, videoPrams)) {
+    if (!concatVideoSegments(processedVideoSegmentsPaths, outputVideo_NA_Path, videoPrams)) {
         Logger::get_instance()->error("[Core] Failed concat video segments for : " + videoPath);
         file_system::remove_dir(processedVideoSegmentsDir);
         return false;
@@ -225,11 +225,11 @@ bool Core::ProcessVideoInSegments(CoreTask core_task) {
 
     if (!core_task.skip_audio) {
         std::unordered_set<std::string> audioPaths = file_system::list_files(audiosDir);
-        audioPaths = FfmpegRunner::filterAudioPaths(audioPaths);
+        audioPaths = filterAudioPaths(audioPaths);
         std::vector<std::string> audioPathsVec(audioPaths.begin(), audioPaths.end());
 
         Logger::get_instance()->info("[Core] Add audios to video...");
-        if (!FfmpegRunner::addAudiosToVideo(outputVideo_NA_Path, audioPathsVec, core_task.output_paths.front())) {
+        if (!addAudiosToVideo(outputVideo_NA_Path, audioPathsVec, core_task.output_paths.front())) {
             Logger::get_instance()->warn("[Core] Add audios to Video failed. The output video will be without audio.");
         }
     } else {

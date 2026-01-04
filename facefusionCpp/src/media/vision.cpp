@@ -179,7 +179,7 @@ bool is_video(const std::string& path) {
     if (!file_system::is_file(path) || !file_system::file_exists(path)) {
         return false;
     }
-    return FfmpegRunner::isVideo(path);
+    return isVideo(path);
 }
 
 bool has_image(const std::unordered_set<std::string>& paths) {

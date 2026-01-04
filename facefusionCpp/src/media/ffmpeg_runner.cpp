@@ -31,10 +31,11 @@ import logger;
 import file_system;
 import vision;
 
-namespace ffc {
+namespace ffc::media {
+using namespace ffc::infra;
 namespace bp = boost::process;
 
-std::vector<std::string> FfmpegRunner::childProcess(const std::string &command) {
+std::vector<std::string> childProcess(const std::string& command) {
     std::vector<std::string> lines;
     try {
         // 使用 Boost.Process 启动进程并获取其输出
@@ -66,14 +67,14 @@ std::vector<std::string> FfmpegRunner::childProcess(const std::string &command) 
         if (c.exit_code() != 0) {
             lines.emplace_back(std::format("Process exited with code {}, command: {}", c.exit_code(), command));
         }
-    } catch (const std::exception &e) {
+    } catch (const std::exception& e) {
         lines.emplace_back(std::format("Exception: {}", e.what()));
     }
 
     return lines;
 }
 
-bool FfmpegRunner::isVideo(const std::string &videoPath) {
+bool isVideo(const std::string& videoPath) {
     if (vision::is_image(videoPath)) {
         return false;
     }
@@ -87,13 +88,13 @@ bool FfmpegRunner::isVideo(const std::string &videoPath) {
     return true;
 }
 
-bool FfmpegRunner::isAudio(const std::string &audioPath) {
+bool isAudio(const std::string& audioPath) {
     if (!file_system::file_exists(audioPath)) {
         Logger::get_instance()->error(std::format("{} : {}", __FUNCTION__, "Not a audio file : " + audioPath));
         return false;
     }
 
-    AVFormatContext *formatContext = avformat_alloc_context();
+    AVFormatContext* formatContext = avformat_alloc_context();
     if (avformat_open_input(&formatContext, audioPath.c_str(), nullptr, nullptr) != 0) {
         std::cerr << "Could not open input file." << std::endl;
         return false;
@@ -114,7 +115,7 @@ bool FfmpegRunner::isAudio(const std::string &audioPath) {
     return false;
 }
 
-void FfmpegRunner::extractFrames(const std::string &videoPath, const std::string &outputImagePattern) {
+void extractFrames(const std::string& videoPath, const std::string& outputImagePattern) {
     if (!isVideo(videoPath)) {
         Logger::get_instance()->error(std::format("{} : {}", __FUNCTION__, "Not a video file"));
         return;
@@ -131,8 +132,8 @@ void FfmpegRunner::extractFrames(const std::string &videoPath, const std::string
     }
 }
 
-bool FfmpegRunner::cutVideoIntoSegments(const std::string &videoPath, const std::string &outputPath,
-                                        const unsigned int &segmentDuration, const std::string &outputPattern) {
+bool cutVideoIntoSegments(const std::string& videoPath, const std::string& outputPath,
+                          const unsigned int& segmentDuration, const std::string& outputPattern) {
     if (!isVideo(videoPath)) {
         Logger::get_instance()->error(std::format("{} : {}", __FUNCTION__, "Not a video file : " + videoPath));
         return false;
@@ -151,8 +152,8 @@ bool FfmpegRunner::cutVideoIntoSegments(const std::string &videoPath, const std:
     return true;
 }
 
-void FfmpegRunner::extractAudios(const std::string &videoPath, const std::string &outputDir,
-                                 const FfmpegRunner::Audio_Codec &audioCodec) {
+void extractAudios(const std::string& videoPath, const std::string& outputDir,
+                   const Audio_Codec& audioCodec) {
     if (!isVideo(videoPath)) {
         Logger::get_instance()->error("Not a video file : " + videoPath);
         return;
@@ -165,11 +166,11 @@ void FfmpegRunner::extractAudios(const std::string &videoPath, const std::string
     std::string extension;
     switch (audioCodec) {
     case Codec_UNKNOWN:
-    case FfmpegRunner::Audio_Codec::Codec_AAC:
+    case Audio_Codec::Codec_AAC:
         audioCodecStr = "aac";
         extension = ".aac";
         break;
-    case FfmpegRunner::Audio_Codec::Codec_MP3:
+    case Audio_Codec::Codec_MP3:
         audioCodecStr = "libmp3lame";
         extension = ".mp3";
         break;
@@ -184,7 +185,7 @@ void FfmpegRunner::extractAudios(const std::string &videoPath, const std::string
     }
 
     for (const auto audioStreamsInfo = getAudioStreamsIndexAndCodec(videoPath);
-         const auto &key : audioStreamsInfo | std::views::keys) {
+         const auto& key : audioStreamsInfo | std::views::keys) {
         std::string index = std::to_string(key);
         std::string command = "ffmpeg -v error -i \"" + videoPath + "\" -map 0:" + index + " -c:a " + audioCodecStr + " -vn -y \"" + outputDir + "/audio_" + index + extension + "\"";
         if (std::vector<std::string> results = childProcess(command); !results.empty()) {
@@ -193,13 +194,13 @@ void FfmpegRunner::extractAudios(const std::string &videoPath, const std::string
     }
 }
 
-std::unordered_map<unsigned int, std::string> FfmpegRunner::getAudioStreamsIndexAndCodec(const std::string &videoPath) {
+std::unordered_map<unsigned int, std::string> getAudioStreamsIndexAndCodec(const std::string& videoPath) {
     if (!isVideo(videoPath)) {
         Logger::get_instance()->error("Not a video file : " + videoPath);
         return {};
     }
 
-    AVFormatContext *formatContext = avformat_alloc_context();
+    AVFormatContext* formatContext = avformat_alloc_context();
     if (avformat_open_input(&formatContext, videoPath.c_str(), nullptr, nullptr) != 0) {
         std::cerr << "Could not open input file." << std::endl;
         return {};
@@ -222,8 +223,8 @@ std::unordered_map<unsigned int, std::string> FfmpegRunner::getAudioStreamsIndex
     return results;
 }
 
-bool FfmpegRunner::concatVideoSegments(const std::vector<std::string> &videoSegmentsPaths,
-                                       const std::string &outputVideoPath, const VideoPrams &videoPrams) {
+bool concatVideoSegments(const std::vector<std::string>& videoSegmentsPaths,
+                         const std::string& outputVideoPath, const VideoPrams& videoPrams) {
     if (file_system::is_file(outputVideoPath) && file_system::file_exists(outputVideoPath)) {
         file_system::remove_file(outputVideoPath);
     }
@@ -248,7 +249,7 @@ bool FfmpegRunner::concatVideoSegments(const std::vector<std::string> &videoSegm
         return false;
     }
 
-    for (const auto &videoSegmentPath : videoSegmentsPaths) {
+    for (const auto& videoSegmentPath : videoSegmentsPaths) {
         if (!isVideo(videoSegmentPath)) {
             Logger::get_instance()->error(std::format("{} : {} is not a video file", __FUNCTION__, videoSegmentPath));
             return false;
@@ -278,9 +279,9 @@ bool FfmpegRunner::concatVideoSegments(const std::vector<std::string> &videoSegm
     return true;
 }
 
-std::unordered_set<std::string> FfmpegRunner::filterVideoPaths(const std::unordered_set<std::string> &filePaths) {
+std::unordered_set<std::string> filterVideoPaths(const std::unordered_set<std::string>& filePaths) {
     std::unordered_set<std::string> filteredPaths;
-    std::ranges::for_each(filePaths, [&](const std::string &videoPath) {
+    std::ranges::for_each(filePaths, [&](const std::string& videoPath) {
         if (isVideo(videoPath)) {
             filteredPaths.insert(videoPath);
         }
@@ -288,9 +289,9 @@ std::unordered_set<std::string> FfmpegRunner::filterVideoPaths(const std::unorde
     return filteredPaths;
 }
 
-std::unordered_set<std::string> FfmpegRunner::filterAudioPaths(const std::unordered_set<std::string> &filePaths) {
+std::unordered_set<std::string> filterAudioPaths(const std::unordered_set<std::string>& filePaths) {
     std::unordered_set<std::string> filteredPaths;
-    std::ranges::for_each(filePaths, [&](const std::string &audioPath) {
+    std::ranges::for_each(filePaths, [&](const std::string& audioPath) {
         if (isAudio(audioPath)) {
             filteredPaths.insert(audioPath);
         }
@@ -298,9 +299,9 @@ std::unordered_set<std::string> FfmpegRunner::filterAudioPaths(const std::unorde
     return filteredPaths;
 }
 
-bool FfmpegRunner::addAudiosToVideo(const std::string &videoPath,
-                                    const std::vector<std::string> &audioPaths,
-                                    const std::string &outputVideoPath) {
+bool addAudiosToVideo(const std::string& videoPath,
+                      const std::vector<std::string>& audioPaths,
+                      const std::string& outputVideoPath) {
     if (!isVideo(videoPath)) {
         Logger::get_instance()->error("Not a video file : " + videoPath);
         return false;
@@ -320,7 +321,7 @@ bool FfmpegRunner::addAudiosToVideo(const std::string &videoPath,
     }
 
     std::string command = "ffmpeg -v error -i \"" + videoPath + "\"";
-    for (const auto &audioPath : audioPaths) {
+    for (const auto& audioPath : audioPaths) {
         command += " -i \"" + audioPath + "\"";
     }
     command += " -map 0:v:0";
@@ -335,9 +336,9 @@ bool FfmpegRunner::addAudiosToVideo(const std::string &videoPath,
     return true;
 }
 
-bool FfmpegRunner::imagesToVideo(const std::string &inputImagePattern,
-                                 const std::string &outputVideoPath,
-                                 const FfmpegRunner::VideoPrams &videoPrams) {
+bool imagesToVideo(const std::string& inputImagePattern,
+                   const std::string& outputVideoPath,
+                   const VideoPrams& videoPrams) {
     if (inputImagePattern.empty() || outputVideoPath.empty()) {
         Logger::get_instance()->error(std::format("{} : inputImagePattern or outputVideoPath is empty", __FUNCTION__));
         return false;
@@ -370,7 +371,7 @@ bool FfmpegRunner::imagesToVideo(const std::string &inputImagePattern,
     return true;
 }
 
-std::string FfmpegRunner::map_NVENC_preset(const std::string &preset) {
+std::string map_NVENC_preset(const std::string& preset) {
     const std::unordered_set<std::string> fastPresets = {"ultrafast", "superfast", "veryfast", "faster", "fast"};
     const std::unordered_set<std::string> mediumPresets = {"medium"};
     const std::unordered_set<std::string> slowPresets = {"slow", "slower", "veryslow"};
@@ -388,7 +389,7 @@ std::string FfmpegRunner::map_NVENC_preset(const std::string &preset) {
     return "medium";
 }
 
-std::string FfmpegRunner::map_amf_preset(const std::string &preset) {
+std::string map_amf_preset(const std::string& preset) {
     const std::unordered_set<std::string> fastPresets = {"ultrafast", "superfast", "veryfast"};
     const std::unordered_set<std::string> mediumPresets = {"faster", "fast", "medium"};
     const std::unordered_set<std::string> slowPresets = {"slow", "slower", "veryslow"};
@@ -406,7 +407,7 @@ std::string FfmpegRunner::map_amf_preset(const std::string &preset) {
     return "balanced";
 }
 
-std::string FfmpegRunner::getCompressionAndPresetCmd(const unsigned int &quality, const std::string &preset, const std::string &codec) {
+std::string getCompressionAndPresetCmd(const unsigned int& quality, const std::string& preset, const std::string& codec) {
     if (codec == "libx264" || codec == "libx265") {
         const int crf = static_cast<int>(std::round(51 - static_cast<float>(quality * 0.51)));
         return "-crf " + std::to_string(crf) + " -preset " + preset;
@@ -426,7 +427,7 @@ std::string FfmpegRunner::getCompressionAndPresetCmd(const unsigned int &quality
     return {};
 }
 
-FfmpegRunner::Audio_Codec FfmpegRunner::getAudioCodec(const std::string &codec) {
+Audio_Codec getAudioCodec(const std::string& codec) {
     if (codec == "aac") {
         return Audio_Codec::Codec_AAC;
     }
@@ -444,7 +445,7 @@ FfmpegRunner::Audio_Codec FfmpegRunner::getAudioCodec(const std::string &codec) 
     return Audio_Codec::Codec_UNKNOWN;
 }
 
-FfmpegRunner::VideoPrams::VideoPrams(const std::string &videoPath) {
+VideoPrams::VideoPrams(const std::string& videoPath) {
     cv::VideoCapture cap(videoPath);
     if (!cap.isOpened()) {
         Logger::get_instance()->error(std::format("{} : Failed to open video : {}", __FUNCTION__, videoPath));
@@ -456,4 +457,4 @@ FfmpegRunner::VideoPrams::VideoPrams(const std::string &videoPath) {
     quality = 80;
     cap.release();
 }
-} // namespace ffc
+} // namespace ffc::media
