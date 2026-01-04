@@ -7,15 +7,6 @@ target_sources(${target_app_facefusioncpp} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/core/core_options.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/core/metadata.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/core/types.ixx
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/crypto.ixx
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/downloader.ixx
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/file_system.ixx
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/logger.ixx
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/progress_bar.ixx
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/progress_observer.ixx
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/serialize.ixx
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/thread_pool.ixx
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/utils.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/media/ffmpeg_runner.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/media/vision.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/task/task.ixx
@@ -27,14 +18,6 @@ target_sources(${target_app_facefusioncpp} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/ai/inference_session.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ai/model_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/core/core.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/boost_impl.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/crypto.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/downloader.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/file_system.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/logger.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/progress_bar.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/thread_pool.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/infrastructure/utils.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/media/ffmpeg_runner.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/media/vision.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/task/core_task.cpp
@@ -47,3 +30,4 @@ target_include_directories(${target_app_facefusioncpp} PRIVATE
 
 add_subdirectory(processors)
 add_subdirectory(face)
+add_subdirectory(infrastructure)
