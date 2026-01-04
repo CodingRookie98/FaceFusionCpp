@@ -52,7 +52,7 @@ target_include_directories(${target_app_facefusioncpp} PRIVATE ${SIMPLEINI_INCLU
 target_link_libraries(${target_app_facefusioncpp} PRIVATE ${OpenCV_LIBS})
 
 # make onnxruntime available
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/onnxruntime-gpu.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/scripts/cmake/onnxruntime-gpu.cmake")
 if (WIN32)
     file(GLOB ONNXRUNTIME_LIBRARIES "${ORT_PATH}/lib/onnxruntime*.lib")
     foreach (ONNXRUNTIME_LIBRARY ${ONNXRUNTIME_LIBRARIES})
@@ -173,7 +173,7 @@ else ()
     set(file_${target_app_facefusioncpp}_ini "${CPACK_PACKAGE_DIRECTORY}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/${${target_app_facefusioncpp}_ini_file_name}")
 endif ()
 
-set(CPACK_PRE_BUILD_SCRIPTS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean_ini_file.cmake")
+set(CPACK_PRE_BUILD_SCRIPTS "${CMAKE_CURRENT_SOURCE_DIR}/scripts/cmake/clean_ini_file.cmake")
 include(CPack)
 find_program(CPACK_EXE NAMES cpack)
 add_custom_target(cpack_all
