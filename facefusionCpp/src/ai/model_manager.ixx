@@ -16,7 +16,7 @@ module;
 
 export module model_manager;
 
-namespace ffc::model_manager {
+namespace ffc::ai::model_manager {
 
 using json = nlohmann::json;
 /**
@@ -193,4 +193,4 @@ private:
     std::unordered_map<Model, ModelInfo> m_models_info_map; ///< Map of model enumeration values to ModelInfo structures
 };
 
-} // namespace ffc::model_manager
+} // namespace ffc::ai::model_manager

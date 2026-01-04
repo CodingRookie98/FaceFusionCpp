@@ -18,7 +18,8 @@ import file_system;
 import serialize;
 import logger;
 
-namespace ffc::model_manager {
+namespace ffc::ai::model_manager {
+using namespace ffc::infra;
 
 using json = nlohmann::json;
 
@@ -103,5 +104,4 @@ std::string ModelManager::get_model_path(const Model& model) const {
     return {};
 }
 
-
-} // namespace ffc::model_manager
+} // namespace ffc::ai::model_manager
