@@ -18,14 +18,15 @@ import file_system;
 import ffmpeg_runner;
 import thread_pool;
 
-namespace ffc::vision {
+namespace ffc::media::vision {
+using namespace ffc::infra;
 std::vector<cv::Mat> read_static_images(const std::unordered_set<std::string>& image_paths,
                                         const bool& use_thread_pool) {
     std::vector<cv::Mat> images;
     if (use_thread_pool) {
         std::vector<std::future<cv::Mat>> futures;
         for (const auto& image_path : image_paths) {
-            futures.emplace_back(ThreadPool::Instance()->Enqueue([image_path]() {
+            futures.emplace_back(ThreadPool::instance()->enqueue([image_path]() {
                 cv::Mat image = read_static_image(image_path);
                 return image;
             }));
@@ -56,9 +57,9 @@ cv::Mat read_static_image(const std::string& image_path) {
 
 cv::Mat resize_frame(const cv::Mat& vision_frame, const cv::Size& crop_size) {
     const int height = vision_frame.rows;
-    const int width  = vision_frame.cols;
+    const int width = vision_frame.cols;
     if (height > crop_size.height || width > crop_size.width) {
-        const float scale       = std::min(static_cast<float>(crop_size.height) / static_cast<float>(height), static_cast<float>(crop_size.width) / static_cast<float>(width));
+        const float scale = std::min(static_cast<float>(crop_size.height) / static_cast<float>(height), static_cast<float>(crop_size.width) / static_cast<float>(width));
         const cv::Size new_size = cv::Size(static_cast<int>(static_cast<float>(width) * scale), static_cast<int>(static_cast<float>(height) * scale));
         cv::Mat temp_image;
         cv::resize(vision_frame, temp_image, new_size);
@@ -109,14 +110,14 @@ std::tuple<std::vector<cv::Mat>, int, int> create_tile_frames(const cv::Mat& vis
 
     // Step 3: Calculate bottom and right padding
     const int pad_size_bottom = size[2] + tile_width - (padded_frame.rows % tile_width);
-    const int pad_size_right  = size[2] + tile_width - (padded_frame.cols % tile_width);
+    const int pad_size_right = size[2] + tile_width - (padded_frame.cols % tile_width);
 
     // Step 4: Pad the frame to make dimensions divisible by tile width
     cv::Mat fully_padded_frame;
     copyMakeBorder(padded_frame, fully_padded_frame, size[2], pad_size_bottom, size[2], pad_size_right, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
 
     int pad_height = fully_padded_frame.rows;
-    int pad_width  = fully_padded_frame.cols;
+    int pad_width = fully_padded_frame.cols;
 
     // Step 5: Define row and column ranges for tile extraction
     std::vector<cv::Mat> tile_frames;
@@ -142,8 +143,8 @@ cv::Mat merge_tile_frames(const std::vector<cv::Mat>& tile_frames, int temp_widt
     cv::Mat merged_frame = cv::Mat::zeros(pad_height, pad_width, CV_8UC3);
 
     // Step 2: Calculate the effective tile width (excluding border size[2]) and the number of tiles per row
-    const int tile_width    = tile_frames[0].cols - 2 * size[2];
-    const int tile_height   = tile_frames[0].rows - 2 * size[2];
+    const int tile_width = tile_frames[0].cols - 2 * size[2];
+    const int tile_height = tile_frames[0].rows - 2 * size[2];
     const int tiles_per_row = std::min(pad_width / tile_width, static_cast<int>(tile_frames.size()));
 
     // Step 3: Place each tile into the merged frame
@@ -154,8 +155,8 @@ cv::Mat merge_tile_frames(const std::vector<cv::Mat>& tile_frames, int temp_widt
         // Calculate the top-left position in the merged frame where the tile will be placed
         const unsigned int row_index = index / tiles_per_row;
         const unsigned int col_index = index % tiles_per_row;
-        const unsigned int top       = row_index * tile_height;
-        const unsigned int left      = col_index * tile_width;
+        const unsigned int top = row_index * tile_height;
+        const unsigned int left = col_index * tile_width;
 
         // Copy the tile to the merged frame at the computed position
         tile.copyTo(merged_frame(cv::Rect(static_cast<int>(left), static_cast<int>(top), tile_width, tile_height)));
@@ -254,9 +255,9 @@ bool copy_images(const std::vector<std::string>& image_paths, const std::vector<
 
     std::vector<std::future<bool>> futures;
     for (size_t i = 0; i < image_paths.size(); ++i) {
-        const std::string& imagePath   = image_paths[i];
+        const std::string& imagePath = image_paths[i];
         const std::string& destination = destinations[i];
-        futures.emplace_back(ThreadPool::Instance()->Enqueue([imagePath, destination, size]() {
+        futures.emplace_back(ThreadPool::instance()->enqueue([imagePath, destination, size]() {
             return copy_image(imagePath, destination, size);
         }));
     }
@@ -320,7 +321,7 @@ bool finalize_images(const std::vector<std::string>& image_paths, const std::vec
 
     std::vector<std::future<bool>> futures;
     for (size_t i = 0; i < image_paths.size(); ++i) {
-        futures.emplace_back(ThreadPool::Instance()->Enqueue([imagePath = image_paths[i], outputPath = output_paths[i], size, output_image_quality]() {
+        futures.emplace_back(ThreadPool::instance()->enqueue([imagePath = image_paths[i], outputPath = output_paths[i], size, output_image_quality]() {
             try {
                 return finalize_image(imagePath, outputPath, size, output_image_quality);
             } catch (const std::exception& e) {
@@ -343,4 +344,4 @@ bool finalize_images(const std::vector<std::string>& image_paths, const std::vec
 
     return allSuccess;
 }
-} // namespace ffc::vision
+} // namespace ffc::media::vision

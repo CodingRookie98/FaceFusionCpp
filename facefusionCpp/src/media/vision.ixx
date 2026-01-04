@@ -15,7 +15,7 @@ module;
 
 export module vision;
 
-namespace ffc::vision {
+namespace ffc::media::vision {
 export cv::Mat read_static_image(const std::string& image_path);
 
 export std::vector<cv::Mat> read_static_images(const std::unordered_set<std::string>& image_paths,
@@ -55,4 +55,4 @@ export bool finalize_image(const std::string& image_path, const std::string& out
 export bool finalize_images(const std::vector<std::string>& image_paths,
                             const std::vector<std::string>& output_paths,
                             const cv::Size& size = cv::Size(0, 0), const int& output_image_quality = 100);
-} // namespace ffc::vision
+} // namespace ffc::media::vision
