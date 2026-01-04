@@ -18,6 +18,9 @@ namespace ffc::infra {
  * @note This class provides a thread pool implementation using dp::thread_pool library for efficient concurrent task management
  */
 export class ThreadPool {
+private:
+    std::unique_ptr<dp::thread_pool<>> m_thread_pool;
+
 public:
     /**
      * @brief Construct a thread pool with specified number of threads
@@ -94,8 +97,5 @@ public:
      * @note This method waits for all current tasks to complete before resetting
      */
     void reset(const unsigned int& thread_num);
-
-private:
-    std::unique_ptr<dp::thread_pool<>> m_thread_pool;
 };
 } // namespace ffc::infra

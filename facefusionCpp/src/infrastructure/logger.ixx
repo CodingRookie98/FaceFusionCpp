@@ -31,6 +31,11 @@ public:
         Critical ///< Critical level for critical error messages
     };
 
+private:
+    std::shared_ptr<spdlog::logger> m_logger; ///< spdlog logger instance
+    LogLevel m_level;                         ///< Current log level
+
+public:
     /**
      * @brief Get the singleton instance of the logger
      * @return std::shared_ptr<Logger> Shared pointer to the singleton instance
@@ -131,10 +136,6 @@ public:
      * @brief Move assignment operator (deleted)
      */
     Logger& operator=(Logger&&) = delete;
-
-private:
-    std::shared_ptr<spdlog::logger> m_logger; ///< spdlog logger instance
-    LogLevel m_level;                         ///< Current log level
 };
 
 } // namespace ffc::infra

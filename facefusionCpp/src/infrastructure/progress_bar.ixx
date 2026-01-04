@@ -20,6 +20,9 @@ export namespace ffc::infra {
  * @note This class provides a progress bar using indicators library for visual progress tracking
  */
 class ProgressBar {
+private:
+    indicators::ProgressBar* m_bar; ///< Pointer to indicators::ProgressBar instance
+
 public:
     /**
      * @brief Construct a progress bar instance
@@ -82,9 +85,6 @@ public:
      * @return bool True if completed, false otherwise
      */
     [[nodiscard]] bool is_completed() const;
-
-private:
-    indicators::ProgressBar* m_bar; ///< Pointer to indicators::ProgressBar instance
 };
 
 } // namespace ffc::infra
