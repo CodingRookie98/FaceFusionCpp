@@ -11,7 +11,7 @@ module;
 
 export module types;
 
-export namespace ffc {
+export namespace ffc::core {
 
 enum class ImageFormat {
     PNG,
@@ -49,4 +49,4 @@ enum class AudioEncoder {
     libopus,
     libvorbis,
 };
-} // namespace ffc
+} // namespace ffc::core

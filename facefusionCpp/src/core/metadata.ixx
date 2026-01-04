@@ -13,7 +13,7 @@ module;
 
 export module metadata;
 
-export namespace ffc::metadata {
+export namespace ffc::core::metadata {
 
 const std::string name = "FaceFusionCpp";
 const std::string description = "This project is a C++ implementation of the open-source project facefusion.";
@@ -22,6 +22,4 @@ const std::string license = "GPL-3.0 License";
 const std::string author = "CodingRookie98 https://github.com/CodingRookie98";
 const std::string url = "https://github.com/CodingRookie98/FaceFusionCpp";
 
-} // namespace ffc::metadata
-
-// #endif // FACEFUSIONCPP_FACEFUSIONCPP_SRC_METADATA_H_
+} // namespace ffc::core::metadata
