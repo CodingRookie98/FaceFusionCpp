@@ -76,13 +76,13 @@ FaceLandmarkerHub::detect_landmark68(const cv::Mat& visionFrame, const BBox& bbo
 
     if (options.types.contains(Type::_2DFAN)) {
         auto landmarker2dfan = dynamic_cast<T2dfan*>(get_landmarker(LandmarkerModel::_2DFAN));
-        futures.emplace_back(ThreadPool::Instance()->Enqueue([&] {
+        futures.emplace_back(ThreadPool::instance()->enqueue([&] {
             return landmarker2dfan->detect(rotatedVisionFrame, bbox);
         }));
     }
     if (options.types.contains(Type::PEPPA_WUTZ)) {
         auto landmarkerPeppawutz = dynamic_cast<Peppawutz*>(get_landmarker(LandmarkerModel::PEPPA_WUTZ));
-        futures.emplace_back(ThreadPool::Instance()->Enqueue([&] {
+        futures.emplace_back(ThreadPool::instance()->enqueue([&] {
             return landmarkerPeppawutz->detect(rotatedVisionFrame, bbox);
         }));
     }

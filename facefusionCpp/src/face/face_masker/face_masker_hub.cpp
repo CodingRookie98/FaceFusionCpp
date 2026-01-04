@@ -65,18 +65,18 @@ cv::Mat FaceMaskerHub::get_best_mask(const ArgsForGetBestMask& func_gbm_args) {
 
     if (func_gbm_args.faceMaskersTypes.contains(Type::Box) && func_gbm_args.boxSize.has_value()
         && func_gbm_args.boxMaskBlur.has_value() && func_gbm_args.boxMaskPadding.has_value()) {
-        futures.emplace_back(ThreadPool::Instance()->Enqueue(create_static_box_mask, func_gbm_args.boxSize.value(), func_gbm_args.boxMaskBlur.value(), func_gbm_args.boxMaskPadding.value()));
+        futures.emplace_back(ThreadPool::instance()->enqueue(create_static_box_mask, func_gbm_args.boxSize.value(), func_gbm_args.boxMaskBlur.value(), func_gbm_args.boxMaskPadding.value()));
     }
 
     if (func_gbm_args.faceMaskersTypes.contains(Type::Occlusion) && func_gbm_args.occlusionFrame.has_value()
         && func_gbm_args.occluder_model.has_value()) {
-        futures.emplace_back(ThreadPool::Instance()->Enqueue([&] {
+        futures.emplace_back(ThreadPool::instance()->enqueue([&] {
             return create_occlusion_mask(*func_gbm_args.occlusionFrame.value(), func_gbm_args.occluder_model.value());
         }));
     }
 
     if (func_gbm_args.faceMaskersTypes.contains(Type::Region) && func_gbm_args.regionFrame.has_value()) {
-        futures.emplace_back(ThreadPool::Instance()->Enqueue([&] {
+        futures.emplace_back(ThreadPool::instance()->enqueue([&] {
             return create_region_mask(*func_gbm_args.regionFrame.value(), func_gbm_args.parser_model.value(),
                                       func_gbm_args.faceMaskerRegions.value());
         }));

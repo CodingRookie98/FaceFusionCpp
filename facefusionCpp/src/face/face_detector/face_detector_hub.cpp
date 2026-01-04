@@ -78,9 +78,9 @@ FaceDetectorHub::Detect(const cv::Mat& image, const Options& options) {
         const auto retina = std::dynamic_pointer_cast<Retina>(GetDetector(Type::Retina));
         if (retina != nullptr) {
             if (options.angle > 0) {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue(std::bind(&Retina::detect_rotated_faces, retina, image, options.size, options.angle, options.min_score)));
+                futures.emplace_back(ThreadPool::instance()->enqueue(std::bind(&Retina::detect_rotated_faces, retina, image, options.size, options.angle, options.min_score)));
             } else {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue(std::bind(&Retina::DetectFaces, retina, image, options.size, options.min_score)));
+                futures.emplace_back(ThreadPool::instance()->enqueue(std::bind(&Retina::DetectFaces, retina, image, options.size, options.min_score)));
             }
         }
     }
@@ -89,9 +89,9 @@ FaceDetectorHub::Detect(const cv::Mat& image, const Options& options) {
         const auto scrfd = std::dynamic_pointer_cast<Scrfd>(GetDetector(Type::Scrfd));
         if (scrfd != nullptr) {
             if (options.angle > 0) {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue(std::bind(&Scrfd::detect_rotated_faces, scrfd, image, options.size, options.angle, options.min_score)));
+                futures.emplace_back(ThreadPool::instance()->enqueue(std::bind(&Scrfd::detect_rotated_faces, scrfd, image, options.size, options.angle, options.min_score)));
             } else {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue(std::bind(&Scrfd::DetectFaces, scrfd, image, options.size, options.min_score)));
+                futures.emplace_back(ThreadPool::instance()->enqueue(std::bind(&Scrfd::DetectFaces, scrfd, image, options.size, options.min_score)));
             }
         }
     }
@@ -100,9 +100,9 @@ FaceDetectorHub::Detect(const cv::Mat& image, const Options& options) {
         const auto yolo = std::dynamic_pointer_cast<Yolo>(GetDetector(Type::Yolo));
         if (yolo != nullptr) {
             if (options.angle > 0) {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue(std::bind(&Yolo::detect_rotated_faces, yolo, image, options.size, options.angle, options.min_score)));
+                futures.emplace_back(ThreadPool::instance()->enqueue(std::bind(&Yolo::detect_rotated_faces, yolo, image, options.size, options.angle, options.min_score)));
             } else {
-                futures.emplace_back(ThreadPool::Instance()->Enqueue(std::bind(&Yolo::DetectFaces, yolo, image, options.size, options.min_score)));
+                futures.emplace_back(ThreadPool::instance()->enqueue(std::bind(&Yolo::DetectFaces, yolo, image, options.size, options.min_score)));
             }
         }
     }
