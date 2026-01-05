@@ -210,29 +210,28 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup MSVC
         uses: microsoft/setup-msbuild@v1
-        
+
       - name: Setup CMake
         uses: jwlawson/actions-setup-cmake@v2
-        
+
       - name: Build Debug
         run: .\build.ps1 -Configuration Debug -Action both
-        
+
       - name: Run Tests
         run: .\build.ps1 -Configuration Debug -Action test
-        
+
       - name: Build Release
         run: .\build.ps1 -Configuration Release -Action both
-        
+
       - name: Package Release
         run: .\build.ps1 -Configuration Release -Action package
 ```
 
 ## 相关文档
 
-- [项目规范](../.trae/rules/project_rules.md)
 - [CMake 文档](https://cmake.org/documentation/)
 - [CPack 文档](https://cmake.org/cmake/help/latest/manual/cpack.1.html)
 - [CTest 文档](https://cmake.org/cmake/help/latest/manual/ctest.1.html)
