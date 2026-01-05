@@ -215,7 +215,7 @@ std::unordered_map<unsigned int, std::string> getAudioStreamsIndexAndCodec(const
     for (size_t i = 0; i < formatContext->nb_streams; ++i) {
         if (formatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             std::string codecName = avcodec_get_name(formatContext->streams[i]->codecpar->codec_id);
-            results.emplace(i, codecName);
+            results.emplace(static_cast<unsigned int>(i), codecName);
         }
     }
     avformat_close_input(&formatContext);
