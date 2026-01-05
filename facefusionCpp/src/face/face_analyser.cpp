@@ -14,6 +14,7 @@ module;
 #include <iterator>
 #include <numeric>
 #include <stdexcept>
+#include <opencv2/opencv.hpp>
 
 module face_analyser;
 import face_helper;
@@ -88,7 +89,7 @@ std::vector<Face> FaceAnalyser::GetManyFaces(const cv::Mat& visionFrame, const F
         return faceStore_->GetFaces(k_faces_name);
     }
 
-    std::vector<BBox> resultBboxes;
+    std::vector<cv::Rect2f> resultBboxes;
     std::vector<Face::Landmarks> resultLandmarks5;
     std::vector<Face::Score> resultScores;
 
@@ -131,7 +132,7 @@ Face::Landmarks FaceAnalyser::ExpandFaceLandmarks68From5(const Face::Landmarks& 
 }
 
 std::vector<Face>
-FaceAnalyser::CreateFaces(const cv::Mat& visionFrame, const std::vector<BBox>& bBoxes,
+FaceAnalyser::CreateFaces(const cv::Mat& visionFrame, const std::vector<cv::Rect2f>& bBoxes,
                           const std::vector<Face::Landmarks>& landmarks5,
                           const std::vector<Face::Score>& scores, const double& detectedAngle,
                           const Options& options) {

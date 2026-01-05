@@ -29,24 +29,6 @@ export enum class Race { //  种族
     White,               //  白人
 };
 
-export class BBox { //  边界框
-public:
-    float x1{0}; //  左上角 x 坐标
-    float y1{0}; //  左上角 y 坐标
-    float x2{0}; //  右下角 x 坐标
-    float y2{0}; //  右下角 y 坐标
-
-    [[nodiscard]] bool is_empty() const { //  是否为空
-        if (y2 - y1 <= 0 || x2 - x1 <= 0) {
-            return true;
-        }
-        return false;
-    }
-
-    [[nodiscard]] float width() const { return x2 - x1; }
-    [[nodiscard]] float height() const { return y2 - y1; }
-    [[nodiscard]] float area() const { return width() * height(); }
-};
 
 export struct AgeRange { //  年龄范围 [0, 100]
     unsigned short min{0};
@@ -83,7 +65,7 @@ public:
     typedef std::vector<cv::Point2f> Landmarks; // 5 个点或 68 个点
     typedef float Score;                        //  score 范围 [0, 1]
 
-    BBox m_box{};                    //  人脸框
+    cv::Rect2f m_box{};                    //  人脸框
     Landmarks m_landmark5{};         //  5 个点, 模型检测的输出结果
     Landmarks m_landmark68{};        //  68 个点, 模型检测的输出结果
     Landmarks m_landmark5_from_68{}; //  从 68 个点到 5 个点的映射，算法计算的输出结果

@@ -26,7 +26,7 @@ public:
     ~FaceDetectorBase() override = default;
 
     struct Result {
-        std::vector<BBox> boxes;
+        std::vector<cv::Rect2f> boxes;
         std::vector<Face::Landmarks> landmarks;
         std::vector<float> scores;
     };

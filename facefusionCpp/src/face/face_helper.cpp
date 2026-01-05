@@ -10,26 +10,27 @@
 
 module;
 #include <opencv2/opencv.hpp>
+#include <limits>
 
 module face_helper;
 import face;
 
 namespace ffc {
-float face_helper::getIoU(const BBox& box1, const BBox& box2) {
-    const float x1 = std::max(box1.x1, box2.x1);
-    const float y1 = std::max(box1.y1, box2.y1);
-    const float x2 = std::min(box1.x2, box2.x2);
-    const float y2 = std::min(box1.y2, box2.y2);
+float face_helper::getIoU(const cv::Rect2f& box1, const cv::Rect2f& box2) {
+    const float x1 = std::max(box1.x, box2.x);
+    const float y1 = std::max(box1.y, box2.y);
+    const float x2 = std::min(box1.x + box1.width, box2.x + box2.width);
+    const float y2 = std::min(box1.y + box1.height, box2.y + box2.height);
     const float w = std::max(0.f, x2 - x1);
     const float h = std::max(0.f, y2 - y1);
     const float overArea = w * h;
     if (overArea == 0)
         return 0.0;
-    const float unionArea = (box1.x2 - box1.x1) * (box1.y2 - box1.y1) + (box2.x2 - box2.x1) * (box2.y2 - box2.y1) - overArea;
+    const float unionArea = box1.area() + box2.area() - overArea;
     return overArea / unionArea;
 }
 
-std::vector<int> face_helper::applyNms(const std::vector<BBox>& boxes,
+std::vector<int> face_helper::applyNms(const std::vector<cv::Rect2f>& boxes,
                                        std::vector<float> confidences,
                                        const float nmsThresh) {
     std::ranges::sort(confidences, [&confidences](const size_t index1, const size_t index2) {
@@ -183,12 +184,14 @@ face_helper::createStaticAnchors(const int& featureStride, const int& anchorTota
     return anchors;
 }
 
-BBox face_helper::distance2BBox(const std::array<int, 2>& anchor, const BBox& bBox) {
-    BBox result;
-    result.x1 = static_cast<float>(anchor[1]) - bBox.x1;
-    result.y1 = static_cast<float>(anchor[0]) - bBox.y1;
-    result.x2 = static_cast<float>(anchor[1]) + bBox.x2;
-    result.y2 = static_cast<float>(anchor[0]) + bBox.y2;
+cv::Rect2f face_helper::distance2BBox(const std::array<int, 2>& anchor, const cv::Rect2f& bBox) {
+    cv::Rect2f result;
+    const float anchorX = static_cast<float>(anchor[1]);
+    const float anchorY = static_cast<float>(anchor[0]);
+    result.x = anchorX - bBox.x;
+    result.y = anchorY - bBox.y;
+    result.width = bBox.x + bBox.width;
+    result.height = bBox.y + bBox.height;
     return result;
 }
 
@@ -243,14 +246,33 @@ std::vector<cv::Point2f> face_helper::transformPoints(const std::vector<cv::Poin
     return transformedPoints;
 }
 
-BBox face_helper::transformBBox(const BBox& bBox, const cv::Mat& affineMatrix) {
-    const std::vector<cv::Point2f> points = {{bBox.x1, bBox.y1}, {bBox.x2, bBox.y2}};
+cv::Rect2f face_helper::transformBBox(const cv::Rect2f& bBox, const cv::Mat& affineMatrix) {
+    const std::vector<cv::Point2f> points = {
+        {bBox.x, bBox.y},
+        {bBox.x + bBox.width, bBox.y},
+        {bBox.x, bBox.y + bBox.height},
+        {bBox.x + bBox.width, bBox.y + bBox.height}
+    };
     const std::vector<cv::Point2f> transformedPoints = transformPoints(points, affineMatrix);
-    const float newXMin = std::min(transformedPoints[0].x, transformedPoints[1].x);
-    const float newYMin = std::min(transformedPoints[0].y, transformedPoints[1].y);
-    const float newXMax = std::max(transformedPoints[0].x, transformedPoints[1].x);
-    const float newYMax = std::max(transformedPoints[0].y, transformedPoints[1].y);
-    const BBox transformedBBox{newXMin, newYMin, newXMax, newYMax};
+
+    float newXMin = std::numeric_limits<float>::max();
+    float newYMin = std::numeric_limits<float>::max();
+    float newXMax = std::numeric_limits<float>::min();
+    float newYMax = std::numeric_limits<float>::min();
+
+    for (const auto& point : transformedPoints) {
+        newXMin = std::min(newXMin, point.x);
+        newYMin = std::min(newYMin, point.y);
+        newXMax = std::max(newXMax, point.x);
+        newYMax = std::max(newYMax, point.y);
+    }
+
+    cv::Rect2f transformedBBox;
+    transformedBBox.x = newXMin;
+    transformedBBox.y = newYMin;
+    transformedBBox.width = newXMax - newXMin;
+    transformedBBox.height = newYMax - newYMin;
+
     return transformedBBox;
 }
 

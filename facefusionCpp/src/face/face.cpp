@@ -14,7 +14,7 @@ module face;
 
 namespace ffc {
 bool Face::is_empty() const {
-    if (m_box.is_empty() || m_landmark5.empty()) {
+    if (m_box.area() == 0.0f || m_landmark5.empty()) {
         return true;
     }
     return false;

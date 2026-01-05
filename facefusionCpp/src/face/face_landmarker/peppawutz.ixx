@@ -22,13 +22,13 @@ public:
     explicit Peppawutz(const std::shared_ptr<Ort::Env>& env = nullptr);
     ~Peppawutz() override = default;
 
-    std::tuple<Face::Landmarks, float> detect(const cv::Mat& visionFrame, const BBox& bBox) const;
+    std::tuple<Face::Landmarks, float> detect(const cv::Mat& visionFrame, const cv::Rect2f& bBox) const;
     void load_model(const std::string& modelPath, const Options& options) override;
 
 private:
     int m_inputHeight{0};
     int m_inputWidth{0};
     cv::Size m_inputSize{256, 256};
-    [[nodiscard]] std::tuple<std::vector<float>, cv::Mat> preProcess(const cv::Mat& visionFrame, const BBox& bBox) const;
+    [[nodiscard]] std::tuple<std::vector<float>, cv::Mat> preProcess(const cv::Mat& visionFrame, const cv::Rect2f& bBox) const;
 };
 } // namespace ffc::face_landmarker

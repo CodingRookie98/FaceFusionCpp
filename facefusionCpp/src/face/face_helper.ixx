@@ -26,7 +26,7 @@ enum class WarpTemplateType {
 };
 
 std::vector<int>
-applyNms(const std::vector<BBox>& boxes, std::vector<float> confidences, float nmsThresh);
+applyNms(const std::vector<cv::Rect2f>& boxes, std::vector<float> confidences, float nmsThresh);
 
 // return: 0->cropedVisionFrame, 1->affineMatrix
 std::tuple<cv::Mat, cv::Mat> warpFaceByFaceLandmarks5(const cv::Mat& tempVisionFrame,
@@ -58,7 +58,7 @@ std::vector<std::array<int, 2>>
 createStaticAnchors(const int& featureStride, const int& anchorTotal,
                     const int& strideHeight, const int& strideWidth);
 
-BBox distance2BBox(const std::array<int, 2>& anchor, const BBox& box);
+cv::Rect2f distance2BBox(const std::array<int, 2>& anchor, const cv::Rect2f& box);
 
 Face::Landmarks
 distance2FaceLandmark5(const std::array<int, 2>& anchor, const Face::Landmarks& faceLandmark5);
@@ -66,11 +66,11 @@ distance2FaceLandmark5(const std::array<int, 2>& anchor, const Face::Landmarks& 
 std::vector<cv::Point2f> getWarpTemplate(const WarpTemplateType& warpTemplateType);
 std::vector<float> calcAverageEmbedding(const std::vector<std::vector<float>>& embeddings);
 std::tuple<cv::Mat, cv::Size> createRotatedMatAndSize(const double& angle, const cv::Size& srcSize);
-BBox transformBBox(const BBox& BoundingBox, const cv::Mat& affineMatrix);
+cv::Rect2f transformBBox(const cv::Rect2f& BoundingBox, const cv::Mat& affineMatrix);
 std::vector<cv::Point2f> transformPoints(const std::vector<cv::Point2f>& points,
                                          const cv::Mat& affineMatrix);
 std::vector<float> interp(const std::vector<float>& x, const std::vector<float>& xp,
                           const std::vector<float>& fp);
-float getIoU(const BBox& box1, const BBox& box2);
+float getIoU(const cv::Rect2f& box1, const cv::Rect2f& box2);
 }
 } // namespace ffc::face_helper

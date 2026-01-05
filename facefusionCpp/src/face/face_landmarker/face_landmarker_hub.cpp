@@ -59,7 +59,7 @@ FaceLandmarkerBase* FaceLandmarkerHub::get_landmarker(const FaceLandmarkerHub::L
 }
 
 std::tuple<Face::Landmarks, float>
-FaceLandmarkerHub::detect_landmark68(const cv::Mat& visionFrame, const BBox& bbox, const FaceLandmarkerHub::Options& options) {
+FaceLandmarkerHub::detect_landmark68(const cv::Mat& visionFrame, const cv::Rect2f& bbox, const FaceLandmarkerHub::Options& options) {
     std::vector<Face::Landmarks> landmarks;
     std::vector<float> scores;
     std::vector<std::future<std::tuple<Face::Landmarks, float>>> futures;

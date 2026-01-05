@@ -52,7 +52,7 @@ Scrfd::DetectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
     std::vector<Ort::Value> ortOutputs = m_ort_session->Run(m_run_options, m_input_names.data(), &inputTensor, 1,
                                                             m_output_names.data(), m_output_names.size());
 
-    std::vector<BBox> resultBoundingBoxes;
+    std::vector<cv::Rect2f> resultBoundingBoxes;
     std::vector<Face::Landmarks> resultFaceLandmarks;
     std::vector<float> resultScores;
 
@@ -80,7 +80,7 @@ Scrfd::DetectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
                                                                                    strideHeight,
                                                                                    strideWidth);
 
-        std::vector<BBox> boundingBoxesRaw;
+        std::vector<cv::Rect2f> boundingBoxesRaw;
         std::vector<Face::Landmarks> faceLandmarksRaw;
 
         float* pdataBbox = ortOutputs[index + m_featureMapChannel].GetTensorMutableData<float>();
@@ -89,11 +89,16 @@ Scrfd::DetectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
         size_t pdataBboxSize = ortOutputs[index + m_featureMapChannel].GetTensorTypeAndShapeInfo().GetShape()[0]
                              * ortOutputs[index + m_featureMapChannel].GetTensorTypeAndShapeInfo().GetShape()[1];
         for (size_t k = 0; k < pdataBboxSize; k += 4) {
-            BBox tempBbox;
-            tempBbox.x1 = *(pdataBbox + k) * featureStride;
-            tempBbox.y1 = *(pdataBbox + k + 1) * featureStride;
-            tempBbox.x2 = *(pdataBbox + k + 2) * featureStride;
-            tempBbox.y2 = *(pdataBbox + k + 3) * featureStride;
+            cv::Rect2f tempBbox;
+            // BBox格式是(x1, y1, x2, y2)，需要转换为cv::Rect2f的(x, y, width, height)
+            float x1 = *(pdataBbox + k) * featureStride;
+            float y1 = *(pdataBbox + k + 1) * featureStride;
+            float x2 = *(pdataBbox + k + 2) * featureStride;
+            float y2 = *(pdataBbox + k + 3) * featureStride;
+            tempBbox.x = x1;
+            tempBbox.y = y1;
+            tempBbox.width = x2 - x1;
+            tempBbox.height = y2 - y1;
             boundingBoxesRaw.emplace_back(tempBbox);
         }
 
@@ -115,10 +120,10 @@ Scrfd::DetectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
 
         for (const auto& keepIndex : keepIndices) {
             auto tempBbox = face_helper::distance2BBox(anchors[keepIndex], boundingBoxesRaw[keepIndex]);
-            tempBbox.x1 *= ratioWidth;
-            tempBbox.y1 *= ratioHeight;
-            tempBbox.x2 *= ratioWidth;
-            tempBbox.y2 *= ratioHeight;
+            tempBbox.x *= ratioWidth;
+            tempBbox.y *= ratioHeight;
+            tempBbox.width *= ratioWidth;
+            tempBbox.height *= ratioHeight;
             resultBoundingBoxes.emplace_back(tempBbox);
 
             auto tempLandmark = face_helper::distance2FaceLandmark5(anchors[keepIndex], faceLandmarksRaw[keepIndex]);

@@ -38,7 +38,7 @@ public:
     };
 
     Face::Landmarks expand_landmark68_from_5(const Face::Landmarks& landmark5);
-    std::tuple<Face::Landmarks, float> detect_landmark68(const cv::Mat& visionFrame, const BBox& bbox,
+    std::tuple<Face::Landmarks, float> detect_landmark68(const cv::Mat& visionFrame, const cv::Rect2f& bbox,
                                                          const Options& options);
 
 private:

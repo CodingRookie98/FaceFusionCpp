@@ -42,8 +42,8 @@ public:
 
     struct Options {
         FaceSelectorOrder order = FaceSelectorOrder::Left_Right;
-        std::unordered_set<Gender> genders{utils::enum_all<Gender>()};
-        std::unordered_set<Race> races{utils::enum_all<Race>()};
+        std::unordered_set<ffc::Gender> genders{utils::enum_all<ffc::Gender>()};
+        std::unordered_set<ffc::Race> races{utils::enum_all<ffc::Race>()};
         unsigned int age_start = 0;
         unsigned int age_end = 100;
     };
@@ -55,9 +55,9 @@ private:
 
     static std::vector<Face> filterByAge(std::vector<Face> faces, const unsigned int& ageStart, const unsigned int& ageEnd);
 
-    static std::vector<Face> filterByGender(std::vector<Face> faces, const std::unordered_set<Gender>& genders);
+    static std::vector<Face> filterByGender(std::vector<Face> faces, const std::unordered_set<ffc::Gender>& genders);
 
-    static std::vector<Face> filterByRace(std::vector<Face> faces, const std::unordered_set<Race>& races);
+    static std::vector<Face> filterByRace(std::vector<Face> faces, const std::unordered_set<ffc::Race>& races);
 };
 
 } // namespace ffc

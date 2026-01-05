@@ -85,7 +85,7 @@ Yolo::DetectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
     float* pdata = ortOutputs[0].GetTensorMutableData<float>(); /// 形状是(1, 20, 8400),不考虑第0维batchsize，每一列的长度20,前4个元素是检测框坐标(cx,cy,w,h)，第4个元素是置信度，剩下的15个元素是5个关键点坐标x,y和置信度
     const int numBox = ortOutputs[0].GetTensorTypeAndShapeInfo().GetShape()[2];
 
-    std::vector<BBox> bBoxRaw;
+    std::vector<cv::Rect2f> bBoxRaw;
     std::vector<float> scoreRaw;
     std::vector<Face::Landmarks> landmarkRaw;
     for (int i = 0; i < numBox; i++) {
@@ -102,7 +102,8 @@ Yolo::DetectFaces(const cv::Mat& visionFrame, const cv::Size& faceDetectorSize,
             xmax = std::max(0.0f, std::min(xmax, static_cast<float>(visionFrame.cols)));
             ymax = std::max(0.0f, std::min(ymax, static_cast<float>(visionFrame.rows)));
 
-            bBoxRaw.emplace_back(BBox{xmin, ymin, xmax, ymax});
+            // BBox格式是(x1, y1, x2, y2)，需要转换为cv::Rect2f的(x, y, width, height)
+            bBoxRaw.emplace_back(cv::Rect2f(xmin, ymin, xmax - xmin, ymax - ymin));
             scoreRaw.emplace_back(score);
 
             // 剩下的5个关键点坐标的计算

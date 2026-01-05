@@ -32,34 +32,32 @@ std::vector<Face> FaceSelector::sortByOrder(std::vector<Face> faces, const FaceS
     switch (order) {
     case FaceSelectorOrder::Left_Right:
         std::ranges::sort(faces, [](const Face& face1, const Face& face2) {
-            return face1.m_box.x1 < face2.m_box.x1;
+            return face1.m_box.x < face2.m_box.x;
         });
         break;
     case FaceSelectorOrder::Right_Left:
         std::ranges::sort(faces, [](const Face& face1, const Face& face2) {
-            return face1.m_box.x1 > face2.m_box.x1;
+            return face1.m_box.x > face2.m_box.x;
         });
         break;
     case FaceSelectorOrder::Top_Bottom:
         std::ranges::sort(faces, [](const Face& face1, const Face& face2) {
-            return face1.m_box.y1 < face2.m_box.y1;
+            return face1.m_box.y < face2.m_box.y;
         });
         break;
     case FaceSelectorOrder::Bottom_Top:
         std::ranges::sort(faces, [](const Face& face1, const Face& face2) {
-            return face1.m_box.y1 > face2.m_box.y1;
+            return face1.m_box.y > face2.m_box.y;
         });
         break;
     case FaceSelectorOrder::Small_Large:
         std::ranges::sort(faces, [](const Face& face1, const Face& face2) {
-            return (face1.m_box.x2 - face1.m_box.x1) * (face1.m_box.y2 - face1.m_box.y1)
-                 < (face2.m_box.x2 - face2.m_box.x1) * (face2.m_box.y2 - face2.m_box.y1);
+            return face1.m_box.area() < face2.m_box.area();
         });
         break;
     case FaceSelectorOrder::Large_Small:
         std::ranges::sort(faces, [](const Face& face1, const Face& face2) {
-            return (face1.m_box.x2 - face1.m_box.x1) * (face1.m_box.y2 - face1.m_box.y1)
-                 > (face2.m_box.x2 - face2.m_box.x1) * (face2.m_box.y2 - face2.m_box.y1);
+            return face1.m_box.area() > face2.m_box.area();
         });
         break;
     case FaceSelectorOrder::Best_Worst:
@@ -78,16 +76,16 @@ std::vector<Face> FaceSelector::sortByOrder(std::vector<Face> faces, const FaceS
     return faces;
 }
 
-std::vector<Face> FaceSelector::filterByRace(std::vector<Face> faces, const std::unordered_set<Race>& races) {
+std::vector<Face> FaceSelector::filterByRace(std::vector<Face> faces, const std::unordered_set<ffc::Race>& races) {
     if (faces.empty()) {
         return faces;
     }
-    if (races.size() == std::unordered_set(utils::enum_all<Race>()).size()) {
+    if (races.size() == std::unordered_set(utils::enum_all<ffc::Race>()).size()) {
         return faces;
     }
     // Erase if race is not match (erase iterator is next iterator
     for (auto it = faces.begin(); it != faces.end();) {
-        if (races.contains(static_cast<Race>(it->m_race))) {
+        if (races.contains(static_cast<ffc::Race>(it->m_race))) {
             ++it;
         } else {
             it = faces.erase(it);
@@ -96,16 +94,16 @@ std::vector<Face> FaceSelector::filterByRace(std::vector<Face> faces, const std:
     return faces;
 }
 
-std::vector<Face> FaceSelector::filterByGender(std::vector<Face> faces, const std::unordered_set<Gender>& genders) {
+std::vector<Face> FaceSelector::filterByGender(std::vector<Face> faces, const std::unordered_set<ffc::Gender>& genders) {
     if (faces.empty()) {
         return faces;
     }
-    if (genders.size() == std::unordered_set(utils::enum_all<Gender>()).size()) {
+    if (genders.size() == std::unordered_set(utils::enum_all<ffc::Gender>()).size()) {
         return faces;
     }
     // Erase if gender is not match (erase iterator is next iterator
     for (auto it = faces.begin(); it != faces.end();) {
-        if (genders.contains(static_cast<Gender>(it->m_gender))) {
+        if (genders.contains(static_cast<ffc::Gender>(it->m_gender))) {
             ++it;
         } else {
             it = faces.erase(it);

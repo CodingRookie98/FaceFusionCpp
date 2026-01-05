@@ -78,7 +78,7 @@ private:
     std::shared_ptr<FaceStore> faceStore_;
 
     std::vector<Face> CreateFaces(const cv::Mat& visionFrame,
-                                  const std::vector<BBox>& bBoxes,
+                                  const std::vector<cv::Rect2f>& bBoxes,
                                   const std::vector<Face::Landmarks>& landmarks5,
                                   const std::vector<Face::Score>& scores, const double& detectedAngle,
                                   const Options& options);

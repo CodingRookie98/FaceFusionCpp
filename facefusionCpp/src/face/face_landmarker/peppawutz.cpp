@@ -28,7 +28,7 @@ void Peppawutz::load_model(const std::string& modelPath, const Options& options)
     m_inputSize = cv::Size(m_inputWidth, m_inputHeight);
 }
 
-std::tuple<Face::Landmarks, float> Peppawutz::detect(const cv::Mat& visionFrame, const BBox& bBox) const {
+std::tuple<Face::Landmarks, float> Peppawutz::detect(const cv::Mat& visionFrame, const cv::Rect2f& bBox) const {
     auto [inputData, invAffineMatrix] = preProcess(visionFrame, bBox);
     std::vector<int64_t> inputImgShape = {1, 3, m_inputHeight, m_inputWidth};
     Ort::Value inputTensor = Ort::Value::CreateTensor<float>(m_memory_info->GetConst(), inputData.data(), inputData.size(), inputImgShape.data(), inputImgShape.size());
@@ -59,12 +59,12 @@ std::tuple<Face::Landmarks, float> Peppawutz::detect(const cv::Mat& visionFrame,
     return std::make_tuple(Face::Landmarks{faceLandmark68}, meanScore);
 }
 
-std::tuple<std::vector<float>, cv::Mat> Peppawutz::preProcess(const cv::Mat& visionFrame, const BBox& bBox) const {
-    float subMax = std::max(bBox.x2 - bBox.x1, bBox.y2 - bBox.y1);
+std::tuple<std::vector<float>, cv::Mat> Peppawutz::preProcess(const cv::Mat& visionFrame, const cv::Rect2f& bBox) const {
+    float subMax = std::max(bBox.width, bBox.height);
     subMax = std::max(subMax, 1.f);
     const float scale = 195.f / subMax;
-    const std::vector<float> translation = {(static_cast<float>(m_inputSize.width) - (bBox.x2 + bBox.x1) * scale) * 0.5f,
-                                            (static_cast<float>(m_inputSize.width) - (bBox.y2 + bBox.y1) * scale) * 0.5f};
+    const std::vector<float> translation = {(static_cast<float>(m_inputSize.width) - (bBox.x * 2 + bBox.width) * scale) * 0.5f,
+                                            (static_cast<float>(m_inputSize.width) - (bBox.y * 2 + bBox.height) * scale) * 0.5f};
 
     auto [cropImg, affineMatrix] = face_helper::warpFaceByTranslation(visionFrame, translation,
                                                                       scale, m_inputSize);
