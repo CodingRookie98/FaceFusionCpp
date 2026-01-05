@@ -5,6 +5,7 @@
 #include <yaml-cpp/yaml.h>
 #include <nlohmann/json.hpp>
 #include <fstream>
+#include <opencv2/core/version.hpp>
 
 import processor_hub;
 import core;
@@ -28,9 +29,7 @@ int main(int argc, char** argv) {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
 #endif
-
-    // test_task();
-    // test_config();
+    std::cout << "OpenCV version: " << CV_VERSION << std::endl;
 
     // from_json(config_json, core_options);
 

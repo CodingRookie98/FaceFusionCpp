@@ -36,12 +36,18 @@ param(
     [string]$Configuration = "Debug",
 
     [Parameter(Mandatory=$false)]
-    [ValidateSet("configure", "build", "both")]
+    [ValidateSet("configure", "build", "test", "install", "package", "both")]
     [string]$Action = "both",
 
     [Parameter(Mandatory=$false)]
     [ValidateRange(1, 32)]
-    [int]$Jobs = 8
+    [int]$Jobs = 8,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$EnableCoverage,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$EnableStaticAnalysis
 )
 
 $ErrorActionPreference = "Stop"
@@ -320,6 +326,124 @@ function Invoke-CMakeBuild {
     }
 }
 
+function Invoke-CMakeTest {
+    <#
+    .SYNOPSIS
+        Run tests using CTest.
+    #>
+    Write-Log "`n=== Running Tests ===" -Level Info
+
+    if (-not (Test-FileAccess -Path $script:buildDir -PathType Container)) {
+        Write-Log "Build directory not found: $script:buildDir" -Level Error
+        Write-Log "Please run build first (Action: build or both)." -Level Info
+        throw "Build directory not found"
+    }
+
+    try {
+        $arguments = @(
+            "--test-dir", $script:buildDir,
+            "--output-on-failure",
+            "-j", $Jobs
+        )
+
+        Write-Log "Executing: $script:cmakePath $($arguments -join ' ')" -Level Info
+
+        & $script:cmakePath $arguments
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Log "Tests failed with exit code: $LASTEXITCODE" -Level Error
+            throw "Tests failed"
+        }
+
+        Write-Log "All tests passed successfully!" -Level Success
+    }
+    catch {
+        Write-Log "Test execution encountered an error!" -Level Error
+        Write-Log "Error: $_" -Level Error
+        throw
+    }
+}
+
+function Invoke-CMakeInstall {
+    <#
+    .SYNOPSIS
+        Install the project using CMake.
+    #>
+    Write-Log "`n=== Installing Project ===" -Level Info
+
+    if (-not (Test-FileAccess -Path $script:buildDir -PathType Container)) {
+        Write-Log "Build directory not found: $script:buildDir" -Level Error
+        Write-Log "Please run build first (Action: build or both)." -Level Info
+        throw "Build directory not found"
+    }
+
+    try {
+        $arguments = @(
+            "--install", $script:buildDir
+        )
+
+        Write-Log "Executing: $script:cmakePath $($arguments -join ' ')" -Level Info
+
+        & $script:cmakePath $arguments
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Log "Installation failed with exit code: $LASTEXITCODE" -Level Error
+            throw "Installation failed"
+        }
+
+        Write-Log "Installation completed successfully!" -Level Success
+    }
+    catch {
+        Write-Log "Installation encountered an error!" -Level Error
+        Write-Log "Error: $_" -Level Error
+        throw
+    }
+}
+
+function Invoke-CMakePackage {
+    <#
+    .SYNOPSIS
+        Package the project using CPack.
+    #>
+    Write-Log "`n=== Packaging Project ===" -Level Info
+
+    if (-not (Test-FileAccess -Path $script:buildDir -PathType Container)) {
+        Write-Log "Build directory not found: $script:buildDir" -Level Error
+        Write-Log "Please run build first (Action: build or both)." -Level Info
+        throw "Build directory not found"
+    }
+
+    try {
+        $cpackPath = Join-Path (Split-Path $script:cmakePath -Parent) "cpack.exe"
+
+        if (-not (Test-FileAccess -Path $cpackPath -PathType Leaf)) {
+            Write-Log "CPack executable not found at: $cpackPath" -Level Error
+            throw "CPack not found"
+        }
+
+        $arguments = @(
+            "-V",
+            "--config", (Join-Path $script:buildDir "CPackConfig.cmake")
+        )
+
+        Write-Log "Executing: $cpackPath $($arguments -join ' ')" -Level Info
+
+        & $cpackPath $arguments
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Log "Packaging failed with exit code: $LASTEXITCODE" -Level Error
+            throw "Packaging failed"
+        }
+
+        Write-Log "Packaging completed successfully!" -Level Success
+    }
+    catch {
+        Write-Log "Packaging encountered an error!" -Level Error
+        Write-Log "Error: $_" -Level Error
+        throw
+    }
+}
+
 function Invoke-Main {
     <#
     .SYNOPSIS
@@ -339,6 +463,15 @@ function Invoke-Main {
             }
             "build" {
                 Invoke-CMakeBuild
+            }
+            "test" {
+                Invoke-CMakeTest
+            }
+            "install" {
+                Invoke-CMakeInstall
+            }
+            "package" {
+                Invoke-CMakePackage
             }
             "both" {
                 Invoke-CMakeConfigure

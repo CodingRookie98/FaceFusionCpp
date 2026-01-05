@@ -30,7 +30,60 @@ if (LINUX)
     set_target_properties(${target_app_facefusioncpp} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
 endif ()
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
+if(MSVC)
+    target_compile_options(${target_app_facefusioncpp} PRIVATE /W4)
+else()
+    target_compile_options(${target_app_facefusioncpp} PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
 add_subdirectory(facefusionCpp)
+
+# 添加测试支持
+enable_testing()
+
+# 配置 GoogleTest 依赖（使用 vcpkg）
+option(BUILD_TESTING "Build tests" ON)
+if(BUILD_TESTING)
+    find_package(GTest CONFIG REQUIRED)
+
+    # 添加测试子目录
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
+        add_subdirectory(tests)
+    endif()
+endif()
+
+# 添加静态分析工具
+#find_program(CLANG_TIDY clang-tidy)
+#if(CLANG_TIDY)
+#    set_target_properties(${target_app_facefusioncpp} PROPERTIES
+#        CXX_CLANG_TIDY "${CLANG_TIDY}"
+#    )
+#endif()
+
+# 添加代码覆盖率支持
+option(ENABLE_COVERAGE "Enable code coverage" OFF)
+
+if(ENABLE_COVERAGE)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        message(STATUS "Enabling coverage for GCC/Clang")
+        add_compile_options(--coverage)
+        add_link_options(--coverage)
+    elseif(MSVC)
+        message(STATUS "Enabling debug info for MSVC (use OpenCppCoverage)")
+        add_compile_options(/DEBUG)
+    endif()
+endif()
+
+
+# 添加性能优化选项
+if(CMAKE_BUILD_TYPE MATCHES Release)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 
 find_package(OpenCV REQUIRED)
 find_package(ONNX CONFIG REQUIRED)
@@ -48,7 +101,6 @@ find_package(FFMPEG REQUIRED)
 target_include_directories(${target_app_facefusioncpp} PRIVATE ${FFMPEG_INCLUDE_DIRS})
 target_link_directories(${target_app_facefusioncpp} PRIVATE ${FFMPEG_LIBRARY_DIRS})
 target_link_libraries(${target_app_facefusioncpp} PRIVATE ${FFMPEG_LIBRARIES})
-target_include_directories(${target_app_facefusioncpp} PRIVATE ${SIMPLEINI_INCLUDE_DIRS})
 target_link_libraries(${target_app_facefusioncpp} PRIVATE ${OpenCV_LIBS})
 
 # make onnxruntime available
@@ -77,9 +129,7 @@ target_link_libraries(${target_app_facefusioncpp} PRIVATE dp::thread-pool)
 target_link_libraries(${target_app_facefusioncpp} PRIVATE Boost::process)
 target_link_libraries(${target_app_facefusioncpp} PRIVATE yaml-cpp::yaml-cpp)
 
-set(${target_app_facefusioncpp}_ini_file_name "FaceFusionCpp.ini")
 list(APPEND RESOURCE_FILES
-        "${CMAKE_CURRENT_SOURCE_DIR}/${${target_app_facefusioncpp}_ini_file_name}"
         "${CMAKE_CURRENT_SOURCE_DIR}/facefusionCpp/modelsInfo.json"
 )
 add_custom_target(copy_resource_files
@@ -131,9 +181,6 @@ if (LINUX)
     install(FILES ${ONNXRUNTIME_LIBS} ${OUTPUT_RUNTIME_LIBS} DESTINATION "." COMPONENT "app_libs")
 endif ()
 
-set(INSTALL_INI_FILE "${CMAKE_INSTALL_PREFIX}/${${target_app_facefusioncpp}_ini_file_name}")
-install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -D INI_FILE_PATH=${INSTALL_INI_FILE} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean_ini_file.cmake)")
-
 set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION ".")
 include(InstallRequiredSystemLibraries)
 
@@ -163,17 +210,6 @@ set(CPACK_PACKAGE_CHECKSUM "SHA256")
 set(CPACK_THREADS 0) # Use multi-threads. Given 0 CPack will try to use all available CPU cores.
 set(CPACK_PACKAGE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/packages/${CMAKE_BUILD_TYPE}")
 
-if (WIN32)
-    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(file_${target_app_facefusioncpp}_ini "${CPACK_PACKAGE_DIRECTORY}/_CPack_Packages/win64/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/${${target_app_facefusioncpp}_ini_file_name}")
-    else ()
-        set(file_${target_app_facefusioncpp}_ini "${CPACK_PACKAGE_DIRECTORY}/_CPack_Packages/win32/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/${${target_app_facefusioncpp}_ini_file_name}")
-    endif ()
-else ()
-    set(file_${target_app_facefusioncpp}_ini "${CPACK_PACKAGE_DIRECTORY}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}/${${target_app_facefusioncpp}_ini_file_name}")
-endif ()
-
-set(CPACK_PRE_BUILD_SCRIPTS "${CMAKE_CURRENT_SOURCE_DIR}/scripts/cmake/clean_ini_file.cmake")
 include(CPack)
 find_program(CPACK_EXE NAMES cpack)
 add_custom_target(cpack_all
