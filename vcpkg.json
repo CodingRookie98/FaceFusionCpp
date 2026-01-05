@@ -19,7 +19,8 @@
     },
     "openssl",
     "spdlog",
-    "yaml-cpp"
+    "yaml-cpp",
+    "gtest"
   ],
   "builtin-baseline": "b7a701cb475805c27e29ddf635a3b16c37ba51fb"
 }
