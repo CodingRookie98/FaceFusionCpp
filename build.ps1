@@ -225,21 +225,21 @@ function Initialize-Environment {
 function Invoke-VisualStudioEnvironment {
     <#
     .SYNOPSIS
-        Load Visual Studio 2022 Developer PowerShell environment.
+        Load Visual Studio 2022 Developer PowerShell environment by calling the dedicated script.
     #>
     Write-Log "`n=== Loading Visual Studio Environment ===" -Level Info
 
-    if (-not (Test-FileAccess -Path $script:vsDevShellModule -PathType Leaf)) {
-        Write-Log "Visual Studio DevShell module not found!" -Level Error
-        Write-Log "Path: $script:vsDevShellModule" -Level Info
-        Write-Log "Please ensure Visual Studio 2022 Build Tools are installed." -Level Info
-        throw "Visual Studio not found"
+    $setMsvcEnvScript = Join-Path $script:projectRoot "scripts\set_msvc_compiler_env.ps1"
+
+    if (-not (Test-FileAccess -Path $setMsvcEnvScript -PathType Leaf)) {
+        Write-Log "MSVC compiler environment script not found!" -Level Error
+        Write-Log "Path: $setMsvcEnvScript" -Level Info
+        throw "MSVC compiler environment script not found"
     }
 
     try {
-        Import-Module $script:vsDevShellModule -ErrorAction Stop
-        Enter-VsDevShell $script:vsInstanceId -SkipAutomaticLocation -DevCmdArguments "-arch=x64 -host_arch=x64" -ErrorAction Stop
-        Write-Log "Visual Studio environment loaded successfully!" -Level Success
+        & $setMsvcEnvScript
+        Write-Log "Visual Studio environment loaded successfully via set_msvc_compiler_env.ps1!" -Level Success
     }
     catch {
         Write-Log "Failed to load Visual Studio environment!" -Level Error
