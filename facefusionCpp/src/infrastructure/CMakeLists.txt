@@ -1,4 +1,4 @@
-target_sources(${target_app_facefusioncpp} PRIVATE
+target_sources(${app_facefusioncpp} PRIVATE
         FILE_SET CXX_MODULES FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/crypto.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/downloader.ixx
@@ -15,7 +15,7 @@ target_sources(${target_app_facefusioncpp} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/utils.ixx
 )
 
-target_sources(${target_app_facefusioncpp} PRIVATE
+target_sources(${app_facefusioncpp} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/boost_impl.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/crypto.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/downloader.cpp
@@ -26,6 +26,6 @@ target_sources(${target_app_facefusioncpp} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/utils.cpp
 )
 
-target_include_directories(${target_app_facefusioncpp} PRIVATE
+target_include_directories(${app_facefusioncpp} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
 )

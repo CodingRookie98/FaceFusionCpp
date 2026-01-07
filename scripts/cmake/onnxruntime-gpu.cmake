@@ -48,9 +48,9 @@ elseif (LINUX)
     FILE(GLOB ONNXRUNTIME_LIBS "${ORT_PATH}/lib/*.so")
 endif ()
 
-add_custom_command(TARGET ${target_app_facefusioncpp} POST_BUILD
+add_custom_command(TARGET ${app_facefusioncpp} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${ONNXRUNTIME_LIBS}
-        $<TARGET_FILE_DIR:${target_app_facefusioncpp}>
+        $<TARGET_FILE_DIR:${app_facefusioncpp}>
         COMMENT "Copying ONNX Runtime libs to runtime output directory"
 )

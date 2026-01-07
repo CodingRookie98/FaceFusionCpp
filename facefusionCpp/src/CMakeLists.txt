@@ -1,5 +1,5 @@
 
-target_sources(${target_app_facefusioncpp} PRIVATE
+target_sources(${app_facefusioncpp} PRIVATE
         FILE_SET CXX_MODULES FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/ai/inference_session.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/ai/model_manager.ixx
@@ -14,7 +14,7 @@ target_sources(${target_app_facefusioncpp} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/task/task_manager.ixx
 )
 
-target_sources(${target_app_facefusioncpp} PRIVATE
+target_sources(${app_facefusioncpp} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/ai/inference_session.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ai/model_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/core/core.cpp
@@ -24,7 +24,7 @@ target_sources(${target_app_facefusioncpp} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/task/task_manager.cpp
 )
 
-target_include_directories(${target_app_facefusioncpp} PRIVATE
+target_include_directories(${app_facefusioncpp} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
