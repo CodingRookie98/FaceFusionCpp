@@ -37,6 +37,7 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 if(MSVC)
     target_compile_options(${target_app_facefusioncpp} PRIVATE /W4)
+    target_compile_options(${target_app_facefusioncpp} PRIVATE /permissive-)
 else()
     target_compile_options(${target_app_facefusioncpp} PRIVATE -Wall -Wextra -Wpedantic)
 endif()
