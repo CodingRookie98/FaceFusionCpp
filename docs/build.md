@@ -1,6 +1,6 @@
 # 构建脚本说明
 
-项目使用 `build.ps1` 脚本进行配置和构建，支持 Debug 和 Release 两种配置。
+项目使用 `build.ps1` 脚本进行配置和构建，支持 Debug 和 Release 两种配置。脚本会自动检测并使用系统的最大处理器核心数进行并行构建和测试。
 
 ## 基本用法
 
@@ -11,11 +11,11 @@
 # 仅构建 Release 版本
 .\build.ps1 -Configuration Release -Action build
 
-# 仅配置 Debug 版本，使用 4 个并行任务
-.\build.ps1 -Configuration Debug -Action configure -Jobs 4
+# 仅配置 Debug 版本
+.\build.ps1 -Configuration Debug -Action configure
 
-# 配置并构建 Release 版本，使用 16 个并行任务
-.\build.ps1 -Configuration Release -Action both -Jobs 16
+# 配置并构建 Release 版本
+.\build.ps1 -Configuration Release -Action both
 
 # 运行测试
 .\build.ps1 -Configuration Debug -Action test
@@ -43,9 +43,10 @@
   - `install`（安装项目）
   - `package`（打包项目）
   - `both`（配置并构建，默认）
-- `-Jobs`: 并行构建任务数，范围 1-32，默认为 8
 - `-EnableCoverage`: 启用代码覆盖率（需要 Debug 配置）
 - `-EnableStaticAnalysis`: 启用静态分析
+
+**注意**: 脚本会自动检测并使用系统的最大处理器核心数进行并行构建和测试，无需手动指定线程数。
 
 ## 完整工作流
 
@@ -87,9 +88,6 @@
 # 重新配置（清除缓存后重新配置）
 Remove-Item -Recurse -Force build\msvc-x64-debug
 .\build.ps1 -Action configure
-
-# 仅构建特定目标
-.\build.ps1 -Action build -Jobs 16
 
 # 快速迭代开发（仅构建）
 .\build.ps1 -Action build
@@ -167,15 +165,11 @@ Remove-Item -Recurse -Force build\msvc-x64-debug
 
 ## 性能优化建议
 
-### 1. 并行构建
+### 1. 自动并行构建
 
-根据 CPU 核心数调整并行任务数:
-```powershell
-# 8 核 CPU
-.\build.ps1 -Jobs 8
-
-# 16 核 CPU
-.\build.ps1 -Jobs 16
+脚本会自动检测并使用系统的最大处理器核心数进行并行构建和测试，无需手动调整。构建时会显示实际使用的线程数：
+```
+Parallel Jobs: 8 (system maximum)
 ```
 
 ### 2. 增量构建

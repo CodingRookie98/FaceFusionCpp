@@ -5,7 +5,8 @@
 .DESCRIPTION
     This script provides a unified interface for configuring and building the FaceFusionCpp project
     using CMake with MSVC toolchain. It automatically detects CMake installation and project root
-    directory, and supports both Debug and Release configurations.
+    directory, and supports both Debug and Release configurations. The script automatically uses
+    the system's maximum number of processor cores for parallel builds.
 
 .PARAMETER Configuration
     Build configuration: Debug or Release. Default is Debug.
@@ -13,20 +14,17 @@
 .PARAMETER Action
     Action to perform: configure, build, or both. Default is both.
 
-.PARAMETER Jobs
-    Number of parallel jobs for build. Default is 8.
-
 .EXAMPLE
     .\build.ps1
-    Configure and build Debug configuration with 8 parallel jobs.
+    Configure and build Debug configuration using system maximum threads.
 
 .EXAMPLE
     .\build.ps1 -Configuration Release -Action build
     Build Release configuration only.
 
 .EXAMPLE
-    .\build.ps1 -Configuration Debug -Action configure -Jobs 4
-    Configure Debug configuration with 4 parallel jobs.
+    .\build.ps1 -Configuration Debug -Action configure
+    Configure Debug configuration only.
 #>
 
 [CmdletBinding()]
@@ -38,10 +36,6 @@ param(
     [Parameter(Mandatory=$false)]
     [ValidateSet("configure", "build", "test", "install", "package", "both")]
     [string]$Action = "both",
-
-    [Parameter(Mandatory=$false)]
-    [ValidateRange(1, 32)]
-    [int]$Jobs = 8,
 
     [Parameter(Mandatory=$false)]
     [switch]$EnableCoverage,
@@ -208,11 +202,13 @@ function Initialize-Environment {
         $script:projectRoot = Find-ProjectRoot
         $script:buildDir = Join-Path $script:projectRoot "build\$script:presetName"
 
+        $script:maxThreads = [System.Environment]::ProcessorCount
+
         Write-Log "Configuration: $Configuration" -Level Info
         Write-Log "Preset: $script:presetName" -Level Info
         Write-Log "Build Directory: $script:buildDir" -Level Info
         Write-Log "Target: $script:target" -Level Info
-        Write-Log "Jobs: $Jobs" -Level Info
+        Write-Log "Parallel Jobs: $script:maxThreads (system maximum)" -Level Info
 
         Write-Log "`nEnvironment initialization completed successfully!" -Level Success
     }
@@ -298,7 +294,7 @@ function Invoke-CMakeBuild {
         $arguments = @(
             "--build", $script:buildDir,
             "--target", $script:target,
-            "-j", $Jobs
+            "-j", $script:maxThreads
         )
 
         Write-Log "Executing: $script:cmakePath $($arguments -join ' ')" -Level Info
@@ -340,15 +336,22 @@ function Invoke-CMakeTest {
     }
 
     try {
+        $ctestPath = Join-Path (Split-Path $script:cmakePath -Parent) "ctest.exe"
+
+        if (-not (Test-FileAccess -Path $ctestPath -PathType Leaf)) {
+            Write-Log "CTest executable not found at: $ctestPath" -Level Error
+            throw "CTest not found"
+        }
+
         $arguments = @(
             "--test-dir", $script:buildDir,
             "--output-on-failure",
-            "-j", $Jobs
+            "--parallel", $script:maxThreads
         )
 
-        Write-Log "Executing: $script:cmakePath $($arguments -join ' ')" -Level Info
+        Write-Log "Executing: $ctestPath $($arguments -join ' ')" -Level Info
 
-        & $script:cmakePath $arguments
+        & $ctestPath $arguments
 
         if ($LASTEXITCODE -ne 0) {
             Write-Log "Tests failed with exit code: $LASTEXITCODE" -Level Error
