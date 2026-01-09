@@ -43,7 +43,7 @@ else()
     target_compile_options(${app_facefusioncpp} PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
-add_subdirectory(facefusionCpp)
+add_subdirectory(src)
 
 # 添加测试支持
 enable_testing()
