@@ -3,6 +3,7 @@ project(infrastructure LANGUAGES CXX)
 
 find_package(yaml-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(CURL REQUIRED)
 
 add_library(infrastructure_lib STATIC)
 
@@ -19,14 +20,17 @@ target_sources(infrastructure_lib
         BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
         FILES
         core_utils.ixx
+        network.ixx
         PRIVATE
         core_utils.cpp
+        network.cpp
 )
 
 target_link_libraries(infrastructure_lib
         PUBLIC
         yaml-cpp::yaml-cpp
         nlohmann_json::nlohmann_json
+        CURL::libcurl
 )
 
 if (MSVC)
