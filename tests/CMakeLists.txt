@@ -44,12 +44,19 @@ add_facefusion_test(
         example_test.cpp
 )
 
-# 在这里添加更多测试...
-# 例如：
-# add_facefusion_test(
-#     core_test
-#     SOURCES
-#         core/core_test.cpp
-#     LINK_LIBRARIES
-#         facefusion_core
-# )
+# Core Utils 模块测试
+add_facefusion_test(
+        core_utils_random_test
+        SOURCES
+        unit/foundation/infrastructure/core_utils/test_core_utils_random.cpp
+        LINK_LIBRARIES
+        infrastructure_lib
+)
+
+add_facefusion_test(
+        core_utils_conversion_test
+        SOURCES
+        unit/foundation/infrastructure/core_utils/test_core_utils_conversion.cpp
+        LINK_LIBRARIES
+        infrastructure_lib
+)
