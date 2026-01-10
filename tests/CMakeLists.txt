@@ -45,18 +45,38 @@ add_facefusion_test(
 )
 
 # Core Utils 模块测试
+# Core Utils Module Tests
 add_facefusion_test(
-        core_utils_random_test
+        core_utils_tests
         SOURCES
-        unit/foundation/infrastructure/core_utils/test_core_utils_random.cpp
+        unit/foundation/infrastructure/core_utils_tests.cpp
         LINK_LIBRARIES
-        infrastructure_lib
+        foundation_infrastructure
 )
 
+# File System Module Tests
 add_facefusion_test(
-        core_utils_conversion_test
+        file_system_tests
         SOURCES
-        unit/foundation/infrastructure/core_utils/test_core_utils_conversion.cpp
+        unit/foundation/infrastructure/file_system_tests.cpp
         LINK_LIBRARIES
-        infrastructure_lib
+        foundation_infrastructure
+)
+
+# Crypto Module Tests
+add_facefusion_test(
+        crypto_tests
+        SOURCES
+        unit/foundation/infrastructure/crypto_tests.cpp
+        LINK_LIBRARIES
+        foundation_infrastructure
+)
+
+# Network Module Tests
+add_facefusion_test(
+        network_tests
+        SOURCES
+        unit/foundation/infrastructure/network_tests.cpp
+        LINK_LIBRARIES
+        foundation_infrastructure
 )
