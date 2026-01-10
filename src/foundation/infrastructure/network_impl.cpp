@@ -1,14 +1,21 @@
-module;
 
+module;
+#include <curl/curl.h>
 #include <filesystem>
 #include <fstream>
+#include <vector>
+#include <string>
+#include <stdexcept>
 #include <iomanip>
 #include <sstream>
-#include <stdexcept>
-#include <curl/curl.h>
-#include <nlohmann/json.hpp>
 
 module foundation.infrastructure.network;
+
+// Forward declarations if needed within the module implementation
+namespace foundation::infrastructure::network {
+std::string get_file_name_from_url(const std::string& url);
+long get_file_size_from_url(const std::string& url);
+} // namespace foundation::infrastructure::network
 
 namespace foundation::infrastructure::network {
 
@@ -31,7 +38,7 @@ public:
         }
     }
 
-    CurlHandle(const CurlHandle&) = delete;
+    CurlHandle(const CurlHandle&)            = delete;
     CurlHandle& operator=(const CurlHandle&) = delete;
 
     CURL* get() const { return m_curl; }
@@ -44,7 +51,7 @@ private:
  * @brief Write callback function for CURL
  */
 size_t write_callback(void* contents, size_t size, size_t nmemb, void* userp) {
-    size_t total_size = size * nmemb;
+    size_t total_size   = size * nmemb;
     std::ofstream* file = static_cast<std::ofstream*>(userp);
     file->write(static_cast<char*>(contents), total_size);
     return total_size;
@@ -54,7 +61,7 @@ size_t write_callback(void* contents, size_t size, size_t nmemb, void* userp) {
  * @brief Header callback function for CURL (to get content length)
  */
 size_t header_callback(char* buffer, size_t size, size_t nitems, void* userdata) {
-    size_t total_size = size * nitems;
+    size_t total_size           = size * nitems;
     std::string* content_length = static_cast<std::string*>(userdata);
     std::string header(buffer, total_size);
 
@@ -69,17 +76,6 @@ size_t header_callback(char* buffer, size_t size, size_t nitems, void* userdata)
 
 } // anonymous namespace
 
-/**
- * @brief Download a file from URL to specified output directory
- * @param url The URL of the file to download
- * @param output_dir The directory to save the downloaded file
- * @return bool True if download succeeded, false otherwise
- * @throws std::invalid_argument if URL is empty
- * @throws std::runtime_error if output directory creation fails or download fails
- * @note Thread-safe (each download operation is independent)
- * @exception-safe Strong guarantee
- * @details Uses libcurl to download file, creates output directory if needed
- */
 bool download(const std::string& url, const std::string& output_dir) {
     if (url.empty()) {
         throw std::invalid_argument("URL cannot be empty");
@@ -92,7 +88,7 @@ bool download(const std::string& url, const std::string& output_dir) {
         }
     }
 
-    std::string file_name = get_file_name_from_url(url);
+    std::string file_name                  = get_file_name_from_url(url);
     std::filesystem::path output_file_path = output_dir_path / file_name;
 
     CurlHandle curl;
@@ -131,19 +127,7 @@ bool download(const std::string& url, const std::string& output_dir) {
     return true;
 }
 
-/**
- * @brief Download multiple files from URLs to specified output directory
- * @param urls Vector of URLs to download
- * @param output_dir The directory to save the downloaded files
- * @return std::vector<bool> Vector of boolean results for each URL
- * @throws std::invalid_argument if any URL is empty
- * @throws std::runtime_error if output directory creation fails
- * @note Thread-safe (each download operation is independent)
- * @exception-safe Strong guarantee
- * @details Downloads each URL sequentially, returns result for each download
- */
-std::vector<bool> batch_download(const std::vector<std::string>& urls,
-                                 const std::string& output_dir) {
+std::vector<bool> batch_download(const std::vector<std::string>& urls, const std::string& output_dir) {
     if (urls.empty()) {
         return {};
     }
@@ -175,47 +159,6 @@ std::vector<bool> batch_download(const std::vector<std::string>& urls,
     return results;
 }
 
-/**
- * @brief Check if a file has been downloaded and matches expected size
- * @param url The URL of the file to check
- * @param file_path The local file path to check
- * @return bool True if file exists and matches expected size, false otherwise
- * @throws std::invalid_argument if URL or file path is empty
- * @note Thread-safe (no shared mutable state)
- * @exception-safe Strong guarantee
- * @details Compares local file size with remote file size from HTTP HEAD request
- */
-bool is_downloaded(const std::string& url, const std::string& file_path) {
-    if (url.empty()) {
-        throw std::invalid_argument("URL cannot be empty");
-    }
-    if (file_path.empty()) {
-        throw std::invalid_argument("File path cannot be empty");
-    }
-
-    std::filesystem::path file_path_obj(file_path);
-    if (!std::filesystem::exists(file_path_obj)) {
-        return false;
-    }
-
-    long remote_size = get_file_size_from_url(url);
-    if (remote_size < 0) {
-        return false;
-    }
-
-    long local_size = static_cast<long>(std::filesystem::file_size(file_path_obj));
-    return local_size == remote_size;
-}
-
-/**
- * @brief Get file size from URL using HTTP HEAD request
- * @param url The URL to query for file size
- * @return long File size in bytes, or -1 if failed to retrieve
- * @throws std::invalid_argument if URL is empty
- * @note Thread-safe (each request is independent)
- * @exception-safe Strong guarantee
- * @details Uses HTTP HEAD request to retrieve Content-Length header
- */
 long get_file_size_from_url(const std::string& url) {
     if (url.empty()) {
         throw std::invalid_argument("URL cannot be empty");
@@ -264,21 +207,34 @@ long get_file_size_from_url(const std::string& url) {
     }
 }
 
-/**
- * @brief Extract file name from URL
- * @param url The URL to extract file name from
- * @return std::string File name extracted from URL
- * @throws std::invalid_argument if URL is empty
- * @note Thread-safe (no shared mutable state)
- * @exception-safe Strong guarantee
- * @details Extracts file name from URL path, handles query parameters
- */
+bool is_downloaded(const std::string& url, const std::string& file_path) {
+    if (url.empty()) {
+        throw std::invalid_argument("URL cannot be empty");
+    }
+    if (file_path.empty()) {
+        throw std::invalid_argument("File path cannot be empty");
+    }
+
+    std::filesystem::path file_path_obj(file_path);
+    if (!std::filesystem::exists(file_path_obj)) {
+        return false;
+    }
+
+    long remote_size = get_file_size_from_url(url);
+    if (remote_size < 0) {
+        return false;
+    }
+
+    long local_size = static_cast<long>(std::filesystem::file_size(file_path_obj));
+    return local_size == remote_size;
+}
+
 std::string get_file_name_from_url(const std::string& url) {
     if (url.empty()) {
         throw std::invalid_argument("URL cannot be empty");
     }
 
-    size_t query_pos = url.find('?');
+    size_t query_pos              = url.find('?');
     std::string url_without_query = (query_pos != std::string::npos) ? url.substr(0, query_pos) : url;
 
     size_t last_slash_pos = url_without_query.find_last_of('/');
@@ -294,22 +250,14 @@ std::string get_file_name_from_url(const std::string& url) {
     return file_name;
 }
 
-/**
- * @brief Convert file size to human-readable format
- * @param size File size in bytes
- * @return std::string Human-readable size string (e.g., "1.5 MB")
- * @note Thread-safe (no shared mutable state)
- * @exception-safe Strong guarantee
- * @details Converts bytes to appropriate unit (B, KB, MB, GB, TB) with 2 decimal places
- */
-std::string human_readable_size(const long& size) {
+std::string human_readable_size(long size) {
     if (size < 0) {
         return "0 B";
     }
 
     const char* units[] = {"B", "KB", "MB", "GB", "TB"};
-    int unit_index = 0;
-    double size_double = static_cast<double>(size);
+    int unit_index      = 0;
+    double size_double  = static_cast<double>(size);
 
     while (size_double >= 1024.0 && unit_index < 4) {
         size_double /= 1024.0;

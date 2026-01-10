@@ -6,5 +6,5 @@ target_sources(${app_facefusioncpp} PUBLIC
 )
 
 target_link_libraries(${app_facefusioncpp} PRIVATE
-        infrastructure_lib
+        foundation_infrastructure
 )
