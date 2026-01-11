@@ -33,15 +33,47 @@ void from_json(const json& j, ModelInfo& model_info) {
     model_info.url = j.value("url", model_info.url);
 }
 
-ModelManager::ModelManager(const std::string& json_file_path) {
-    m_json_file_path = json_file_path;
+ModelManager::ModelManager() : m_json_file_path("./assets/models_info.json") {
+    try {
+        set_model_info_file_path(m_json_file_path);
+    } catch (const std::exception& e) {
+        // Log warning but don't fail construction for default path
+        // logger::Logger::get_instance()->warn("Default model info file not found or invalid: " + std::string(e.what()));
+        // Since logger might not be ready or we want to keep it simple:
+        // Just ignore, user must call set_model_info_file_path with valid path later if default is missing.
+    }
+}
+
+std::shared_ptr<ModelManager> ModelManager::get_instance() {
+    static std::shared_ptr<ModelManager> instance;
+    static std::once_flag flag;
+    // Constructor is private, so we can't use make_shared directly without a workaround or raw new
+    // Since we are inside the class (static method), we can access private constructor
+    std::call_once(flag, [&]() { instance.reset(new ModelManager()); });
+    return instance;
+}
+
+void ModelManager::set_model_info_file_path(const std::string& path) {
+    m_json_file_path = path;
+    m_models_info_map.clear();
+
     json models_info_json;
     if (std::ifstream file(m_json_file_path); file.is_open()) {
         models_info_json = nlohmann::json::parse(file);
         file.close();
     } else {
+        // If file doesn't exist, just return, don't throw, or maybe log warning?
+        // Original code threw runtime_error, but for setter maybe we should be more lenient or log
+        // Keeping original behavior for consistency if possible, or maybe just log
+        // But constructor calls this, effectively.
+        // Let's log and rethrow if it was called from logic that expects it?
+        // Actually, the previous constructor threw. Let's try to keep it simple.
+        // If we want to allow empty/default init that might fail, we should handle exceptions.
+        // But here let's just throw if file missing as before?
+        // User requested setter to allow changing path.
         throw std::runtime_error("Failed to open " + m_json_file_path);
     }
+
     if (auto model_info_json = models_info_json.items().begin().value(); model_info_json.is_array()) {
         for (const auto& model_info_json_item : model_info_json.items()) {
             ModelInfo model_info;
@@ -52,13 +84,6 @@ ModelManager::ModelManager(const std::string& json_file_path) {
             }
         }
     }
-}
-
-std::shared_ptr<ModelManager> ModelManager::get_instance(const std::string& modelsInfoJsonPath) {
-    static std::shared_ptr<ModelManager> instance;
-    static std::once_flag flag;
-    std::call_once(flag, [&]() { instance = std::make_shared<ModelManager>(modelsInfoJsonPath); });
-    return instance;
 }
 
 bool ModelManager::download_model(const std::string& model_name) const {

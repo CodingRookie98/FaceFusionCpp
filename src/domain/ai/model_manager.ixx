@@ -28,22 +28,21 @@ export struct ModelInfo {
 /**
  * @brief Model manager class for handling AI model operations
  */
-export class ModelManager {
+export class ModelManager final {
 public:
-    /**
-     * @brief Construct a new ModelManager object
-     * @param json_file_path Path to the models information JSON file
-     */
-    explicit ModelManager(const std::string& json_file_path = "./models_info.json");
+    virtual ~ModelManager() = default;
 
-    ~ModelManager() = default;
+    // Delete copy and move constructors and assignment operators
+    ModelManager(const ModelManager&) = delete;
+    ModelManager& operator=(const ModelManager&) = delete;
+    ModelManager(ModelManager&&) = delete;
+    ModelManager& operator=(ModelManager&&) = delete;
 
     /**
      * @brief Get the singleton instance of ModelManager
-     * @param json_file_path Path to the models information JSON file
      * @return std::shared_ptr<ModelManager> Shared pointer to the singleton instance
      */
-    static std::shared_ptr<ModelManager> get_instance(const std::string& json_file_path = "./models_info.json");
+    static std::shared_ptr<ModelManager> get_instance();
 
     /**
      * @brief Get complete model information
@@ -94,7 +93,17 @@ public:
      */
     [[nodiscard]] bool has_model(const std::string& model_name) const;
 
+    /**
+     * @brief Set the path to the models information JSON file
+     * @param path Path to the models information JSON file
+     */
+    void set_model_info_file_path(const std::string& path = "./assets/models_info.json");
+
 private:
+    /**
+     * @brief Construct a new ModelManager object
+     */
+    ModelManager();
     std::string m_json_file_path;                           ///< Path to models information JSON file
     std::unordered_map<std::string, ModelInfo> m_models_info_map; ///< Map of model names to ModelInfo structures
 };
