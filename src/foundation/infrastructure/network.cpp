@@ -8,6 +8,8 @@ module;
 #include <stdexcept>
 #include <iomanip>
 #include <sstream>
+#include <locale>
+
 
 module foundation.infrastructure.network;
 
@@ -265,6 +267,7 @@ std::string human_readable_size(long size) {
     }
 
     std::ostringstream oss;
+    oss.imbue(std::locale::classic());
     oss << std::fixed << std::setprecision(2) << size_double << " " << units[unit_index];
     return oss.str();
 }
