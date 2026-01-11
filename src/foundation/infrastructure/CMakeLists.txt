@@ -38,16 +38,16 @@ target_sources(foundation_infrastructure
             thread_pool.ixx
             test_support.ixx
     PRIVATE
-        core_utils_impl.cpp
-        network_impl.cpp
-        file_system_impl.cpp
-        concurrent_file_system_impl.cpp
-        crypto_impl.cpp
-        concurrent_crypto_impl.cpp
-        logger_impl.cpp
-        progress_impl.cpp
-        thread_pool_impl.cpp
-        test_support_impl.cpp
+        core_utils.cpp
+        network.cpp
+        file_system.cpp
+        concurrent_file_system.cpp
+        crypto.cpp
+        concurrent_crypto.cpp
+        logger.cpp
+        progress.cpp
+        thread_pool.cpp
+        test_support.cpp
 )
 
 target_link_libraries(foundation_infrastructure
