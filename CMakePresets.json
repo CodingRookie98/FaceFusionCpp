@@ -20,8 +20,8 @@
             "name": "linux-release",
             "displayName": "x64 Release",
             "inherits": "linux-base",
-            "binaryDir": "${sourceDir}/build/release",
-            "installDir": "${sourceDir}/build/install/release",
+            "binaryDir": "${sourceDir}/build/linux-x64-release",
+            "installDir": "${sourceDir}/build/install/linux-x64-release",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             }
@@ -30,8 +30,8 @@
             "name": "linux-debug",
             "displayName": "x64 debug",
             "inherits": "linux-base",
-            "binaryDir": "${sourceDir}/build/debug",
-            "installDir": "${sourceDir}/build/install/debug",
+            "binaryDir": "${sourceDir}/build/linux-x64-debug",
+            "installDir": "${sourceDir}/build/install/linux-x64-debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
             }
@@ -81,6 +81,76 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/runtime/msvc-x64-debug"
             }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "msvc-x64-debug",
+            "configurePreset": "msvc-x64-debug",
+            "configuration": "Debug"
+        },
+        {
+            "name": "msvc-x64-release",
+            "configurePreset": "msvc-x64-release",
+            "configuration": "Release"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "msvc-x64-debug",
+            "configurePreset": "msvc-x64-debug",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "msvc-x64-release",
+            "configurePreset": "msvc-x64-release",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "msvc-x64-release",
+            "displayName": "Release Workflow",
+            "description": "Configure, build and test release configuration",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "msvc-x64-release"
+                },
+                {
+                    "type": "build",
+                    "name": "msvc-x64-release"
+                },
+                {
+                    "type": "test",
+                    "name": "msvc-x64-release"
+                }
+            ]
+        },
+        {
+            "name": "msvc-x64-debug",
+            "displayName": "Debug Workflow",
+            "description": "Configure, build and test debug configuration",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "msvc-x64-debug"
+                },
+                {
+                    "type": "build",
+                    "name": "msvc-x64-debug"
+                },
+                {
+                    "type": "test",
+                    "name": "msvc-x64-debug"
+                }
+            ]
         }
     ]
 }

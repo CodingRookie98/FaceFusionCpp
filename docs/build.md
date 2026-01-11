@@ -1,21 +1,21 @@
-# 构建脚本说明
+# 使用 `build.ps1` 脚本配置和构建
 
-项目使用 `build.ps1` 脚本进行配置和构建，支持 Debug 和 Release 两种配置。脚本会自动检测并使用系统的最大处理器核心数进行并行构建和测试。
+本项目提供了 `build.ps1` 脚本，旨在简化配置、构建、测试和打包的流程。该脚本会自动检测系统环境（如最大处理器核心数），并支持 Debug 和 Release 两种配置。
 
-## 基本用法
+## 1. 快速开始
+
+在 PowerShell 中执行以下命令即可开始构建：
 
 ```powershell
-# 配置并构建 Debug 版本（默认）
+# 默认行为：配置并构建 Debug 版本
 .\build.ps1
+```
 
+## 2. 常用命令
+
+```powershell
 # 仅构建 Release 版本
 .\build.ps1 -Configuration Release -Action build
-
-# 仅配置 Debug 版本
-.\build.ps1 -Configuration Debug -Action configure
-
-# 配置并构建 Release 版本
-.\build.ps1 -Configuration Release -Action both
 
 # 运行测试
 .\build.ps1 -Configuration Debug -Action test
@@ -25,207 +25,141 @@
 
 # 打包项目
 .\build.ps1 -Configuration Release -Action package
-
-# 启用代码覆盖率
-.\build.ps1 -Configuration Debug -Action test -EnableCoverage
-
-# 启用静态分析
-.\build.ps1 -Configuration Debug -Action both -EnableStaticAnalysis
 ```
 
-## 参数说明
+## 3. 参数说明
 
-- `-Configuration`: 构建配置类型，可选值为 `Debug` 或 `Release`，默认为 `Debug`
-- `-Action`: 执行操作，可选值为：
-  - `configure`（仅配置）
-  - `build`（仅构建）
-  - `test`（运行测试）
-  - `install`（安装项目）
-  - `package`（打包项目）
-  - `both`（配置并构建，默认）
-- `-EnableCoverage`: 启用代码覆盖率（需要 Debug 配置）
-- `-EnableStaticAnalysis`: 启用静态分析
+脚本支持以下参数，用于定制构建行为：
 
-**注意**: 脚本会自动检测并使用系统的最大处理器核心数进行并行构建和测试，无需手动指定线程数。
+| 参数 | 说明 | 可选值 | 默认值 |
+| :--- | :--- | :--- | :--- |
+| `-Configuration` | 构建配置类型 | `Debug`, `Release` | `Debug` |
+| `-Action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (运行测试)<br>`install` (安装)<br>`package` (打包)<br>`both` (配置+构建) | `both` |
+| `-EnableCoverage` | 启用代码覆盖率 | `[switch]` | `False` |
+| `-EnableStaticAnalysis` | 启用静态分析 | `[switch]` | `False` |
 
-## 完整工作流
+> **注意**: 脚本会自动利用系统所有可用核心进行并行构建，无需手动指定 `-j` 参数。
 
-### 1. 开发流程
+## 4. 完整工作流示例
 
+### 开发流程
 ```powershell
-# 配置并构建 Debug 版本
+# 1. 首次构建 Debug 版本
 .\build.ps1
 
-# 运行测试
+# 2. 运行测试并查看结果
 .\build.ps1 -Action test
 
-# 运行测试并生成覆盖率报告
+# 3. (可选) 生成覆盖率报告
 .\build.ps1 -Action test -EnableCoverage
-
-# 启用静态分析进行构建
-.\build.ps1 -Action both -EnableStaticAnalysis
 ```
 
-### 2. 发布流程
-
+### 发布流程
 ```powershell
-# 配置并构建 Release 版本
-.\build.ps1 -Configuration Release
-
-# 运行测试确保质量
-.\build.ps1 -Configuration Release -Action test
-
-# 安装到目标目录
-.\build.ps1 -Configuration Release -Action install
-
-# 打包为发布版本
-.\build.ps1 -Configuration Release -Action package
-```
-
-### 3. 高级用法
-
-```powershell
-# 重新配置（清除缓存后重新配置）
-Remove-Item -Recurse -Force build\msvc-x64-debug
-.\build.ps1 -Action configure
-
-# 快速迭代开发（仅构建）
-.\build.ps1 -Action build
-
-# 完整的发布流程
+# 1. 一键构建并测试 Release 版本
 .\build.ps1 -Configuration Release -Action both
 .\build.ps1 -Configuration Release -Action test
-.\build.ps1 -Configuration Release -Action install
+
+# 2. 生成安装包
 .\build.ps1 -Configuration Release -Action package
 ```
 
-## 输出目录
+## 5. 输出目录
 
-### Debug 配置
-- **构建目录**: `build/msvc-x64-debug/`
-- **可执行文件**: `build/msvc-x64-debug/runtime/msvc-x64-debug/FaceFusionCpp.exe`
-- **安装目录**: `build/msvc-x64-debug/`
+构建产物将位于 `build` 目录下：
 
-### Release 配置
-- **构建目录**: `build/msvc-x64-release/`
-- **可执行文件**: `build/msvc-x64-release/runtime/msvc-x64-release/FaceFusionCpp.exe`
-- **安装目录**: `build/msvc-x64-release/`
-- **打包文件**: `build/packages/Release/FaceFusionCpp-0.33.0-Windows-x86_64-Release.7z`
+- **Debug 构建**: `build/msvc-x64-debug/`
+- **Release 构建**: `build/msvc-x64-release/`
+- **安装目录**: 对应构建目录下的 install 文件夹（如未指定其他前缀）
+- **打包文件**: `build/packages/` (通常) 或构建根目录
 
-## 常见问题
+---
 
-### 1. CMake 未找到
+# 使用 CMake 直接构建
 
-**错误信息**: `CMake executable not found!`
+如果您更喜欢使用原生的 CMake 命令行工具，或者使用 IDE（如 VS Code, Visual Studio, CLion）内置的 CMake 支持，可以直接使用 CMake Presets。
 
-**解决方案**:
-- 安装 CMake: https://cmake.org/download/
-- 确保 CMake 已添加到系统 PATH
-- 或者安装到标准位置: `C:\Program Files\CMake\bin\`
+## 1. 环境准备
 
-### 2. Visual Studio 未找到
+在开始之前，请确保已满足以下条件：
 
-**错误信息**: `Visual Studio DevShell module not found!`
+- **CMake**: 3.25 或更高版本。
+- **编译器**: Visual Studio 2022 (MSVC)。
+- **构建系统**: Ninja (推荐) 或 Visual Studio 生成器。
+- **环境设置**: 执行 CMake 命令前，必须处于 MSVC 开发环境中。
+    - 方法一：使用 `Visual Studio 2022 Developer PowerShell`。
+    - 方法二：运行项目提供的脚本：`.\scripts\set_msvc_compiler_env.ps1`。
 
-**解决方案**:
-- 安装 Visual Studio 2022 Build Tools
-- 确保安装了 C++ 构建工具
-- 或者修改脚本中的路径指向正确的安装位置
+## 2. 常用操作
 
-### 3. 构建失败
+项目利用 `CMakePresets.json` 预定义了常用的构建配置。
 
-**错误信息**: `Build failed with exit code: X`
+### 配置 (Configure)
 
-**解决方案**:
-- 检查编译错误信息
-- 确保所有依赖库已正确安装
-- 尝试清除构建目录后重新构建:
-  ```powershell
-  Remove-Item -Recurse -Force build\msvc-x64-debug
-  .\build.ps1
-  ```
-
-### 4. 测试失败
-
-**错误信息**: `Tests failed with exit code: X`
-
-**解决方案**:
-- 查看详细的测试输出
-- 确保测试代码已正确实现
-- 使用 `-EnableCoverage` 参数获取更多信息
-
-### 5. 打包失败
-
-**错误信息**: `Packaging failed with exit code: X`
-
-**解决方案**:
-- 确保已先完成构建和安装
-- 检查 CPack 配置是否正确
-- 查看打包日志了解详细错误
-
-## 性能优化建议
-
-### 1. 自动并行构建
-
-脚本会自动检测并使用系统的最大处理器核心数进行并行构建和测试，无需手动调整。构建时会显示实际使用的线程数：
-```
-Parallel Jobs: 8 (system maximum)
-```
-
-### 2. 增量构建
-
-在开发过程中使用 `build` 操作避免重新配置:
 ```powershell
-# 首次配置
-.\build.ps1 -Action configure
+# 查看所有可用预设
+cmake --list-presets
 
-# 后续增量构建
-.\build.ps1 -Action build
+# 配置 Debug 版本
+cmake --preset msvc-x64-debug
+
+# 配置 Release 版本
+cmake --preset msvc-x64-release
 ```
 
-### 3. Release 优化
+### 构建 (Build)
 
-Release 版本会自动启用以下优化:
-- 链接时优化 (LTO/IPO)
-- 更高的优化级别
-- 更小的二进制文件
+```powershell
+# 构建 Debug 版本 (自动使用多线程)
+cmake --build --preset msvc-x64-debug
 
-## 集成到 CI/CD
-
-### GitHub Actions 示例
-
-```yaml
-name: Build and Test
-
-on: [push, pull_request]
-
-jobs:
-  build:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup MSVC
-        uses: microsoft/setup-msbuild@v1
-
-      - name: Setup CMake
-        uses: jwlawson/actions-setup-cmake@v2
-
-      - name: Build Debug
-        run: .\build.ps1 -Configuration Debug -Action both
-
-      - name: Run Tests
-        run: .\build.ps1 -Configuration Debug -Action test
-
-      - name: Build Release
-        run: .\build.ps1 -Configuration Release -Action both
-
-      - name: Package Release
-        run: .\build.ps1 -Configuration Release -Action package
+# 构建 Release 版本 (自动使用多线程)
+cmake --build --preset msvc-x64-release
 ```
+> **提示**: 这里的 `--preset` 已经定义了构建参数。如果需要手动指定并发数，可以在命令末尾添加 `-j <核心数>`，例如 `cmake --build --preset msvc-x64-debug -- -j 8` (取决于生成器) 或直接 `cmake --build --preset msvc-x64-debug -j 8` (CMake 3.12+)。
+
+### 测试 (Test)
+
+```powershell
+# 运行 Debug 测试
+ctest --preset msvc-x64-debug
+
+# 运行 Release 测试
+ctest --preset msvc-x64-release
+```
+
+### 打包 (Package)
+
+```powershell
+# 进入构建目录进行打包
+cd build/msvc-x64-release
+cpack -C Release
+```
+
+## 3. 工作流 (Workflow)
+
+CMake 3.25+ 引入了工作流预设，允许通过一条命令顺序执行 **配置 -> 构建 -> 测试 -> 打包** (如果配置了打包步骤)。
+
+```powershell
+# 执行完整的 Debug 工作流
+cmake --workflow --preset msvc-x64-debug
+
+# 执行完整的 Release 工作流
+cmake --workflow --preset msvc-x64-release
+```
+
+---
+
+## 常见问题 (FAQ)
+
+### Q: 提示 `CMake executable not found`?
+**A**: 请安装 CMake 并确保将其添加到系统 PATH 中。推荐安装位置：`C:\Program Files\CMake\bin\`。
+
+### Q: 提示 `Visual Studio DevShell module not found`?
+**A**: 请确保安装了 Visual Studio 2022 及其 C++桌面开发工作负载。如果安装位置非默认，请修改 `build.ps1` 脚本中的路径。
 
 ## 相关文档
 
-- [CMake 文档](https://cmake.org/documentation/)
-- [CPack 文档](https://cmake.org/cmake/help/latest/manual/cpack.1.html)
-- [CTest 文档](https://cmake.org/cmake/help/latest/manual/ctest.1.html)
+- [CMake Documentation](https://cmake.org/documentation/)
+- [CPack Documentation](https://cmake.org/cmake/help/latest/manual/cpack.1.html)
+- [CTest Documentation](https://cmake.org/cmake/help/latest/manual/ctest.1.html)
