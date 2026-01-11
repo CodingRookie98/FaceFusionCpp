@@ -11,7 +11,9 @@ namespace fs = std::filesystem;
 class NetworkTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_dir = "test_network_sandbox";
+        const testing::TestInfo* const test_info =
+            testing::UnitTest::GetInstance()->current_test_info();
+        test_dir = std::string("test_network_sandbox_") + test_info->test_suite_name() + "_" + test_info->name();
         if (fs::exists(test_dir)) {
             fs::remove_all(test_dir);
         }

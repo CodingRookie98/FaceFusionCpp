@@ -7,7 +7,6 @@
 #include <unordered_set>
 
 import foundation.infrastructure.crypto;
-import foundation.infrastructure.concurrent_crypto;
 
 namespace fs = std::filesystem;
 
@@ -23,7 +22,7 @@ protected:
 
     void TearDown() override {
         if (fs::exists(test_dir)) {
-           fs::remove_all(test_dir);
+            fs::remove_all(test_dir);
         }
     }
 
@@ -44,28 +43,4 @@ TEST_F(CryptoTest, Sha1Sync) {
 
     std::string hash = foundation::infrastructure::crypto::sha1(path);
     EXPECT_EQ(hash, "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3");
-}
-
-TEST_F(CryptoTest, Sha1BatchAsync) {
-    std::string p1 = create_dummy_file("f1.txt", "test");
-    std::string p2 = create_dummy_file("f2.txt", "hello");
-    // "hello" sha1 = aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d
-
-    std::unordered_set<std::string> files = {p1, p2};
-    auto results = foundation::infrastructure::concurrent_crypto::sha1_batch(files);
-
-    // Results are sorted by path, so order is deterministic
-    // f1.txt (test) should be first or second depending on path sort
-
-    // We just check if both hashes are present
-    bool found_test = false;
-    bool found_hello = false;
-
-    for(const auto& h : results) {
-        if (h == "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3") found_test = true;
-        if (h == "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d") found_hello = true;
-    }
-
-    EXPECT_TRUE(found_test);
-    EXPECT_TRUE(found_hello);
 }

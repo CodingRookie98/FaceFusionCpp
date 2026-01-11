@@ -29,3 +29,35 @@ add_facefusion_test(
     LINK_LIBRARIES
     foundation_infrastructure
 )
+
+add_facefusion_test(
+        thread_pool_tests
+        SOURCES
+        thread_pool_tests.cpp
+        LINK_LIBRARIES
+        foundation_infrastructure
+)
+
+add_facefusion_test(
+        logger_tests
+        SOURCES
+        logger_tests.cpp
+        LINK_LIBRARIES
+        foundation_infrastructure
+)
+
+add_facefusion_test(
+        concurrent_crypto_tests
+        SOURCES
+        concurrent_crypto_tests.cpp
+        LINK_LIBRARIES
+        foundation_infrastructure
+)
+
+add_facefusion_test(
+        progress_tests
+        SOURCES
+        progress_tests.cpp
+        LINK_LIBRARIES
+        foundation_infrastructure
+)
