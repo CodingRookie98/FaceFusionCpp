@@ -1,12 +1,4 @@
-add_library(foundation_ai)
-
-target_compile_features(foundation_ai PUBLIC cxx_std_20)
-
-set_target_properties(foundation_ai PROPERTIES
-        CXX_STANDARD 20
-        CXX_STANDARD_REQUIRED YES
-        CXX_EXTENSIONS OFF
-)
+add_modules_library(foundation_ai)
 
 target_sources(foundation_ai
         PUBLIC
@@ -23,12 +15,3 @@ target_link_libraries(foundation_ai
         foundation_infrastructure
         ONNXRuntime::ONNXRuntime
 )
-
-if (MSVC)
-    target_compile_options(foundation_ai
-            PRIVATE
-            /permissive-
-            /bigobj
-            /wd5050
-    )
-endif ()

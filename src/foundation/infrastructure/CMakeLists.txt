@@ -10,15 +10,7 @@ find_package(OpenSSL REQUIRED)
 # indicators is usually header-only, assuming it's available or we might need to find/add it.
 # For now assuming it is available via include path or fetchcontent in root.
 
-add_library(foundation_infrastructure STATIC)
-
-target_compile_features(foundation_infrastructure PUBLIC cxx_std_20)
-
-set_target_properties(foundation_infrastructure PROPERTIES
-    CXX_STANDARD 20
-    CXX_STANDARD_REQUIRED YES
-    CXX_EXTENSIONS OFF
-)
+add_modules_library(foundation_infrastructure STATIC)
 
 target_sources(foundation_infrastructure
     PUBLIC
@@ -60,12 +52,3 @@ target_link_libraries(foundation_infrastructure
         OpenSSL::Crypto
         # indicators::indicators # If it has a target
 )
-
-if (MSVC)
-    target_compile_options(foundation_infrastructure
-        PRIVATE
-            /permissive-
-            /bigobj
-            /wd5050 # Header unit warning
-    )
-endif()

@@ -1,14 +1,6 @@
-add_library(domain_ai)
+add_modules_library(domain_ai)
 
 find_package(nlohmann_json REQUIRED)
-
-target_compile_features(domain_ai PUBLIC cxx_std_20)
-
-set_target_properties(domain_ai PROPERTIES
-    CXX_STANDARD 20
-    CXX_STANDARD_REQUIRED YES
-    CXX_EXTENSIONS OFF
-)
 
 target_sources(domain_ai
     PUBLIC
@@ -25,12 +17,3 @@ target_link_libraries(domain_ai
         foundation_infrastructure
         nlohmann_json::nlohmann_json
 )
-
-if (MSVC)
-    target_compile_options(domain_ai
-        PRIVATE
-            /permissive-
-            /bigobj
-            /wd5050
-    )
-endif()

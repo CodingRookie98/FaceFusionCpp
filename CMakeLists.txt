@@ -43,6 +43,8 @@ else()
     target_compile_options(${app_facefusioncpp} PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+include(cmake/modules_lib.cmake)
+
 add_subdirectory(src)
 
 # 添加测试支持
