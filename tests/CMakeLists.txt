@@ -90,3 +90,13 @@ add_facefusion_test(
     domain_ai
     foundation_infrastructure
 )
+
+# Inference Session Module Tests
+add_facefusion_test(
+    inference_session_tests
+    SOURCES
+    unit/foundation/ai/inference_session_tests.cpp
+    LINK_LIBRARIES
+    foundation_ai
+    foundation_infrastructure
+)
