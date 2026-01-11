@@ -45,7 +45,7 @@ endif ()
 if (WIN32 OR WIN64)
     FILE(GLOB ONNXRUNTIME_LIBS "${ORT_PATH}/lib/*.dll")
 elseif (LINUX)
-    FILE(GLOB ONNXRUNTIME_LIBS "${ORT_PATH}/lib/*.so")
+    FILE(GLOB ONNXRUNTIME_LIBS "${ORT_PATH}/lib/*.so*")
 endif ()
 
 add_custom_command(TARGET ${app_facefusioncpp} POST_BUILD
@@ -54,3 +54,16 @@ add_custom_command(TARGET ${app_facefusioncpp} POST_BUILD
         $<TARGET_FILE_DIR:${app_facefusioncpp}>
         COMMENT "Copying ONNX Runtime libs to runtime output directory"
 )
+
+if (NOT TARGET ONNXRuntime::ONNXRuntime)
+    add_library(ONNXRuntime::ONNXRuntime INTERFACE IMPORTED GLOBAL)
+    target_include_directories(ONNXRuntime::ONNXRuntime INTERFACE "${ORT_PATH}/include")
+
+    if (WIN32)
+        file(GLOB ONNXRUNTIME_LIBRARIES "${ORT_PATH}/lib/onnxruntime*.lib")
+        target_link_libraries(ONNXRuntime::ONNXRuntime INTERFACE ${ONNXRUNTIME_LIBRARIES})
+    elseif (LINUX)
+        file(GLOB ONNXRUNTIME_LIBRARIES "${ORT_PATH}/lib/libonnxruntime*.so")
+        target_link_libraries(ONNXRuntime::ONNXRuntime INTERFACE ${ONNXRUNTIME_LIBRARIES})
+    endif ()
+endif()
