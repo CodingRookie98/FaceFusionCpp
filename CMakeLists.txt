@@ -110,7 +110,6 @@ target_link_libraries(${app_facefusioncpp} PRIVATE ${OpenCV_LIBS})
 # make onnxruntime available
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/onnxruntime-gpu.cmake")
 target_link_libraries(${app_facefusioncpp} PRIVATE ONNXRuntime::ONNXRuntime)
-
 target_link_libraries(${app_facefusioncpp} PRIVATE ONNX::onnx ONNX::onnx_proto)
 target_link_libraries(${app_facefusioncpp} PRIVATE nlohmann_json::nlohmann_json)
 target_link_libraries(${app_facefusioncpp} PRIVATE spdlog::spdlog_header_only)
