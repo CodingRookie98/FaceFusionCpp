@@ -48,7 +48,10 @@ param(
     [switch]$EnableStaticAnalysis,
 
     [Parameter(Mandatory=$false)]
-    [string]$Target = "all"
+    [string]$Target = "all",
+
+    [Parameter(Mandatory=$false)]
+    [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -260,10 +263,7 @@ function Invoke-CMakeConfigure {
 
     try {
         $arguments = @(
-            "-DCMAKE_BUILD_TYPE=$Configuration",
-            "--preset", $script:presetName,
-            "-S", $script:projectRoot,
-            "-B", $script:buildDir
+            "--preset", $script:presetName
         )
 
         Write-Log "Executing: $script:cmakePath $($arguments -join ' ')" -Level Info
@@ -299,14 +299,17 @@ function Invoke-CMakeBuild {
 
     try {
         $arguments = @(
-            "--build", $script:buildDir
+            "--build",
+            "--preset", $script:presetName
         )
 
         if ($script:target -ne "all") {
             $arguments += "--target", $script:target
         }
 
-        $arguments += "-j", $script:maxThreads
+        # Ninja automatically uses all cores, but we can pass it if needed.
+        # Presets might define native tool options.
+        # $arguments += "-j", $script:maxThreads
 
         Write-Log "Executing: $script:cmakePath $($arguments -join ' ')" -Level Info
 
@@ -355,9 +358,7 @@ function Invoke-CMakeTest {
         }
 
         $arguments = @(
-            "--test-dir", $script:buildDir,
-            "--output-on-failure",
-            "--parallel", $script:maxThreads
+            "--preset", $script:presetName
         )
 
         Write-Log "Executing: $ctestPath $($arguments -join ' ')" -Level Info
@@ -479,6 +480,9 @@ function Invoke-Main {
                 Invoke-CMakeBuild
             }
             "test" {
+                if (-not $SkipBuild) {
+                    Invoke-CMakeBuild
+                }
                 Invoke-CMakeTest
             }
             "install" {

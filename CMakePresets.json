@@ -4,6 +4,7 @@
         {
             "name": "linux-base",
             "hidden": true,
+            "description": "Base configuration for Linux",
             "generator": "Ninja",
             "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
             "condition": {
@@ -18,7 +19,8 @@
         },
         {
             "name": "linux-release",
-            "displayName": "x64 Release",
+            "displayName": "Linux x64 Release",
+            "description": "Release configuration for Linux x64",
             "inherits": "linux-base",
             "binaryDir": "${sourceDir}/build/linux-x64-release",
             "installDir": "${sourceDir}/build/install/linux-x64-release",
@@ -28,7 +30,8 @@
         },
         {
             "name": "linux-debug",
-            "displayName": "x64 debug",
+            "displayName": "Linux x64 Debug",
+            "description": "Debug configuration for Linux x64",
             "inherits": "linux-base",
             "binaryDir": "${sourceDir}/build/linux-x64-debug",
             "installDir": "${sourceDir}/build/install/linux-x64-debug",
@@ -39,6 +42,7 @@
         {
             "name": "windows-x64-base",
             "hidden": true,
+            "description": "Base configuration for Windows x64",
             "generator": "Ninja",
             "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
             "condition": {
@@ -54,6 +58,7 @@
         {
             "name": "msvc-x64-base",
             "hidden": true,
+            "description": "Base configuration for Windows x64 using MSVC",
             "inherits": "windows-x64-base",
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "cl.exe",
@@ -62,7 +67,8 @@
         },
         {
             "name": "msvc-x64-release",
-            "displayName": "msvc x64 release",
+            "displayName": "MSVC x64 Release",
+            "description": "Release configuration for Windows x64 using MSVC",
             "inherits": "msvc-x64-base",
             "binaryDir": "${sourceDir}/build/msvc-x64-release",
             "installDir": "${sourceDir}/build/install/msvc-x64-release",
@@ -73,7 +79,8 @@
         },
         {
             "name": "msvc-x64-debug",
-            "displayName": "msvc x64 debug",
+            "displayName": "MSVC x64 Debug",
+            "description": "Debug configuration for Windows x64 using MSVC",
             "inherits": "msvc-x64-base",
             "binaryDir": "${sourceDir}/build/msvc-x64-debug",
             "installDir": "${sourceDir}/build/install/msvc-x64-debug",
@@ -86,11 +93,15 @@
     "buildPresets": [
         {
             "name": "msvc-x64-debug",
+            "displayName": "Build MSVC x64 Debug",
+            "description": "Build Debug configuration for Windows x64",
             "configurePreset": "msvc-x64-debug",
             "configuration": "Debug"
         },
         {
             "name": "msvc-x64-release",
+            "displayName": "Build MSVC x64 Release",
+            "description": "Build Release configuration for Windows x64",
             "configurePreset": "msvc-x64-release",
             "configuration": "Release"
         }
@@ -98,6 +109,8 @@
     "testPresets": [
         {
             "name": "msvc-x64-debug",
+            "displayName": "Test MSVC x64 Debug",
+            "description": "Run tests for Debug configuration",
             "configurePreset": "msvc-x64-debug",
             "configuration": "Debug",
             "output": {
@@ -106,6 +119,8 @@
         },
         {
             "name": "msvc-x64-release",
+            "displayName": "Test MSVC x64 Release",
+            "description": "Run tests for Release configuration",
             "configurePreset": "msvc-x64-release",
             "configuration": "Release",
             "output": {

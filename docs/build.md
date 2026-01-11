@@ -37,10 +37,11 @@
 | 参数 | 说明 | 可选值 | 默认值 |
 | :--- | :--- | :--- | :--- |
 | `-Configuration` | 构建配置类型 | `Debug`, `Release` | `Debug` |
-| `-Action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (运行测试)<br>`install` (安装)<br>`package` (打包)<br>`both` (配置+构建) | `both` |
+| `-Action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (构建并运行测试)<br>`install` (安装)<br>`package` (打包)<br>`both` (配置+构建) | `both` |
 | `-Target` | 构建目标 | `all` 或具体目标名 | `all` |
 | `-EnableCoverage` | 启用代码覆盖率 | `[switch]` | `False` |
 | `-EnableStaticAnalysis` | 启用静态分析 | `[switch]` | `False` |
+| `-SkipBuild` | 跳过自动构建 (仅对 test 有效) | `[switch]` | `False` |
 
 > **注意**: 脚本会自动利用系统所有可用核心进行并行构建，无需手动指定 `-j` 参数。
 
