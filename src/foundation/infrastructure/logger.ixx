@@ -4,13 +4,10 @@ module;
 
 export module foundation.infrastructure.logger;
 
-// import <string>;
-// import <memory>;
-
 export namespace foundation::infrastructure::logger {
 class Logger {
 public:
-    static Logger& get_instance();
+    static std::shared_ptr<Logger> get_instance();
 
     // Delete copy/move
     Logger(const Logger&)            = delete;

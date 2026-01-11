@@ -15,8 +15,12 @@ struct Logger::Impl {
     std::shared_ptr<spdlog::logger> logger;
 };
 
-Logger& Logger::get_instance() {
-    static Logger instance;
+std::shared_ptr<Logger> Logger::get_instance() {
+    static std::once_flag flag;
+    static std::shared_ptr<Logger> instance;
+    std::call_once(flag, [&]() {
+        instance = std::make_shared<Logger>();
+    });
     return instance;
 }
 
