@@ -121,14 +121,11 @@ target_link_libraries(${app_facefusioncpp} PRIVATE yaml-cpp::yaml-cpp)
 target_link_libraries(${app_facefusioncpp} PRIVATE foundation_ai)
 target_link_libraries(${app_facefusioncpp} PRIVATE domain_ai)
 
-list(APPEND RESOURCE_FILES
-        "${CMAKE_CURRENT_SOURCE_DIR}/facefusionCpp/modelsInfo.json"
-)
 add_custom_target(copy_resource_files
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${RESOURCE_FILES}
-        $<TARGET_FILE_DIR:${app_facefusioncpp}>
-        COMMENT "Copying resource files to runtime output directory"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+        "$<TARGET_FILE_DIR:${app_facefusioncpp}>/assets"
+        COMMENT "Copying assets directory to runtime output directory"
 )
 add_dependencies(${app_facefusioncpp} copy_resource_files)
 
