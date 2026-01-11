@@ -11,6 +11,10 @@
 .PARAMETER Configuration
     Build configuration: Debug or Release. Default is Debug.
 
+.PARAMETER Target
+    Build target to execute. Default is "all" (builds all targets).
+    You can specify a specific target name (e.g., "FaceFusionCpp").
+
 .PARAMETER Action
     Action to perform: configure, build, or both. Default is both.
 
@@ -41,7 +45,10 @@ param(
     [switch]$EnableCoverage,
 
     [Parameter(Mandatory=$false)]
-    [switch]$EnableStaticAnalysis
+    [switch]$EnableStaticAnalysis,
+
+    [Parameter(Mandatory=$false)]
+    [string]$Target = "all"
 )
 
 $ErrorActionPreference = "Stop"
@@ -52,7 +59,7 @@ $script:cmakePath = $null
 $script:projectRoot = $null
 $script:presetName = "msvc-x64-" + $Configuration.ToLower()
 $script:buildDir = $null
-$script:target = "FaceFusionCpp"
+$script:target = $Target
 
 function Write-Log {
     <#
@@ -292,10 +299,14 @@ function Invoke-CMakeBuild {
 
     try {
         $arguments = @(
-            "--build", $script:buildDir,
-            "--target", $script:target,
-            "-j", $script:maxThreads
+            "--build", $script:buildDir
         )
+
+        if ($script:target -ne "all") {
+            $arguments += "--target", $script:target
+        }
+
+        $arguments += "-j", $script:maxThreads
 
         Write-Log "Executing: $script:cmakePath $($arguments -join ' ')" -Level Info
 
@@ -309,7 +320,7 @@ function Invoke-CMakeBuild {
         $outputDir = Join-Path $script:buildDir "runtime\$script:presetName"
         $executablePath = Join-Path $outputDir "$script:target.exe"
 
-        if (Test-FileAccess -Path $executablePath -PathType Leaf) {
+        if ($script:target -ne "all" -and (Test-FileAccess -Path $executablePath -PathType Leaf)) {
             Write-Log "Executable created: $executablePath" -Level Success
         }
 

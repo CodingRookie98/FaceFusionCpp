@@ -25,6 +25,9 @@
 
 # 打包项目
 .\build.ps1 -Configuration Release -Action package
+
+# 仅构建主程序 (旧默认行为)
+.\build.ps1 -Target FaceFusionCpp
 ```
 
 ## 3. 参数说明
@@ -35,6 +38,7 @@
 | :--- | :--- | :--- | :--- |
 | `-Configuration` | 构建配置类型 | `Debug`, `Release` | `Debug` |
 | `-Action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (运行测试)<br>`install` (安装)<br>`package` (打包)<br>`both` (配置+构建) | `both` |
+| `-Target` | 构建目标 | `all` 或具体目标名 | `all` |
 | `-EnableCoverage` | 启用代码覆盖率 | `[switch]` | `False` |
 | `-EnableStaticAnalysis` | 启用静态分析 | `[switch]` | `False` |
 
