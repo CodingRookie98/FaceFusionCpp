@@ -22,7 +22,9 @@ if (NOT EXISTS "${ORT_DOWNLOAD_FILE}")
 
     # 下载文件
     message(STATUS "Downloading ${ORT_FILE_NAME}")
-    file(DOWNLOAD "${ORT_DOWNLOAD_URL}" "${ORT_DOWNLOAD_FILE}" SHOW_PROGRESS)
+    file(DOWNLOAD "${ORT_DOWNLOAD_URL}" "${ORT_DOWNLOAD_FILE}.tmp" SHOW_PROGRESS)
+    # 重命名临时文件为最终文件名
+    file(RENAME "${ORT_DOWNLOAD_FILE}.tmp" "${ORT_DOWNLOAD_FILE}")
 
     # 确保解压目录存在
     file(MAKE_DIRECTORY "${ORT_EXTRACT_DIR}")
