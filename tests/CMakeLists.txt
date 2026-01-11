@@ -37,13 +37,6 @@ function(add_facefusion_test TEST_NAME)
     )
 endfunction()
 
-# 示例测试：基础功能测试
-add_facefusion_test(
-    example_test
-    SOURCES
-        example_test.cpp
-)
-
 # Core Utils 模块测试
 # Core Utils Module Tests
 add_facefusion_test(
