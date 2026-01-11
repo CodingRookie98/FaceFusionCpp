@@ -27,6 +27,15 @@ void copy_file(const std::string& source, const std::string& destination) {
     std::filesystem::copy_file(source, destination, std::filesystem::copy_options::overwrite_existing);
 }
 
+void copy_files(const std::vector<std::string>& sources, const std::string& destination) {
+    if (sources.empty() || destination.empty()) {
+        throw std::invalid_argument("Sources or destination path is empty");
+    }
+    for (const auto& source : sources) {
+        copy_file(source, destination);
+    }
+}
+
 bool file_exists(const std::string& path) {
     return std::filesystem::exists(path);
 }
