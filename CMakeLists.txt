@@ -118,6 +118,8 @@ target_link_libraries(${app_facefusioncpp} PRIVATE OpenSSL::Crypto)
 target_link_libraries(${app_facefusioncpp} PRIVATE dp::thread-pool)
 target_link_libraries(${app_facefusioncpp} PRIVATE Boost::process)
 target_link_libraries(${app_facefusioncpp} PRIVATE yaml-cpp::yaml-cpp)
+target_link_libraries(${app_facefusioncpp} PRIVATE foundation_ai)
+target_link_libraries(${app_facefusioncpp} PRIVATE domain_ai)
 
 list(APPEND RESOURCE_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/facefusionCpp/modelsInfo.json"

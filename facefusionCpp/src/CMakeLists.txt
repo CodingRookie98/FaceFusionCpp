@@ -1,8 +1,6 @@
 
 target_sources(${app_facefusioncpp} PRIVATE
         FILE_SET CXX_MODULES FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/ai/inference_session.ixx
-        ${CMAKE_CURRENT_SOURCE_DIR}/ai/model_manager.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/core/core.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/core/core_options.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/core/metadata.ixx
@@ -15,8 +13,6 @@ target_sources(${app_facefusioncpp} PRIVATE
 )
 
 target_sources(${app_facefusioncpp} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/ai/inference_session.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/ai/model_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/core/core.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/media/ffmpeg_runner.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/media/vision.cpp

@@ -14,9 +14,9 @@ module;
 #include <memory>
 #include <nlohmann/json.hpp>
 
-export module model_manager;
+export module domain.ai.model_manager;
 
-namespace ffc::ai::model_manager {
+namespace domain::ai::model_manager {
 
 using json = nlohmann::json;
 /**
@@ -193,4 +193,32 @@ private:
     std::unordered_map<Model, ModelInfo> m_models_info_map; ///< Map of model enumeration values to ModelInfo structures
 };
 
-} // namespace ffc::ai::model_manager
+/**
+ * @brief Serialize Model enum to JSON
+ * @param j JSON object to write to
+ * @param model Model enum value to serialize
+ */
+export void to_json(json& j, const Model& model);
+
+/**
+ * @brief Deserialize Model enum from JSON
+ * @param j JSON object to read from
+ * @param model Model enum value to deserialize
+ */
+export void from_json(const json& j, Model& model);
+
+/**
+ * @brief Serialize ModelInfo to JSON
+ * @param j JSON object to write to
+ * @param model_info ModelInfo object to serialize
+ */
+export void to_json(json& j, const ModelInfo& model_info);
+
+/**
+ * @brief Deserialize ModelInfo from JSON
+ * @param j JSON object to read from
+ * @param model_info ModelInfo object to deserialize
+ */
+export void from_json(const json& j, ModelInfo& model_info);
+
+} // namespace domain::ai::model_manager

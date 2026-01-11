@@ -12,12 +12,15 @@ module;
 #include <filesystem>
 #include <mutex>
 #include <onnxruntime_cxx_api.h>
+#include <format>
+#include <memory>
+#include <string>
 
-module inference_session;
+module foundation.ai.inference_session;
 
-namespace ffc::ai {
+namespace foundation::ai::inference_session {
 
-using namespace ffc::infra;
+using namespace foundation::infrastructure;
 
 /**
  * @brief Construct a new InferenceSession object
@@ -30,7 +33,7 @@ InferenceSession::InferenceSession(const std::shared_ptr<Ort::Env>& env) {
     m_session_options.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
     auto available_providers = Ort::GetAvailableProviders();
     m_available_providers.insert(available_providers.begin(), available_providers.end());
-    m_logger = Logger::get_instance();
+    m_logger = logger::Logger::get_instance(); // Updated for new namespace
     m_memory_info = std::make_unique<Ort::MemoryInfo>(Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault));
 }
 
@@ -73,13 +76,13 @@ void InferenceSession::load_model(const std::string& model_path, const Options& 
         m_ort_session = std::make_unique<Ort::Session>(*m_ort_env, model_path.c_str(), m_session_options);
 #endif
     } catch (const Ort::Exception& e) {
-        m_logger->error(std::format("CreateSession: Ort::Exception: {}", e.what()));
+       m_logger->error(std::format("CreateSession: Ort::Exception: {}", e.what()));
         throw std::runtime_error(e.what());
     } catch (const std::exception& e) {
-        m_logger->error(std::format("CreateSession: std::exception: {}", e.what()));
+       m_logger->error(std::format("CreateSession: std::exception: {}", e.what()));
         throw std::runtime_error(e.what());
     } catch (...) {
-        m_logger->error("CreateSession: Unknown exception occurred.");
+       m_logger->error("CreateSession: Unknown exception occurred.");
         throw std::runtime_error("CreateSession: Unknown exception occurred.");
     }
 
@@ -126,7 +129,7 @@ void InferenceSession::load_model(const std::string& model_path, const Options& 
         }
     }
 
-    m_logger->trace(info_msg);
+   m_logger->trace(info_msg);
     m_is_model_loaded = true;
     m_model_path = model_path;
 }
@@ -139,7 +142,7 @@ void InferenceSession::load_model(const std::string& model_path, const Options& 
  */
 void InferenceSession::append_provider_cuda() {
     if (!m_available_providers.contains("CUDAExecutionProvider")) {
-        m_logger->error("CUDA execution provider is not available in your environment.");
+       m_logger->error("CUDA execution provider is not available in your environment.");
         return;
     }
     m_cuda_provider_options = std::make_unique<OrtCUDAProviderOptions>();
@@ -150,7 +153,7 @@ void InferenceSession::append_provider_cuda() {
     try {
         m_session_options.AppendExecutionProvider_CUDA(*m_cuda_provider_options);
     } catch (const Ort::Exception& e) {
-        m_logger->error(std::format("AppendExecutionProvider_CUDA: Ort::Exception: {}", e.what()));
+       m_logger->error(std::format("AppendExecutionProvider_CUDA: Ort::Exception: {}", e.what()));
         throw std::runtime_error(e.what());
     }
 }
@@ -164,7 +167,7 @@ void InferenceSession::append_provider_cuda() {
  */
 void InferenceSession::append_provider_tensorrt() {
     if (!m_available_providers.contains("TensorrtExecutionProvider")) {
-        m_logger->error("TensorRT execution provider is not available in your environment.");
+       m_logger->error("TensorRT execution provider is not available in your environment.");
         return;
     }
     std::vector<const char*> keys;
@@ -219,13 +222,13 @@ void InferenceSession::append_provider_tensorrt() {
                                                             keys.data(), values.data(), keys.size()));
         m_session_options.AppendExecutionProvider_TensorRT_V2(*tensorrt_provider_options_v2);
     } catch (const Ort::Exception& e) {
-        m_logger->warn(std::format("Failed to append TensorRT execution provider: {}", e.what()));
+       m_logger->warn(std::format("Failed to append TensorRT execution provider: {}", e.what()));
         throw std::runtime_error(e.what());
     } catch (const std::exception& e) {
-        m_logger->warn(std::format("Failed to append TensorRT execution provider: {}", e.what()));
+       m_logger->warn(std::format("Failed to append TensorRT execution provider: {}", e.what()));
         throw std::runtime_error(e.what());
     } catch (...) {
-        m_logger->error("Failed to append TensorRT execution provider: Unknown error");
+       m_logger->error("Failed to append TensorRT execution provider: Unknown error");
         throw std::runtime_error("Failed to append TensorRT execution provider: Unknown error");
     }
     api.ReleaseTensorRTProviderOptions(tensorrt_provider_options_v2);
@@ -266,4 +269,4 @@ void InferenceSession::reset() {
     m_session_options.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
     m_cuda_provider_options.reset();
 }
-} // namespace ffc::ai
+} // namespace foundation::ai::inference_session

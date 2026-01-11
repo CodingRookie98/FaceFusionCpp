@@ -1,4 +1,3 @@
-
 module;
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -6,59 +5,106 @@ module;
 #include <memory>
 #include <string>
 #include <filesystem>
+#include <mutex>
+#include <vector>
+#include <iostream>
 
 module foundation.infrastructure.logger;
 
 namespace foundation::infrastructure::logger {
 
-struct Logger::Impl {
-    std::shared_ptr<spdlog::logger> logger;
-};
-
 std::shared_ptr<Logger> Logger::get_instance() {
     static std::once_flag flag;
     static std::shared_ptr<Logger> instance;
     std::call_once(flag, [&]() {
-        instance = std::make_shared<Logger>();
+        instance = std::shared_ptr<Logger>(new Logger());
     });
     return instance;
 }
 
-Logger::Logger() : m_impl(std::make_unique<Impl>()) {
+Logger::Logger() {
     try {
-        // Create a multi-sink logger (console and file)
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-        console_sink->set_level(spdlog::level::info);
+        console_sink->set_level(spdlog::level::trace);
 
-        // Ensure log directory exists
         if (!std::filesystem::exists("logs")) {
             std::filesystem::create_directory("logs");
         }
         auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/app.log", true);
         file_sink->set_level(spdlog::level::trace);
 
-        m_impl->logger = std::make_shared<spdlog::logger>("multi_sink", spdlog::sinks_init_list{console_sink, file_sink});
-        m_impl->logger->set_level(spdlog::level::trace);
-
-        // Register globally if desired, though we encapsulate
-        // spdlog::register_logger(m_impl->logger);
+        m_logger = std::make_shared<spdlog::logger>("facefusion", spdlog::sinks_init_list{console_sink, file_sink});
+        m_logger->set_level(spdlog::level::trace);
+        m_logger->flush_on(spdlog::level::trace);
     } catch (const spdlog::spdlog_ex& ex) {
-        // Fallback or stderr
+        std::cerr << "Log init failed: " << ex.what() << std::endl;
     }
 }
 
-Logger::~Logger() = default;
-
-void Logger::info(const std::string& msg) {
-    if (m_impl->logger) m_impl->logger->info(msg);
+void Logger::trace(const std::string& msg) const {
+    if (m_logger) m_logger->trace(msg);
 }
 
-void Logger::warn(const std::string& msg) {
-    if (m_impl->logger) m_impl->logger->warn(msg);
+void Logger::debug(const std::string& msg) const {
+    if (m_logger) m_logger->debug(msg);
 }
 
-void Logger::error(const std::string& msg) {
-    if (m_impl->logger) m_impl->logger->error(msg);
+void Logger::info(const std::string& msg) const {
+    if (m_logger) m_logger->info(msg);
 }
 
+void Logger::warn(const std::string& msg) const {
+    if (m_logger) m_logger->warn(msg);
+}
+
+void Logger::error(const std::string& msg) const {
+    if (m_logger) m_logger->error(msg);
+}
+
+void Logger::critical(const std::string& msg) const {
+    if (m_logger) m_logger->critical(msg);
+}
+
+void Logger::log(const std::string &level, const std::string &msg) {
+    // level to lower
+    std::string level_t = level;
+    std::ranges::for_each(level_t, [](char &c) { c = std::tolower(c); });
+    if (level_t == "trace") {
+        get_instance()->trace(msg);
+    } else if (level_t == "debug") {
+        get_instance()->debug(msg);
+    } else if (level_t == "info") {
+        get_instance()->info(msg);
+    } else if (level_t == "warn") {
+        get_instance()->warn(msg);
+    } else if (level_t == "error") {
+        get_instance()->error(msg);
+    } else if (level_t == "critical") {
+        get_instance()->critical(msg);
+    }
+}
+
+void Logger::log(const LogLevel &level, const std::string &message) const {
+    switch (level) {
+    case LogLevel::Trace:
+        trace(message);
+        break;
+    case LogLevel::Debug:
+        debug(message);
+        break;
+    case LogLevel::Info:
+        info(message);
+        break;
+    case LogLevel::Warn:
+        warn(message);
+        break;
+    case LogLevel::Error:
+        error(message);
+        break;
+    case LogLevel::Critical:
+        critical(message);
+        break;
+    case LogLevel::Off: break;
+    }
+}
 } // namespace foundation::infrastructure::logger

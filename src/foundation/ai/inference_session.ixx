@@ -12,12 +12,12 @@ module;
 #include <mutex>
 #include <onnxruntime_cxx_api.h>
 
-export module inference_session;
-import logger;
+export module foundation.ai.inference_session;
+import foundation.infrastructure.logger;
 
-namespace ffc::ai {
+namespace foundation::ai::inference_session {
 
-using namespace infra;
+using namespace foundation::infrastructure; // Adapt based on actual logger namespace usage
 
 /**
  * @brief ONNX Runtime inference session wrapper class
@@ -27,9 +27,9 @@ using namespace infra;
 export class InferenceSession {
 public:
     enum class ExecutionProvider {
-        CPU,      ///< CPU execution provider
-        CUDA,     ///< CUDA GPU execution provider
-        TensorRT  ///< TensorRT execution provider
+        CPU,     ///< CPU execution provider
+        CUDA,    ///< CUDA GPU execution provider
+        TensorRT ///< TensorRT execution provider
     };
 
     struct Options {
@@ -74,26 +74,26 @@ public:
     [[nodiscard]] std::string get_loaded_model_path() const;
 
 protected:
-    std::unique_ptr<Ort::Session> m_ort_session;                                          ///< ONNX Runtime session object
-    Ort::SessionOptions m_session_options;                                                 ///< Session configuration options
-    Ort::RunOptions m_run_options;                                                        ///< Run configuration options
-    std::unique_ptr<OrtCUDAProviderOptions> m_cuda_provider_options{nullptr};             ///< CUDA execution provider options
-    std::vector<const char*> m_input_names;                                                ///< Input tensor names
-    std::vector<const char*> m_output_names;                                               ///< Output tensor names
-    std::vector<std::vector<int64_t>> m_input_node_dims;                                   ///< Input tensor dimensions
-    std::vector<std::vector<int64_t>> m_output_node_dims;                                  ///< Output tensor dimensions
-    std::unique_ptr<Ort::MemoryInfo> m_memory_info;                                       ///< Memory information for tensor allocation
+    std::unique_ptr<Ort::Session> m_ort_session;                              ///< ONNX Runtime session object
+    Ort::SessionOptions m_session_options;                                    ///< Session configuration options
+    Ort::RunOptions m_run_options;                                            ///< Run configuration options
+    std::unique_ptr<OrtCUDAProviderOptions> m_cuda_provider_options{nullptr}; ///< CUDA execution provider options
+    std::vector<const char*> m_input_names;                                   ///< Input tensor names
+    std::vector<const char*> m_output_names;                                  ///< Output tensor names
+    std::vector<std::vector<int64_t>> m_input_node_dims;                      ///< Input tensor dimensions
+    std::vector<std::vector<int64_t>> m_output_node_dims;                     ///< Output tensor dimensions
+    std::unique_ptr<Ort::MemoryInfo> m_memory_info;                           ///< Memory information for tensor allocation
 
 private:
-    std::mutex m_mutex;                                                                    ///< Mutex for thread-safe operations
-    std::shared_ptr<Ort::Env> m_ort_env;                                                   ///< ONNX Runtime environment
-    std::unordered_set<std::string> m_available_providers;                                ///< Available execution providers
-    Options m_options;                                                                     ///< Current session options
-    std::vector<Ort::AllocatedStringPtr> m_input_names_ptrs;                               ///< Allocated input name strings
-    std::vector<Ort::AllocatedStringPtr> m_output_names_ptrs;                             ///< Allocated output name strings
-    std::shared_ptr<Logger> m_logger;                                                      ///< Logger instance
-    bool m_is_model_loaded = false;                                                        ///< Flag indicating if model is loaded
-    std::string m_model_path;                                                              ///< Path to the loaded model
+    std::mutex m_mutex;                                       ///< Mutex for thread-safe operations
+    std::shared_ptr<Ort::Env> m_ort_env;                      ///< ONNX Runtime environment
+    std::unordered_set<std::string> m_available_providers;    ///< Available execution providers
+    Options m_options;                                        ///< Current session options
+    std::vector<Ort::AllocatedStringPtr> m_input_names_ptrs;  ///< Allocated input name strings
+    std::vector<Ort::AllocatedStringPtr> m_output_names_ptrs; ///< Allocated output name strings
+    std::shared_ptr<logger::Logger> m_logger;                                              ///< Logger instance
+    bool m_is_model_loaded = false;                           ///< Flag indicating if model is loaded
+    std::string m_model_path;                                 ///< Path to the loaded model
 
     /**
      * @brief Append CUDA execution provider to session options
@@ -117,4 +117,4 @@ private:
     void reset();
 };
 
-} // namespace ffc::ai
+} // namespace foundation::ai::inference_session
