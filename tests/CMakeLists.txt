@@ -80,3 +80,13 @@ add_facefusion_test(
         LINK_LIBRARIES
         foundation_infrastructure
 )
+
+# Model Manager Module Tests
+add_facefusion_test(
+    model_manager_tests
+    SOURCES
+    unit/domain/ai/model_manager_tests.cpp
+    LINK_LIBRARIES
+    domain_ai
+    foundation_infrastructure
+)
