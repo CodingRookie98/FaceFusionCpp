@@ -5,6 +5,10 @@ module;
 #include <vector>
 #include <stdexcept>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 module foundation.infrastructure.file_system;
 
 namespace foundation::infrastructure::file_system {
@@ -34,41 +38,6 @@ void copy_files(const std::vector<std::string>& sources, const std::string& dest
         throw std::invalid_argument("Sources or destination path is empty");
     }
     for (const auto& source : sources) {
-        // destination meant to be dict? no, standard copy logic usually implies dest is dir if multiple sources.
-        // But the original usage might vary.
-        // Logic in original file was: copy_file(source, destination) - iterating.
-        // If destination is a directory, we should append filename.
-        // But legacy implementation in `facefusionCpp` might have done exactly what was there.
-        // The previous implementation I saw in `vision.cpp` pass `tmpTargetImgPaths` (vector) and `outputImgPaths` (vector) to `move_files`.
-        // Wait, `move_files` (not `copy_files`) was used in `core.cpp`.
-        // `copy_files` used in `core.cpp`: `file_system::copy_files(core_task.target_paths, originalTargetPaths);` (vector to vector).
-        // My interface says `vector<string> sources, string destination`. This mismatches `copy_files(vec, vec)`.
-        // I need to check `core.cpp` usage again.
-        // `file_system::copy_files(core_task.target_paths, originalTargetPaths);` where both are vectors.
-        // So `copy_files` should probably take `vector, vector`.
-        // But `file_system.ixx` has `void copy_files(const std::vector<std::string>& sources, const std::string& destination);`.
-        // This is a mismatch with legacy usage!
-        // I should change `copy_files` signature to `vector, vector` or add overloading.
-        // But `file_system.cpp` already has implementation for `copy_files(vec, string)`.
-
-        // Let's check `file_system.cpp` existing content again.
-        // 30: void copy_files(const std::vector<std::string>& sources, const std::string& destination) { ... }
-        // It iterates sources and calls `copy_file(source, destination)`. This implies destination is overwritten repeatedly? Or destination is a DIR?
-        // If destination is a dir, `std::filesystem::copy_file` will fail if dest is dir.
-        // `copy_file` implementation uses `copy_file(src, dst, overwrite)`.
-
-        // I will fix `copy_files` to match what might be needed (vector, vector) if `core.cpp` uses it that way.
-        // But `core.cpp` is LEGACY code I shouldn't touch?
-        // Wait, `vision.cpp` call `copy_files`?
-        // No, `vision.cpp` error log didn't mention `copy_files`.
-
-        // I'll stick to implementing missing functions for now.
-        // I'll ignore `copy_files` signature issue until it breaks build (which it might if `core.cpp` is compiled).
-        // But `core.cpp` is compiled.
-
-        // I'll add `copy_files(vec, vec)` overload if needed.
-
-        // For now, implementing missing functions.
         copy_file(source, destination);
     }
 }
@@ -130,7 +99,19 @@ std::string absolute_path(const std::string& path) {
 }
 
 std::string utf8_to_sys_default_local(const std::string& str) {
+#ifdef _WIN32
+    if (str.empty()) return "";
+    int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), NULL, 0);
+    std::wstring wstrTo(size_needed, 0);
+    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), &wstrTo[0], size_needed);
+
+    int size_needed_ansi = WideCharToMultiByte(CP_ACP, 0, wstrTo.c_str(), (int)wstrTo.size(), NULL, 0, NULL, NULL);
+    std::string strTo(size_needed_ansi, 0);
+    WideCharToMultiByte(CP_ACP, 0, wstrTo.c_str(), (int)wstrTo.size(), &strTo[0], size_needed_ansi, NULL, NULL);
+    return strTo;
+#else
     return str;
+#endif
 }
 
 } // namespace foundation::infrastructure::file_system
