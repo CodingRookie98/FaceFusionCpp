@@ -1,4 +1,5 @@
 find_package(OpenCV REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 add_modules_library(domain_face)
 
@@ -8,13 +9,21 @@ target_sources(domain_face
         FILES
             face_types.ixx
             face.ixx
+            face_helper.ixx
+            face_selector.ixx
+            face_store.ixx
             face_test_support.ixx
     PRIVATE
         face.cpp
+        face_helper.cpp
+        face_selector.cpp
+        face_store.cpp
 )
 
 target_link_libraries(domain_face
     PUBLIC
         ${OpenCV_LIBS}
+        OpenSSL::SSL
+        OpenSSL::Crypto
         domain_common
 )
