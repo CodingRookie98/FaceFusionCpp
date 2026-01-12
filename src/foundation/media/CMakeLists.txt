@@ -1,4 +1,6 @@
-add_cxx_module_library(foundation_media)
+add_modules_library(foundation_media)
+
+find_package(OpenCV REQUIRED)
 
 target_sources(foundation_media
     PUBLIC
@@ -15,7 +17,6 @@ target_sources(foundation_media
 target_link_libraries(foundation_media
     PUBLIC
         foundation_infrastructure
-    PRIVATE
         ${OpenCV_LIBS}
-        # FFmpeg libraries if needed, or if they are just invoking executables
+        ${FFMPEG_LIBRARIES}
 )

@@ -1,6 +1,3 @@
-cmake_minimum_required(VERSION 3.28)
-project(foundation_infrastructure LANGUAGES CXX)
-
 # Find Dependencies
 find_package(yaml-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
@@ -27,6 +24,7 @@ target_sources(foundation_infrastructure
             concurrent_crypto.ixx
             logger.ixx
             progress.ixx
+        process.ixx
             thread_pool.ixx
             test_support.ixx
     PRIVATE
@@ -38,6 +36,7 @@ target_sources(foundation_infrastructure
         concurrent_crypto.cpp
         logger.cpp
         progress.cpp
+        process.cpp
         thread_pool.cpp
         test_support.cpp
 )

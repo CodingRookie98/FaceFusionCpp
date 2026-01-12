@@ -61,3 +61,11 @@ add_facefusion_test(
         LINK_LIBRARIES
         foundation_infrastructure
 )
+
+add_facefusion_test(
+        process_tests
+        SOURCES
+        process_tests.cpp
+        LINK_LIBRARIES
+        foundation_infrastructure
+)

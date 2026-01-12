@@ -15,6 +15,15 @@ module;
 #include <vector>
 #include <string>
 #include <cmath>
+#include <sstream>
+
+#include <opencv2/opencv.hpp>
+
+module foundation.media.ffmpeg;
+import foundation.infrastructure.logger;
+import foundation.infrastructure.file_system;
+import foundation.infrastructure.process;
+import foundation.media.vision;
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -22,20 +31,12 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-#include <boost/process.hpp>
-#include <opencv2/opencv.hpp>
-
-module foundation.media.ffmpeg;
-import foundation.infrastructure.logger;
-import foundation.infrastructure.file_system;
-import foundation.media.vision;
-
 namespace foundation::media::ffmpeg {
 
     using namespace foundation::infrastructure;
-    namespace bp = boost::process;
+using namespace foundation::infrastructure::logger;
 
-    // Internal helper declarations (not exported)
+// Internal helper declarations (not exported)
     std::string map_NVENC_preset(const std::string& preset);
     std::string map_amf_preset(const std::string& preset);
     std::string get_compression_and_preset_cmd(const unsigned int& quality, const std::string& preset, const std::string& codec);
@@ -43,30 +44,30 @@ namespace foundation::media::ffmpeg {
 
     std::vector<std::string> child_process(const std::string& command) {
         std::vector<std::string> lines;
+        std::string output_buffer;
         try {
             std::string commandToRun = command;
-            bp::ipstream pipeStream;
 #ifdef _WIN32
             commandToRun = file_system::utf8_to_sys_default_local(commandToRun);
-            bp::child c(commandToRun, bp::std_out > pipeStream);
-#else
-            bp::child c(commandToRun, bp::std_out > pipeStream);
 #endif
 
-            if (!c.valid()) {
-                std::string error = "child process is valid : " + commandToRun;
-                lines.emplace_back(error);
-                return lines;
+            process::Process process(commandToRun, "",
+                                     [&output_buffer](const char* bytes, size_t n) {
+                                         output_buffer.append(bytes, n);
+                                     });
+
+            int exit_status = process.get_exit_status();
+
+            // Process buffer similar to original implementation (splitting by whitespace/tokens potentially, or just lines)
+            // Original code: pipeStream >> line. This does whitespace splitting.
+            std::stringstream ss(output_buffer);
+            std::string temp;
+            while (ss >> temp) {
+                lines.push_back(temp);
             }
 
-            std::string line;
-            while (pipeStream >> line) {
-                lines.push_back(line);
-            }
-            c.wait();
-
-            if (c.exit_code() != 0) {
-                lines.emplace_back(std::format("Process exited with code {}, command: {}", c.exit_code(), command));
+            if (exit_status != 0) {
+                lines.emplace_back(std::format("Process exited with code {}, command: {}", exit_status, command));
             }
         } catch (const std::exception& e) {
             lines.emplace_back(std::format("Exception: {}", e.what()));

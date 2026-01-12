@@ -70,7 +70,7 @@ ThreadPool& ThreadPool::instance() {
 ThreadPool::ThreadPool() : m_impl(std::make_unique<Impl>(std::thread::hardware_concurrency())) {}
 ThreadPool::~ThreadPool() = default; // m_impl unique_ptr requires full type here
 
-void ThreadPool::enqueue(std::function<void()> task) {
+void ThreadPool::enqueue_raw(std::function<void()> task) {
     m_impl->enqueue(std::move(task));
 }
 
