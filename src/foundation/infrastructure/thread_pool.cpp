@@ -74,14 +74,4 @@ void ThreadPool::enqueue_raw(std::function<void()> task) {
     m_impl->enqueue(std::move(task));
 }
 
-// Define m_impl in class definition in .ixx using PIMPL?
-// Wait, in .ixx I didn't define `m_impl` member in `class ThreadPool`.
-// I only had `static ThreadPool& instance(); void enqueue(...)`.
-// I need to update .ixx to have `m_impl` OR hide it completely if `ThreadPool` is just interface?
-// But `ThreadPool` is a class. If it's a singleton, the instance is static.
-// The instance must be stored somewhere.
-// In `instance()`, `static ThreadPool pool;` -> `ThreadPool` constructor is called.
-// `ThreadPool` needs to store state.
-// I should update .ixx to include `std::unique_ptr<Impl> m_impl;` or similar PIMPL.
-// Let me check what I wrote in Step 331.
 } // namespace foundation::infrastructure::thread_pool
