@@ -1,0 +1,12 @@
+CompileFlags:
+  Add: [-std=c++20, -fmodules]
+---
+If:
+  PathMatch: .*\.ixx
+CompileFlags:
+  Add: [-x, c++-module]
+---
+If:
+  PathMatch: .*\.cppm
+CompileFlags:
+  Add: [-x, c++-module]
