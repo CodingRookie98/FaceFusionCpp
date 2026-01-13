@@ -4,13 +4,27 @@
 
 ## 目录结构
 
+测试目录结构与源代码目录 (`src/`) 结构保持镜像一致，主要分为单元测试 (`unit`) 和集成测试 (`integration`)。
+
 ```
 tests/
-├── CMakeLists.txt          # 测试构建配置
-├── README.md               # 本文件
-├── example_test.cpp        # 示例测试文件
-└── [其他测试文件]           # 具体模块的测试
+├── CMakeLists.txt              # 测试构建配置
+├── README.md                   # 本文件
+├── unit/                       # 单元测试（对应 src 目录结构）
+│   ├── CMakeLists.txt
+│   ├── app/                    # 对应 src/app
+│   ├── domain/                 # 对应 src/domain
+│   │   ├── face/
+│   │   │   ├── detector/
+│   │   │   ├── face_helper_test.cpp
+│   │   │   └── ...
+│   │   └── ai/
+│   ├── foundation/             # 对应 src/foundation
+│   ├── platform/               # 对应 src/platform
+│   └── services/               # 对应 src/services
+└── integration/                # 集成测试（如需）
 ```
+
 
 ## 快速开始
 
