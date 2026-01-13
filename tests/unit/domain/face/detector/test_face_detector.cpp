@@ -60,14 +60,11 @@ TEST(FaceDetectorTest, DetectFaces_Tiffany) {
             model_manager->set_model_info_file_path((assets_path / "models_info.json").string());
         }
 
-        if (!model_manager->is_downloaded(model_key)) {
-            GTEST_SKIP() << "Model " << model_key << " not downloaded. Skipping test.";
+        // Use ensure_model to auto-download if needed
+        std::string model_path = model_manager->ensure_model(model_key);
+        if (model_path.empty()) {
+            GTEST_SKIP() << "Model " << model_key << " not available. Skipping test.";
         }
-
-        std::string model_path = model_manager->get_model_path(model_key);
-        // If absolute path needed:
-        // model_path = (assets_path / "models" / "yoloface_8n.onnx").string();
-        // But get_model_path should return valid path if is_downloaded is true.
 
         detector->load_model(model_path);
 

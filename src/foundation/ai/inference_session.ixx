@@ -24,9 +24,14 @@ export enum class ExecutionProvider {
     TensorRT ///< TensorRT execution provider
 };
 
+/**
+ * @brief Get the best available execution providers (TensorRT > CUDA > CPU)
+ * @return std::unordered_set<ExecutionProvider> Set of available providers in priority order
+ */
+export std::unordered_set<ExecutionProvider> get_best_available_providers();
+
 export struct Options {
-    std::unordered_set<ExecutionProvider> execution_providers{
-        ExecutionProvider::CPU};              ///< Set of execution providers to use
+    std::unordered_set<ExecutionProvider> execution_providers{}; ///< Empty = auto-detect best
     int execution_device_id = 0;              ///< Device ID for GPU execution
     size_t trt_max_workspace_size = 0;        ///< Maximum workspace size for TensorRT in GB
     bool enable_tensorrt_embed_engine = true; ///< Enable TensorRT engine embedding
@@ -38,6 +43,15 @@ export struct Options {
             && trt_max_workspace_size == other.trt_max_workspace_size
             && enable_tensorrt_embed_engine == other.enable_tensorrt_embed_engine
             && enable_tensorrt_cache == other.enable_tensorrt_cache;
+    }
+
+    /**
+     * @brief Create options with best available providers (TensorRT > CUDA > CPU)
+     */
+    static Options with_best_providers() {
+        Options opts;
+        opts.execution_providers = get_best_available_providers();
+        return opts;
     }
 };
 

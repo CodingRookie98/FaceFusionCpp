@@ -53,11 +53,19 @@ public:
     [[nodiscard]] ModelInfo get_model_info(const std::string& model_name) const;
 
     /**
-     * @brief Get model file path
+     * @brief Get model file path from configuration (does not verify file exists)
      * @param model_name Model name string
-     * @return std::string Model file path
+     * @return std::string Model file path from config, empty if model not in config
      */
     [[nodiscard]] std::string get_model_path(const std::string& model_name) const;
+
+    /**
+     * @brief Ensure model is available (download if not exists)
+     * @param model_name Model name string
+     * @return std::string Model file path if available, empty if failed
+     * @note This will download the model if it doesn't exist locally
+     */
+    [[nodiscard]] std::string ensure_model(const std::string& model_name) const;
 
     /**
      * @brief Get model download URL

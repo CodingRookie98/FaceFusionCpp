@@ -116,9 +116,29 @@ std::string ModelManager::get_model_url(const std::string& model_name) const {
 
 std::string ModelManager::get_model_path(const std::string& model_name) const {
     if (!m_models_info_map.contains(model_name)) { return {}; }
-    if (std::string path = m_models_info_map.at(model_name).path; file_system::file_exists(path)) {
-        return path;
+    return m_models_info_map.at(model_name).path;
+}
+
+std::string ModelManager::ensure_model(const std::string& model_name) const {
+    if (model_name.empty()) { return {}; }
+    if (!m_models_info_map.contains(model_name)) {
+        logger::Logger::get_instance()->warn("Model not found in configuration: " + model_name);
+        return {};
     }
+
+    const ModelInfo& model_info = m_models_info_map.at(model_name);
+
+    // If already exists, return path directly
+    if (file_system::file_exists(model_info.path)) { return model_info.path; }
+
+    // Try to download
+    logger::Logger::get_instance()->info("Downloading model: " + model_name);
+    if (download_model(model_name)) {
+        // Verify download succeeded
+        if (file_system::file_exists(model_info.path)) { return model_info.path; }
+    }
+
+    logger::Logger::get_instance()->error("Failed to ensure model: " + model_name);
     return {};
 }
 

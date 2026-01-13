@@ -64,15 +64,16 @@ TEST(FaceClassifierIntegrationTest, ClassifyDetectedFace_Tiffany) {
         cv::Mat frame = cv::imread(img_path.string());
         ASSERT_FALSE(frame.empty()) << "Failed to read image: " << img_path;
 
-        // 3. Detect face using face detector
+        // 3. Detect face using face detector (auto-download if needed)
         std::string detector_model_key = "face_detector_yoloface";
-        if (!model_manager->is_downloaded(detector_model_key)) {
-            GTEST_SKIP() << "Model " << detector_model_key << " not downloaded. Skipping test.";
+        std::string detector_model_path = model_manager->ensure_model(detector_model_key);
+        if (detector_model_path.empty()) {
+            GTEST_SKIP() << "Model " << detector_model_key << " not available. Skipping test.";
         }
 
         auto detector = FaceDetectorFactory::create(DetectorType::Yolo);
         ASSERT_NE(detector, nullptr);
-        detector->load_model(model_manager->get_model_path(detector_model_key));
+        detector->load_model(detector_model_path);
 
         auto detections = detector->detect(frame);
         ASSERT_GE(detections.size(), 1) << "Should detect at least 1 face in tiffany.bmp";
@@ -82,15 +83,16 @@ TEST(FaceClassifierIntegrationTest, ClassifyDetectedFace_Tiffany) {
         ASSERT_EQ(first_detection.landmarks.size(), 5)
             << "Expected 5-point landmarks from detector";
 
-        // 5. Create and load face classifier
+        // 5. Create and load face classifier (auto-download if needed)
         std::string classifier_model_key = "fairface";
-        if (!model_manager->is_downloaded(classifier_model_key)) {
-            GTEST_SKIP() << "Model " << classifier_model_key << " not downloaded. Skipping test.";
+        std::string classifier_model_path = model_manager->ensure_model(classifier_model_key);
+        if (classifier_model_path.empty()) {
+            GTEST_SKIP() << "Model " << classifier_model_key << " not available. Skipping test.";
         }
 
         auto classifier = create_classifier(ClassifierType::FairFace);
         ASSERT_NE(classifier, nullptr);
-        classifier->load_model(model_manager->get_model_path(classifier_model_key));
+        classifier->load_model(classifier_model_path);
 
         // 6. Classify the face
         ClassificationResult result = classifier->classify(frame, first_detection.landmarks);

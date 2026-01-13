@@ -20,6 +20,27 @@ namespace foundation::ai::inference_session {
 
 using namespace foundation::infrastructure;
 
+// Get available providers from ONNX Runtime and return best ones
+std::unordered_set<ExecutionProvider> get_best_available_providers() {
+    std::unordered_set<ExecutionProvider> result;
+    auto available = Ort::GetAvailableProviders();
+    std::unordered_set<std::string> available_set(available.begin(), available.end());
+
+    // Priority: TensorRT > CUDA > CPU
+    if (available_set.contains("TensorrtExecutionProvider")) {
+        result.insert(ExecutionProvider::TensorRT);
+        result.insert(ExecutionProvider::CUDA); // TensorRT needs CUDA fallback
+        result.insert(ExecutionProvider::CPU);
+    } else if (available_set.contains("CUDAExecutionProvider")) {
+        result.insert(ExecutionProvider::CUDA);
+        result.insert(ExecutionProvider::CPU);
+    } else {
+        result.insert(ExecutionProvider::CPU);
+    }
+
+    return result;
+}
+
 struct InferenceSession::Impl {
     std::unique_ptr<Ort::Session> m_ort_session;
     Ort::SessionOptions m_session_options;
@@ -163,12 +184,20 @@ struct InferenceSession::Impl {
         reset();
         m_options = options;
 
-        if (m_options.execution_providers.contains(ExecutionProvider::TensorRT)) {
-            append_provider_tensorrt();
+        // Auto-detect best providers if none specified
+        auto providers_to_use = m_options.execution_providers;
+        if (providers_to_use.empty()) {
+            providers_to_use = get_best_available_providers();
+            m_logger->info(
+                "Auto-detected execution providers: "
+                + std::string(
+                    providers_to_use.contains(ExecutionProvider::TensorRT) ? "TensorRT, " : "")
+                + std::string(providers_to_use.contains(ExecutionProvider::CUDA) ? "CUDA, " : "")
+                + std::string(providers_to_use.contains(ExecutionProvider::CPU) ? "CPU" : ""));
         }
-        if (m_options.execution_providers.contains(ExecutionProvider::CUDA)) {
-            append_provider_cuda();
-        }
+
+        if (providers_to_use.contains(ExecutionProvider::TensorRT)) { append_provider_tensorrt(); }
+        if (providers_to_use.contains(ExecutionProvider::CUDA)) { append_provider_cuda(); }
 
         try {
 #if defined(WIN32) || defined(_WIN32)
