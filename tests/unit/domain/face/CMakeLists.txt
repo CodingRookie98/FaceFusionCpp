@@ -10,3 +10,4 @@ add_facefusion_test(
 )
 
 add_subdirectory(detector)
+add_subdirectory(classifier)
