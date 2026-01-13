@@ -5,6 +5,7 @@
 
 module;
 #include <fstream>           // NOLINT(misc-include-cleaner)
+#include <filesystem>        // NOLINT(misc-include-cleaner)
 #include <nlohmann/json.hpp> // NOLINT(misc-include-cleaner)
 
 module domain.ai.model_manager;
@@ -33,23 +34,11 @@ void from_json(const json& j, ModelInfo& model_info) {
     model_info.url = j.value("url", model_info.url);
 }
 
-ModelManager::ModelManager() : m_json_file_path("./assets/models_info.json") {
-    try {
-        set_model_info_file_path(m_json_file_path);
-    } catch (const std::exception& e) {
-        // Log warning but don't fail construction for default path
-        // logger::Logger::get_instance()->warn("Default model info file not found or invalid: " +
-        // std::string(e.what())); Since logger might not be ready or we want to keep it simple:
-        // Just ignore, user must call set_model_info_file_path with valid path later if default is
-        // missing.
-    }
-}
+ModelManager::ModelManager() : m_json_file_path("") {}
 
 std::shared_ptr<ModelManager> ModelManager::get_instance() {
     static std::shared_ptr<ModelManager> instance;
     static std::once_flag flag;
-    // Constructor is private, so we can't use make_shared directly without a workaround or raw new
-    // Since we are inside the class (static method), we can access private constructor
     std::call_once(flag, [&]() { instance.reset(new ModelManager()); });
     return instance;
 }
@@ -94,7 +83,13 @@ bool ModelManager::download_model(const std::string& model_name) const {
     }
     const ModelInfo& model_info = m_models_info_map.at(model_name);
     if (file_system::file_exists(model_info.path)) { return true; }
-    return network::download(model_info.url, "./models");
+
+    // Extract directory from model path
+    std::filesystem::path model_path(model_info.path);
+    std::string output_dir = model_path.parent_path().string();
+    if (output_dir.empty()) { output_dir = "."; }
+
+    return network::download(model_info.url, output_dir);
 }
 
 bool ModelManager::is_downloaded(const std::string& model_name) const {

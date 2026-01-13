@@ -52,10 +52,10 @@ struct InferenceSession::Impl {
     std::vector<std::vector<int64_t>> m_output_node_dims;
     std::unique_ptr<Ort::MemoryInfo> m_memory_info;
 
-    std::mutex m_mutex;
+    std::recursive_mutex m_mutex;
     std::shared_ptr<Ort::Env> m_ort_env;
     std::unordered_set<std::string> m_available_providers;
-    Options m_options; // Now refers to foundation::ai::inference_session::Options
+    Options m_options;
     std::vector<Ort::AllocatedStringPtr> m_input_names_ptrs;
     std::vector<Ort::AllocatedStringPtr> m_output_names_ptrs;
     std::shared_ptr<logger::Logger> m_logger;
@@ -63,9 +63,6 @@ struct InferenceSession::Impl {
     std::string m_model_path;
 
     Impl() {
-        m_logger = logger::Logger::get_instance();
-        m_ort_env =
-            std::make_shared<Ort::Env>(Ort::Env(ORT_LOGGING_LEVEL_WARNING, "FaceFusionCpp"));
         m_session_options = Ort::SessionOptions();
         m_session_options.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
 
@@ -76,19 +73,45 @@ struct InferenceSession::Impl {
             Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault));
     }
 
-    void reset() {
-        m_is_model_loaded = false;
-        m_model_path.clear();
-        m_ort_session.reset();
+    ~Impl() {
+        // Explicit destruction order to avoid TensorRT SEH exceptions
         m_input_names.clear();
         m_output_names.clear();
         m_input_names_ptrs.clear();
         m_output_names_ptrs.clear();
         m_input_node_dims.clear();
         m_output_node_dims.clear();
+        m_ort_session.reset();
+        m_cuda_provider_options.reset();
+        m_memory_info.reset();
+    }
+
+    void ensure_resources() {
+        if (!m_logger) { m_logger = logger::Logger::get_instance(); }
+        if (!m_ort_env) {
+            m_ort_env =
+                std::make_shared<Ort::Env>(Ort::Env(ORT_LOGGING_LEVEL_WARNING, "FaceFusionCpp"));
+        }
+    }
+
+    void reset() {
+        std::lock_guard lock(m_mutex);
+        reset_internal();
+    }
+
+    void reset_internal() {
+        m_is_model_loaded = false;
+        m_model_path.clear();
+        m_input_names.clear();
+        m_output_names.clear();
+        m_input_names_ptrs.clear();
+        m_output_names_ptrs.clear();
+        m_input_node_dims.clear();
+        m_output_node_dims.clear();
+        m_ort_session.reset();
+        m_cuda_provider_options.reset();
         m_session_options = Ort::SessionOptions();
         m_session_options.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
-        m_cuda_provider_options.reset();
     }
 
     void append_provider_cuda() {
@@ -181,10 +204,10 @@ struct InferenceSession::Impl {
         }
 
         std::lock_guard lock(m_mutex);
-        reset();
+        ensure_resources();
+        reset_internal();
         m_options = options;
 
-        // Auto-detect best providers if none specified
         auto providers_to_use = m_options.execution_providers;
         if (providers_to_use.empty()) {
             providers_to_use = get_best_available_providers();
@@ -218,15 +241,32 @@ struct InferenceSession::Impl {
 
         m_input_names.reserve(num_input_nodes);
         m_input_names_ptrs.reserve(num_input_nodes);
+        m_output_names.reserve(num_output_nodes);
+        m_output_names_ptrs.reserve(num_output_nodes);
+        m_input_node_dims.reserve(num_input_nodes);
+        m_output_node_dims.reserve(num_output_nodes);
 
         Ort::AllocatorWithDefaultOptions allocator;
+
         for (size_t i = 0; i < num_input_nodes; i++) {
             m_input_names_ptrs.push_back(
                 std::move(m_ort_session->GetInputNameAllocated(i, allocator)));
             m_input_names.push_back(m_input_names_ptrs[i].get());
+
+            auto type_info = m_ort_session->GetInputTypeInfo(i);
+            auto tensor_info = type_info.GetTensorTypeAndShapeInfo();
+            m_input_node_dims.push_back(tensor_info.GetShape());
         }
 
-        // ... (output loading logic if needed, kept concise)
+        for (size_t i = 0; i < num_output_nodes; i++) {
+            m_output_names_ptrs.push_back(
+                std::move(m_ort_session->GetOutputNameAllocated(i, allocator)));
+            m_output_names.push_back(m_output_names_ptrs[i].get());
+
+            auto type_info = m_ort_session->GetOutputTypeInfo(i);
+            auto tensor_info = type_info.GetTensorTypeAndShapeInfo();
+            m_output_node_dims.push_back(tensor_info.GetShape());
+        }
 
         m_is_model_loaded = true;
         m_model_path = model_path;
@@ -245,21 +285,12 @@ bool InferenceSession::is_model_loaded() const {
     return m_impl->m_is_model_loaded;
 }
 
-/**
- * @brief Get the path of the currently loaded model
- * @return std::string Path to the loaded model file
- */
 std::string InferenceSession::get_loaded_model_path() const {
     return m_impl->m_model_path;
 }
 
 std::vector<Ort::Value> InferenceSession::run(const std::vector<Ort::Value>& input_tensors) {
     if (!m_impl->m_is_model_loaded) { throw std::runtime_error("Model not loaded"); }
-    // Validate inputs count
-    // if (input_tensors.size() != m_impl->m_input_names.size()) {
-    //    throw std::runtime_error("Input tensors count mismatch");
-    // }
-
     return m_impl->m_ort_session->Run(m_impl->m_run_options, m_impl->m_input_names.data(),
                                       input_tensors.data(), input_tensors.size(),
                                       m_impl->m_output_names.data(), m_impl->m_output_names.size());
