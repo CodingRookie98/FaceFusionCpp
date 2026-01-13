@@ -1,0 +1,206 @@
+---
+# Clang-Tidy 配置文件
+# 基于 Google C++ 风格指南，适配 C++20 和模块化开发
+
+# 是否继承父目录的配置
+InheritParentConfig: false
+
+# 启用的检查项列表
+# 格式: 检查组名 或 具体检查项名称
+# - 开头表示禁用该检查项
+Checks: >
+  -*,                                                    # 默认禁用所有检查
+  bugprone-*,                                           # 启用所有 Bugprone 检查（检测常见的编程错误）
+  -bugprone-easily-swappable-parameters,                 # 禁用：容易混淆的参数检查
+  -bugprone-branch-clone,                               # 禁用：分支克隆检查
+  -bugprone-narrowing-conversions,                      # 禁用：窄化转换检查
+  cppcoreguidelines-*,                                  # 启用所有 C++ Core Guidelines 检查
+  -cppcoreguidelines-avoid-magic-numbers,               # 禁用：避免魔法数字（过于严格）
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay, # 禁用：数组到指针的衰减检查
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,     # 禁用：指针算术检查
+  -cppcoreguidelines-pro-type-reinterpret-cast,         # 禁用：禁止 reinterpret_cast（某些场景需要）
+  -cppcoreguidelines-pro-type-vararg,                   # 禁用：禁止可变参数函数
+  -cppcoreguidelines-avoid-c-arrays,                    # 禁用：避免 C 风格数组
+  -cppcoreguidelines-owning-memory,                    # 禁用：拥有内存的检查
+  google-*,                                             # 启用所有 Google 风格检查
+  -google-readability-todo,                             # 禁用：TODO 注释检查
+  -google-runtime-references,                           # 禁用：运行时引用检查
+  modernize-*,                                          # 启用所有现代化检查（C++11/14/17/20 特性）
+  -modernize-use-trailing-return-type,                  # 禁用：使用尾置返回类型
+  -modernize-avoid-c-arrays,                            # 禁用：避免 C 风格数组
+  performance-*,                                        # 启用所有性能优化检查
+  readability-*,                                        # 启用所有可读性检查
+  -readability-magic-numbers,                          # 禁用：魔法数字检查
+  -readability-identifier-length,                      # 禁用：标识符长度检查
+  -readability-function-cognitive-complexity,           # 禁用：函数认知复杂度检查
+  -readability-convert-member-functions-to-static,      # 禁用：转换成员函数为静态
+  -readability-redundant-access-specifiers,            # 禁用：冗余访问说明符检查
+  -readability-avoid-const-params-in-decls,             # 禁用：避免声明中的 const 参数
+  misc-*,                                               # 启用所有杂项检查
+  -misc-non-private-member-variables-in-classes,        # 禁用：类中的非私有成员变量检查
+  -misc-use-anonymous-namespace                         # 禁用：使用匿名命名空间检查
+
+# 将警告视为错误（留空表示不启用）
+WarningsAsErrors: ""
+
+# 头文件过滤器（正则表达式）
+# 只检查匹配该模式的头文件
+HeaderFilterRegex: ".*"
+
+# 是否检查系统头文件
+SystemHeaders: false
+
+# 格式化风格
+# file 表示使用 .clang-format 文件中的配置
+FormatStyle: file
+
+# 检查选项的详细配置
+CheckOptions:
+  # C++ Core Guidelines - 特殊成员函数
+  - key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
+    value: "1"
+    # 允许只有默认析构函数的类
+
+  # Google 风格 - 命名空间注释
+  - key: google-readability-namespace-comments.SpacesBefore
+    value: "2"
+    # 命名空间结束注释前的空格数
+
+  # Google 风格 - 函数大小限制
+  - key: google-readability-function-size.LineThreshold
+    value: "100"
+    # 函数最大行数
+  - key: google-readability-function-size.StatementThreshold
+    value: "800"
+    # 函数最大语句数
+  - key: google-readability-function-size.BranchThreshold
+    value: "100"
+    # 函数最大分支数
+  - key: google-readability-function-size.ParameterThreshold
+    value: "6"
+    # 函数最大参数数量
+
+  # Google 风格 - 命名空间缩进
+  - key: google-readability-namespace-comments.ShortNamespaceLines
+    value: "10"
+    # 短命名空间的行数阈值
+  - key: google-readability-namespace-comments.SpacesBefore
+    value: "2"
+    # 命名空间结束注释前的空格数
+
+  # 现代化 - 使用 nullptr 替代 NULL
+  - key: modernize-use-nullptr.NullMacros
+    value: "NULL"
+    # 需要替换为 nullptr 的宏列表
+
+  # 现代化 - 使用 override 关键字
+  - key: modernize-use-override.IgnoreDestructors
+    value: "1"
+    # 忽略析构函数的 override 检查
+
+  # 现代化 - 使用 auto 关键字
+  - key: modernize-use-auto.MinTypeNameLength
+    value: "5"
+    # 类型名最小长度，超过此长度建议使用 auto
+  - key: modernize-use-auto.RemoveStars
+    value: "0"
+    # 是否移除指针/引用的 * 或 & 符号（0 表示不移除）
+
+  # 现代化 - 使用默认成员初始化
+  - key: modernize-use-default-member-init.UseAssignment
+    value: "1"
+    # 是否使用赋值初始化
+
+  # 可读性 - 语句块周围的大括号
+  - key: readability-braces-around-statements.ShortStatementLines
+    value: "1"
+    # 短语句的行数阈值
+
+  # 可读性 - 容器大小检查
+  - key: readability-container-size-empty.WarnAgainstEmptyNonEmpty
+    value: "1"
+    # 是否警告使用 empty() 而不是 size() == 0
+
+  # 可读性 - 标识符命名规范（符合项目要求：使用 snake_case）
+  - key: readability-identifier-naming.ClassCase
+    value: "CamelCase"
+    # 类名使用驼峰命名（如 MyClass）
+  - key: readability-identifier-naming.StructCase
+    value: "CamelCase"
+    # 结构体名使用驼峰命名
+  - key: readability-identifier-naming.EnumCase
+    value: "CamelCase"
+    # 枚举名使用驼峰命名
+  - key: readability-identifier-naming.FunctionCase
+    value: "snake_case"
+    # 函数名使用 snake_case 命名（如 my_function）
+  - key: readability-identifier-naming.VariableCase
+    value: "snake_case"
+    # 变量名使用 snake_case 命名
+  - key: readability-identifier-naming.ParameterCase
+    value: "snake_case"
+    # 参数名使用 snake_case 命名
+  - key: readability-identifier-naming.MemberCase
+    value: "snake_case"
+    # 成员变量名使用 snake_case 命名
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: ""
+    # 私有成员变量前缀（留空表示无前缀）
+  - key: readability-identifier-naming.ProtectedMemberPrefix
+    value: ""
+    # 保护成员变量前缀
+  - key: readability-identifier-naming.ConstantCase
+    value: "CamelCase"
+    # 常量名使用驼峰命名
+  - key: readability-identifier-naming.ConstantPrefix
+    value: "k"
+    # 常量前缀（如 kMyConstant）
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: "CamelCase"
+    # 全局常量名使用驼峰命名
+  - key: readability-identifier-naming.GlobalConstantPrefix
+    value: "k"
+    # 全局常量前缀
+  - key: readability-identifier-naming.StaticConstantCase
+    value: "CamelCase"
+    # 静态常量名使用驼峰命名
+  - key: readability-identifier-naming.StaticConstantPrefix
+    value: "k"
+    # 静态常量前缀
+  - key: readability-identifier-naming.EnumConstantCase
+    value: "CamelCase"
+    # 枚举常量名使用驼峰命名
+  - key: readability-identifier-naming.NamespaceCase
+    value: "lower_case"
+    # 命名空间名使用小写加下划线（如 my_namespace）
+  - key: readability-identifier-naming.TemplateParameterCase
+    value: "CamelCase"
+    # 模板参数名使用驼峰命名
+  - key: readability-identifier-naming.TemplateParameterPrefix
+    value: "T"
+    # 模板参数前缀（如 TMyType）
+
+  # 性能 - 不必要的拷贝初始化
+  - key: performance-unnecessary-copy-initialization.AllowedTypes
+    value: ""
+    # 允许不必要的拷贝的类型列表（留空表示不允许）
+
+  # 性能 - 移动语义检查
+  - key: performance-move-const-arg.CheckTriviallyCopyableMove
+    value: "1"
+    # 检查可简单拷贝类型的移动
+
+  # Bugprone - 字符串拼接
+  - key: bugprone-string-concatenation.CheckConcatenationToResult
+    value: "1"
+    # 检查字符串拼接到结果变量
+
+  # Bugprone - 移动后使用检查
+  - key: bugprone-use-after-move.WarnOnAllUses
+    value: "1"
+    # 警告所有移动后的使用
+
+  # Doxygen 注释检查
+  - key: readability-identifier-naming.IgnoreMainLikeFunctions
+    value: "1"
+    # 忽略类似 main 的函数命名检查
