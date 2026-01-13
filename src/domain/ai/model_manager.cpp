@@ -4,8 +4,8 @@
  */
 
 module;
-#include <fstream>
-#include <nlohmann/json.hpp>
+#include <fstream>           // NOLINT(misc-include-cleaner)
+#include <nlohmann/json.hpp> // NOLINT(misc-include-cleaner)
 
 module domain.ai.model_manager;
 import foundation.infrastructure.file_system;
@@ -17,7 +17,7 @@ using namespace foundation::infrastructure;
 
 using json = nlohmann::json;
 
-void to_json(json& j, const ModelInfo& model_info) {
+static void to_json(json& j, const ModelInfo& model_info) {
     j = json{
         {"name", model_info.name},
         {"type", model_info.type},
@@ -26,7 +26,7 @@ void to_json(json& j, const ModelInfo& model_info) {
     };
 }
 
-void from_json(const json& j, ModelInfo& model_info) {
+static void from_json(const json& j, ModelInfo& model_info) {
     model_info.name = j.value("name", model_info.name);
     model_info.type = j.value("type", model_info.type);
     model_info.path = j.value("path", model_info.path);

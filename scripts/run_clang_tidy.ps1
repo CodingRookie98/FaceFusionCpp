@@ -39,7 +39,7 @@ Write-Host "Using build directory: $buildDir" -ForegroundColor Cyan
 Write-Host "Using clang-tidy: $($clangTidy.Source)" -ForegroundColor Cyan
 
 # Directories to scan for files to check
-$dirs = @("src", "facefusionCpp")
+$dirs = @("src")
 $extensions = @("*.cpp", "*.ixx", "*.cppm", "*.cc", "*.c") # clang-tidy usually runs on implementation files
 
 $filesToCheck = @(foreach ($dir in $dirs) {

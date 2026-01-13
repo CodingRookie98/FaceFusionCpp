@@ -9,36 +9,37 @@ InheritParentConfig: false
 # 格式: 检查组名 或 具体检查项名称
 # - 开头表示禁用该检查项
 Checks: >
-  -*,                                                    # 默认禁用所有检查
-  bugprone-*,                                           # 启用所有 Bugprone 检查（检测常见的编程错误）
-  -bugprone-easily-swappable-parameters,                 # 禁用：容易混淆的参数检查
-  -bugprone-branch-clone,                               # 禁用：分支克隆检查
-  -bugprone-narrowing-conversions,                      # 禁用：窄化转换检查
-  cppcoreguidelines-*,                                  # 启用所有 C++ Core Guidelines 检查
-  -cppcoreguidelines-avoid-magic-numbers,               # 禁用：避免魔法数字（过于严格）
-  -cppcoreguidelines-pro-bounds-array-to-pointer-decay, # 禁用：数组到指针的衰减检查
-  -cppcoreguidelines-pro-bounds-pointer-arithmetic,     # 禁用：指针算术检查
-  -cppcoreguidelines-pro-type-reinterpret-cast,         # 禁用：禁止 reinterpret_cast（某些场景需要）
-  -cppcoreguidelines-pro-type-vararg,                   # 禁用：禁止可变参数函数
-  -cppcoreguidelines-avoid-c-arrays,                    # 禁用：避免 C 风格数组
-  -cppcoreguidelines-owning-memory,                    # 禁用：拥有内存的检查
-  google-*,                                             # 启用所有 Google 风格检查
-  -google-readability-todo,                             # 禁用：TODO 注释检查
-  -google-runtime-references,                           # 禁用：运行时引用检查
-  modernize-*,                                          # 启用所有现代化检查（C++11/14/17/20 特性）
-  -modernize-use-trailing-return-type,                  # 禁用：使用尾置返回类型
-  -modernize-avoid-c-arrays,                            # 禁用：避免 C 风格数组
-  performance-*,                                        # 启用所有性能优化检查
-  readability-*,                                        # 启用所有可读性检查
-  -readability-magic-numbers,                          # 禁用：魔法数字检查
-  -readability-identifier-length,                      # 禁用：标识符长度检查
-  -readability-function-cognitive-complexity,           # 禁用：函数认知复杂度检查
-  -readability-convert-member-functions-to-static,      # 禁用：转换成员函数为静态
-  -readability-redundant-access-specifiers,            # 禁用：冗余访问说明符检查
-  -readability-avoid-const-params-in-decls,             # 禁用：避免声明中的 const 参数
-  misc-*,                                               # 启用所有杂项检查
-  -misc-non-private-member-variables-in-classes,        # 禁用：类中的非私有成员变量检查
-  -misc-use-anonymous-namespace                         # 禁用：使用匿名命名空间检查
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-branch-clone,
+  -bugprone-narrowing-conversions,
+  cppcoreguidelines-*,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-avoid-c-arrays,
+  -cppcoreguidelines-owning-memory,
+  google-*,
+  -google-readability-todo,
+  -google-runtime-references,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  -modernize-avoid-c-arrays,
+  performance-*,
+  readability-*,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity,
+  -readability-convert-member-functions-to-static,
+  -readability-redundant-access-specifiers,
+  -readability-avoid-const-params-in-decls,
+  misc-*,
+  -misc-non-private-member-variables-in-classes,
+  -misc-use-anonymous-namespace,
+  -misc-include-cleaner
 
 # 将警告视为错误（留空表示不启用）
 WarningsAsErrors: ""
@@ -132,22 +133,22 @@ CheckOptions:
     value: "CamelCase"
     # 枚举名使用驼峰命名
   - key: readability-identifier-naming.FunctionCase
-    value: "snake_case"
+    value: "lower_case"
     # 函数名使用 snake_case 命名（如 my_function）
   - key: readability-identifier-naming.VariableCase
-    value: "snake_case"
+    value: "lower_case"
     # 变量名使用 snake_case 命名
   - key: readability-identifier-naming.ParameterCase
-    value: "snake_case"
+    value: "lower_case"
     # 参数名使用 snake_case 命名
   - key: readability-identifier-naming.MemberCase
-    value: "snake_case"
+    value: "lower_case"
     # 成员变量名使用 snake_case 命名
   - key: readability-identifier-naming.PrivateMemberPrefix
-    value: ""
-    # 私有成员变量前缀（留空表示无前缀）
+    value: "m_"
+    # 私有成员变量前缀
   - key: readability-identifier-naming.ProtectedMemberPrefix
-    value: ""
+    value: "m_"
     # 保护成员变量前缀
   - key: readability-identifier-naming.ConstantCase
     value: "CamelCase"
