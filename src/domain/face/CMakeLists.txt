@@ -29,4 +29,5 @@ target_link_libraries(domain_face
 )
 
 add_subdirectory(detector)
+add_subdirectory(classifier)
 
