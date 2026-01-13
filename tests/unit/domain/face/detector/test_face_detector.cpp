@@ -5,9 +5,11 @@
 import domain.face.detector;
 import foundation.infrastructure.test_support;
 import domain.ai.model_manager;
+import foundation.ai.inference_session;
 
 using namespace domain::face::detector;
 using namespace foundation::infrastructure::test;
+using namespace foundation::ai::inference_session;
 namespace fs = std::filesystem;
 
 TEST(FaceDetectorFactoryTest, CreateYolo) {
@@ -66,7 +68,7 @@ TEST(FaceDetectorTest, DetectFaces_Tiffany) {
             GTEST_SKIP() << "Model " << model_key << " not available. Skipping test.";
         }
 
-        detector->load_model(model_path);
+        detector->load_model(model_path, Options::with_best_providers());
 
         // 4. Detect
         // Interface uses 'detect' and returns 'DetectionResults'
