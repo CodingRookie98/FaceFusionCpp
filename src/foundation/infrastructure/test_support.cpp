@@ -29,7 +29,9 @@ std::filesystem::path get_assets_path() {
 
     while (max_depth-- > 0) {
         fs::path potential = current / "assets";
-        if (fs::exists(potential) && fs::is_directory(potential)) {
+        // Check if it's a directory AND contains models_info.json to ensure it's the real assets
+        if (fs::exists(potential) && fs::is_directory(potential)
+            && fs::exists(potential / "models_info.json")) {
             return fs::absolute(potential);
         }
 

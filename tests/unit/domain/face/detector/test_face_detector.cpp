@@ -41,7 +41,7 @@ TEST(FaceDetectorTest, DetectFaces_Tiffany) {
         }
 
         // 2. Load Image
-        auto img_path = get_test_data_path("standard_face_test_iamges/tiffany.bmp");
+        auto img_path = get_test_data_path("standard_face_test_images/tiffany.bmp");
         if (!fs::exists(img_path)) { GTEST_SKIP() << "Test image not found: " << img_path; }
 
         cv::Mat frame = cv::imread(img_path.string());

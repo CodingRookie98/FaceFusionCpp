@@ -30,7 +30,9 @@ function(add_facefusion_test TEST_NAME)
     endif()
 
     # 启用测试发现并设置属性
+    message(STATUS "Setting test ${TEST_NAME} working directory to: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
     gtest_discover_tests(${TEST_NAME}
+        WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
         PROPERTIES
             LABELS "facefusion"
             TIMEOUT 300

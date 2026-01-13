@@ -113,6 +113,9 @@
             "description": "Run tests for Debug configuration",
             "configurePreset": "msvc-x64-debug",
             "configuration": "Debug",
+            "execution": {
+                "workingDirectory": "${sourceDir}/build/runtime/msvc-x64-debug"
+            },
             "output": {
                 "outputOnFailure": true
             }
@@ -123,6 +126,9 @@
             "description": "Run tests for Release configuration",
             "configurePreset": "msvc-x64-release",
             "configuration": "Release",
+            "execution": {
+                "workingDirectory": "${sourceDir}/build/runtime/msvc-x64-release"
+            },
             "output": {
                 "outputOnFailure": true
             }
