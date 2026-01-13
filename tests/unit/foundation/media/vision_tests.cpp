@@ -9,9 +9,11 @@
 
 import foundation.media.vision;
 import foundation.infrastructure.file_system;
+import foundation.infrastructure.test_support;
 
 namespace fs = std::filesystem;
 using namespace foundation::media::vision;
+using namespace foundation::infrastructure::test;
 
 class VisionTest : public ::testing::Test {
 protected:
@@ -83,4 +85,22 @@ TEST_F(VisionTest, ResizeFrame) {
     cv::Mat dst2 = resize_frame(src, largeSize);
     EXPECT_EQ(dst2.cols, 100);
     EXPECT_EQ(dst2.rows, 100);
+}
+
+TEST_F(VisionTest, ReadRealImage_Lenna) {
+    try {
+        auto path = get_test_data_path("standard_face_test_iamges/lenna.bmp");
+        if (fs::exists(path)) {
+            cv::Mat img = read_static_image(path.string());
+            ASSERT_FALSE(img.empty());
+            // Lenna is typically 512x512
+            EXPECT_GT(img.cols, 0);
+            EXPECT_GT(img.rows, 0);
+            EXPECT_EQ(img.channels(), 3);
+        } else {
+            // If assets missing, fail or skip.
+            // We decided to try to ensure they exist.
+            FAIL() << "Test asset not found: " << path.string();
+        }
+    } catch (const std::exception& e) { FAIL() << "Exception finding asset: " << e.what(); }
 }

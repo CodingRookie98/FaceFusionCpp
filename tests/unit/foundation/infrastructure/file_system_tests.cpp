@@ -5,6 +5,8 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <thread>
+#include <chrono>
 
 import foundation.infrastructure.file_system;
 import foundation.infrastructure.concurrent_file_system;
@@ -68,20 +70,37 @@ TEST_F(FileSystemTest, ConcurrentRemoveFiles) {
         files.push_back((fs::path(test_dir) / name).string());
     }
 
-    // Wait slightly to ensure file creation is flushed (optional but safe)
+    // Wait slightly to ensure file creation is flushed
 
     foundation::infrastructure::concurrent_file_system::remove_files(files);
 
-    // Allow some time for async ops if implementation doesn't block (it usually enqueues)
-    // NOTE: The current simple thread pool might not return futures for void tasks,
-    // so we might need to sleep or use better sync in real tests.
-    // For now assuming implementation might be blocking or we wait a bit.
-    // Real implementation uses fire-and-forget, so this test is flaky without sync.
-    // However, let's assume for this basic version we just check.
+    // Polling instead of fixed sleep
+    auto start = std::chrono::steady_clock::now();
+    bool all_removed = false;
 
-    // To properly test async, we'd need the thread pool to drain.
-    // Since we don't have a 'drain' on the simple pool, we sleep briefly.
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    // Wait up to 5 seconds
+    while (std::chrono::steady_clock::now() - start < std::chrono::seconds(5)) {
+        bool any_exist = false;
+        for (const auto& f : files) {
+            if (fs::exists(f)) {
+                any_exist = true;
+                break;
+            }
+        }
 
-    for (const auto& f : files) { EXPECT_FALSE(fs::exists(f)) << "File should be removed: " << f; }
+        if (!any_exist) {
+            all_removed = true;
+            break;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    EXPECT_TRUE(all_removed) << "Timed out waiting for files to be removed";
+
+    if (all_removed) {
+        for (const auto& f : files) {
+            EXPECT_FALSE(fs::exists(f)) << "File should be removed: " << f;
+        }
+    }
 }

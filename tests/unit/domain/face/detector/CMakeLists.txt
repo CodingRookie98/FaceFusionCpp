@@ -4,4 +4,6 @@ add_facefusion_test(
         test_face_detector.cpp
     LINK_LIBRARIES
         domain_face_detector
+        domain_ai
+        foundation_infrastructure
 )
