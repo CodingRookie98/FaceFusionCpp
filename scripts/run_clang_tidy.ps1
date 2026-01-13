@@ -42,18 +42,15 @@ Write-Host "Using clang-tidy: $($clangTidy.Source)" -ForegroundColor Cyan
 $dirs = @("src", "facefusionCpp")
 $extensions = @("*.cpp", "*.ixx", "*.cppm", "*.cc", "*.c") # clang-tidy usually runs on implementation files
 
-$filesToCheck = @()
-
-foreach ($dir in $dirs) {
+$filesToCheck = @(foreach ($dir in $dirs) {
     $path = Join-Path $projectRoot $dir
     if (Test-Path $path) {
         Write-Host "Scanning directory: $dir" -ForegroundColor Green
         foreach ($ext in $extensions) {
-            $files = Get-ChildItem -Path $path -Recurse -Filter $ext
-            $filesToCheck += $files
+            @(Get-ChildItem -Path $path -Recurse -Filter $ext)
         }
     }
-}
+})
 
 if ($filesToCheck.Count -eq 0) {
     Write-Host "No files found to check." -ForegroundColor Yellow
