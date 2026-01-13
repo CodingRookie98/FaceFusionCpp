@@ -21,8 +21,7 @@ import face_helper;
 namespace ffc::faceSwapper {
 
 InSwapper::InSwapper(const std::shared_ptr<Ort::Env>& env) :
-    FaceSwapperBase(), InferenceSession(env) {
-}
+    FaceSwapperBase(), InferenceSession(env) {}
 
 void InSwapper::load_model(const std::string& modelPath, const Options& options) {
     InferenceSession::load_model(modelPath, options);
@@ -42,14 +41,14 @@ void InSwapper::init() {
     // Load ONNX model as a protobuf message
     onnx::ModelProto modelProto;
     std::ifstream input(get_loaded_model_path(), std::ios::binary);
-    if (!modelProto.ParseFromIstream(&input)) {
-        throw std::runtime_error("Failed to load model.");
-    }
+    if (!modelProto.ParseFromIstream(&input)) { throw std::runtime_error("Failed to load model."); }
     // Access the initializer
-    const onnx::TensorProto& initializer = modelProto.graph().initializer(modelProto.graph().initializer_size() - 1);
+    const onnx::TensorProto& initializer =
+        modelProto.graph().initializer(modelProto.graph().initializer_size() - 1);
     bool isFp16 = false;
 
-    for (auto itr = modelProto.graph().initializer().cbegin(); itr != modelProto.graph().initializer().cend();) {
+    for (auto itr = modelProto.graph().initializer().cbegin();
+         itr != modelProto.graph().initializer().cend();) {
         if (itr->data_type() == onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16) {
             isFp16 = true;
             break;
@@ -70,46 +69,37 @@ void InSwapper::init() {
 }
 
 cv::Mat InSwapper::swapFace(const InSwapperInput& input) {
-    if (input.source_average_embeddings.empty()
-        || input.target_frame == nullptr) {
-        return {};
-    }
-    if (input.target_frame->empty()) {
-        return {};
-    }
-    if (input.target_faces_5_landmarks.empty()) {
-        return input.target_frame->clone();
-    }
+    if (input.source_average_embeddings.empty() || input.target_frame == nullptr) { return {}; }
+    if (input.target_frame->empty()) { return {}; }
+    if (input.target_faces_5_landmarks.empty()) { return input.target_frame->clone(); }
 
     if (is_model_loaded() == false) {
-        throw std::runtime_error(std::format("File: {}, Line: {}, Error: Model is not loaded!", __FILE__, __LINE__));
+        throw std::runtime_error(
+            std::format("File: {}, Line: {}, Error: Model is not loaded!", __FILE__, __LINE__));
     }
-    if (is_model_loaded() == true && m_initializerArray.empty()) {
-        init();
-    }
+    if (is_model_loaded() == true && m_initializerArray.empty()) { init(); }
 
     if (!has_face_masker_hub()) {
-        throw std::runtime_error(std::format("File: {}, Line: {}, Error: faceMaskers is nullptr!", __FILE__, __LINE__));
+        throw std::runtime_error(
+            std::format("File: {}, Line: {}, Error: faceMaskers is nullptr!", __FILE__, __LINE__));
     }
 
     const auto& targetFrame = *input.target_frame;
-    if (targetFrame.empty()) {
-        return {};
-    }
+    if (targetFrame.empty()) { return {}; }
     std::vector<cv::Mat> croppedTargetFrames;
     std::vector<cv::Mat> affineMatrices;
     std::vector<cv::Mat> croppedResultFrames;
     std::vector<cv::Mat> bestMasks;
     for (const auto& landmarks5 : input.target_faces_5_landmarks) {
         cv::Mat croppedTargetFrame, affineMat;
-        std::tie(croppedTargetFrame, affineMat) = face_helper::warpFaceByFaceLandmarks5(targetFrame, landmarks5,
-                                                                                        face_helper::getWarpTemplate(m_warpTemplateType),
-                                                                                        m_size);
+        std::tie(croppedTargetFrame, affineMat) = face_helper::warpFaceByFaceLandmarks5(
+            targetFrame, landmarks5, face_helper::getWarpTemplate(m_warpTemplateType), m_size);
         croppedTargetFrames.emplace_back(croppedTargetFrame);
         affineMatrices.emplace_back(affineMat);
     }
     for (const auto& croppedTargetFrame : croppedTargetFrames) {
-        croppedResultFrames.emplace_back(applySwap(input.source_average_embeddings, croppedTargetFrame));
+        croppedResultFrames.emplace_back(
+            applySwap(input.source_average_embeddings, croppedTargetFrame));
     }
     for (size_t i = 0; i < croppedTargetFrames.size(); ++i) {
         FaceMaskerHub::ArgsForGetBestMask args_4_get_best_mask = input.args_for_get_best_mask;
@@ -119,34 +109,45 @@ cv::Mat InSwapper::swapFace(const InSwapperInput& input) {
         bestMasks.emplace_back(m_face_masker_hub->get_best_mask(args_4_get_best_mask));
     }
 
-    if (croppedTargetFrames.size() != affineMatrices.size() || croppedTargetFrames.size() != croppedResultFrames.size() || croppedTargetFrames.size() != bestMasks.size()) {
-        throw std::runtime_error("The size of croppedTargetFrames, affineMatrices, croppedResultFrames, and bestMasks must be equal.");
+    if (croppedTargetFrames.size() != affineMatrices.size()
+        || croppedTargetFrames.size() != croppedResultFrames.size()
+        || croppedTargetFrames.size() != bestMasks.size()) {
+        throw std::runtime_error(
+            "The size of croppedTargetFrames, affineMatrices, croppedResultFrames, and bestMasks must be equal.");
     }
 
     cv::Mat resultFrame = targetFrame.clone();
     for (size_t i = 0; i < bestMasks.size(); ++i) {
-        resultFrame = face_helper::pasteBack(resultFrame, croppedResultFrames[i], bestMasks[i], affineMatrices[i]);
+        resultFrame = face_helper::pasteBack(resultFrame, croppedResultFrames[i], bestMasks[i],
+                                             affineMatrices[i]);
     }
     return resultFrame;
 }
 
-cv::Mat InSwapper::applySwap(const Face::Embedding& sourceEmbedding, const cv::Mat& croppedTargetFrame) const {
+cv::Mat InSwapper::applySwap(const Face::Embedding& sourceEmbedding,
+                             const cv::Mat& croppedTargetFrame) const {
     std::vector<Ort::Value> inputTensors;
     std::vector<float> inputImageData, inputEmbeddingData;
     for (const auto& inputName : m_input_names) {
         if (std::string(inputName) == "source") {
             inputEmbeddingData = prepareSourceEmbedding(sourceEmbedding);
-            std::vector<int64_t> inputEmbeddingShape{1, static_cast<int64_t>(inputEmbeddingData.size())};
-            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memory_info->GetConst(), inputEmbeddingData.data(), inputEmbeddingData.size(), inputEmbeddingShape.data(), inputEmbeddingShape.size()));
+            std::vector<int64_t> inputEmbeddingShape{
+                1, static_cast<int64_t>(inputEmbeddingData.size())};
+            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(
+                m_memory_info->GetConst(), inputEmbeddingData.data(), inputEmbeddingData.size(),
+                inputEmbeddingShape.data(), inputEmbeddingShape.size()));
         } else if (std::string(inputName) == "target") {
             inputImageData = getInputImageData(croppedTargetFrame);
             std::vector<int64_t> inputImageShape = {1, 3, m_inputHeight, m_inputWidth};
-            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memory_info->GetConst(), inputImageData.data(), inputImageData.size(), inputImageShape.data(), inputImageShape.size()));
+            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(
+                m_memory_info->GetConst(), inputImageData.data(), inputImageData.size(),
+                inputImageShape.data(), inputImageShape.size()));
         }
     }
 
-    auto outputTensor = m_ort_session->Run(m_run_options, m_input_names.data(), inputTensors.data(), inputTensors.size(),
-                                           m_output_names.data(), m_output_names.size());
+    auto outputTensor =
+        m_ort_session->Run(m_run_options, m_input_names.data(), inputTensors.data(),
+                           inputTensors.size(), m_output_names.data(), m_output_names.size());
 
     inputImageData.clear();
     inputEmbeddingData.clear();
@@ -192,7 +193,8 @@ std::vector<float> InSwapper::getInputImageData(const cv::Mat& croppedTargetFram
     std::vector<cv::Mat> bgrChannels(3);
     split(croppedTargetFrame, bgrChannels);
     for (int c = 0; c < 3; c++) {
-        bgrChannels[c].convertTo(bgrChannels.at(c), CV_32FC1, 1 / (255.0 * m_standardDeviation.at(c)),
+        bgrChannels[c].convertTo(bgrChannels.at(c), CV_32FC1,
+                                 1 / (255.0 * m_standardDeviation.at(c)),
                                  -m_mean.at(c) / static_cast<float>(m_standardDeviation.at(c)));
     }
 

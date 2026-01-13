@@ -40,14 +40,11 @@ public:
 
     [[nodiscard]] std::string get_processor_name() const override;
 
-    void loadModel(const std::string& featureExtractorPath,
-                   const std::string& motionExtractorPath,
-                   const std::string& generatorPath,
-                   const ai::InferenceSession::Options& options);
+    void loadModel(const std::string& featureExtractorPath, const std::string& motionExtractorPath,
+                   const std::string& generatorPath, const ai::InferenceSession::Options& options);
 
     [[nodiscard]] bool isModelLoaded() const {
-        return m_featureExtractor.is_model_loaded()
-            && m_motionExtractor.is_model_loaded()
+        return m_featureExtractor.is_model_loaded() && m_motionExtractor.is_model_loaded()
             && m_generator.is_model_loaded();
     }
 
@@ -80,7 +77,8 @@ private:
     };
 
     cv::Size m_generatorOutputSize{512, 512};
-    face_helper::WarpTemplateType m_warpTemplateType = face_helper::WarpTemplateType::Arcface_128_v2;
+    face_helper::WarpTemplateType m_warpTemplateType =
+        face_helper::WarpTemplateType::Arcface_128_v2;
     float m_restoreFactor = 0.96;
     std::shared_ptr<Ort::Env> m_env;
     FeatureExtractor m_featureExtractor;
@@ -89,7 +87,8 @@ private:
 
     static std::vector<float> getInputImageData(const cv::Mat& image, const cv::Size& size);
 
-    [[nodiscard]] cv::Mat applyRestore(const cv::Mat& croppedSourceFrame, const cv::Mat& croppedTargetFrame) const;
+    [[nodiscard]] cv::Mat applyRestore(const cv::Mat& croppedSourceFrame,
+                                       const cv::Mat& croppedTargetFrame) const;
 
     [[nodiscard]] static cv::Mat createRotationMat(float pitch, float yaw, float roll);
 

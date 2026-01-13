@@ -27,14 +27,13 @@ export struct CoreOptions {
     struct LoggerOptions {
         Logger::LogLevel log_level{Logger::LogLevel::Trace}; // 日志级别
 
-        bool operator==(const LoggerOptions& other) const {
-            return log_level == other.log_level;
-        }
+        bool operator==(const LoggerOptions& other) const { return log_level == other.log_level; }
     };
     LoggerOptions logger_options{};
 
-    struct TaskOptions {                         // 任务选项
-        unsigned short per_task_thread_count{1}; // 指定进行任务的线程数量。减小此项可降低内存和显存占用。默认: 1
+    struct TaskOptions { // 任务选项
+        unsigned short per_task_thread_count{
+            1}; // 指定进行任务的线程数量。减小此项可降低内存和显存占用。默认: 1
 
         bool operator==(const TaskOptions& other) const {
             return per_task_thread_count == other.per_task_thread_count;
@@ -58,7 +57,9 @@ export struct CoreOptions {
     InferenceSession::Options inference_session_options{};
 
     bool operator==(const CoreOptions& other) const {
-        return model_options == other.model_options && logger_options == other.logger_options && task_options == other.task_options && memory_options == other.memory_options && inference_session_options == other.inference_session_options;
+        return model_options == other.model_options && logger_options == other.logger_options
+            && task_options == other.task_options && memory_options == other.memory_options
+            && inference_session_options == other.inference_session_options;
     }
 };
 

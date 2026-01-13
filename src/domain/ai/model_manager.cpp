@@ -38,9 +38,10 @@ ModelManager::ModelManager() : m_json_file_path("./assets/models_info.json") {
         set_model_info_file_path(m_json_file_path);
     } catch (const std::exception& e) {
         // Log warning but don't fail construction for default path
-        // logger::Logger::get_instance()->warn("Default model info file not found or invalid: " + std::string(e.what()));
-        // Since logger might not be ready or we want to keep it simple:
-        // Just ignore, user must call set_model_info_file_path with valid path later if default is missing.
+        // logger::Logger::get_instance()->warn("Default model info file not found or invalid: " +
+        // std::string(e.what())); Since logger might not be ready or we want to keep it simple:
+        // Just ignore, user must call set_model_info_file_path with valid path later if default is
+        // missing.
     }
 }
 
@@ -74,62 +75,47 @@ void ModelManager::set_model_info_file_path(const std::string& path) {
         throw std::runtime_error("Failed to open " + m_json_file_path);
     }
 
-    if (auto model_info_json = models_info_json.items().begin().value(); model_info_json.is_array()) {
+    if (auto model_info_json = models_info_json.items().begin().value();
+        model_info_json.is_array()) {
         for (const auto& model_info_json_item : model_info_json.items()) {
             ModelInfo model_info;
             from_json(model_info_json_item.value(), model_info);
             // Use name as the key for the map
-            if (!model_info.name.empty()) {
-                m_models_info_map[model_info.name] = model_info;
-            }
+            if (!model_info.name.empty()) { m_models_info_map[model_info.name] = model_info; }
         }
     }
 }
 
 bool ModelManager::download_model(const std::string& model_name) const {
-    if (model_name.empty()) {
-        return true;
-    }
+    if (model_name.empty()) { return true; }
     if (!m_models_info_map.contains(model_name)) {
         logger::Logger::get_instance()->warn("Model not found in configuration: " + model_name);
         return false;
     }
     const ModelInfo& model_info = m_models_info_map.at(model_name);
-    if (file_system::file_exists(model_info.path)) {
-        return true;
-    }
+    if (file_system::file_exists(model_info.path)) { return true; }
     return network::download(model_info.url, "./models");
 }
 
 bool ModelManager::is_downloaded(const std::string& model_name) const {
-    if (model_name.empty()) {
-        return true;
-    }
-    if (!m_models_info_map.contains(model_name)) {
-        return false;
-    }
+    if (model_name.empty()) { return true; }
+    if (!m_models_info_map.contains(model_name)) { return false; }
     const ModelInfo& model_info = m_models_info_map.at(model_name);
     return file_system::file_exists(model_info.path);
 }
 
 ModelInfo ModelManager::get_model_info(const std::string& model_name) const {
-    if (!m_models_info_map.contains(model_name)) {
-        return ModelInfo{};
-    }
+    if (!m_models_info_map.contains(model_name)) { return ModelInfo{}; }
     return m_models_info_map.at(model_name);
 }
 
 std::string ModelManager::get_model_url(const std::string& model_name) const {
-    if (!m_models_info_map.contains(model_name)) {
-        return {};
-    }
+    if (!m_models_info_map.contains(model_name)) { return {}; }
     return m_models_info_map.at(model_name).url;
 }
 
 std::string ModelManager::get_model_path(const std::string& model_name) const {
-    if (!m_models_info_map.contains(model_name)) {
-        return {};
-    }
+    if (!m_models_info_map.contains(model_name)) { return {}; }
     if (std::string path = m_models_info_map.at(model_name).path; file_system::file_exists(path)) {
         return path;
     }

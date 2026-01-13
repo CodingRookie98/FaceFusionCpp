@@ -13,4 +13,4 @@ import :expression_restorer_basee;
 
 namespace ffc::expressionRestore {
 
-} // namespace expressionRestore
+} // namespace ffc::expressionRestore

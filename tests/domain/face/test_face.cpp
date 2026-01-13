@@ -32,7 +32,7 @@ TEST(FaceTest, SetAndGetBox) {
 TEST(FaceTest, SetAndGetKps) {
     using domain::face::types::Landmarks;
     Face face;
-    face.set_box({0,0,100,100});
+    face.set_box({0, 0, 100, 100});
 
     Landmarks kps;
     kps.emplace_back(10.0f, 10.0f);

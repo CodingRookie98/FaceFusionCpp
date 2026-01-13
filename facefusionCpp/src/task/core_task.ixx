@@ -57,13 +57,12 @@ public:
     std::optional<std::array<int, 4>> face_mask_padding;
     std::optional<std::unordered_set<FaceMaskerRegion::Region>> face_mask_regions;
     [[nodiscard]] FaceMaskerHub::ArgsForGetBestMask GetArgsForGetBestMask() const {
-        return FaceMaskerHub::ArgsForGetBestMask{
-            .faceMaskersTypes = {face_mask_types.value()},
-            .occluder_model = face_occluder_model,
-            .parser_model = face_parser_model,
-            .boxMaskBlur = face_mask_blur,
-            .boxMaskPadding = face_mask_padding,
-            .faceMaskerRegions = face_mask_regions};
+        return FaceMaskerHub::ArgsForGetBestMask{.faceMaskersTypes = {face_mask_types.value()},
+                                                 .occluder_model = face_occluder_model,
+                                                 .parser_model = face_parser_model,
+                                                 .boxMaskBlur = face_mask_blur,
+                                                 .boxMaskPadding = face_mask_padding,
+                                                 .faceMaskerRegions = face_mask_regions};
     }
 
     // output creation
@@ -87,28 +86,24 @@ public:
     CoreTask() = default;
     ~CoreTask() = default;
 
-    [[nodiscard]] FaceSwapperInput
-    GetFaceSwapperInput(const size_t& target_paths_index,
-                        const std::shared_ptr<FaceAnalyser>& face_analyser);
+    [[nodiscard]] FaceSwapperInput GetFaceSwapperInput(
+        const size_t& target_paths_index, const std::shared_ptr<FaceAnalyser>& face_analyser);
 
-    [[nodiscard]] FaceEnhancerInput
-    GetFaceEnhancerInput(const size_t& target_paths_index,
-                         const std::shared_ptr<FaceAnalyser>& face_analyser) const;
+    [[nodiscard]] FaceEnhancerInput GetFaceEnhancerInput(
+        const size_t& target_paths_index, const std::shared_ptr<FaceAnalyser>& face_analyser) const;
 
-    [[nodiscard]] ExpressionRestorerInput
-    GetExpressionRestorerInput(const size_t& source_paths_index,
-                               const size_t& target_paths_index,
-                               const std::shared_ptr<FaceAnalyser>& face_analyser) const;
+    [[nodiscard]] ExpressionRestorerInput GetExpressionRestorerInput(
+        const size_t& source_paths_index, const size_t& target_paths_index,
+        const std::shared_ptr<FaceAnalyser>& face_analyser) const;
 
-    [[nodiscard]] FrameEnhancerInput
-    GetFrameEnhancerInput(const size_t& target_paths_index) const;
+    [[nodiscard]] FrameEnhancerInput GetFrameEnhancerInput(const size_t& target_paths_index) const;
 
-    [[nodiscard]] Face ProcessSourceAverageFace(const std::shared_ptr<FaceAnalyser>& face_analyser) const;
+    [[nodiscard]] Face ProcessSourceAverageFace(
+        const std::shared_ptr<FaceAnalyser>& face_analyser) const;
 
 private:
-    [[nodiscard]] std::vector<Face>
-    GetTargetFaces(const cv::Mat& target_frame,
-                   const std::shared_ptr<FaceAnalyser>& face_analyser) const;
+    [[nodiscard]] std::vector<Face> GetTargetFaces(
+        const cv::Mat& target_frame, const std::shared_ptr<FaceAnalyser>& face_analyser) const;
 };
 
 } // namespace ffc::task

@@ -17,7 +17,7 @@ TEST(FaceHelperTest, GetIoU) {
     // Union: 100 + 100 - 50 = 150
     // IoU: 50/150 = 0.333...
     float iou = get_iou(box1, box2);
-    EXPECT_NEAR(iou, 1.0f/3.0f, 1e-5);
+    EXPECT_NEAR(iou, 1.0f / 3.0f, 1e-5);
 
     // Non-overlapping boxes
     cv::Rect2f box3(0, 0, 10, 10);
@@ -50,7 +50,7 @@ TEST(FaceHelperTest, ApplyNMS) {
 TEST(FaceHelperTest, ConvertLandmark68To5) {
     types::Landmarks kps68(68);
     // Fill with dummy data
-    for(int i=0; i<68; ++i) {
+    for (int i = 0; i < 68; ++i) {
         kps68[i] = cv::Point2f(static_cast<float>(i), static_cast<float>(i));
     }
 
@@ -91,16 +91,16 @@ TEST(FaceHelperTest, CreateStaticAnchors) {
 
     ASSERT_EQ(anchors.size(), 8);
     // Check first couple
-    EXPECT_EQ(anchors[0][0], 0); EXPECT_EQ(anchors[0][1], 0); // (0,0) anchor 1
-    EXPECT_EQ(anchors[1][0], 0); EXPECT_EQ(anchors[1][1], 0); // (0,0) anchor 2
-    EXPECT_EQ(anchors[2][0], 0); EXPECT_EQ(anchors[2][1], 8); // (0,8) anchor 1
+    EXPECT_EQ(anchors[0][0], 0);
+    EXPECT_EQ(anchors[0][1], 0); // (0,0) anchor 1
+    EXPECT_EQ(anchors[1][0], 0);
+    EXPECT_EQ(anchors[1][1], 0); // (0,0) anchor 2
+    EXPECT_EQ(anchors[2][0], 0);
+    EXPECT_EQ(anchors[2][1], 8); // (0,8) anchor 1
 }
 
 TEST(FaceHelperTest, CalcAverageEmbedding) {
-    std::vector<std::vector<float>> embeddings = {
-        {1.0f, 2.0f, 3.0f},
-        {3.0f, 2.0f, 1.0f}
-    };
+    std::vector<std::vector<float>> embeddings = {{1.0f, 2.0f, 3.0f}, {3.0f, 2.0f, 1.0f}};
 
     auto avg = calc_average_embedding(embeddings);
     ASSERT_EQ(avg.size(), 3);

@@ -13,9 +13,7 @@ namespace foundation::infrastructure::core_utils {
 namespace random {
 
 std::string generate_random_str(size_t length) {
-    if (length == 0) {
-        throw std::invalid_argument("Length must be greater than zero");
-    }
+    if (length == 0) { throw std::invalid_argument("Length must be greater than zero"); }
 
     static const std::string chars =
         "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -25,9 +23,7 @@ std::string generate_random_str(size_t length) {
 
     std::string result;
     result.reserve(length);
-    for (size_t i = 0; i < length; ++i) {
-        result += chars[distribution(generator)];
-    }
+    for (size_t i = 0; i < length; ++i) { result += chars[distribution(generator)]; }
     return result;
 }
 
@@ -63,23 +59,17 @@ nlohmann::json yaml_node_to_json(const YAML::Node& node);
 YAML::Node json_to_yaml_node(const nlohmann::json& j);
 
 nlohmann::json infer_scalar_type(const std::string& value) {
-    if (value.empty()) {
-        return value;
-    }
+    if (value.empty()) { return value; }
     try {
         size_t pos;
         auto int_val = std::stoll(value, &pos);
-        if (pos == value.size()) {
-            return int_val;
-        }
+        if (pos == value.size()) { return int_val; }
     } catch (...) {}
 
     try {
         size_t pos;
         auto float_val = std::stod(value, &pos);
-        if (pos == value.size()) {
-            return float_val;
-        }
+        if (pos == value.size()) { return float_val; }
     } catch (...) {}
 
     return value;
@@ -89,9 +79,14 @@ nlohmann::json yaml_node_to_json(const YAML::Node& node) {
     switch (node.Type()) {
     case YAML::NodeType::Scalar: {
         auto scalar_value = node.as<std::string>();
-        if (scalar_value == "true" || scalar_value == "True" || scalar_value == "TRUE" || scalar_value == "yes" || scalar_value == "Yes" || scalar_value == "YES") return true;
-        if (scalar_value == "false" || scalar_value == "False" || scalar_value == "FALSE" || scalar_value == "no" || scalar_value == "No" || scalar_value == "NO") return false;
-        if (scalar_value == "null" || scalar_value == "Null" || scalar_value == "NULL") return nullptr;
+        if (scalar_value == "true" || scalar_value == "True" || scalar_value == "TRUE"
+            || scalar_value == "yes" || scalar_value == "Yes" || scalar_value == "YES")
+            return true;
+        if (scalar_value == "false" || scalar_value == "False" || scalar_value == "FALSE"
+            || scalar_value == "no" || scalar_value == "No" || scalar_value == "NO")
+            return false;
+        if (scalar_value == "null" || scalar_value == "Null" || scalar_value == "NULL")
+            return nullptr;
 
         const std::string& tag = node.Tag();
         if (tag == "!!int" || tag == "tag:yaml.org,2002:int") {
@@ -108,38 +103,34 @@ nlohmann::json yaml_node_to_json(const YAML::Node& node) {
     }
     case YAML::NodeType::Sequence: {
         nlohmann::json arr = nlohmann::json::array();
-        for (const auto& child : node) {
-            arr.push_back(yaml_node_to_json(child));
-        }
+        for (const auto& child : node) { arr.push_back(yaml_node_to_json(child)); }
         return arr;
     }
     case YAML::NodeType::Map: {
         nlohmann::json obj = nlohmann::json::object();
         for (const auto& pair : node) {
             const auto key = pair.first.as<std::string>();
-            obj[key]       = yaml_node_to_json(pair.second);
+            obj[key] = yaml_node_to_json(pair.second);
         }
         return obj;
     }
     case YAML::NodeType::Null: return nullptr;
     case YAML::NodeType::Undefined: return nlohmann::json::object();
-    default: throw std::runtime_error("Unsupported YAML node type: " + std::to_string(static_cast<int>(node.Type())));
+    default:
+        throw std::runtime_error("Unsupported YAML node type: "
+                                 + std::to_string(static_cast<int>(node.Type())));
     }
 }
 
 YAML::Node json_to_yaml_node(const nlohmann::json& j) {
     if (j.is_object()) {
         YAML::Node node(YAML::NodeType::Map);
-        for (auto& [key, value] : j.items()) {
-            node[key] = json_to_yaml_node(value);
-        }
+        for (auto& [key, value] : j.items()) { node[key] = json_to_yaml_node(value); }
         return node;
     }
     if (j.is_array()) {
         YAML::Node node(YAML::NodeType::Sequence);
-        for (auto& element : j) {
-            node.push_back(json_to_yaml_node(element));
-        }
+        for (auto& element : j) { node.push_back(json_to_yaml_node(element)); }
         return node;
     }
     if (j.is_null()) return YAML::Node(YAML::NodeType::Null);
@@ -154,9 +145,7 @@ YAML::Node json_to_yaml_node(const nlohmann::json& j) {
 }
 
 nlohmann::json yaml_str_to_json(const std::string& yaml_str) {
-    if (yaml_str.empty()) {
-        return nlohmann::json::object();
-    }
+    if (yaml_str.empty()) { return nlohmann::json::object(); }
     try {
         const YAML::Node root = YAML::Load(yaml_str);
         return yaml_node_to_json(root);

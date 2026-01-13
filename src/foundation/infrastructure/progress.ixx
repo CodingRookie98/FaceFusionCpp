@@ -10,7 +10,7 @@ export module foundation.infrastructure.progress;
 export namespace foundation::infrastructure::progress {
 
 struct IProgressObserver {
-    virtual ~IProgressObserver()                               = default;
+    virtual ~IProgressObserver() = default;
     virtual void on_progress(int step, const std::string& msg) = 0;
 };
 
@@ -20,7 +20,7 @@ public:
     ~ProgressBar(); // Required for PIMPL
 
     // Delete copy/move as it holds unique_ptr to external resource potentially
-    ProgressBar(const ProgressBar&)            = delete;
+    ProgressBar(const ProgressBar&) = delete;
     ProgressBar& operator=(const ProgressBar&) = delete;
     ProgressBar(ProgressBar&&);
     ProgressBar& operator=(ProgressBar&&);

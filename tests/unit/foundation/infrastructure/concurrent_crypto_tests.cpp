@@ -16,18 +16,15 @@ protected:
     void SetUp() override {
         const testing::TestInfo* const test_info =
             testing::UnitTest::GetInstance()->current_test_info();
-        test_dir = std::string("test_ccrypto_sandbox_") + test_info->test_suite_name() + "_" + test_info->name();
+        test_dir = std::string("test_ccrypto_sandbox_") + test_info->test_suite_name() + "_"
+                 + test_info->name();
 
-        if (fs::exists(test_dir)) {
-            fs::remove_all(test_dir);
-        }
+        if (fs::exists(test_dir)) { fs::remove_all(test_dir); }
         fs::create_directories(test_dir);
     }
 
     void TearDown() override {
-        if (fs::exists(test_dir)) {
-            fs::remove_all(test_dir);
-        }
+        if (fs::exists(test_dir)) { fs::remove_all(test_dir); }
     }
 
     std::string test_dir;
@@ -75,6 +72,7 @@ TEST_F(ConcurrentCryptoTest, CombinedSha1) {
     EXPECT_EQ(combined_hash.length(), 40); // SHA1 hex length
 
     // Verify consistency
-    std::string combined_hash2 = foundation::infrastructure::concurrent_crypto::combined_sha1(files);
+    std::string combined_hash2 =
+        foundation::infrastructure::concurrent_crypto::combined_sha1(files);
     EXPECT_EQ(combined_hash, combined_hash2);
 }

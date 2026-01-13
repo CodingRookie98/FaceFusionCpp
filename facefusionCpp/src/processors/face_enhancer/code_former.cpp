@@ -16,9 +16,7 @@ module face_enhancer;
 import :code_former;
 
 namespace ffc::faceEnhancer {
-CodeFormer::CodeFormer(const std::shared_ptr<Ort::Env>& env) :
-    InferenceSession(env) {
-}
+CodeFormer::CodeFormer(const std::shared_ptr<Ort::Env>& env) : InferenceSession(env) {}
 
 std::string CodeFormer::get_processor_name() const {
     return "FaceEnhancer.CodeFormer";
@@ -32,22 +30,12 @@ void CodeFormer::load_model(const std::string& modelPath, const Options& options
 }
 
 cv::Mat CodeFormer::enhanceFace(const CodeFormerInput& input) const {
-    if (input.target_frame == nullptr) {
-        return {};
-    }
-    if (input.target_frame->empty()) {
-        return {};
-    }
-    if (input.target_faces_5_landmarks.empty()) {
-        return input.target_frame->clone();
-    }
+    if (input.target_frame == nullptr) { return {}; }
+    if (input.target_frame->empty()) { return {}; }
+    if (input.target_faces_5_landmarks.empty()) { return input.target_frame->clone(); }
 
-    if (!is_model_loaded()) {
-        throw std::runtime_error("model is not loaded");
-    }
-    if (!hasFaceMaskerHub()) {
-        throw std::runtime_error("faceMaskers is nullptr");
-    }
+    if (!is_model_loaded()) { throw std::runtime_error("model is not loaded"); }
+    if (!hasFaceMaskerHub()) { throw std::runtime_error("faceMaskers is nullptr"); }
 
     std::vector<cv::Mat> croppedTargetFrames;
     std::vector<cv::Mat> affineMatrices;
@@ -55,7 +43,9 @@ cv::Mat CodeFormer::enhanceFace(const CodeFormerInput& input) const {
     std::vector<cv::Mat> bestMasks;
     for (const auto& target_faces_5_landmark : input.target_faces_5_landmarks) {
         cv::Mat croppedTargetFrame, affineMatrix;
-        std::tie(croppedTargetFrame, affineMatrix) = face_helper::warpFaceByFaceLandmarks5(*input.target_frame, target_faces_5_landmark, face_helper::getWarpTemplate(m_warpTemplateType), m_size);
+        std::tie(croppedTargetFrame, affineMatrix) = face_helper::warpFaceByFaceLandmarks5(
+            *input.target_frame, target_faces_5_landmark,
+            face_helper::getWarpTemplate(m_warpTemplateType), m_size);
         croppedTargetFrames.emplace_back(croppedTargetFrame);
         affineMatrices.emplace_back(affineMatrix);
     }
@@ -71,12 +61,16 @@ cv::Mat CodeFormer::enhanceFace(const CodeFormerInput& input) const {
         args4_get_best_mask.occlusionFrame = {&croppedTargetFrame};
         bestMasks.emplace_back(m_faceMaskerHub->get_best_mask(args4_get_best_mask));
     }
-    if (croppedTargetFrames.size() != affineMatrices.size() || croppedTargetFrames.size() != croppedResultFrames.size() || croppedTargetFrames.size() != bestMasks.size()) {
-        throw std::runtime_error("The size of croppedTargetFrames, affineMatrices, croppedResultFrames, and bestMasks must be equal.");
+    if (croppedTargetFrames.size() != affineMatrices.size()
+        || croppedTargetFrames.size() != croppedResultFrames.size()
+        || croppedTargetFrames.size() != bestMasks.size()) {
+        throw std::runtime_error(
+            "The size of croppedTargetFrames, affineMatrices, croppedResultFrames, and bestMasks must be equal.");
     }
     cv::Mat resultFrame = input.target_frame->clone();
     for (size_t i = 0; i < bestMasks.size(); ++i) {
-        resultFrame = face_helper::pasteBack(resultFrame, croppedResultFrames[i], bestMasks[i], affineMatrices[i]);
+        resultFrame = face_helper::pasteBack(resultFrame, croppedResultFrames[i], bestMasks[i],
+                                             affineMatrices[i]);
     }
     if (input.faceBlend > 100) {
         resultFrame = blendFrame(*input.target_frame, resultFrame, 100);
@@ -94,21 +88,19 @@ cv::Mat CodeFormer::applyEnhance(const cv::Mat& croppedFrame) const {
     std::vector<Ort::Value> inputTensors;
     for (const auto& name : m_input_names) {
         if (std::string(name) == "input") {
-            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memory_info->GetConst(),
-                                                                      inputImageData.data(), inputImageData.size(),
-                                                                      inputImageDataShape.data(), inputImageDataShape.size()));
+            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(
+                m_memory_info->GetConst(), inputImageData.data(), inputImageData.size(),
+                inputImageDataShape.data(), inputImageDataShape.size()));
         } else if (std::string(name) == "weight") {
-            inputTensors.emplace_back(Ort::Value::CreateTensor<double>(m_memory_info->GetConst(),
-                                                                       inputWeightData.data(), inputWeightData.size(),
-                                                                       inputWeightDataShape.data(), inputWeightDataShape.size()));
+            inputTensors.emplace_back(Ort::Value::CreateTensor<double>(
+                m_memory_info->GetConst(), inputWeightData.data(), inputWeightData.size(),
+                inputWeightDataShape.data(), inputWeightDataShape.size()));
         }
     }
 
-    std::vector<Ort::Value> outputTensor = m_ort_session->Run(m_run_options,
-                                                              m_input_names.data(),
-                                                              inputTensors.data(), inputTensors.size(),
-                                                              m_output_names.data(),
-                                                              m_output_names.size());
+    std::vector<Ort::Value> outputTensor =
+        m_ort_session->Run(m_run_options, m_input_names.data(), inputTensors.data(),
+                           inputTensors.size(), m_output_names.data(), m_output_names.size());
 
     auto* pdata = outputTensor[0].GetTensorMutableData<float>();
     const std::vector<int64_t> outsShape = outputTensor[0].GetTensorTypeAndShapeInfo().GetShape();

@@ -16,31 +16,36 @@ module;
 
 export module foundation.ai.inference_session;
 
-
 namespace foundation::ai::inference_session {
 
-    export enum class ExecutionProvider {
-        CPU,     ///< CPU execution provider
-        CUDA,    ///< CUDA GPU execution provider
-        TensorRT ///< TensorRT execution provider
-    };
+export enum class ExecutionProvider {
+    CPU,     ///< CPU execution provider
+    CUDA,    ///< CUDA GPU execution provider
+    TensorRT ///< TensorRT execution provider
+};
 
-    export struct Options {
-        std::unordered_set<ExecutionProvider> execution_providers{ExecutionProvider::CPU}; ///< Set of execution providers to use
-        int execution_device_id = 0;                                                       ///< Device ID for GPU execution
-        size_t trt_max_workspace_size = 0;                                                 ///< Maximum workspace size for TensorRT in GB
-        bool enable_tensorrt_embed_engine = true;                                          ///< Enable TensorRT engine embedding
-        bool enable_tensorrt_cache = true;                                                 ///< Enable TensorRT engine caching
+export struct Options {
+    std::unordered_set<ExecutionProvider> execution_providers{
+        ExecutionProvider::CPU};              ///< Set of execution providers to use
+    int execution_device_id = 0;              ///< Device ID for GPU execution
+    size_t trt_max_workspace_size = 0;        ///< Maximum workspace size for TensorRT in GB
+    bool enable_tensorrt_embed_engine = true; ///< Enable TensorRT engine embedding
+    bool enable_tensorrt_cache = true;        ///< Enable TensorRT engine caching
 
-        bool operator==(const Options& other) const {
-            return execution_providers == other.execution_providers && execution_device_id == other.execution_device_id && trt_max_workspace_size == other.trt_max_workspace_size && enable_tensorrt_embed_engine == other.enable_tensorrt_embed_engine && enable_tensorrt_cache == other.enable_tensorrt_cache;
-        }
-    };
+    bool operator==(const Options& other) const {
+        return execution_providers == other.execution_providers
+            && execution_device_id == other.execution_device_id
+            && trt_max_workspace_size == other.trt_max_workspace_size
+            && enable_tensorrt_embed_engine == other.enable_tensorrt_embed_engine
+            && enable_tensorrt_cache == other.enable_tensorrt_cache;
+    }
+};
 
 /**
  * @brief ONNX Runtime inference session wrapper class
  * @details This class provides a high-level interface for loading ONNX models and running
- *          inference with support for various execution providers including CPU, CUDA, and TensorRT.
+ *          inference with support for various execution providers including CPU, CUDA, and
+ * TensorRT.
  */
 export class InferenceSession {
 public:
@@ -75,6 +80,7 @@ public:
     /**
      * @brief Run inference
      * @param input_tensors Vector of input tensors
+     *
      * @return Vector of output tensors
      */
     std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors);
@@ -83,7 +89,6 @@ public:
     [[nodiscard]] std::vector<std::vector<int64_t>> get_output_node_dims() const;
 
 private:
-
     struct Impl;
     std::unique_ptr<Impl> m_impl;
 };

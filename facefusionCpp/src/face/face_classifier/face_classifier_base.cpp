@@ -14,7 +14,6 @@ import :face_classifier_base;
 namespace ffc::face_classifier {
 
 FaceClassifierBase::FaceClassifierBase(const std::shared_ptr<Ort::Env>& env) :
-    InferenceSession(env) {
-}
+    InferenceSession(env) {}
 
 } // namespace ffc::face_classifier

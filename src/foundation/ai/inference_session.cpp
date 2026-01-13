@@ -43,14 +43,16 @@ struct InferenceSession::Impl {
 
     Impl() {
         m_logger = logger::Logger::get_instance();
-        m_ort_env = std::make_shared<Ort::Env>(Ort::Env(ORT_LOGGING_LEVEL_WARNING, "FaceFusionCpp"));
+        m_ort_env =
+            std::make_shared<Ort::Env>(Ort::Env(ORT_LOGGING_LEVEL_WARNING, "FaceFusionCpp"));
         m_session_options = Ort::SessionOptions();
         m_session_options.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
 
         auto available_providers = Ort::GetAvailableProviders();
         m_available_providers.insert(available_providers.begin(), available_providers.end());
 
-        m_memory_info = std::make_unique<Ort::MemoryInfo>(Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault));
+        m_memory_info = std::make_unique<Ort::MemoryInfo>(
+            Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault));
     }
 
     void reset() {
@@ -81,7 +83,8 @@ struct InferenceSession::Impl {
         try {
             m_session_options.AppendExecutionProvider_CUDA(*m_cuda_provider_options);
         } catch (const Ort::Exception& e) {
-            m_logger->error(std::format("AppendExecutionProvider_CUDA: Ort::Exception: {}", e.what()));
+            m_logger->error(
+                std::format("AppendExecutionProvider_CUDA: Ort::Exception: {}", e.what()));
             throw std::runtime_error(e.what());
         }
     }
@@ -140,19 +143,18 @@ struct InferenceSession::Impl {
         }
 
         try {
-            Ort::ThrowOnError(api.UpdateTensorRTProviderOptions(tensorrt_provider_options_v2,
-                                                                keys.data(), values.data(), keys.size()));
+            Ort::ThrowOnError(api.UpdateTensorRTProviderOptions(
+                tensorrt_provider_options_v2, keys.data(), values.data(), keys.size()));
             m_session_options.AppendExecutionProvider_TensorRT_V2(*tensorrt_provider_options_v2);
         } catch (const std::exception& e) {
-            m_logger->warn(std::format("Failed to append TensorRT execution provider: {}", e.what()));
+            m_logger->warn(
+                std::format("Failed to append TensorRT execution provider: {}", e.what()));
         }
         api.ReleaseTensorRTProviderOptions(tensorrt_provider_options_v2);
     }
 
     void load_model(const std::string& model_path, const Options& options) {
-        if (model_path.empty()) {
-            throw std::runtime_error("modelPath is empty");
-        }
+        if (model_path.empty()) { throw std::runtime_error("modelPath is empty"); }
         if (!std::filesystem::exists(model_path)) {
             throw std::runtime_error(std::format("modelPath: {} does not exist", model_path));
         }
@@ -171,9 +173,11 @@ struct InferenceSession::Impl {
         try {
 #if defined(WIN32) || defined(_WIN32)
             auto wide_model_path = std::filesystem::path(model_path).wstring();
-            m_ort_session = std::make_unique<Ort::Session>(*m_ort_env, wide_model_path.c_str(), m_session_options);
+            m_ort_session = std::make_unique<Ort::Session>(*m_ort_env, wide_model_path.c_str(),
+                                                           m_session_options);
 #else
-            m_ort_session = std::make_unique<Ort::Session>(*m_ort_env, model_path.c_str(), m_session_options);
+            m_ort_session =
+                std::make_unique<Ort::Session>(*m_ort_env, model_path.c_str(), m_session_options);
 #endif
         } catch (const std::exception& e) {
             m_logger->error(std::format("CreateSession: {}", e.what()));
@@ -188,7 +192,8 @@ struct InferenceSession::Impl {
 
         Ort::AllocatorWithDefaultOptions allocator;
         for (size_t i = 0; i < num_input_nodes; i++) {
-            m_input_names_ptrs.push_back(std::move(m_ort_session->GetInputNameAllocated(i, allocator)));
+            m_input_names_ptrs.push_back(
+                std::move(m_ort_session->GetInputNameAllocated(i, allocator)));
             m_input_names.push_back(m_input_names_ptrs[i].get());
         }
 
@@ -220,20 +225,15 @@ std::string InferenceSession::get_loaded_model_path() const {
 }
 
 std::vector<Ort::Value> InferenceSession::run(const std::vector<Ort::Value>& input_tensors) {
-    if (!m_impl->m_is_model_loaded) {
-        throw std::runtime_error("Model not loaded");
-    }
+    if (!m_impl->m_is_model_loaded) { throw std::runtime_error("Model not loaded"); }
     // Validate inputs count
     // if (input_tensors.size() != m_impl->m_input_names.size()) {
     //    throw std::runtime_error("Input tensors count mismatch");
     // }
-    
-    return m_impl->m_ort_session->Run(m_impl->m_run_options, 
-                                      m_impl->m_input_names.data(), 
-                                      input_tensors.data(), 
-                                      input_tensors.size(), 
-                                      m_impl->m_output_names.data(), 
-                                      m_impl->m_output_names.size());
+
+    return m_impl->m_ort_session->Run(m_impl->m_run_options, m_impl->m_input_names.data(),
+                                      input_tensors.data(), input_tensors.size(),
+                                      m_impl->m_output_names.data(), m_impl->m_output_names.size());
 }
 
 std::vector<std::vector<int64_t>> InferenceSession::get_input_node_dims() const {
@@ -245,4 +245,3 @@ std::vector<std::vector<int64_t>> InferenceSession::get_output_node_dims() const
 }
 
 } // namespace foundation::ai::inference_session
-

@@ -45,12 +45,9 @@ public:
     explicit ProcessorHub(const InferenceSession::Options& _options);
     ~ProcessorHub() = default;
 
-    ProcessorPool& getProcessorPool() {
-        return processorPool_;
-    }
+    ProcessorPool& getProcessorPool() { return processorPool_; }
 
-    cv::Mat swapFace(const FaceSwapperType& _faceSwapperType,
-                     const model_manager::Model& _model,
+    cv::Mat swapFace(const FaceSwapperType& _faceSwapperType, const model_manager::Model& _model,
                      const FaceSwapperInput& _faceSwapperInput);
 
     cv::Mat enhanceFace(const FaceEnhancerType& _faceEnhancerType,
@@ -61,8 +58,7 @@ public:
                               const ExpressionRestorerInput& input);
 
     cv::Mat enhanceFrame(const FrameEnhancerType& _frameEnhancerType,
-                         const model_manager::Model& _model,
-                         const FrameEnhancerInput& _input);
+                         const model_manager::Model& _model, const FrameEnhancerInput& _input);
 
 private:
     ProcessorPool processorPool_;

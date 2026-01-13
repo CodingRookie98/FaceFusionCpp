@@ -15,13 +15,12 @@ namespace foundation::infrastructure::concurrent_file_system {
 void remove_files(const std::vector<std::string>& paths) {
     auto& pool = foundation::infrastructure::thread_pool::ThreadPool::instance();
     for (const auto& path : paths) {
-        pool.enqueue([path]() {
-            foundation::infrastructure::file_system::remove_file(path);
-        });
+        pool.enqueue([path]() { foundation::infrastructure::file_system::remove_file(path); });
     }
 }
 
-void copy_files(const std::vector<std::string>& sources, const std::vector<std::string>& destinations) {
+void copy_files(const std::vector<std::string>& sources,
+                const std::vector<std::string>& destinations) {
     if (sources.size() != destinations.size()) {
         // Handle error: sizes must match
         return;
@@ -30,9 +29,8 @@ void copy_files(const std::vector<std::string>& sources, const std::vector<std::
     for (size_t i = 0; i < sources.size(); ++i) {
         std::string src = sources[i];
         std::string dst = destinations[i];
-        pool.enqueue([src, dst]() {
-            foundation::infrastructure::file_system::copy_file(src, dst);
-        });
+        pool.enqueue(
+            [src, dst]() { foundation::infrastructure::file_system::copy_file(src, dst); });
     }
 }
 

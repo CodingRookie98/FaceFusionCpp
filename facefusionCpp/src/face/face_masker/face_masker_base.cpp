@@ -16,7 +16,5 @@ module face_masker_hub;
 import :face_masker_base;
 
 namespace ffc::face_masker {
-FaceMaskerBase::FaceMaskerBase(const std::shared_ptr<Ort::Env>& env) :
-    InferenceSession(env) {
-}
+FaceMaskerBase::FaceMaskerBase(const std::shared_ptr<Ort::Env>& env) : InferenceSession(env) {}
 } // namespace ffc::face_masker

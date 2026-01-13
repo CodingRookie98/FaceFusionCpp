@@ -14,16 +14,12 @@ class CryptoTest : public ::testing::Test {
 protected:
     void SetUp() override {
         test_dir = "test_crypto_sandbox";
-        if (fs::exists(test_dir)) {
-            fs::remove_all(test_dir);
-        }
+        if (fs::exists(test_dir)) { fs::remove_all(test_dir); }
         fs::create_directories(test_dir);
     }
 
     void TearDown() override {
-        if (fs::exists(test_dir)) {
-            fs::remove_all(test_dir);
-        }
+        if (fs::exists(test_dir)) { fs::remove_all(test_dir); }
     }
 
     std::string test_dir;

@@ -9,20 +9,21 @@ import :types;
 import foundation.ai.inference_session;
 
 export namespace domain::face::detector {
-    
-    using InferenceOptions = foundation::ai::inference_session::Options;
 
-    class IFaceDetector {
-    public:
-        virtual ~IFaceDetector() = default;
+using InferenceOptions = foundation::ai::inference_session::Options;
 
-        virtual void load_model(const std::string& model_path, const InferenceOptions& options = {}) = 0;
+class IFaceDetector {
+public:
+    virtual ~IFaceDetector() = default;
 
-        /**
-         * @brief Detect faces in the given image.
-         * @param image Input image (BGR usually)
-         * @return List of detection results
-         */
-        virtual DetectionResults detect(const cv::Mat& image) = 0;
-    };
-}
+    virtual void load_model(const std::string& model_path,
+                            const InferenceOptions& options = {}) = 0;
+
+    /**
+     * @brief Detect faces in the given image.
+     * @param image Input image (BGR usually)
+     * @return List of detection results
+     */
+    virtual DetectionResults detect(const cv::Mat& image) = 0;
+};
+} // namespace domain::face::detector

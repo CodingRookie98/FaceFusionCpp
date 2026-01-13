@@ -11,5 +11,5 @@ export import foundation.infrastructure.progress;
 export import foundation.infrastructure.thread_pool;
 
 export namespace foundation::infrastructure::test {
-    void reset_environment();
+void reset_environment();
 }

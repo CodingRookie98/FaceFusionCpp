@@ -17,20 +17,16 @@ using namespace task;
 using json = nlohmann::json;
 using namespace core;
 
-NLOHMANN_JSON_SERIALIZE_ENUM(
-    ProcessorMajorType,
-    {
-        {ProcessorMajorType::FaceSwapper, "face_swapper"},
-        {ProcessorMajorType::FrameEnhancer, "frame_enhancer"},
-        {ProcessorMajorType::ExpressionRestorer, "expression_restorer"},
-        {ProcessorMajorType::FaceEnhancer, "face_enhancer"},
-    });
+NLOHMANN_JSON_SERIALIZE_ENUM(ProcessorMajorType,
+                             {
+                                 {ProcessorMajorType::FaceSwapper, "face_swapper"},
+                                 {ProcessorMajorType::FrameEnhancer, "frame_enhancer"},
+                                 {ProcessorMajorType::ExpressionRestorer, "expression_restorer"},
+                                 {ProcessorMajorType::FaceEnhancer, "face_enhancer"},
+                             });
 
 void to_json(json& j, Task::Output& output) {
-    j = {
-        {"path", output.path},
-        {"prefix", output.prefix},
-        {"subfix", output.subfix}};
+    j = {{"path", output.path}, {"prefix", output.prefix}, {"subfix", output.subfix}};
 }
 
 void from_json(json& j, Task::Output& output) {
@@ -63,48 +59,40 @@ void from_json(json& j, Task::ProcessorInfo& info) {
     }
 }
 
-NLOHMANN_JSON_SERIALIZE_ENUM(
-    ImageFormat,
-    {
-        {ImageFormat::JPEG, "jpeg"},
-        {ImageFormat::PNG, "png"},
-        {ImageFormat::JPG, "jpg"},
-    });
+NLOHMANN_JSON_SERIALIZE_ENUM(ImageFormat, {
+                                              {ImageFormat::JPEG, "jpeg"},
+                                              {ImageFormat::PNG, "png"},
+                                              {ImageFormat::JPG, "jpg"},
+                                          });
 
-NLOHMANN_JSON_SERIALIZE_ENUM(
-    VideoEncoder,
-    {
-        {VideoEncoder::libx264, "libx264"},
-        {VideoEncoder::libx265, "libx265"},
-        {VideoEncoder::libvpx_vp9, "libvpx-vp9"},
-        {VideoEncoder::h264_nvenc, "h264-nvenc"},
-        {VideoEncoder::hevc_nvenc, "h265-nvenc"},
-        {VideoEncoder::h264_amf, "h264_amf"},
-        {VideoEncoder::hevc_nvenc, "hevc_nvenc"},
-    });
+NLOHMANN_JSON_SERIALIZE_ENUM(VideoEncoder, {
+                                               {VideoEncoder::libx264, "libx264"},
+                                               {VideoEncoder::libx265, "libx265"},
+                                               {VideoEncoder::libvpx_vp9, "libvpx-vp9"},
+                                               {VideoEncoder::h264_nvenc, "h264-nvenc"},
+                                               {VideoEncoder::hevc_nvenc, "h265-nvenc"},
+                                               {VideoEncoder::h264_amf, "h264_amf"},
+                                               {VideoEncoder::hevc_nvenc, "hevc_nvenc"},
+                                           });
 
-NLOHMANN_JSON_SERIALIZE_ENUM(
-    VideoPreset,
-    {
-        {VideoPreset::ultrafast, "ultrafast"},
-        {VideoPreset::superfast, "superfast"},
-        {VideoPreset::veryfast, "veryfast"},
-        {VideoPreset::faster, "faster"},
-        {VideoPreset::fast, "fast"},
-        {VideoPreset::medium, "medium"},
-        {VideoPreset::slow, "slow"},
-        {VideoPreset::slower, "slower"},
-        {VideoPreset::veryslow, "veryslow"},
-    });
+NLOHMANN_JSON_SERIALIZE_ENUM(VideoPreset, {
+                                              {VideoPreset::ultrafast, "ultrafast"},
+                                              {VideoPreset::superfast, "superfast"},
+                                              {VideoPreset::veryfast, "veryfast"},
+                                              {VideoPreset::faster, "faster"},
+                                              {VideoPreset::fast, "fast"},
+                                              {VideoPreset::medium, "medium"},
+                                              {VideoPreset::slow, "slow"},
+                                              {VideoPreset::slower, "slower"},
+                                              {VideoPreset::veryslow, "veryslow"},
+                                          });
 
-NLOHMANN_JSON_SERIALIZE_ENUM(
-    AudioEncoder,
-    {
-        {AudioEncoder::aac, "aac"},
-        {AudioEncoder::libmp3lame, "libmp3lame"},
-        {AudioEncoder::libopus, "libopus"},
-        {AudioEncoder::libvorbis, "libvorbis"},
-    })
+NLOHMANN_JSON_SERIALIZE_ENUM(AudioEncoder, {
+                                               {AudioEncoder::aac, "aac"},
+                                               {AudioEncoder::libmp3lame, "libmp3lame"},
+                                               {AudioEncoder::libopus, "libopus"},
+                                               {AudioEncoder::libvorbis, "libvorbis"},
+                                           })
 
 void to_json(json& j, Task::ImageInfo& info) {
     json size_json;
@@ -124,12 +112,9 @@ void from_json(json& j, Task::ImageInfo& info) {
 
 void to_json(json& j, Task::VideoInfo& info) {
     j = json{
-        {"segment_duration", info.segment_duration},
-        {"video_encoder", info.video_encoder},
-        {"video_preset", info.video_preset},
-        {"video_quality", info.video_quality},
-        {"audio_encoder", info.audio_encoder},
-        {"skip_audio", info.skip_audio},
+        {"segment_duration", info.segment_duration}, {"video_encoder", info.video_encoder},
+        {"video_preset", info.video_preset},         {"video_quality", info.video_quality},
+        {"audio_encoder", info.audio_encoder},       {"skip_audio", info.skip_audio},
         {"frame_format", info.frame_format},
     };
 }
@@ -148,12 +133,9 @@ void to_json(json& j, Task::FaceMasker& face_masker) {
     json regions_json;
     to_json(regions_json, face_masker.mask_regions);
     j = json{
-        {"occluder_model", face_masker.occluder_model},
-        {"parser_model", face_masker.parser_model},
-        {"mask_type", face_masker.mask_type},
-        {"mask_blur", face_masker.mask_blur},
-        {"mask_padding", face_masker.mask_padding},
-        {"mask_regions", regions_json},
+        {"occluder_model", face_masker.occluder_model}, {"parser_model", face_masker.parser_model},
+        {"mask_type", face_masker.mask_type},           {"mask_blur", face_masker.mask_blur},
+        {"mask_padding", face_masker.mask_padding},     {"mask_regions", regions_json},
     };
 }
 
@@ -161,18 +143,10 @@ void from_json(json& j, Task::FaceMasker& face_masker) {
     if (j.contains("occluder_model")) {
         from_json(j.at("occluder_model"), face_masker.occluder_model);
     }
-    if (j.contains("parser_model")) {
-        from_json(j.at("parser_model"), face_masker.parser_model);
-    }
-    if (j.contains("mask_type")) {
-        from_json(j.at("mask_type"), face_masker.mask_type);
-    }
-    if (j.contains("mask_blur")) {
-        from_json(j.at("mask_blur"), face_masker.mask_blur);
-    }
-    if (j.contains("mask_padding")) {
-        from_json(j.at("mask_padding"), face_masker.mask_padding);
-    }
+    if (j.contains("parser_model")) { from_json(j.at("parser_model"), face_masker.parser_model); }
+    if (j.contains("mask_type")) { from_json(j.at("mask_type"), face_masker.mask_type); }
+    if (j.contains("mask_blur")) { from_json(j.at("mask_blur"), face_masker.mask_blur); }
+    if (j.contains("mask_padding")) { from_json(j.at("mask_padding"), face_masker.mask_padding); }
     if (j.at("mask_regions").is_array() == true) {
         if (j.at("mask_regions").contains("all")) {
             face_masker.mask_regions = FaceMaskerRegion::getAllRegions();
@@ -185,7 +159,8 @@ void from_json(json& j, Task::FaceMasker& face_masker) {
 }
 
 void to_json(json& j, Task& task) {
-    json output_json, processors_info_json, image_info_json, video_info_json, face_analyser_json, face_masker_json;
+    json output_json, processors_info_json, image_info_json, video_info_json, face_analyser_json,
+        face_masker_json;
     to_json(output_json, task.output);
     for (auto& processor_info : task.processors_info) {
         json processor_info_json;

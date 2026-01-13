@@ -18,18 +18,17 @@ protected:
     void SetUp() override {
         const testing::TestInfo* const test_info =
             testing::UnitTest::GetInstance()->current_test_info();
-        test_dir = std::string("test_vision_sandbox_") + test_info->test_suite_name() + "_" + test_info->name();
+        test_dir = std::string("test_vision_sandbox_") + test_info->test_suite_name() + "_"
+                 + test_info->name();
 
-        if (fs::exists(test_dir)) {
-            fs::remove_all(test_dir);
-        }
+        if (fs::exists(test_dir)) { fs::remove_all(test_dir); }
         fs::create_directories(test_dir);
     }
 
     void TearDown() override {
         if (fs::exists(test_dir)) {
             // Cleanup logic if needed
-           fs::remove_all(test_dir);
+            fs::remove_all(test_dir);
         }
     }
 
@@ -78,8 +77,8 @@ TEST_F(VisionTest, ResizeFrame) {
     EXPECT_EQ(dst.rows, 50);
 
     // If target is larger, it should not upscale (based on implementation logic?)
-    // Wait, implementation says: if height > crop_size.height || width > crop_size.width -> resize down.
-    // If smaller, returns clone.
+    // Wait, implementation says: if height > crop_size.height || width > crop_size.width -> resize
+    // down. If smaller, returns clone.
     cv::Size largeSize(200, 200);
     cv::Mat dst2 = resize_frame(src, largeSize);
     EXPECT_EQ(dst2.cols, 100);

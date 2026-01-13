@@ -10,8 +10,8 @@ TEST(FaceDetectorFactoryTest, CreateYolo) {
 
 TEST(FaceDetectorFactoryTest, CreateOthers) {
     auto detector_scrfd = FaceDetectorFactory::create(DetectorType::SCRFD);
-    EXPECT_NE(detector_scrfd, nullptr); 
-    
+    EXPECT_NE(detector_scrfd, nullptr);
+
     auto detector_retina = FaceDetectorFactory::create(DetectorType::RetinaFace);
     EXPECT_NE(detector_retina, nullptr);
 }

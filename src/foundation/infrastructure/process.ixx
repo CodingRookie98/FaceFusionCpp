@@ -57,15 +57,13 @@ public:
     Process(const string_type& command, const string_type& path = string_type(),
             std::function<void(const char* bytes, size_t n)> read_stdout = nullptr,
             std::function<void(const char* bytes, size_t n)> read_stderr = nullptr,
-            bool open_stdin = false,
-            const Config& config = {}) noexcept;
+            bool open_stdin = false, const Config& config = {}) noexcept;
 
     // Constructor with arguments vector
     Process(const std::vector<string_type>& arguments, const string_type& path = string_type(),
             std::function<void(const char* bytes, size_t n)> read_stdout = nullptr,
             std::function<void(const char* bytes, size_t n)> read_stderr = nullptr,
-            bool open_stdin = false,
-            const Config& config = {}) noexcept;
+            bool open_stdin = false, const Config& config = {}) noexcept;
 
     ~Process() noexcept;
 

@@ -17,17 +17,14 @@ protected:
     void SetUp() override {
         const testing::TestInfo* const test_info =
             testing::UnitTest::GetInstance()->current_test_info();
-        test_dir = std::string("test_fs_sandbox_") + test_info->test_suite_name() + "_" + test_info->name();
-        if (fs::exists(test_dir)) {
-            fs::remove_all(test_dir);
-        }
+        test_dir = std::string("test_fs_sandbox_") + test_info->test_suite_name() + "_"
+                 + test_info->name();
+        if (fs::exists(test_dir)) { fs::remove_all(test_dir); }
         fs::create_directories(test_dir);
     }
 
     void TearDown() override {
-        if (fs::exists(test_dir)) {
-            fs::remove_all(test_dir);
-        }
+        if (fs::exists(test_dir)) { fs::remove_all(test_dir); }
     }
 
     std::string test_dir;
@@ -86,7 +83,5 @@ TEST_F(FileSystemTest, ConcurrentRemoveFiles) {
     // Since we don't have a 'drain' on the simple pool, we sleep briefly.
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-    for (const auto& f : files) {
-        EXPECT_FALSE(fs::exists(f)) << "File should be removed: " << f;
-    }
+    for (const auto& f : files) { EXPECT_FALSE(fs::exists(f)) << "File should be removed: " << f; }
 }

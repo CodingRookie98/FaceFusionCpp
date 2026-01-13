@@ -30,8 +30,9 @@ public:
     };
 
     // return: [0] embedding, [1] normedEmbedding
-    std::array<Face::Embedding, 2>
-    recognize(const cv::Mat& visionFrame, const Face::Landmarks& faceLandmark5, const Type& type);
+    std::array<Face::Embedding, 2> recognize(const cv::Mat& visionFrame,
+                                             const Face::Landmarks& faceLandmark5,
+                                             const Type& type);
 
 private:
     std::shared_ptr<Ort::Env> m_env;

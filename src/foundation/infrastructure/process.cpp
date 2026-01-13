@@ -48,8 +48,7 @@ public:
     Handle() noexcept : handle(INVALID_HANDLE_VALUE) {}
     ~Handle() noexcept { close(); }
     void close() noexcept {
-        if (handle != INVALID_HANDLE_VALUE)
-            CloseHandle(handle);
+        if (handle != INVALID_HANDLE_VALUE) CloseHandle(handle);
     }
     HANDLE detach() noexcept {
         HANDLE old_handle = handle;
@@ -63,10 +62,8 @@ private:
     HANDLE handle;
 };
 
-template <class Char>
-struct CharSet;
-template <>
-struct CharSet<char> {
+template <class Char> struct CharSet;
+template <> struct CharSet<char> {
     static constexpr const char* whitespace = " \t\n\v\"";
     static constexpr char space = ' ';
     static constexpr char doublequote = '"';
@@ -159,20 +156,16 @@ public:
 
 Process::Process(const string_type& command, const string_type& path,
                  std::function<void(const char*, size_t)> read_stdout,
-                 std::function<void(const char*, size_t)> read_stderr,
-                 bool open_stdin, const Config& config) noexcept
-    : m_impl(std::make_unique<Impl>()) {
+                 std::function<void(const char*, size_t)> read_stderr, bool open_stdin,
+                 const Config& config) noexcept : m_impl(std::make_unique<Impl>()) {
     m_impl->read_stdout = std::move(read_stdout);
     m_impl->read_stderr = std::move(read_stderr);
     m_impl->open_stdin = open_stdin;
     m_impl->config = config;
 
-    if (m_impl->open_stdin)
-        m_impl->stdin_fd = std::unique_ptr<void*>(new void*(nullptr));
-    if (m_impl->read_stdout)
-        m_impl->stdout_fd = std::unique_ptr<void*>(new void*(nullptr));
-    if (m_impl->read_stderr)
-        m_impl->stderr_fd = std::unique_ptr<void*>(new void*(nullptr));
+    if (m_impl->open_stdin) m_impl->stdin_fd = std::unique_ptr<void*>(new void*(nullptr));
+    if (m_impl->read_stdout) m_impl->stdout_fd = std::unique_ptr<void*>(new void*(nullptr));
+    if (m_impl->read_stderr) m_impl->stderr_fd = std::unique_ptr<void*>(new void*(nullptr));
 
     Handle stdin_rd_p, stdin_wr_p;
     Handle stdout_rd_p, stdout_wr_p;
@@ -187,13 +180,19 @@ Process::Process(const string_type& command, const string_type& path,
 
     bool success = true;
     if (m_impl->stdin_fd) {
-        if (!CreatePipe(&stdin_rd_p, &stdin_wr_p, &security_attributes, 0) || !SetHandleInformation(stdin_wr_p, HANDLE_FLAG_INHERIT, 0)) success = false;
+        if (!CreatePipe(&stdin_rd_p, &stdin_wr_p, &security_attributes, 0)
+            || !SetHandleInformation(stdin_wr_p, HANDLE_FLAG_INHERIT, 0))
+            success = false;
     }
     if (success && m_impl->stdout_fd) {
-        if (!CreatePipe(&stdout_rd_p, &stdout_wr_p, &security_attributes, 0) || !SetHandleInformation(stdout_rd_p, HANDLE_FLAG_INHERIT, 0)) success = false;
+        if (!CreatePipe(&stdout_rd_p, &stdout_wr_p, &security_attributes, 0)
+            || !SetHandleInformation(stdout_rd_p, HANDLE_FLAG_INHERIT, 0))
+            success = false;
     }
     if (success && m_impl->stderr_fd) {
-        if (!CreatePipe(&stderr_rd_p, &stderr_wr_p, &security_attributes, 0) || !SetHandleInformation(stderr_rd_p, HANDLE_FLAG_INHERIT, 0)) success = false;
+        if (!CreatePipe(&stderr_rd_p, &stderr_wr_p, &security_attributes, 0)
+            || !SetHandleInformation(stderr_rd_p, HANDLE_FLAG_INHERIT, 0))
+            success = false;
     }
 
     if (!success) return;
@@ -216,12 +215,13 @@ Process::Process(const string_type& command, const string_type& path,
     }
 
     auto process_command = command;
-    DWORD creation_flags = (m_impl->stdin_fd || m_impl->stdout_fd || m_impl->stderr_fd) ? CREATE_NO_WINDOW : 0;
+    DWORD creation_flags =
+        (m_impl->stdin_fd || m_impl->stdout_fd || m_impl->stderr_fd) ? CREATE_NO_WINDOW : 0;
 
-    BOOL bSuccess = CreateProcessA(nullptr, process_command.empty() ? nullptr : &process_command[0], nullptr, nullptr,
-                                   TRUE, creation_flags, nullptr,
-                                   path.empty() ? nullptr : path.c_str(),
-                                   &startup_info, &process_info);
+    BOOL bSuccess =
+        CreateProcessA(nullptr, process_command.empty() ? nullptr : &process_command[0], nullptr,
+                       nullptr, TRUE, creation_flags, nullptr,
+                       path.empty() ? nullptr : path.c_str(), &startup_info, &process_info);
 
     if (!bSuccess) return;
 
@@ -241,13 +241,15 @@ Process::Process(const string_type& command, const string_type& path,
                 DWORD n;
                 std::unique_ptr<char[]> buffer(new char[m_impl->config.buffer_size]);
                 for (;;) {
-                    BOOL bRes = ReadFile(static_cast<HANDLE>(*m_impl->stdout_fd),
-                                         buffer.get(), static_cast<DWORD>(m_impl->config.buffer_size), &n, nullptr);
+                    BOOL bRes =
+                        ReadFile(static_cast<HANDLE>(*m_impl->stdout_fd), buffer.get(),
+                                 static_cast<DWORD>(m_impl->config.buffer_size), &n, nullptr);
                     if (!bRes || n == 0) {
                         if (m_impl->config.on_stdout_close) m_impl->config.on_stdout_close();
                         break;
                     }
-                    if (m_impl->read_stdout) m_impl->read_stdout(buffer.get(), static_cast<size_t>(n));
+                    if (m_impl->read_stdout)
+                        m_impl->read_stdout(buffer.get(), static_cast<size_t>(n));
                 }
             });
         }
@@ -256,13 +258,15 @@ Process::Process(const string_type& command, const string_type& path,
                 DWORD n;
                 std::unique_ptr<char[]> buffer(new char[m_impl->config.buffer_size]);
                 for (;;) {
-                    BOOL bRes = ReadFile(static_cast<HANDLE>(*m_impl->stderr_fd),
-                                         buffer.get(), static_cast<DWORD>(m_impl->config.buffer_size), &n, nullptr);
+                    BOOL bRes =
+                        ReadFile(static_cast<HANDLE>(*m_impl->stderr_fd), buffer.get(),
+                                 static_cast<DWORD>(m_impl->config.buffer_size), &n, nullptr);
                     if (!bRes || n == 0) {
                         if (m_impl->config.on_stderr_close) m_impl->config.on_stderr_close();
                         break;
                     }
-                    if (m_impl->read_stderr) m_impl->read_stderr(buffer.get(), static_cast<size_t>(n));
+                    if (m_impl->read_stderr)
+                        m_impl->read_stderr(buffer.get(), static_cast<size_t>(n));
                 }
             });
         }
@@ -271,9 +275,10 @@ Process::Process(const string_type& command, const string_type& path,
 
 Process::Process(const std::vector<string_type>& arguments, const string_type& path,
                  std::function<void(const char*, size_t)> read_stdout,
-                 std::function<void(const char*, size_t)> read_stderr,
-                 bool open_stdin, const Config& config) noexcept
-    : Process(join_arguments(arguments), path, std::move(read_stdout), std::move(read_stderr), open_stdin, config) {}
+                 std::function<void(const char*, size_t)> read_stderr, bool open_stdin,
+                 const Config& config) noexcept :
+    Process(join_arguments(arguments), path, std::move(read_stdout), std::move(read_stderr),
+            open_stdin, config) {}
 
 Process::~Process() noexcept {
     m_impl->close_fds();
@@ -292,8 +297,7 @@ int Process::get_exit_status() noexcept {
     DWORD exit_code;
     if (!GetExitCodeProcess(static_cast<HANDLE>(m_impl->handle), &exit_code))
         m_impl->exit_status = -1;
-    else
-        m_impl->exit_status = static_cast<int>(exit_code);
+    else m_impl->exit_status = static_cast<int>(exit_code);
 
     {
         std::lock_guard<std::mutex> lock(m_impl->close_mutex);
@@ -319,10 +323,8 @@ bool Process::try_get_exit_status(int& exit_status) noexcept {
     if (wait_status == WAIT_TIMEOUT) return false;
 
     DWORD tmp_exit;
-    if (!GetExitCodeProcess(static_cast<HANDLE>(m_impl->handle), &tmp_exit))
-        exit_status = -1;
-    else
-        exit_status = static_cast<int>(tmp_exit);
+    if (!GetExitCodeProcess(static_cast<HANDLE>(m_impl->handle), &tmp_exit)) exit_status = -1;
+    else exit_status = static_cast<int>(tmp_exit);
 
     m_impl->exit_status = exit_status;
 
@@ -342,7 +344,8 @@ bool Process::write(const char* bytes, size_t n) {
     std::lock_guard<std::mutex> lock(m_impl->stdin_mutex);
     if (m_impl->stdin_fd) {
         DWORD written;
-        BOOL bSuccess = WriteFile(static_cast<HANDLE>(*m_impl->stdin_fd), bytes, static_cast<DWORD>(n), &written, nullptr);
+        BOOL bSuccess = WriteFile(static_cast<HANDLE>(*m_impl->stdin_fd), bytes,
+                                  static_cast<DWORD>(n), &written, nullptr);
         return bSuccess && written > 0;
     }
     return false;
@@ -421,9 +424,8 @@ public:
 
 Process::Process(const string_type& command, const string_type& path,
                  std::function<void(const char*, size_t)> read_stdout_func,
-                 std::function<void(const char*, size_t)> read_stderr_func,
-                 bool open_stdin_flag, const Config& config) noexcept
-    : m_impl(std::make_unique<Impl>()) {
+                 std::function<void(const char*, size_t)> read_stderr_func, bool open_stdin_flag,
+                 const Config& config) noexcept : m_impl(std::make_unique<Impl>()) {
     m_impl->read_stdout = std::move(read_stdout_func);
     m_impl->read_stderr = std::move(read_stderr_func);
     m_impl->open_stdin = open_stdin_flag;
@@ -536,44 +538,63 @@ Process::Process(const string_type& command, const string_type& path,
             if (m_impl->stdout_fd) {
                 fd_is_stdout.set(pollfds.size());
                 pollfds.emplace_back();
-                pollfds.back().fd = fcntl(*m_impl->stdout_fd, F_SETFL, fcntl(*m_impl->stdout_fd, F_GETFL) | O_NONBLOCK) == 0 ? *m_impl->stdout_fd : -1;
+                pollfds.back().fd = fcntl(*m_impl->stdout_fd, F_SETFL,
+                                          fcntl(*m_impl->stdout_fd, F_GETFL) | O_NONBLOCK)
+                                         == 0 ?
+                                      *m_impl->stdout_fd :
+                                      -1;
                 pollfds.back().events = POLLIN;
             }
             if (m_impl->stderr_fd) {
                 pollfds.emplace_back();
-                pollfds.back().fd = fcntl(*m_impl->stderr_fd, F_SETFL, fcntl(*m_impl->stderr_fd, F_GETFL) | O_NONBLOCK) == 0 ? *m_impl->stderr_fd : -1;
+                pollfds.back().fd = fcntl(*m_impl->stderr_fd, F_SETFL,
+                                          fcntl(*m_impl->stderr_fd, F_GETFL) | O_NONBLOCK)
+                                         == 0 ?
+                                      *m_impl->stderr_fd :
+                                      -1;
                 pollfds.back().events = POLLIN;
             }
 
             auto buffer = std::unique_ptr<char[]>(new char[m_impl->config.buffer_size]);
             bool any_open = !pollfds.empty();
 
-            while (any_open && (poll(pollfds.data(), static_cast<nfds_t>(pollfds.size()), -1) > 0 || errno == EINTR)) {
+            while (any_open
+                   && (poll(pollfds.data(), static_cast<nfds_t>(pollfds.size()), -1) > 0
+                       || errno == EINTR)) {
                 any_open = false;
                 for (size_t i = 0; i < pollfds.size(); ++i) {
                     if (pollfds[i].fd >= 0) {
                         if (pollfds[i].revents & POLLIN) {
-                            const ssize_t n = read(pollfds[i].fd, buffer.get(), m_impl->config.buffer_size);
+                            const ssize_t n =
+                                read(pollfds[i].fd, buffer.get(), m_impl->config.buffer_size);
                             if (n > 0) {
                                 if (fd_is_stdout[i]) {
-                                    if (m_impl->read_stdout) m_impl->read_stdout(buffer.get(), static_cast<size_t>(n));
+                                    if (m_impl->read_stdout)
+                                        m_impl->read_stdout(buffer.get(), static_cast<size_t>(n));
                                 } else {
-                                    if (m_impl->read_stderr) m_impl->read_stderr(buffer.get(), static_cast<size_t>(n));
+                                    if (m_impl->read_stderr)
+                                        m_impl->read_stderr(buffer.get(), static_cast<size_t>(n));
                                 }
-                            } else if (n == 0 || (n < 0 && errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK)) {
+                            } else if (n == 0
+                                       || (n < 0 && errno != EINTR && errno != EAGAIN
+                                           && errno != EWOULDBLOCK)) {
                                 if (fd_is_stdout[i]) {
-                                    if (m_impl->config.on_stdout_close) m_impl->config.on_stdout_close();
+                                    if (m_impl->config.on_stdout_close)
+                                        m_impl->config.on_stdout_close();
                                 } else {
-                                    if (m_impl->config.on_stderr_close) m_impl->config.on_stderr_close();
+                                    if (m_impl->config.on_stderr_close)
+                                        m_impl->config.on_stderr_close();
                                 }
                                 pollfds[i].fd = -1;
                                 continue;
                             }
                         } else if (pollfds[i].revents & (POLLERR | POLLHUP | POLLNVAL)) {
                             if (fd_is_stdout[i]) {
-                                if (m_impl->config.on_stdout_close) m_impl->config.on_stdout_close();
+                                if (m_impl->config.on_stdout_close)
+                                    m_impl->config.on_stdout_close();
                             } else {
-                                if (m_impl->config.on_stderr_close) m_impl->config.on_stderr_close();
+                                if (m_impl->config.on_stderr_close)
+                                    m_impl->config.on_stderr_close();
                             }
                             pollfds[i].fd = -1;
                             continue;
@@ -588,9 +609,8 @@ Process::Process(const string_type& command, const string_type& path,
 
 Process::Process(const std::vector<string_type>& arguments, const string_type& path,
                  std::function<void(const char*, size_t)> read_stdout,
-                 std::function<void(const char*, size_t)> read_stderr,
-                 bool open_stdin, const Config& config) noexcept
-    : m_impl(std::make_unique<Impl>()) {
+                 std::function<void(const char*, size_t)> read_stderr, bool open_stdin,
+                 const Config& config) noexcept : m_impl(std::make_unique<Impl>()) {
     // Convert arguments to a command string for simplicity
     std::string command;
     for (const auto& arg : arguments) {
@@ -609,7 +629,8 @@ Process::Process(const std::vector<string_type>& arguments, const string_type& p
     }
     // Delegate to string command constructor via placement new
     this->~Process();
-    new (this) Process(command, path, std::move(read_stdout), std::move(read_stderr), open_stdin, config);
+    new (this)
+        Process(command, path, std::move(read_stdout), std::move(read_stderr), open_stdin, config);
 }
 
 Process::~Process() noexcept {
@@ -625,9 +646,7 @@ int Process::get_exit_status() noexcept {
 
     int exit_status;
     pid_t pid;
-    do {
-        pid = waitpid(m_impl->id, &exit_status, 0);
-    } while (pid < 0 && errno == EINTR);
+    do { pid = waitpid(m_impl->id, &exit_status, 0); } while (pid < 0 && errno == EINTR);
 
     if (pid < 0 && errno == ECHILD) {
         return m_impl->exit_status;

@@ -17,9 +17,7 @@ import :region;
 
 namespace ffc::face_masker {
 
-FaceMaskerRegion::FaceMaskerRegion(const std::shared_ptr<Ort::Env>& env) :
-    FaceMaskerBase(env) {
-}
+FaceMaskerRegion::FaceMaskerRegion(const std::shared_ptr<Ort::Env>& env) : FaceMaskerBase(env) {}
 
 void FaceMaskerRegion::load_model(const std::string& modelPath, const Options& options) {
     FaceMaskerBase::load_model(modelPath, options);
@@ -27,18 +25,18 @@ void FaceMaskerRegion::load_model(const std::string& modelPath, const Options& o
     m_inputWidth = m_input_node_dims[0][3];
 }
 
-cv::Mat FaceMaskerRegion::createRegionMask(const cv::Mat& inputImage, const std::unordered_set<Region>& regions) const {
+cv::Mat FaceMaskerRegion::createRegionMask(const cv::Mat& inputImage,
+                                           const std::unordered_set<Region>& regions) const {
     std::vector<float> inputImageData = getInputImageData(inputImage);
     std::vector<int64_t> inputImageShape{1, 3, m_inputWidth, m_inputHeight};
     std::vector<Ort::Value> inputTensors;
-    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memory_info->GetConst(), inputImageData.data(),
-                                                              inputImageData.size(),
-                                                              inputImageShape.data(),
-                                                              inputImageShape.size()));
+    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(
+        m_memory_info->GetConst(), inputImageData.data(), inputImageData.size(),
+        inputImageShape.data(), inputImageShape.size()));
 
-    std::vector<Ort::Value> outputTensors = m_ort_session->Run(m_run_options, m_input_names.data(),
-                                                               inputTensors.data(), inputTensors.size(),
-                                                               m_output_names.data(), m_output_names.size());
+    std::vector<Ort::Value> outputTensors =
+        m_ort_session->Run(m_run_options, m_input_names.data(), inputTensors.data(),
+                           inputTensors.size(), m_output_names.data(), m_output_names.size());
 
     auto* pdata = outputTensors[0].GetTensorMutableData<float>();
     const std::vector<int64_t> outsShape = outputTensors[0].GetTensorTypeAndShapeInfo().GetShape();
@@ -57,9 +55,7 @@ cv::Mat FaceMaskerRegion::createRegionMask(const cv::Mat& inputImage, const std:
 
     cv::Mat resultMask;
     cv::max(masks[0], masks[1], resultMask);
-    for (size_t i = 2; i < masks.size(); ++i) {
-        cv::max(resultMask, masks[i], resultMask);
-    }
+    for (size_t i = 2; i < masks.size(); ++i) { cv::max(resultMask, masks[i], resultMask); }
 
     cv::resize(resultMask, resultMask, inputImage.size());
 

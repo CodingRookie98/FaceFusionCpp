@@ -23,8 +23,9 @@ import face;
 export namespace ffc::face_landmarker {
 class FaceLandmarkerHub {
 public:
-    explicit FaceLandmarkerHub(const std::shared_ptr<Ort::Env>& env = nullptr,
-                               const InferenceSession::Options& ISOptions = InferenceSession::Options{});
+    explicit FaceLandmarkerHub(
+        const std::shared_ptr<Ort::Env>& env = nullptr,
+        const InferenceSession::Options& ISOptions = InferenceSession::Options{});
     ~FaceLandmarkerHub();
 
     enum class Type {
@@ -38,7 +39,8 @@ public:
     };
 
     Face::Landmarks expand_landmark68_from_5(const Face::Landmarks& landmark5);
-    std::tuple<Face::Landmarks, float> detect_landmark68(const cv::Mat& visionFrame, const cv::Rect2f& bbox,
+    std::tuple<Face::Landmarks, float> detect_landmark68(const cv::Mat& visionFrame,
+                                                         const cv::Rect2f& bbox,
                                                          const Options& options);
 
 private:

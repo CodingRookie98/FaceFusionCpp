@@ -17,15 +17,14 @@ import :processor_pool;
 
 namespace ffc {
 
-ProcessorHub::ProcessorHub(const InferenceSession::Options& _options) :
-    processorPool_(_options) {
-}
+ProcessorHub::ProcessorHub(const InferenceSession::Options& _options) : processorPool_(_options) {}
 
 cv::Mat ProcessorHub::swapFace(const FaceSwapperType& _faceSwapperType,
                                const model_manager::Model& _model,
                                const FaceSwapperInput& _faceSwapperInput) {
     if (_faceSwapperType == FaceSwapperType::InSwapper) {
-        const auto ptr = std::dynamic_pointer_cast<InSwapper>(processorPool_.get_face_swapper(_faceSwapperType, _model));
+        const auto ptr = std::dynamic_pointer_cast<InSwapper>(
+            processorPool_.get_face_swapper(_faceSwapperType, _model));
         if (!_faceSwapperInput.in_swapper_input) {
             throw std::invalid_argument("Invalid input for InSwapper");
         }
@@ -38,7 +37,8 @@ cv::Mat ProcessorHub::enhanceFace(const FaceEnhancerType& _faceEnhancerType,
                                   const model_manager::Model& _model,
                                   const FaceEnhancerInput& _faceEnhancerInput) {
     if (_faceEnhancerType == FaceEnhancerType::CodeFormer) {
-        const auto ptr = std::dynamic_pointer_cast<CodeFormer>(processorPool_.get_face_enhancer(_faceEnhancerType, _model));
+        const auto ptr = std::dynamic_pointer_cast<CodeFormer>(
+            processorPool_.get_face_enhancer(_faceEnhancerType, _model));
         if (!_faceEnhancerInput.code_former_input) {
             throw std::invalid_argument("Invalid input for CodeFormer");
         }
@@ -46,7 +46,8 @@ cv::Mat ProcessorHub::enhanceFace(const FaceEnhancerType& _faceEnhancerType,
     }
 
     if (_faceEnhancerType == FaceEnhancerType::GFP_GAN) {
-        const auto ptr = std::dynamic_pointer_cast<GFP_GAN>(processorPool_.get_face_enhancer(_faceEnhancerType, _model));
+        const auto ptr = std::dynamic_pointer_cast<GFP_GAN>(
+            processorPool_.get_face_enhancer(_faceEnhancerType, _model));
         if (!_faceEnhancerInput.gfp_gan_input) {
             throw std::invalid_argument("Invalid input for GFP_GAN");
         }
@@ -59,7 +60,8 @@ cv::Mat ProcessorHub::enhanceFace(const FaceEnhancerType& _faceEnhancerType,
 cv::Mat ProcessorHub::restoreExpression(const ExpressionRestorerType& _type,
                                         const ExpressionRestorerInput& input) {
     if (_type == ExpressionRestorerType::LivePortrait) {
-        const auto ptr = std::dynamic_pointer_cast<LivePortrait>(processorPool_.get_expression_restorer(ExpressionRestorerType::LivePortrait));
+        const auto ptr = std::dynamic_pointer_cast<LivePortrait>(
+            processorPool_.get_expression_restorer(ExpressionRestorerType::LivePortrait));
         if (!input.live_portrait_input) {
             throw std::invalid_argument("Invalid input for LivePortrait");
         }
@@ -72,7 +74,8 @@ cv::Mat ProcessorHub::enhanceFrame(const FrameEnhancerType& _frameEnhancerType,
                                    const model_manager::Model& _model,
                                    const FrameEnhancerInput& _input) {
     if (_frameEnhancerType == FrameEnhancerType::Real_esr_gan) {
-        const auto ptr = std::dynamic_pointer_cast<RealEsrGan>(processorPool_.get_frame_enhancer(_frameEnhancerType, _model));
+        const auto ptr = std::dynamic_pointer_cast<RealEsrGan>(
+            processorPool_.get_frame_enhancer(_frameEnhancerType, _model));
         if (!_input.real_esr_gan_input) {
             throw std::invalid_argument("Invalid input for RealEsrGAN");
         }
@@ -80,7 +83,8 @@ cv::Mat ProcessorHub::enhanceFrame(const FrameEnhancerType& _frameEnhancerType,
     }
 
     if (_frameEnhancerType == FrameEnhancerType::Real_hat_gan) {
-        const auto ptr = std::dynamic_pointer_cast<RealHatGan>(processorPool_.get_frame_enhancer(_frameEnhancerType, _model));
+        const auto ptr = std::dynamic_pointer_cast<RealHatGan>(
+            processorPool_.get_frame_enhancer(_frameEnhancerType, _model));
         if (!_input.real_hat_gan_input) {
             throw std::invalid_argument("Invalid input for RealHatGAN");
         }

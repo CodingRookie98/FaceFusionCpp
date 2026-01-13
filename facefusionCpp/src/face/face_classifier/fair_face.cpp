@@ -18,9 +18,7 @@ import face;
 import face_helper;
 
 namespace ffc::face_classifier {
-FairFace::FairFace(const std::shared_ptr<Ort::Env>& env) :
-    FaceClassifierBase(env) {
-}
+FairFace::FairFace(const std::shared_ptr<Ort::Env>& env) : FaceClassifierBase(env) {}
 
 void FairFace::load_model(const std::string& modelPath, const Options& options) {
     FaceClassifierBase::load_model(modelPath, options);
@@ -29,14 +27,17 @@ void FairFace::load_model(const std::string& modelPath, const Options& options) 
     m_size = cv::Size(m_inputWidth, m_inputHeight);
 }
 
-std::vector<float> FairFace::getInputImageData(const cv::Mat& image, const Face::Landmarks& faceLandmark5) const {
+std::vector<float> FairFace::getInputImageData(const cv::Mat& image,
+                                               const Face::Landmarks& faceLandmark5) const {
     cv::Mat inputImage;
-    std::tie(inputImage, std::ignore) = face_helper::warpFaceByFaceLandmarks5(image, faceLandmark5, face_helper::getWarpTemplate(m_WarpTemplateType), m_size);
+    std::tie(inputImage, std::ignore) = face_helper::warpFaceByFaceLandmarks5(
+        image, faceLandmark5, face_helper::getWarpTemplate(m_WarpTemplateType), m_size);
 
     std::vector<cv::Mat> inputChannels(3);
     cv::split(inputImage, inputChannels);
     for (int c = 0; c < 3; c++) {
-        inputChannels[c].convertTo(inputChannels[c], CV_32FC1, 1 / (255.0 * m_standardDeviation.at(c)),
+        inputChannels[c].convertTo(inputChannels[c], CV_32FC1,
+                                   1 / (255.0 * m_standardDeviation.at(c)),
                                    -m_mean.at(c) / m_standardDeviation.at(c));
     }
 
@@ -49,7 +50,8 @@ std::vector<float> FairFace::getInputImageData(const cv::Mat& image, const Face:
     return inputData;
 }
 
-FaceClassifierBase::Result FairFace::classify(const cv::Mat& image, const Face::Landmarks& faceLandmark5) {
+FaceClassifierBase::Result FairFace::classify(const cv::Mat& image,
+                                              const Face::Landmarks& faceLandmark5) {
     std::vector<Ort::Value> inputTensor;
     std::vector<int64_t> inputShape{1, 3, m_inputHeight, m_inputWidth};
     std::vector<float> inputData = getInputImageData(image, faceLandmark5);
@@ -57,9 +59,9 @@ FaceClassifierBase::Result FairFace::classify(const cv::Mat& image, const Face::
                                                              inputData.data(), inputData.size(),
                                                              inputShape.data(), inputShape.size()));
 
-    std::vector<Ort::Value> outputTensor = m_ort_session->Run(m_run_options, m_input_names.data(),
-                                                              inputTensor.data(), inputTensor.size(),
-                                                              m_output_names.data(), m_output_names.size());
+    std::vector<Ort::Value> outputTensor =
+        m_ort_session->Run(m_run_options, m_input_names.data(), inputTensor.data(),
+                           inputTensor.size(), m_output_names.data(), m_output_names.size());
 
     int64 raceId = outputTensor[0].GetTensorMutableData<int64>()[0];
     int64 genderId = outputTensor[1].GetTensorMutableData<int64>()[0];
@@ -108,28 +110,16 @@ AgeRange FairFace::categorizeAge(const int64_t& age_id) {
 }
 
 Gender FairFace::categorizeGender(const int64_t& genderId) {
-    if (genderId == 0) {
-        return Gender::Male;
-    }
+    if (genderId == 0) { return Gender::Male; }
     return Gender::Female;
 }
 
 Race FairFace::categorizeRace(const int64_t& raceId) {
-    if (raceId == 1) {
-        return Race::Black;
-    }
-    if (raceId == 2) {
-        return Race::Latino;
-    }
-    if (raceId == 3 || raceId == 4) {
-        return Race::Asian;
-    }
-    if (raceId == 5) {
-        return Race::Indian;
-    }
-    if (raceId == 6) {
-        return Race::Arabic;
-    }
+    if (raceId == 1) { return Race::Black; }
+    if (raceId == 2) { return Race::Latino; }
+    if (raceId == 3 || raceId == 4) { return Race::Asian; }
+    if (raceId == 5) { return Race::Indian; }
+    if (raceId == 6) { return Race::Arabic; }
     return Race::White;
 }
 } // namespace ffc::face_classifier

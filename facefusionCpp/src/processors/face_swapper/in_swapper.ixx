@@ -50,13 +50,16 @@ private:
     cv::Size m_size{0, 0};
     const std::vector<float> m_mean{0.0, 0.0, 0.0};
     const std::vector<float> m_standardDeviation{1.0, 1.0, 1.0};
-    const face_helper::WarpTemplateType m_warpTemplateType{face_helper::WarpTemplateType::Arcface_128_v2};
+    const face_helper::WarpTemplateType m_warpTemplateType{
+        face_helper::WarpTemplateType::Arcface_128_v2};
     int m_inputHeight{0};
     int m_inputWidth{0};
     std::vector<float> m_initializerArray;
 
-    [[nodiscard]] cv::Mat applySwap(const Face::Embedding& sourceEmbedding, const cv::Mat& croppedTargetFrame) const;
-    [[nodiscard]] std::vector<float> prepareSourceEmbedding(const Face::Embedding& sourceEmbedding) const;
+    [[nodiscard]] cv::Mat applySwap(const Face::Embedding& sourceEmbedding,
+                                    const cv::Mat& croppedTargetFrame) const;
+    [[nodiscard]] std::vector<float> prepareSourceEmbedding(
+        const Face::Embedding& sourceEmbedding) const;
     [[nodiscard]] std::vector<float> getInputImageData(const cv::Mat& croppedTargetFrame) const;
     void init();
 };

@@ -33,9 +33,7 @@ TaskManager& TaskManager::get_instance() {
     static std::once_flag flag;
     std::call_once(flag, [&]() {
         instance.m_logger->trace("TaskManager instance created.");
-        auto thread = std::jthread([&]() {
-            instance.run_tasks();
-        });
+        auto thread = std::jthread([&]() { instance.run_tasks(); });
         thread.detach();
     });
     return instance;
@@ -53,12 +51,8 @@ std::string TaskManager::get_current_task_id() {
 
 std::string TaskManager::submit_task(Task task) {
     std::string task_id;
-    if (prepare_task(task)) {
-        task_id = utils::generate_uuid();
-    }
-    if (task_id.empty()) {
-        return task_id;
-    }
+    if (prepare_task(task)) { task_id = utils::generate_uuid(); }
+    if (task_id.empty()) { return task_id; }
 
     {
         std::unique_lock w_lock_task_map(m_mutex_task_map);
@@ -82,7 +76,8 @@ bool TaskManager::prepare_task(Task& task) const {
         task.output.path = file_system::get_current_path();
     } else {
         if (!file_system::is_dir(task.output.path)) {
-            m_logger->warn("TaskManager.prepare_task: output.path is not a directory. Replace with default output directory.");
+            m_logger->warn(
+                "TaskManager.prepare_task: output.path is not a directory. Replace with default output directory.");
             task.output.path = file_system::get_current_path();
         }
     }
@@ -90,9 +85,7 @@ bool TaskManager::prepare_task(Task& task) const {
     std::vector<std::string> target_paths;
     for (const auto& path : task.target_paths) {
         if (file_system::is_file(path)) {
-            if (vision::is_image(path) || vision::is_video(path)) {
-                target_paths.push_back(path);
-            }
+            if (vision::is_image(path) || vision::is_video(path)) { target_paths.push_back(path); }
         } else {
             auto files = file_system::list_files(path);
             target_paths.insert(target_paths.end(), files.begin(), files.end());
@@ -103,24 +96,27 @@ bool TaskManager::prepare_task(Task& task) const {
     for (auto& [type, model, parameters] : task.processors_info) {
         if (type == ProcessorMajorType::FaceSwapper) {
             if (!ModelManager::is_face_swapper_model(model)) {
-                m_logger->warn(
-                    std::format("TaskManager.prepare_task: Face swapper model ({}) not found. Replace with default model ({}).",
-                                ModelManager::get_instance()->get_model_name(model),
-                                ModelManager::get_instance()->get_model_name(model_manager::Model::Inswapper_128_fp16)));
+                m_logger->warn(std::format(
+                    "TaskManager.prepare_task: Face swapper model ({}) not found. Replace with default model ({}).",
+                    ModelManager::get_instance()->get_model_name(model),
+                    ModelManager::get_instance()->get_model_name(
+                        model_manager::Model::Inswapper_128_fp16)));
                 model = model_manager::Model::Inswapper_128_fp16;
             } else {
             }
         } else if (type == ProcessorMajorType::FaceEnhancer) {
             if (!ModelManager::is_face_enhancer_model(model)) {
-                m_logger->warn(
-                    std::format("TaskManager.prepare_task: Face enhancer model ({}) not found. Replace with default model ({}).",
-                                ModelManager::get_instance()->get_model_name(model),
-                                ModelManager::get_instance()->get_model_name(model_manager::Model::Codeformer)));
+                m_logger->warn(std::format(
+                    "TaskManager.prepare_task: Face enhancer model ({}) not found. Replace with default model ({}).",
+                    ModelManager::get_instance()->get_model_name(model),
+                    ModelManager::get_instance()->get_model_name(
+                        model_manager::Model::Codeformer)));
                 model = model_manager::Model::Codeformer;
             } else {
                 if (!parameters.contains("blend_factor")) {
-                    m_logger->warn(std::format("TaskManager.prepare_task: Face enhancer model ({}) blend_factor not found. Replace with default value (0.8).",
-                                               ModelManager::get_instance()->get_model_name(model)));
+                    m_logger->warn(std::format(
+                        "TaskManager.prepare_task: Face enhancer model ({}) blend_factor not found. Replace with default value (0.8).",
+                        ModelManager::get_instance()->get_model_name(model)));
                     parameters["blend_factor"] = "0.8";
                 }
             }
@@ -128,7 +124,8 @@ bool TaskManager::prepare_task(Task& task) const {
             // Todo
             // if (!ModelManager::is_expression_restorer_model(model)) {
             //     logger_->warn(
-            //         std::format("TaskManager.prepare_task: Expression restorer model ({}) not found. Replace with default model ({}).",
+            //         std::format("TaskManager.prepare_task: Expression restorer model ({}) not
+            //         found. Replace with default model ({}).",
             //                     ModelManager::get_model_name(model),
             //                     ModelManager::get_model_name(model_manager::Model::Gfpgan_14)));
             //     model = model_manager::Model::Gfpgan_14;
@@ -151,9 +148,7 @@ void TaskManager::run_tasks() {
             bool is_task_queue_empty = false;
             {
                 std::lock_guard lock_task_queue(m_mutex_task_queue);
-                if (m_task_queue.empty()) {
-                    is_task_queue_empty = true;
-                }
+                if (m_task_queue.empty()) { is_task_queue_empty = true; }
             }
 
             if (is_task_queue_empty) {
@@ -165,9 +160,7 @@ void TaskManager::run_tasks() {
                 m_task_queue.pop();
             }
         }
-        if (task_id.empty()) {
-            continue;
-        }
+        if (task_id.empty()) { continue; }
 
         Task task;
         {

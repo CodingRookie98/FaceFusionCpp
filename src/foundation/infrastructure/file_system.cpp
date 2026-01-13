@@ -20,9 +20,7 @@ void remove_file(const std::string& path) {
 }
 
 void remove_files(const std::vector<std::string>& paths) {
-    for (const auto& path : paths) {
-        remove_file(path);
-    }
+    for (const auto& path : paths) { remove_file(path); }
 }
 
 void copy_file(const std::string& source, const std::string& destination) {
@@ -30,16 +28,15 @@ void copy_file(const std::string& source, const std::string& destination) {
         throw std::invalid_argument("Source or destination path is empty");
     }
     std::error_code ec;
-    std::filesystem::copy_file(source, destination, std::filesystem::copy_options::overwrite_existing, ec);
+    std::filesystem::copy_file(source, destination,
+                               std::filesystem::copy_options::overwrite_existing, ec);
 }
 
 void copy_files(const std::vector<std::string>& sources, const std::string& destination) {
     if (sources.empty() || destination.empty()) {
         throw std::invalid_argument("Sources or destination path is empty");
     }
-    for (const auto& source : sources) {
-        copy_file(source, destination);
-    }
+    for (const auto& source : sources) { copy_file(source, destination); }
 }
 
 bool file_exists(const std::string& path) {
@@ -105,9 +102,11 @@ std::string utf8_to_sys_default_local(const std::string& str) {
     std::wstring wstrTo(size_needed, 0);
     MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), &wstrTo[0], size_needed);
 
-    int size_needed_ansi = WideCharToMultiByte(CP_ACP, 0, wstrTo.c_str(), (int)wstrTo.size(), NULL, 0, NULL, NULL);
+    int size_needed_ansi =
+        WideCharToMultiByte(CP_ACP, 0, wstrTo.c_str(), (int)wstrTo.size(), NULL, 0, NULL, NULL);
     std::string strTo(size_needed_ansi, 0);
-    WideCharToMultiByte(CP_ACP, 0, wstrTo.c_str(), (int)wstrTo.size(), &strTo[0], size_needed_ansi, NULL, NULL);
+    WideCharToMultiByte(CP_ACP, 0, wstrTo.c_str(), (int)wstrTo.size(), &strTo[0], size_needed_ansi,
+                        NULL, NULL);
     return strTo;
 #else
     return str;

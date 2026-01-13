@@ -70,11 +70,10 @@ private:
     bool EnhanceFace(const FaceEnhancerInput& face_enhancer_input, const std::string& output_path,
                      const FaceEnhancerType& type, const model_manager::Model& model);
     bool RestoreExpression(const ExpressionRestorerInput& expression_restorer_input,
-                           const std::string& output_path,
-                           const ExpressionRestorerType& type);
+                           const std::string& output_path, const ExpressionRestorerType& type);
     bool EnhanceFrame(const FrameEnhancerInput& frame_enhancer_input,
-                      const std::string& output_path,
-                      const FrameEnhancerType& type, const model_manager::Model& model);
+                      const std::string& output_path, const FrameEnhancerType& type,
+                      const model_manager::Model& model);
 };
 
 } // namespace ffc::core

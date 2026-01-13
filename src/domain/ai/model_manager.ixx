@@ -104,8 +104,9 @@ private:
      * @brief Construct a new ModelManager object
      */
     ModelManager();
-    std::string m_json_file_path;                           ///< Path to models information JSON file
-    std::unordered_map<std::string, ModelInfo> m_models_info_map; ///< Map of model names to ModelInfo structures
+    std::string m_json_file_path; ///< Path to models information JSON file
+    std::unordered_map<std::string, ModelInfo>
+        m_models_info_map; ///< Map of model names to ModelInfo structures
 };
 
 /**

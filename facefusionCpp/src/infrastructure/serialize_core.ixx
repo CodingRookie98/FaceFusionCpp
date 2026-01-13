@@ -26,16 +26,14 @@ void from_json(json& j, CoreOptions::ModelOptions& model_options) {
     j.at("skip_download").get_to(model_options.skip_download);
 }
 
-NLOHMANN_JSON_SERIALIZE_ENUM(
-    Logger::LogLevel,
-    {
-        {Logger::LogLevel::Trace, "trace"},
-        {Logger::LogLevel::Debug, "debug"},
-        {Logger::LogLevel::Info, "info"},
-        {Logger::LogLevel::Warn, "warn"},
-        {Logger::LogLevel::Error, "error"},
-        {Logger::LogLevel::Critical, "critical"},
-    })
+NLOHMANN_JSON_SERIALIZE_ENUM(Logger::LogLevel, {
+                                                   {Logger::LogLevel::Trace, "trace"},
+                                                   {Logger::LogLevel::Debug, "debug"},
+                                                   {Logger::LogLevel::Info, "info"},
+                                                   {Logger::LogLevel::Warn, "warn"},
+                                                   {Logger::LogLevel::Error, "error"},
+                                                   {Logger::LogLevel::Critical, "critical"},
+                                               })
 
 void to_json(json& j, CoreOptions::LoggerOptions& logger_options) {
     json log_level_json;
@@ -59,15 +57,15 @@ void from_json(json& j, CoreOptions::TaskOptions& task_options) {
     j.at("per_task_thread_count").get_to(task_options.per_task_thread_count);
 }
 
-NLOHMANN_JSON_SERIALIZE_ENUM(
-    InferenceSession::ExecutionProvider,
-    {
-        {InferenceSession::ExecutionProvider::CPU, "cpu"},
-        {InferenceSession::ExecutionProvider::CUDA, "cuda"},
-        {InferenceSession::ExecutionProvider::TensorRT, "tensor_rt"},
-    });
+NLOHMANN_JSON_SERIALIZE_ENUM(InferenceSession::ExecutionProvider,
+                             {
+                                 {InferenceSession::ExecutionProvider::CPU, "cpu"},
+                                 {InferenceSession::ExecutionProvider::CUDA, "cuda"},
+                                 {InferenceSession::ExecutionProvider::TensorRT, "tensor_rt"},
+                             });
 
-void to_json(json& j, std::unordered_set<InferenceSession::ExecutionProvider>& execution_providers) {
+void to_json(json& j,
+             std::unordered_set<InferenceSession::ExecutionProvider>& execution_providers) {
     for (auto provider : execution_providers) {
         json provider_json;
         to_json(provider_json, provider);
@@ -75,7 +73,8 @@ void to_json(json& j, std::unordered_set<InferenceSession::ExecutionProvider>& e
     }
 }
 
-void from_json(json& j, std::unordered_set<InferenceSession::ExecutionProvider>& execution_providers) {
+void from_json(json& j,
+               std::unordered_set<InferenceSession::ExecutionProvider>& execution_providers) {
     for (auto& provider_json : j) {
         InferenceSession::ExecutionProvider provider;
         from_json(provider_json, provider);
@@ -83,12 +82,11 @@ void from_json(json& j, std::unordered_set<InferenceSession::ExecutionProvider>&
     }
 }
 
-NLOHMANN_JSON_SERIALIZE_ENUM(
-    CoreOptions::MemoryStrategy,
-    {
-        {CoreOptions::MemoryStrategy::Strict, "strict"},
-        {CoreOptions::MemoryStrategy::Tolerant, "tolerant"},
-    });
+NLOHMANN_JSON_SERIALIZE_ENUM(CoreOptions::MemoryStrategy,
+                             {
+                                 {CoreOptions::MemoryStrategy::Strict, "strict"},
+                                 {CoreOptions::MemoryStrategy::Tolerant, "tolerant"},
+                             });
 
 void to_json(json& j, CoreOptions::MemoryOptions& memory_options) {
     j = json{
@@ -97,7 +95,8 @@ void to_json(json& j, CoreOptions::MemoryOptions& memory_options) {
 }
 
 void from_json(json& j, CoreOptions::MemoryOptions& memory_options) {
-    memory_options.processor_memory_strategy = j.value("processor_memory_strategy", memory_options.processor_memory_strategy);
+    memory_options.processor_memory_strategy =
+        j.value("processor_memory_strategy", memory_options.processor_memory_strategy);
 }
 
 void to_json(json& j, InferenceSession::Options& inference_session_options) {

@@ -32,9 +32,7 @@ public:
     }
 
     [[nodiscard]] bool has_face_masker_hub() const {
-        if (m_face_masker_hub == nullptr) {
-            return false;
-        }
+        if (m_face_masker_hub == nullptr) { return false; }
         return true;
     }
 

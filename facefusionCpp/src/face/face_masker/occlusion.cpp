@@ -16,9 +16,7 @@ module face_masker_hub;
 import :occlusion;
 
 namespace ffc::face_masker {
-Occlusion::Occlusion(const std::shared_ptr<Ort::Env>& env) :
-    FaceMaskerBase(env) {
-}
+Occlusion::Occlusion(const std::shared_ptr<Ort::Env>& env) : FaceMaskerBase(env) {}
 
 void Occlusion::load_model(const std::string& modelPath, const Options& options) {
     FaceMaskerBase::load_model(modelPath, options);
@@ -31,14 +29,13 @@ cv::Mat Occlusion::createOcclusionMask(const cv::Mat& cropVisionFrame) const {
 
     std::vector<int64_t> inputImageShape{1, m_inputHeight, m_inputWidth, 3};
     std::vector<Ort::Value> inputTensors;
-    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(m_memory_info->GetConst(), inputImageData.data(),
-                                                              inputImageData.size(),
-                                                              inputImageShape.data(),
-                                                              inputImageShape.size()));
+    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(
+        m_memory_info->GetConst(), inputImageData.data(), inputImageData.size(),
+        inputImageShape.data(), inputImageShape.size()));
 
-    std::vector<Ort::Value> outputTensors = m_ort_session->Run(m_run_options, m_input_names.data(),
-                                                               inputTensors.data(), inputTensors.size(),
-                                                               m_output_names.data(), m_output_names.size());
+    std::vector<Ort::Value> outputTensors =
+        m_ort_session->Run(m_run_options, m_input_names.data(), inputTensors.data(),
+                           inputTensors.size(), m_output_names.data(), m_output_names.size());
 
     auto* pdata = outputTensors[0].GetTensorMutableData<float>();
     const std::vector<int64_t> outsShape = outputTensors[0].GetTensorTypeAndShapeInfo().GetShape();
@@ -63,9 +60,7 @@ std::vector<float> Occlusion::getInputImageData(const cv::Mat& cropVisionFrame) 
     cv::resize(cropVisionFrame, inputImage, cv::Size(m_inputWidth, m_inputHeight));
     std::vector<cv::Mat> bgrChannels;
     cv::split(inputImage, bgrChannels);
-    for (int i = 0; i < 3; i++) {
-        bgrChannels[i].convertTo(bgrChannels[i], CV_32FC1, 1.0 / 255.0);
-    }
+    for (int i = 0; i < 3; i++) { bgrChannels[i].convertTo(bgrChannels[i], CV_32FC1, 1.0 / 255.0); }
     const int imageArea = inputImage.rows * inputImage.cols;
     std::vector<float> inputImageData(3 * imageArea);
 

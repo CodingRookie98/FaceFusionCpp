@@ -19,30 +19,24 @@ namespace {
 std::string bytes_to_hex(const unsigned char* bytes, size_t length) {
     std::stringstream ss;
     ss << std::hex << std::setfill('0');
-    for (size_t i = 0; i < length; ++i) {
-        ss << std::setw(2) << static_cast<int>(bytes[i]);
-    }
+    for (size_t i = 0; i < length; ++i) { ss << std::setw(2) << static_cast<int>(bytes[i]); }
     return ss.str();
 }
 } // namespace
 
 std::string sha1(const std::string& file_path) {
     std::ifstream file(file_path, std::ios::binary);
-    if (!file) {
-        throw std::runtime_error("Failed to open file for SHA1: " + file_path);
-    }
+    if (!file) { throw std::runtime_error("Failed to open file for SHA1: " + file_path); }
 
     EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
-    const EVP_MD* md  = EVP_sha1();
+    const EVP_MD* md = EVP_sha1();
     unsigned char md_value[EVP_MAX_MD_SIZE];
     unsigned int md_len;
 
     EVP_DigestInit_ex(mdctx, md, NULL);
 
     char buffer[4096];
-    while (file.read(buffer, sizeof(buffer))) {
-        EVP_DigestUpdate(mdctx, buffer, file.gcount());
-    }
+    while (file.read(buffer, sizeof(buffer))) { EVP_DigestUpdate(mdctx, buffer, file.gcount()); }
     EVP_DigestUpdate(mdctx, buffer, file.gcount());
 
     EVP_DigestFinal_ex(mdctx, md_value, &md_len);
@@ -52,15 +46,13 @@ std::string sha1(const std::string& file_path) {
 }
 
 std::string combined_sha1(const std::unordered_set<std::string>& file_paths) {
-    if (file_paths.empty()) {
-        return "";
-    }
+    if (file_paths.empty()) { return ""; }
 
     std::vector<std::string> sorted_paths(file_paths.begin(), file_paths.end());
     std::sort(sorted_paths.begin(), sorted_paths.end());
 
     EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
-    const EVP_MD* md  = EVP_sha1();
+    const EVP_MD* md = EVP_sha1();
     unsigned char md_value[EVP_MAX_MD_SIZE];
     unsigned int md_len;
 

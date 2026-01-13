@@ -12,7 +12,7 @@ using namespace foundation::media::ffmpeg;
 class FfmpegTest : public ::testing::Test {
 protected:
     void SetUp() override {
-       // Setup if needed
+        // Setup if needed
     }
 };
 
@@ -31,15 +31,14 @@ TEST_F(FfmpegTest, IsVideoNonExistent) {
     EXPECT_FALSE(is_video("non_existent_video.mp4"));
 }
 
-// Simple test for VideoPrams struct (though it tries to open video in constructor, might fail or log error)
-// If we pass invalid path, it logs error and leaves default values?
-// Let's check implementation behavior locally if possible or trust standard behavior.
-// Implementation: VideoPrams constructor opens video. IF fails, returns (members uninitialized/default?).
-// Members are NOT initialized in member list, but assigned in body.
-// If failed to open, it returns immediately. width/height will be garbage or default initialized?
-// In C++, member variables of primitive types are NOT default initialized to 0.
-// This might be a bug in original/refactored code. Let's verify.
-// In refactored code (Step 510):
+// Simple test for VideoPrams struct (though it tries to open video in constructor, might fail or
+// log error) If we pass invalid path, it logs error and leaves default values? Let's check
+// implementation behavior locally if possible or trust standard behavior. Implementation:
+// VideoPrams constructor opens video. IF fails, returns (members uninitialized/default?). Members
+// are NOT initialized in member list, but assigned in body. If failed to open, it returns
+// immediately. width/height will be garbage or default initialized? In C++, member variables of
+// primitive types are NOT default initialized to 0. This might be a bug in original/refactored
+// code. Let's verify. In refactored code (Step 510):
 /*
     VideoPrams::VideoPrams(const std::string& videoPath) {
         cv::VideoCapture cap(videoPath);

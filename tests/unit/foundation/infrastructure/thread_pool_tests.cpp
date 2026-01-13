@@ -21,9 +21,7 @@ TEST(ThreadPoolTest, EnqueueSimpleTask) {
     std::promise<void> promise;
     auto future = promise.get_future();
 
-    ThreadPool::instance().enqueue([&promise]() {
-        promise.set_value();
-    });
+    ThreadPool::instance().enqueue([&promise]() { promise.set_value(); });
 
     // Wait for the task to complete with a timeout
     EXPECT_EQ(future.wait_for(std::chrono::seconds(2)), std::future_status::ready);
@@ -66,9 +64,7 @@ TEST(ThreadPoolTest, ConcurrentExecution) {
 
     auto task = [&active_threads, &overlap_detected](std::promise<void> p) {
         active_threads++;
-        if (active_threads > 1) {
-            overlap_detected = true;
-        }
+        if (active_threads > 1) { overlap_detected = true; }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         active_threads--;
         p.set_value();
@@ -82,7 +78,7 @@ TEST(ThreadPoolTest, ConcurrentExecution) {
 
     // It's not guaranteed to overlap if the OS schedules them sequentially or the pool is busy,
     // but in a dedicated test environment with >=2 threads, it likely will.
-    // We won't strictly fail the test if no overlap to avoid flakiness on single-core setups (rare),
-    // but checking it is useful for manual verification.
-    // EXPECT_TRUE(overlap_detected); // Commented out to prevent flakiness
+    // We won't strictly fail the test if no overlap to avoid flakiness on single-core setups
+    // (rare), but checking it is useful for manual verification. EXPECT_TRUE(overlap_detected); //
+    // Commented out to prevent flakiness
 }

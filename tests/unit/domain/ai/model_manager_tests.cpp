@@ -35,9 +35,7 @@ protected:
     }
 
     void TearDown() override {
-        if (fs::exists(test_json_path)) {
-            fs::remove(test_json_path);
-        }
+        if (fs::exists(test_json_path)) { fs::remove(test_json_path); }
     }
     std::string test_json_path;
 };
@@ -48,8 +46,8 @@ TEST_F(ModelManagerTest, SingletonInstance) {
     // Verify default path is used initially or settable
     // Note: Default path "./assets/models_info.json" might not exist in test env,
     // but constructor might throw if not found.
-    // However, since we are using singleton, it might have been initialized in previous tests or runs.
-    // Let's set it to test path to be sure.
+    // However, since we are using singleton, it might have been initialized in previous tests or
+    // runs. Let's set it to test path to be sure.
     instance->set_model_info_file_path(test_json_path);
     EXPECT_EQ(instance->get_model_json_file_path(), test_json_path);
 }
@@ -111,6 +109,7 @@ TEST_F(ModelManagerTest, LoadRealAssetsModelInfo) {
         // If test is run from project root, ./assets exists.
         // If test is run from build/msvc-x64-debug, then ../../assets might be needed.
         // But let's just warn or skip if not found.
-        std::cout << "[WARNING] Real assets file not found at " << real_path << ", skipping real asset test." << std::endl;
+        std::cout << "[WARNING] Real assets file not found at " << real_path
+                  << ", skipping real asset test." << std::endl;
     }
 }

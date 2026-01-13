@@ -23,9 +23,7 @@ TEST(ProgressTest, ProgressUpdate) {
     pb.set_progress(10.0f);
     // Ideally we would mock the underlying indicator, but with PIMPL it's hard.
     // We just ensure it doesn't crash.
-    for (int i = 0; i < 5; ++i) {
-        pb.tick();
-    }
+    for (int i = 0; i < 5; ++i) { pb.tick(); }
     pb.mark_as_completed();
     EXPECT_TRUE(pb.is_completed());
 }

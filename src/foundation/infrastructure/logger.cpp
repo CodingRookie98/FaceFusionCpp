@@ -16,9 +16,7 @@ namespace foundation::infrastructure::logger {
 std::shared_ptr<Logger> Logger::get_instance() {
     static std::once_flag flag;
     static std::shared_ptr<Logger> instance;
-    std::call_once(flag, [&]() {
-        instance = std::shared_ptr<Logger>(new Logger());
-    });
+    std::call_once(flag, [&]() { instance = std::shared_ptr<Logger>(new Logger()); });
     return instance;
 }
 
@@ -27,13 +25,12 @@ Logger::Logger() {
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
         console_sink->set_level(spdlog::level::trace);
 
-        if (!std::filesystem::exists("logs")) {
-            std::filesystem::create_directory("logs");
-        }
+        if (!std::filesystem::exists("logs")) { std::filesystem::create_directory("logs"); }
         auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/app.log", true);
         file_sink->set_level(spdlog::level::trace);
 
-        m_logger = std::make_shared<spdlog::logger>("facefusion", spdlog::sinks_init_list{console_sink, file_sink});
+        m_logger = std::make_shared<spdlog::logger>(
+            "facefusion", spdlog::sinks_init_list{console_sink, file_sink});
         m_logger->set_level(spdlog::level::trace);
         m_logger->flush_on(spdlog::level::trace);
     } catch (const spdlog::spdlog_ex& ex) {
@@ -65,10 +62,10 @@ void Logger::critical(const std::string& msg) const {
     if (m_logger) m_logger->critical(msg);
 }
 
-void Logger::log(const std::string &level, const std::string &msg) {
+void Logger::log(const std::string& level, const std::string& msg) {
     // level to lower
     std::string level_t = level;
-    std::ranges::for_each(level_t, [](char &c) { c = std::tolower(c); });
+    std::ranges::for_each(level_t, [](char& c) { c = std::tolower(c); });
     if (level_t == "trace") {
         get_instance()->trace(msg);
     } else if (level_t == "debug") {
@@ -84,26 +81,14 @@ void Logger::log(const std::string &level, const std::string &msg) {
     }
 }
 
-void Logger::log(const LogLevel &level, const std::string &message) const {
+void Logger::log(const LogLevel& level, const std::string& message) const {
     switch (level) {
-    case LogLevel::Trace:
-        trace(message);
-        break;
-    case LogLevel::Debug:
-        debug(message);
-        break;
-    case LogLevel::Info:
-        info(message);
-        break;
-    case LogLevel::Warn:
-        warn(message);
-        break;
-    case LogLevel::Error:
-        error(message);
-        break;
-    case LogLevel::Critical:
-        critical(message);
-        break;
+    case LogLevel::Trace: trace(message); break;
+    case LogLevel::Debug: debug(message); break;
+    case LogLevel::Info: info(message); break;
+    case LogLevel::Warn: warn(message); break;
+    case LogLevel::Error: error(message); break;
+    case LogLevel::Critical: critical(message); break;
     case LogLevel::Off: break;
     }
 }

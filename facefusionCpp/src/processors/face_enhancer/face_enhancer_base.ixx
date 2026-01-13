@@ -30,16 +30,15 @@ public:
     }
 
     [[nodiscard]] bool hasFaceMaskerHub() const {
-        if (m_faceMaskerHub == nullptr) {
-            return false;
-        }
+        if (m_faceMaskerHub == nullptr) { return false; }
         return true;
     }
 
 protected:
     std::shared_ptr<FaceMaskerHub> m_faceMaskerHub;
 
-    [[nodiscard]] static cv::Mat blendFrame(const cv::Mat& targetFrame, const cv::Mat& pasteVisionFrame, ushort blend = 80);
+    [[nodiscard]] static cv::Mat blendFrame(const cv::Mat& targetFrame,
+                                            const cv::Mat& pasteVisionFrame, ushort blend = 80);
 };
 
 } // namespace ffc::faceEnhancer

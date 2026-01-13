@@ -51,20 +51,19 @@ public:
 
     std::vector<Face> GetManyFaces(const cv::Mat& visionFrame, const Options& options);
 
-    Face GetOneFace(const cv::Mat& visionFrame, const Options& options, const unsigned int& position = 0);
+    Face GetOneFace(const cv::Mat& visionFrame, const Options& options,
+                    const unsigned int& position = 0);
 
     std::vector<Face> FindSimilarFaces(const std::vector<Face>& referenceFaces,
-                                       const cv::Mat& targetVisionFrame,
-                                       const float& faceDistance, const Options& options);
+                                       const cv::Mat& targetVisionFrame, const float& faceDistance,
+                                       const Options& options);
 
     static bool CompareFace(const Face& face, const Face& referenceFace, const float& faceDistance);
 
     static float CalculateFaceDistance(const Face& face1, const Face& face2);
 
     std::shared_ptr<FaceStore> GetFaceStore() {
-        if (faceStore_ == nullptr) {
-            faceStore_ = std::make_shared<FaceStore>();
-        }
+        if (faceStore_ == nullptr) { faceStore_ = std::make_shared<FaceStore>(); }
         return faceStore_;
     }
 
@@ -77,18 +76,17 @@ private:
     InferenceSession::Options ISOptions_;
     std::shared_ptr<FaceStore> faceStore_;
 
-    std::vector<Face> CreateFaces(const cv::Mat& visionFrame,
-                                  const std::vector<cv::Rect2f>& bBoxes,
+    std::vector<Face> CreateFaces(const cv::Mat& visionFrame, const std::vector<cv::Rect2f>& bBoxes,
                                   const std::vector<Face::Landmarks>& landmarks5,
-                                  const std::vector<Face::Score>& scores, const double& detectedAngle,
-                                  const Options& options);
+                                  const std::vector<Face::Score>& scores,
+                                  const double& detectedAngle, const Options& options);
     Face::Landmarks ExpandFaceLandmarks68From5(const Face::Landmarks& inputLandmark5);
 
     std::array<Face::Embedding, 2> CalculateEmbedding(const cv::Mat& visionFrame,
                                                       const Face::Landmarks& faceLandmark5By68,
                                                       const FaceRecognizerHub::Type& type);
 
-    std::tuple<Gender, AgeRange, Race>
-    ClassifyFace(const cv::Mat& visionFrame, const Face::Landmarks& faceLandmarks5);
+    std::tuple<Gender, AgeRange, Race> ClassifyFace(const cv::Mat& visionFrame,
+                                                    const Face::Landmarks& faceLandmarks5);
 };
 } // namespace ffc

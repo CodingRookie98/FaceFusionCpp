@@ -21,7 +21,8 @@ namespace ffc::face_classifier {
 
 using namespace ai::model_manager;
 
-FaceClassifierHub::FaceClassifierHub(const std::shared_ptr<Ort::Env>& env, const ai::InferenceSession::Options& options) {
+FaceClassifierHub::FaceClassifierHub(const std::shared_ptr<Ort::Env>& env,
+                                     const ai::InferenceSession::Options& options) {
     if (env == nullptr) {
         m_env = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "FaceDetectorHub");
     } else {
@@ -32,33 +33,27 @@ FaceClassifierHub::FaceClassifierHub(const std::shared_ptr<Ort::Env>& env, const
 
 FaceClassifierHub::~FaceClassifierHub() {
     std::unique_lock lock(m_sharedMutex);
-    for (const auto& val : m_classifiers | std::views::values) {
-        delete val;
-    }
+    for (const auto& val : m_classifiers | std::views::values) { delete val; }
     m_classifiers.clear();
 }
 
-FaceClassifierBase::Result
-FaceClassifierHub::classify(const cv::Mat& image, const Face::Landmarks& faceLandmark5,
-                            const Type& type) {
+FaceClassifierBase::Result FaceClassifierHub::classify(const cv::Mat& image,
+                                                       const Face::Landmarks& faceLandmark5,
+                                                       const Type& type) {
     return get_face_classifier(type)->classify(image, faceLandmark5);
 }
 
 FaceClassifierBase* FaceClassifierHub::get_face_classifier(const Type& type) {
     std::unique_lock lock(m_sharedMutex);
     if (m_classifiers.contains(type)) {
-        if (m_classifiers[type] != nullptr) {
-            return m_classifiers[type];
-        }
+        if (m_classifiers[type] != nullptr) { return m_classifiers[type]; }
     }
 
     static std::shared_ptr<ModelManager> modelManager = ModelManager::get_instance();
     if (type == Type::FairFace) {
         FaceClassifierBase* classifier{nullptr};
         classifier = new FairFace(m_env);
-        if (classifier == nullptr) {
-            return nullptr;
-        }
+        if (classifier == nullptr) { return nullptr; }
         classifier->load_model(modelManager->get_model_path(Model::FairFace), m_ISOptions);
         m_classifiers[type] = classifier;
     }

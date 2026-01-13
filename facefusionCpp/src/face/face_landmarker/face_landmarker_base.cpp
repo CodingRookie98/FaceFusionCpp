@@ -17,8 +17,7 @@ import :face_landmarker_base;
 
 namespace ffc::face_landmarker {
 FaceLandmarkerBase::FaceLandmarkerBase(const std::shared_ptr<Ort::Env>& env) :
-    InferenceSession(env) {
-}
+    InferenceSession(env) {}
 
 cv::Mat FaceLandmarkerBase::conditionalOptimizeContrast(const cv::Mat& visionFrame) {
     cv::Mat result;

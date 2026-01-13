@@ -18,14 +18,16 @@ export namespace ffc::face_classifier {
 
 class FaceClassifierHub {
 public:
-    explicit FaceClassifierHub(const std::shared_ptr<Ort::Env>& env = nullptr, const ai::InferenceSession::Options& options = ai::InferenceSession::Options());
+    explicit FaceClassifierHub(
+        const std::shared_ptr<Ort::Env>& env = nullptr,
+        const ai::InferenceSession::Options& options = ai::InferenceSession::Options());
     ~FaceClassifierHub();
 
     enum class Type {
         FairFace,
     };
-    FaceClassifierBase::Result
-    classify(const cv::Mat& image, const Face::Landmarks& faceLandmark5, const Type& type = Type::FairFace);
+    FaceClassifierBase::Result classify(const cv::Mat& image, const Face::Landmarks& faceLandmark5,
+                                        const Type& type = Type::FairFace);
 
 private:
     std::shared_ptr<Ort::Env> m_env;

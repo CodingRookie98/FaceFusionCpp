@@ -31,33 +31,30 @@ FaceRecognizerHub::FaceRecognizerHub(const std::shared_ptr<Ort::Env>& env,
 FaceRecognizerBase* FaceRecognizerHub::getRecognizer(const FaceRecognizerHub::Type& type) {
     std::unique_lock lock(m_sharedMutex);
     if (m_recognizers.contains(type)) {
-        if (m_recognizers[type] != nullptr) {
-            return m_recognizers[type];
-        }
+        if (m_recognizers[type] != nullptr) { return m_recognizers[type]; }
     }
 
     static std::shared_ptr<ModelManager> modelManager = ModelManager::get_instance();
     FaceRecognizerBase* recognizer = nullptr;
     if (type == Type::Arc_w600k_r50) {
         recognizer = new ArcW600kR50(m_env);
-        recognizer->load_model(modelManager->get_model_path(Model::Face_recognizer_arcface_w600k_r50), m_ISOptions);
+        recognizer->load_model(
+            modelManager->get_model_path(Model::Face_recognizer_arcface_w600k_r50), m_ISOptions);
     }
 
-    if (recognizer != nullptr) {
-        m_recognizers[type] = recognizer;
-    }
+    if (recognizer != nullptr) { m_recognizers[type] = recognizer; }
     return m_recognizers[type];
 }
 
-std::array<Face::Embedding, 2> FaceRecognizerHub::recognize(const cv::Mat& visionFrame, const Face::Landmarks& faceLandmark5, const FaceRecognizerHub::Type& type) {
+std::array<Face::Embedding, 2> FaceRecognizerHub::recognize(const cv::Mat& visionFrame,
+                                                            const Face::Landmarks& faceLandmark5,
+                                                            const FaceRecognizerHub::Type& type) {
     return getRecognizer(type)->recognize(visionFrame, faceLandmark5);
 }
 
 FaceRecognizerHub::~FaceRecognizerHub() {
     std::unique_lock lock(m_sharedMutex);
-    for (auto& val : m_recognizers | std::views::values) {
-        delete val;
-    }
+    for (auto& val : m_recognizers | std::views::values) { delete val; }
     m_recognizers.clear();
 }
 } // namespace ffc::face_recognizer

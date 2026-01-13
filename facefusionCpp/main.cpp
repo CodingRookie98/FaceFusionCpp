@@ -22,7 +22,6 @@ using namespace ffc::core;
 using namespace ffc::infra;
 using namespace ffc::ai::model_manager;
 
-
 int main(int argc, char** argv) {
     file_system::set_local_to_utf8();
 
@@ -46,7 +45,8 @@ int main(int argc, char** argv) {
     // const bool ok = core->Run(coreTask);
     //
     // if (!ok) {
-    //     Logger::getInstance()->error("FaceFusionCpp failed to run. Maybe some of the tasks failed.");
+    //     Logger::getInstance()->error("FaceFusionCpp failed to run. Maybe some of the tasks
+    //     failed.");
     // }
     // FileSystem::remove_dir(tmpPath);
     return 0;

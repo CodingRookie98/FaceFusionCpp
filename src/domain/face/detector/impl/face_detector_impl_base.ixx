@@ -8,10 +8,11 @@ import foundation.ai.inference_session;
 
 export namespace domain::face::detector {
 
-    class FaceDetectorImplBase : public IFaceDetector, public foundation::ai::inference_session::InferenceSession {
-    public:
-        using foundation::ai::inference_session::InferenceSession::InferenceSession;
-        
-        virtual ~FaceDetectorImplBase() = default;
-    };
-}
+class FaceDetectorImplBase : public IFaceDetector,
+                             public foundation::ai::inference_session::InferenceSession {
+public:
+    using foundation::ai::inference_session::InferenceSession::InferenceSession;
+
+    virtual ~FaceDetectorImplBase() = default;
+};
+} // namespace domain::face::detector

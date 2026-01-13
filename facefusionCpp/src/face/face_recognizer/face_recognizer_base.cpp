@@ -13,6 +13,5 @@ import :face_recognizer_base;
 
 namespace ffc::face_recognizer {
 FaceRecognizerBase::FaceRecognizerBase(const std::shared_ptr<Ort::Env>& env) :
-    InferenceSession(env) {
-}
+    InferenceSession(env) {}
 } // namespace ffc::face_recognizer

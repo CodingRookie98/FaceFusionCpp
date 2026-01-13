@@ -22,23 +22,18 @@ public:
 
     [[nodiscard]] std::string get_processor_name() const override = 0;
 
-    void setTileSize(const std::vector<int>& size) {
-        m_tileSize = size;
-    }
+    void setTileSize(const std::vector<int>& size) { m_tileSize = size; }
 
-    void setModelScale(const int& scale) {
-        m_modelScale = scale;
-    }
+    void setModelScale(const int& scale) { m_modelScale = scale; }
 
-    [[nodiscard]] int getModelScale() const {
-        return m_modelScale;
-    }
+    [[nodiscard]] int getModelScale() const { return m_modelScale; }
 
 protected:
     std::vector<int> m_tileSize;
     unsigned short m_modelScale{0};
 
-    [[nodiscard]] static cv::Mat blend_frame(const cv::Mat& tempFrame, const cv::Mat& mergedFrame, const int& blend);
+    [[nodiscard]] static cv::Mat blend_frame(const cv::Mat& tempFrame, const cv::Mat& mergedFrame,
+                                             const int& blend);
     static std::vector<float> get_input_data(const cv::Mat& frame);
     static cv::Mat get_output_data(const float* outputData, const cv::Size& size);
 };

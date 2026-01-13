@@ -13,17 +13,14 @@ protected:
     void SetUp() override {
         const testing::TestInfo* const test_info =
             testing::UnitTest::GetInstance()->current_test_info();
-        test_dir = std::string("test_network_sandbox_") + test_info->test_suite_name() + "_" + test_info->name();
-        if (fs::exists(test_dir)) {
-            fs::remove_all(test_dir);
-        }
+        test_dir = std::string("test_network_sandbox_") + test_info->test_suite_name() + "_"
+                 + test_info->name();
+        if (fs::exists(test_dir)) { fs::remove_all(test_dir); }
         fs::create_directories(test_dir);
     }
 
     void TearDown() override {
-         if (fs::exists(test_dir)) {
-            fs::remove_all(test_dir);
-         }
+        if (fs::exists(test_dir)) { fs::remove_all(test_dir); }
     }
     std::string test_dir;
 };
@@ -52,8 +49,8 @@ TEST_F(NetworkTest, DownloadInvalidUrl) {
     using namespace foundation::infrastructure::network;
 
     // Expect failure (throw)
-    EXPECT_THROW({
-        download("http://invalid.url.that.does.not.exist/file.txt", test_dir);
-    }, std::runtime_error);
+    EXPECT_THROW(
+        { download("http://invalid.url.that.does.not.exist/file.txt", test_dir); },
+        std::runtime_error);
     // Or whatever exception implementation throws, likely runtime_error from CURL code
 }

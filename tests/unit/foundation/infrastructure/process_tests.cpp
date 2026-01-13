@@ -16,9 +16,7 @@ using namespace foundation::infrastructure::process;
 
 TEST(ProcessTest, BasicExecutionAndOutput) {
     std::string output;
-    auto read_stdout = [&](const char* bytes, size_t n) {
-        output.append(bytes, n);
-    };
+    auto read_stdout = [&](const char* bytes, size_t n) { output.append(bytes, n); };
 
 #ifdef _WIN32
     std::string command = "cmd /c echo hello world";

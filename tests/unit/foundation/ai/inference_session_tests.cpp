@@ -17,9 +17,7 @@ protected:
 };
 
 TEST_F(InferenceSessionTest, Initialization) {
-    EXPECT_NO_THROW({
-        InferenceSession session;
-    });
+    EXPECT_NO_THROW({ InferenceSession session; });
 }
 
 TEST_F(InferenceSessionTest, IsModelLoaded) {

@@ -16,7 +16,8 @@ import :frame_enhancer_base;
 
 namespace ffc::frame_enhancer {
 
-cv::Mat FrameEnhancerBase::blend_frame(const cv::Mat& tempFrame, const cv::Mat& mergedFrame, const int& blend) {
+cv::Mat FrameEnhancerBase::blend_frame(const cv::Mat& tempFrame, const cv::Mat& mergedFrame,
+                                       const int& blend) {
     const float blendFactor = 1 - static_cast<float>(blend) / 100.f;
     cv::Mat result;
     cv::resize(tempFrame, result, mergedFrame.size());

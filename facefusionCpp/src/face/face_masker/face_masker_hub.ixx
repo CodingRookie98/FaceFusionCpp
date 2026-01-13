@@ -27,15 +27,12 @@ using namespace infra;
 
 class FaceMaskerHub {
 public:
-    explicit FaceMaskerHub(const std::shared_ptr<Ort::Env>& env = nullptr,
-                           const ai::InferenceSession::Options& options = ai::InferenceSession::Options{});
+    explicit FaceMaskerHub(
+        const std::shared_ptr<Ort::Env>& env = nullptr,
+        const ai::InferenceSession::Options& options = ai::InferenceSession::Options{});
     ~FaceMaskerHub();
 
-    enum class Type {
-        Box,
-        Occlusion,
-        Region
-    };
+    enum class Type { Box, Occlusion, Region };
 
     struct ArgsForGetBestMask {
         std::unordered_set<Type> faceMaskersTypes{Type::Box};
@@ -49,15 +46,14 @@ public:
         std::optional<std::unordered_set<FaceMaskerRegion::Region>> faceMaskerRegions{std::nullopt};
     };
 
-    static cv::Mat create_static_box_mask(const cv::Size& cropSize, const float& faceMaskBlur = 0.3f,
+    static cv::Mat create_static_box_mask(const cv::Size& cropSize,
+                                          const float& faceMaskBlur = 0.3f,
                                           const std::array<int, 4>& faceMaskPadding = {0, 0, 0, 0});
 
-    cv::Mat create_region_mask(const cv::Mat& inputImage,
-                               const Model& parser_model,
+    cv::Mat create_region_mask(const cv::Mat& inputImage, const Model& parser_model,
                                const std::unordered_set<FaceMaskerRegion::Region>& regions);
 
-    cv::Mat create_occlusion_mask(const cv::Mat& cropVisionFrame,
-                                  const Model& occluder_model);
+    cv::Mat create_occlusion_mask(const cv::Mat& cropVisionFrame, const Model& occluder_model);
 
     static cv::Mat get_best_mask(const std::vector<cv::Mat>& masks);
 
