@@ -62,12 +62,15 @@ if(BUILD_TESTING)
 endif()
 
 # 添加静态分析工具
-#find_program(CLANG_TIDY clang-tidy)
-#if(CLANG_TIDY)
-#    set_target_properties(${app_facefusioncpp} PROPERTIES
-#        CXX_CLANG_TIDY "${CLANG_TIDY}"
-#    )
-#endif()
+option(ENABLE_CLANG_TIDY "Enable clang-tidy" OFF)
+if(ENABLE_CLANG_TIDY)
+    find_program(CLANG_TIDY clang-tidy)
+    if(CLANG_TIDY)
+        set_target_properties(${app_facefusioncpp} PROPERTIES
+            CXX_CLANG_TIDY "${CLANG_TIDY}"
+        )
+    endif()
+endif()
 
 # 添加代码覆盖率支持
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
