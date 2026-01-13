@@ -4,7 +4,7 @@ Language: Cpp
 BasedOnStyle: Google
 
 # C++ 标准: Cpp03, Cpp11, Cpp14, Cpp17, Cpp20, Auto(自动检测)
-Standard: Cpp20
+Standard: Latest
 
 # Tab 字符宽度
 TabWidth: 2
