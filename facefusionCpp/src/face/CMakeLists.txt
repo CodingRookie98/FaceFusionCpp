@@ -16,8 +16,8 @@ target_sources(${app_facefusioncpp} PRIVATE
 target_include_directories(${app_facefusioncpp} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
-add_subdirectory(face_detector)
 add_subdirectory(face_landmarker)
+
 add_subdirectory(face_recognizer)
 add_subdirectory(face_masker)
 add_subdirectory(face_classifier)

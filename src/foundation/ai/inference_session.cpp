@@ -219,4 +219,30 @@ std::string InferenceSession::get_loaded_model_path() const {
     return m_impl->m_model_path;
 }
 
+std::vector<Ort::Value> InferenceSession::run(const std::vector<Ort::Value>& input_tensors) {
+    if (!m_impl->m_is_model_loaded) {
+        throw std::runtime_error("Model not loaded");
+    }
+    // Validate inputs count
+    // if (input_tensors.size() != m_impl->m_input_names.size()) {
+    //    throw std::runtime_error("Input tensors count mismatch");
+    // }
+    
+    return m_impl->m_ort_session->Run(m_impl->m_run_options, 
+                                      m_impl->m_input_names.data(), 
+                                      input_tensors.data(), 
+                                      input_tensors.size(), 
+                                      m_impl->m_output_names.data(), 
+                                      m_impl->m_output_names.size());
+}
+
+std::vector<std::vector<int64_t>> InferenceSession::get_input_node_dims() const {
+    return m_impl->m_input_node_dims;
+}
+
+std::vector<std::vector<int64_t>> InferenceSession::get_output_node_dims() const {
+    return m_impl->m_output_node_dims;
+}
+
 } // namespace foundation::ai::inference_session
+

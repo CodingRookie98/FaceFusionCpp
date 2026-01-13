@@ -12,8 +12,10 @@ module;
 #include <memory>
 #include <string>
 #include <vector>
+#include <onnxruntime_cxx_api.h>
 
 export module foundation.ai.inference_session;
+
 
 namespace foundation::ai::inference_session {
 
@@ -70,7 +72,18 @@ public:
      */
     [[nodiscard]] std::string get_loaded_model_path() const;
 
+    /**
+     * @brief Run inference
+     * @param input_tensors Vector of input tensors
+     * @return Vector of output tensors
+     */
+    std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors);
+
+    [[nodiscard]] std::vector<std::vector<int64_t>> get_input_node_dims() const;
+    [[nodiscard]] std::vector<std::vector<int64_t>> get_output_node_dims() const;
+
 private:
+
     struct Impl;
     std::unique_ptr<Impl> m_impl;
 };

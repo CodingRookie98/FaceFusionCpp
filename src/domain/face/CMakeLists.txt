@@ -27,3 +27,6 @@ target_link_libraries(domain_face
         OpenSSL::Crypto
         domain_common
 )
+
+add_subdirectory(detector)
+
