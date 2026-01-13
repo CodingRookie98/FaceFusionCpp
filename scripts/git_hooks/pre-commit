@@ -1,0 +1,20 @@
+#!/bin/sh
+# Git pre-commit hook to run code formatting and static analysis
+
+# Check if we are on Windows (Git Bash / Cygwin / WSL)
+if [ "$OS" = "Windows_NT" ]; then
+    # Run PowerShell script
+    powershell.exe -ExecutionPolicy Bypass -File "./scripts/pre_commit_check.ps1"
+    EXIT_CODE=$?
+else
+    # Fallback for Linux/Mac if needed (not primary target per env)
+    pwsh -ExecutionPolicy Bypass -File "./scripts/pre_commit_check.ps1"
+    EXIT_CODE=$?
+fi
+
+if [ $EXIT_CODE -ne 0 ]; then
+    echo "Pre-commit checks failed. Please fix the issues and try again."
+    exit 1
+fi
+
+exit 0
