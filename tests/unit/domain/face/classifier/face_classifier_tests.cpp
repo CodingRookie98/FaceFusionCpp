@@ -62,9 +62,8 @@ TEST(FaceClassifierIntegrationTest, ClassifyDetectedFace_Tiffany) {
         ASSERT_FALSE(frame.empty()) << "Failed to read image: " << img_path;
 
         // 3. Detect face using face detector
-        // Use CPU for test stability if needed, but let's try auto-detect first
-        Options detector_options{};
-        // detector_options.execution_providers = {ExecutionProvider::CPU};
+        // Use best available execution providers (TensorRT > CUDA > CPU)
+        auto detector_options = Options::with_best_providers();
 
         std::string detector_model_key = "face_detector_yoloface";
         std::string detector_model_path = model_manager->ensure_model(detector_model_key);
@@ -83,8 +82,8 @@ TEST(FaceClassifierIntegrationTest, ClassifyDetectedFace_Tiffany) {
         auto& first_detection = detections[0];
 
         // 5. Create and load face classifier
-        Options classifier_options{};
-        // classifier_options.execution_providers = {ExecutionProvider::CPU};
+        // Use best available execution providers (TensorRT > CUDA > CPU)
+        auto classifier_options = Options::with_best_providers();
 
         std::string classifier_model_key = "fairface";
         std::string classifier_model_path = model_manager->ensure_model(classifier_model_key);
