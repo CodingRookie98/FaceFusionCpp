@@ -89,7 +89,7 @@ TEST_F(VisionTest, ResizeFrame) {
 
 TEST_F(VisionTest, ReadRealImage_Lenna) {
     try {
-        auto path = get_test_data_path("standard_face_test_iamges/lenna.bmp");
+        auto path = get_test_data_path("standard_face_test_images/lenna.bmp");
         if (fs::exists(path)) {
             cv::Mat img = read_static_image(path.string());
             ASSERT_FALSE(img.empty());
