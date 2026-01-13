@@ -69,7 +69,42 @@
 .\build.ps1 -Configuration Release -Action package
 ```
 
-## 5. 输出目录
+## 5. 代码风格与静态检查
+
+本项目使用 Clang 工具链进行代码格式化和静态分析。
+
+### 代码格式化 (Clang-Format)
+
+使用 `scripts/format_code.ps1` 脚本自动格式化代码。该脚本会根据 `.clang-format` 配置文件递归扫描 `src`, `facefusionCpp`, `tests` 目录下的 C++ 源文件。
+
+```powershell
+.\scripts\format_code.ps1
+```
+
+### 静态分析 (Clang-Tidy)
+
+使用 `scripts/run_clang_tidy.ps1` 脚本运行静态分析。该脚本依赖于 CMake 配置生成的 `compile_commands.json`。
+
+```powershell
+# 1. 确保已配置项目 (生成 compile_commands.json)
+.\build.ps1 -Action configure
+
+# 2. 运行 Clang-Tidy 检查
+.\scripts\run_clang_tidy.ps1
+```
+
+### 构建时静态分析
+
+可以在 CMake 构建过程中启用 Clang-Tidy 检查。
+
+```powershell
+# 启用 Clang-Tidy 配置
+cmake -DENABLE_CLANG_TIDY=ON --preset msvc-x64-debug
+
+# 或者直接修改 CMakeLists.txt 中的 option 默认值
+```
+
+## 6. 输出目录
 
 构建产物将位于 `build` 目录下：
 
