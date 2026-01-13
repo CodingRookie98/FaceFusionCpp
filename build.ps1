@@ -320,7 +320,8 @@ function Invoke-CMakeBuild {
             throw "Build failed"
         }
 
-        $outputDir = Join-Path $script:buildDir "runtime\$script:presetName"
+        # 这里的路径必须与 CMakeLists.txt 中的 CMAKE_RUNTIME_OUTPUT_DIRECTORY 逻辑一致
+        $outputDir = Join-Path $script:buildDir "bin"
         $executablePath = Join-Path $outputDir "$script:target.exe"
 
         if ($script:target -ne "all" -and (Test-FileAccess -Path $executablePath -PathType Leaf)) {
