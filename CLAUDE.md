@@ -71,3 +71,5 @@ trigger: always_on
 - 移动文件或重命名文件优先使用git命令，避免直接操作文件系统
 - 代码要经过完全测试才能提交
 - 所有开发工作应在其他分支上进行，如 feature/branch、fix/branch 等
+
+## 其他事项
