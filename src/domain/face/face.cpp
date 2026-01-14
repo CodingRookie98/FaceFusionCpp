@@ -4,6 +4,8 @@ module;
 
 module domain.face;
 
+import domain.face.helper;
+
 namespace domain::face {
 
 // 访问器实现
@@ -38,8 +40,7 @@ types::Score Face::landmarker_score() const noexcept {
 // 辅助方法
 types::Landmarks Face::get_landmark5() const {
     if (m_kps.size() == 5) { return m_kps; }
-    // TODO: 如果是68点，实现从68点提取5点的逻辑
-    // 目前如果不是5点，返回空
+    if (m_kps.size() == 68) { return domain::face::helper::convert_face_landmark_68_to_5(m_kps); }
     return {};
 }
 

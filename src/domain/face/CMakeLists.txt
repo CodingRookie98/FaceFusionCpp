@@ -36,5 +36,6 @@ add_subdirectory(classifier)
 add_subdirectory(landmarker)
 add_subdirectory(recognizer)
 add_subdirectory(masker)
+add_subdirectory(analyser)
 
 

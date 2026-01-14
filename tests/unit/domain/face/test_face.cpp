@@ -54,8 +54,8 @@ TEST(FaceTest, GetLandmark5) {
     auto face68 = test_support::create_face_with_68_kps();
     EXPECT_EQ(face68.kps().size(), 68);
     auto l5_from_68 = face68.get_landmark5();
-    // 目前未实现算法，应该返回空
-    EXPECT_TRUE(l5_from_68.empty());
+    // 现在实现了算法，不应为空
+    EXPECT_EQ(l5_from_68.size(), 5);
 }
 
 TEST(AgeRangeTest, Logic) {

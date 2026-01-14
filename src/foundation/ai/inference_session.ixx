@@ -72,16 +72,22 @@ public:
 
     /**
      * @brief Load an ONNX model with specified options
-     * @param model_path Path to the ONNX model file
-     * @param options Session options including execution providers and device configuration
-     * @note This method will reset the current session state before loading the new model.
-     *       If the same model is already loaded with the same options, it will not be reloaded.
+     * @param model_path Path to the
+     * ONNX model file
+     * @param options Session options including execution providers and
+     * device configuration
+     * @note This method will reset the current session state before
+     * loading the new model.
+     *       If the same model is already loaded with the same
+     * options, it will not be reloaded.
      */
-    void load_model(const std::string& model_path, const Options& options);
+    virtual void load_model(const std::string& model_path, const Options& options);
 
     /**
      * @brief Check if a model is currently loaded
-     * @return true if a model is loaded, false otherwise
+
+     * @return true if a model is
+     * loaded, false otherwise
      */
     [[nodiscard]] bool is_model_loaded() const;
 
@@ -97,9 +103,10 @@ public:
      *
      * @return Vector of output tensors
      */
-    std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors);
+    virtual std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors);
 
     [[nodiscard]] std::vector<std::vector<int64_t>> get_input_node_dims() const;
+
     [[nodiscard]] std::vector<std::vector<int64_t>> get_output_node_dims() const;
 
 private:
