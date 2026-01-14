@@ -18,6 +18,8 @@ target_include_directories(${app_facefusioncpp} PRIVATE
 )
 add_subdirectory(face_landmarker)
 
-add_subdirectory(face_recognizer)
-add_subdirectory(face_masker)
+
+# add_subdirectory(face_recognizer)
+# add_subdirectory(face_masker)
+
 add_subdirectory(face_classifier)
