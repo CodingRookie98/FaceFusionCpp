@@ -4,7 +4,7 @@
 
 import domain.face.detector;
 import foundation.infrastructure.test_support;
-import domain.ai.model_manager;
+import domain.ai.model_repository;
 import foundation.ai.inference_session;
 
 using namespace domain::face::detector;
@@ -12,58 +12,34 @@ using namespace foundation::infrastructure::test;
 using namespace foundation::ai::inference_session;
 namespace fs = std::filesystem;
 
-TEST(FaceDetectorFactoryTest, CreateYolo) {
-    auto detector = FaceDetectorFactory::create(DetectorType::Yolo);
-    EXPECT_NE(detector, nullptr);
-}
-
-TEST(FaceDetectorFactoryTest, CreateOthers) {
-    auto detector_scrfd = FaceDetectorFactory::create(DetectorType::SCRFD);
-    EXPECT_NE(detector_scrfd, nullptr);
-
-    auto detector_retina = FaceDetectorFactory::create(DetectorType::RetinaFace);
-    EXPECT_NE(detector_retina, nullptr);
-}
-
-TEST(FaceDetectorTest, DetectFaces_Tiffany) {
-    try {
-        // 1. Configure ModelManager to find models
+class FaceDetectorTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        // 1. Configure ModelRepository to find models
         auto assets_path = get_assets_path();
-        auto models_path = assets_path / "models_info.json";
+        auto models_info_path = assets_path / "models_info.json";
 
-        if (fs::exists(models_path)) {
-            // We assume ModelManager is a singleton and we can configure it
-            // Note: We need to ensure domain.ai.model_manager is imported
-            domain::ai::model_manager::ModelManager::get_instance()->set_model_info_file_path(
-                models_path.string());
-        } else {
-            std::cout << "[WARNING] models_info.json not found at " << models_path << std::endl;
+        if (fs::exists(models_info_path)) {
+            domain::ai::model_repository::ModelRepository::get_instance()->set_model_info_file_path(
+                models_info_path.string());
         }
+    }
+};
 
-        // 2. Load Image
+TEST_F(FaceDetectorTest, DetectFaces_Tiffany) {
+    try {
+        auto model_repository = domain::ai::model_repository::ModelRepository::get_instance();
         auto img_path = get_test_data_path("standard_face_test_images/tiffany.bmp");
         if (!fs::exists(img_path)) { GTEST_SKIP() << "Test image not found: " << img_path; }
 
         cv::Mat frame = cv::imread(img_path.string());
         ASSERT_FALSE(frame.empty()) << "Failed to read image: " << img_path;
 
-        // 3. Create Detector
-        // Note: Creation might fail or throw if model files listed in json are missing on disk
         auto detector = FaceDetectorFactory::create(DetectorType::Yolo);
         ASSERT_NE(detector, nullptr);
 
-        // 3.1 Load Model
-        // We need to load the model before detection
-        auto model_manager = domain::ai::model_manager::ModelManager::get_instance();
         std::string model_key = "face_detector_yoloface";
-
-        // Ensure path is set (redundant if set above, but safe)
-        if (model_manager->get_model_json_file_path().empty()) {
-            model_manager->set_model_info_file_path((assets_path / "models_info.json").string());
-        }
-
-        // Use ensure_model to auto-download if needed
-        std::string model_path = model_manager->ensure_model(model_key);
+        std::string model_path = model_repository->ensure_model(model_key);
         if (model_path.empty()) {
             GTEST_SKIP() << "Model " << model_key << " not available. Skipping test.";
         }

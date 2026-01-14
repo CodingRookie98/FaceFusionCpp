@@ -8,7 +8,7 @@ import domain.face;
 import domain.face.detector;
 import domain.face.helper;
 import foundation.infrastructure.test_support;
-import domain.ai.model_manager;
+import domain.ai.model_repository;
 import foundation.ai.inference_session;
 
 using namespace domain::face::classifier;
@@ -43,13 +43,13 @@ TEST_F(FaceClassifierTest, ClassificationResultDefaultValues) {
 
 TEST(FaceClassifierIntegrationTest, ClassifyDetectedFace_Tiffany) {
     try {
-        // 1. Configure ModelManager
+        // 1. Configure ModelRepository
         auto assets_path = get_assets_path();
         auto models_path = assets_path / "models_info.json";
 
-        auto model_manager = domain::ai::model_manager::ModelManager::get_instance();
+        auto model_repository = domain::ai::model_repository::ModelRepository::get_instance();
         if (fs::exists(models_path)) {
-            model_manager->set_model_info_file_path(models_path.string());
+            model_repository->set_model_info_file_path(models_path.string());
         } else {
             GTEST_SKIP() << "models_info.json not found at " << models_path;
         }
@@ -66,7 +66,7 @@ TEST(FaceClassifierIntegrationTest, ClassifyDetectedFace_Tiffany) {
         auto detector_options = Options::with_best_providers();
 
         std::string detector_model_key = "face_detector_yoloface";
-        std::string detector_model_path = model_manager->ensure_model(detector_model_key);
+        std::string detector_model_path = model_repository->ensure_model(detector_model_key);
         if (detector_model_path.empty()) {
             GTEST_SKIP() << "Model " << detector_model_key << " not available.";
         }
@@ -86,7 +86,7 @@ TEST(FaceClassifierIntegrationTest, ClassifyDetectedFace_Tiffany) {
         auto classifier_options = Options::with_best_providers();
 
         std::string classifier_model_key = "fairface";
-        std::string classifier_model_path = model_manager->ensure_model(classifier_model_key);
+        std::string classifier_model_path = model_repository->ensure_model(classifier_model_key);
 
         auto classifier = create_classifier(ClassifierType::FairFace);
         ASSERT_NE(classifier, nullptr);

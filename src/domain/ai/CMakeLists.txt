@@ -7,9 +7,9 @@ target_sources(domain_ai
         FILE_SET cxx_modules TYPE CXX_MODULES
         BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
         FILES
-            model_manager.ixx
+            model_repository.ixx
     PRIVATE
-        model_manager.cpp
+        model_repository.cpp
 )
 
 target_link_libraries(domain_ai

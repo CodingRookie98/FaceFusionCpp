@@ -1,19 +1,20 @@
 /**
- * @file           : model_manager.cpp
- * @brief          : Model management module implementation
+ * @file           : model_repository.cpp
+ * @brief          : Model repository module implementation
  */
 
 module;
 #include <fstream>           // NOLINT(misc-include-cleaner)
 #include <filesystem>        // NOLINT(misc-include-cleaner)
 #include <nlohmann/json.hpp> // NOLINT(misc-include-cleaner)
+#include <mutex>
 
-module domain.ai.model_manager;
+module domain.ai.model_repository;
 import foundation.infrastructure.file_system;
 import foundation.infrastructure.network;
 import foundation.infrastructure.logger;
 
-namespace domain::ai::model_manager {
+namespace domain::ai::model_repository {
 using namespace foundation::infrastructure;
 
 using json = nlohmann::json;
@@ -34,16 +35,16 @@ void from_json(const json& j, ModelInfo& model_info) {
     model_info.url = j.value("url", model_info.url);
 }
 
-ModelManager::ModelManager() : m_json_file_path("") {}
+ModelRepository::ModelRepository() : m_json_file_path("") {}
 
-std::shared_ptr<ModelManager> ModelManager::get_instance() {
-    static std::shared_ptr<ModelManager> instance;
+std::shared_ptr<ModelRepository> ModelRepository::get_instance() {
+    static std::shared_ptr<ModelRepository> instance;
     static std::once_flag flag;
-    std::call_once(flag, [&]() { instance.reset(new ModelManager()); });
+    std::call_once(flag, [&]() { instance.reset(new ModelRepository()); });
     return instance;
 }
 
-void ModelManager::set_model_info_file_path(const std::string& path) {
+void ModelRepository::set_model_info_file_path(const std::string& path) {
     m_json_file_path = path;
     m_models_info_map.clear();
 
@@ -52,15 +53,6 @@ void ModelManager::set_model_info_file_path(const std::string& path) {
         models_info_json = nlohmann::json::parse(file);
         file.close();
     } else {
-        // If file doesn't exist, just return, don't throw, or maybe log warning?
-        // Original code threw runtime_error, but for setter maybe we should be more lenient or log
-        // Keeping original behavior for consistency if possible, or maybe just log
-        // But constructor calls this, effectively.
-        // Let's log and rethrow if it was called from logic that expects it?
-        // Actually, the previous constructor threw. Let's try to keep it simple.
-        // If we want to allow empty/default init that might fail, we should handle exceptions.
-        // But here let's just throw if file missing as before?
-        // User requested setter to allow changing path.
         throw std::runtime_error("Failed to open " + m_json_file_path);
     }
 
@@ -75,7 +67,7 @@ void ModelManager::set_model_info_file_path(const std::string& path) {
     }
 }
 
-bool ModelManager::download_model(const std::string& model_name) const {
+bool ModelRepository::download_model(const std::string& model_name) const {
     if (model_name.empty()) { return true; }
     if (!m_models_info_map.contains(model_name)) {
         logger::Logger::get_instance()->warn("Model not found in configuration: " + model_name);
@@ -92,29 +84,29 @@ bool ModelManager::download_model(const std::string& model_name) const {
     return network::download(model_info.url, output_dir);
 }
 
-bool ModelManager::is_downloaded(const std::string& model_name) const {
+bool ModelRepository::is_downloaded(const std::string& model_name) const {
     if (model_name.empty()) { return true; }
     if (!m_models_info_map.contains(model_name)) { return false; }
     const ModelInfo& model_info = m_models_info_map.at(model_name);
     return file_system::file_exists(model_info.path);
 }
 
-ModelInfo ModelManager::get_model_info(const std::string& model_name) const {
+ModelInfo ModelRepository::get_model_info(const std::string& model_name) const {
     if (!m_models_info_map.contains(model_name)) { return ModelInfo{}; }
     return m_models_info_map.at(model_name);
 }
 
-std::string ModelManager::get_model_url(const std::string& model_name) const {
+std::string ModelRepository::get_model_url(const std::string& model_name) const {
     if (!m_models_info_map.contains(model_name)) { return {}; }
     return m_models_info_map.at(model_name).url;
 }
 
-std::string ModelManager::get_model_path(const std::string& model_name) const {
+std::string ModelRepository::get_model_path(const std::string& model_name) const {
     if (!m_models_info_map.contains(model_name)) { return {}; }
     return m_models_info_map.at(model_name).path;
 }
 
-std::string ModelManager::ensure_model(const std::string& model_name) const {
+std::string ModelRepository::ensure_model(const std::string& model_name) const {
     if (model_name.empty()) { return {}; }
     if (!m_models_info_map.contains(model_name)) {
         logger::Logger::get_instance()->warn("Model not found in configuration: " + model_name);
@@ -137,8 +129,8 @@ std::string ModelManager::ensure_model(const std::string& model_name) const {
     return {};
 }
 
-bool ModelManager::has_model(const std::string& model_name) const {
+bool ModelRepository::has_model(const std::string& model_name) const {
     return m_models_info_map.contains(model_name);
 }
 
-} // namespace domain::ai::model_manager
+} // namespace domain::ai::model_repository

@@ -1,6 +1,6 @@
 /**
- * @file           : model_manager.ixx
- * @brief          : Model management module for handling AI model information and operations
+ * @file           : model_repository.ixx
+ * @brief          : Model repository module for handling AI model information and operations
  */
 
 module;
@@ -9,9 +9,9 @@ module;
 #include <memory>
 #include <nlohmann/json.hpp>
 
-export module domain.ai.model_manager;
+export module domain.ai.model_repository;
 
-namespace domain::ai::model_manager {
+namespace domain::ai::model_repository {
 
 using json = nlohmann::json;
 
@@ -26,23 +26,23 @@ export struct ModelInfo {
 };
 
 /**
- * @brief Model manager class for handling AI model operations
+ * @brief Model repository class for handling AI model operations
  */
-export class ModelManager final {
+export class ModelRepository final {
 public:
-    virtual ~ModelManager() = default;
+    virtual ~ModelRepository() = default;
 
     // Delete copy and move constructors and assignment operators
-    ModelManager(const ModelManager&) = delete;
-    ModelManager& operator=(const ModelManager&) = delete;
-    ModelManager(ModelManager&&) = delete;
-    ModelManager& operator=(ModelManager&&) = delete;
+    ModelRepository(const ModelRepository&) = delete;
+    ModelRepository& operator=(const ModelRepository&) = delete;
+    ModelRepository(ModelRepository&&) = delete;
+    ModelRepository& operator=(ModelRepository&&) = delete;
 
     /**
-     * @brief Get the singleton instance of ModelManager
-     * @return std::shared_ptr<ModelManager> Shared pointer to the singleton instance
+     * @brief Get the singleton instance of ModelRepository
+     * @return std::shared_ptr<ModelRepository> Shared pointer to the singleton instance
      */
-    static std::shared_ptr<ModelManager> get_instance();
+    static std::shared_ptr<ModelRepository> get_instance();
 
     /**
      * @brief Get complete model information
@@ -109,9 +109,9 @@ public:
 
 private:
     /**
-     * @brief Construct a new ModelManager object
+     * @brief Construct a new ModelRepository object
      */
-    ModelManager();
+    ModelRepository();
     std::string m_json_file_path; ///< Path to models information JSON file
     std::unordered_map<std::string, ModelInfo>
         m_models_info_map; ///< Map of model names to ModelInfo structures
@@ -131,4 +131,4 @@ export void to_json(json& j, const ModelInfo& model_info);
  */
 export void from_json(const json& j, ModelInfo& model_info);
 
-} // namespace domain::ai::model_manager
+} // namespace domain::ai::model_repository

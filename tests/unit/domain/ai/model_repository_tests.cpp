@@ -3,15 +3,16 @@
 #include <gmock/gmock.h>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <filesystem>
 
-import domain.ai.model_manager;
+import domain.ai.model_repository;
 import foundation.infrastructure.file_system;
 import foundation.infrastructure.test_support;
 
 namespace fs = std::filesystem;
-using namespace domain::ai::model_manager;
+using namespace domain::ai::model_repository;
 
-class ModelManagerTest : public ::testing::Test {
+class ModelRepositoryTest : public ::testing::Test {
 protected:
     void SetUp() override {
         test_json_path = "test_models_info.json";
@@ -41,28 +42,23 @@ protected:
     std::string test_json_path;
 };
 
-TEST_F(ModelManagerTest, SingletonInstance) {
-    auto instance = ModelManager::get_instance();
+TEST_F(ModelRepositoryTest, SingletonInstance) {
+    auto instance = ModelRepository::get_instance();
     ASSERT_NE(instance, nullptr);
-    // Verify default path is used initially or settable
-    // Note: Default path "./assets/models_info.json" might not exist in test env,
-    // but constructor might throw if not found.
-    // However, since we are using singleton, it might have been initialized in previous tests or
-    // runs. Let's set it to test path to be sure.
     instance->set_model_info_file_path(test_json_path);
     EXPECT_EQ(instance->get_model_json_file_path(), test_json_path);
 }
 
-TEST_F(ModelManagerTest, LoadConfiguration) {
-    auto instance = ModelManager::get_instance();
+TEST_F(ModelRepositoryTest, LoadConfiguration) {
+    auto instance = ModelRepository::get_instance();
     instance->set_model_info_file_path(test_json_path);
     EXPECT_TRUE(instance->has_model("test_model_1"));
     EXPECT_TRUE(instance->has_model("test_model_2"));
     EXPECT_FALSE(instance->has_model("non_existent_model"));
 }
 
-TEST_F(ModelManagerTest, GetModelInfo) {
-    auto instance = ModelManager::get_instance();
+TEST_F(ModelRepositoryTest, GetModelInfo) {
+    auto instance = ModelRepository::get_instance();
     instance->set_model_info_file_path(test_json_path);
     auto info = instance->get_model_info("test_model_1");
 
@@ -72,14 +68,14 @@ TEST_F(ModelManagerTest, GetModelInfo) {
     EXPECT_EQ(info.path, "./models/test_model_1.onnx");
 }
 
-TEST_F(ModelManagerTest, GetModelInfoInvalid) {
-    auto instance = ModelManager::get_instance();
+TEST_F(ModelRepositoryTest, GetModelInfoInvalid) {
+    auto instance = ModelRepository::get_instance();
     instance->set_model_info_file_path(test_json_path);
     auto info = instance->get_model_info("invalid_model");
     EXPECT_TRUE(info.name.empty());
 }
 
-TEST_F(ModelManagerTest, JSONSerialization) {
+TEST_F(ModelRepositoryTest, JSONSerialization) {
     ModelInfo original{"test", "type", "path", "url"};
     nlohmann::json j;
     to_json(j, original);
@@ -93,31 +89,19 @@ TEST_F(ModelManagerTest, JSONSerialization) {
     EXPECT_EQ(deserialized.url, original.url);
 }
 
-TEST_F(ModelManagerTest, LoadRealAssetsModelInfo) {
+TEST_F(ModelRepositoryTest, LoadRealAssetsModelInfo) {
     try {
-        // Use the new test support helper to find assets
         std::string real_path =
             (foundation::infrastructure::test::get_assets_path() / "models_info.json").string();
 
         if (fs::exists(real_path)) {
-            auto instance = ModelManager::get_instance();
+            auto instance = ModelRepository::get_instance();
             EXPECT_NO_THROW(instance->set_model_info_file_path(real_path));
             EXPECT_EQ(instance->get_model_json_file_path(), real_path);
 
-            // Check for a known model to ensure parsing worked
-            // Assuming "gfpgan_1.4" exists in the default assets
-            if (instance->has_model("gfpgan_1.4")) {
-                EXPECT_TRUE(instance->has_model("gfpgan_1.4"));
-            } else {
-                // If not found, just warn, as assets might change
-                std::cout << "[WARNING] 'gfpgan_1.4' not found in real assets. Loaded models: "
-                          << std::endl;
+            if (instance->has_model("face_detector_yoloface")) {
+                EXPECT_TRUE(instance->has_model("face_detector_yoloface"));
             }
         }
-    } catch (const std::exception& e) {
-        // If assets not found, skip test or fail depending on strictness.
-        // For now, let's print and SKIP if possible, or Fail if we expect assets to be there.
-        // Given the goal is to fix this, we should Fail if assets are missing.
-        FAIL() << "Failed to load real assets: " << e.what();
-    }
+    } catch (const std::exception& e) { FAIL() << "Failed to load real assets: " << e.what(); }
 }
