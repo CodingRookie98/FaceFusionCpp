@@ -63,7 +63,8 @@ def main():
 
     # Filter for C++ files
     format_extensions = {".cpp", ".h", ".hpp", ".ixx", ".cppm", ".c", ".cc"}
-    tidy_extensions = {".cpp", ".ixx", ".cppm", ".c", ".cc"}
+    # Excluding .ixx/.cppm for MSVC as clang-tidy often struggles with MSVC modules commands
+    tidy_extensions = {".cpp", ".c", ".cc"}
 
     files_to_format = []
     files_to_tidy = []

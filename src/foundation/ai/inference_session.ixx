@@ -32,7 +32,7 @@ export std::unordered_set<ExecutionProvider> get_best_available_providers();
 
 export struct Options {
     std::unordered_set<ExecutionProvider> execution_providers{}; ///< Empty = auto-detect best
-    int execution_device_id = 0;              ///< Device ID for GPU execution
+    int execution_device_id = 0;                                 ///< Device ID for GPU execution
     size_t trt_max_workspace_size = 0;        ///< Maximum workspace size for TensorRT in GB
     bool enable_tensorrt_embed_engine = true; ///< Enable TensorRT engine embedding
     bool enable_tensorrt_cache = true;        ///< Enable TensorRT engine caching

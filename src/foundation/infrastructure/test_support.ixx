@@ -23,5 +23,4 @@ std::filesystem::path get_assets_path();
 // 获取特定测试数据的绝对路径
 // relative_path: 相对于 assets 目录的路径
 std::filesystem::path get_test_data_path(const std::string& relative_path);
-}
-
+} // namespace foundation::infrastructure::test

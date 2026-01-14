@@ -64,7 +64,8 @@ def main():
     # 3. Scan files
     # clang-tidy typically runs on implementation files
     dirs_to_scan = ["src"]
-    extensions = {".cpp", ".ixx", ".cppm", ".cc", ".c"}
+    # Excluding .ixx/.cppm for MSVC as clang-tidy often struggles with MSVC modules commands
+    extensions = {".cpp", ".cc", ".c"}
 
     files_to_check = []
 
