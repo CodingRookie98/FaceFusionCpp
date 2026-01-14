@@ -31,8 +31,8 @@ public:
     [[nodiscard]] std::vector<Face> get_faces(const cv::Mat& frame);
     [[nodiscard]] std::vector<Face> get_faces(const std::string& faces_name);
     [[nodiscard]] static std::string create_frame_hash(const cv::Mat& frame);
-    [[nodiscard]] bool is_contains(const cv::Mat& frame);
-    [[nodiscard]] bool is_contains(const std::string& faces_name);
+    [[nodiscard]] bool is_contains(const cv::Mat& frame) const;
+    [[nodiscard]] bool is_contains(const std::string& faces_name) const;
 
 private:
     std::unordered_map<std::string, std::vector<Face>> m_faces_map;
