@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include <string>
+#include <thread>
+#include <atomic>
 #include <opencv2/opencv.hpp>
 
 import domain.face;
@@ -106,4 +108,67 @@ TEST_F(FaceStoreTest, EmptyInsert) {
     // Implementation says: if faces.empty() return;
     // So map should remain empty/unchanged
     EXPECT_FALSE(store.is_contains(frame1));
+}
+
+TEST_F(FaceStoreTest, ConcurrentReadWrite) {
+    const int num_threads = 8;
+    const int operations_per_thread = 100;
+    std::vector<std::thread> threads;
+    std::atomic<int> successful_reads{0};
+    std::atomic<int> successful_writes{0};
+
+    // Writer threads
+    for (int i = 0; i < num_threads / 2; ++i) {
+        threads.emplace_back([this, i, operations_per_thread, &successful_writes]() {
+            for (int j = 0; j < operations_per_thread; ++j) {
+                std::string name = "thread_" + std::to_string(i) + "_op_" + std::to_string(j);
+                store.insert_faces(name, faces1);
+                successful_writes++;
+            }
+        });
+    }
+
+    // Reader threads
+    for (int i = 0; i < num_threads / 2; ++i) {
+        threads.emplace_back([this, operations_per_thread, &successful_reads]() {
+            for (int j = 0; j < operations_per_thread; ++j) {
+                // Read operations should not crash even with concurrent writes
+                [[maybe_unused]] auto result = store.get_faces("thread_0_op_0");
+                [[maybe_unused]] bool contains = store.is_contains("thread_0_op_0");
+                successful_reads++;
+            }
+        });
+    }
+
+    for (auto& t : threads) { t.join(); }
+
+    EXPECT_EQ(successful_writes.load(), (num_threads / 2) * operations_per_thread);
+    EXPECT_EQ(successful_reads.load(), (num_threads / 2) * operations_per_thread);
+}
+
+TEST_F(FaceStoreTest, ConcurrentReadOnly) {
+    // Pre-populate store
+    store.insert_faces("test_key", faces1);
+    store.insert_faces(frame1, faces2);
+
+    const int num_threads = 8;
+    const int reads_per_thread = 200;
+    std::vector<std::thread> threads;
+    std::atomic<int> total_reads{0};
+
+    for (int i = 0; i < num_threads; ++i) {
+        threads.emplace_back([this, reads_per_thread, &total_reads]() {
+            for (int j = 0; j < reads_per_thread; ++j) {
+                auto result1 = store.get_faces("test_key");
+                auto result2 = store.get_faces(frame1);
+                EXPECT_EQ(result1.size(), 1);
+                EXPECT_EQ(result2.size(), 1);
+                total_reads += 2;
+            }
+        });
+    }
+
+    for (auto& t : threads) { t.join(); }
+
+    EXPECT_EQ(total_reads.load(), num_threads * reads_per_thread * 2);
 }

@@ -48,7 +48,9 @@ std::vector<Face> FaceStore::get_faces(const cv::Mat& frame) {
 
 std::vector<Face> FaceStore::get_faces(const std::string& faces_name) {
     std::shared_lock<std::shared_mutex> lock(m_rw_mutex);
-    if (m_faces_map.contains(faces_name)) { return m_faces_map[faces_name]; }
+    if (const auto it = m_faces_map.find(faces_name); it != m_faces_map.end()) {
+        return it->second;
+    }
     return {};
 }
 
@@ -67,12 +69,12 @@ void FaceStore::remove_faces(const cv::Mat& frame) {
     m_faces_map.erase(create_frame_hash(frame));
 }
 
-bool FaceStore::is_contains(const cv::Mat& frame) {
+bool FaceStore::is_contains(const cv::Mat& frame) const {
     std::shared_lock<std::shared_mutex> lock(m_rw_mutex);
     return m_faces_map.contains(create_frame_hash(frame));
 }
 
-bool FaceStore::is_contains(const std::string& faces_name) {
+bool FaceStore::is_contains(const std::string& faces_name) const {
     std::shared_lock<std::shared_mutex> lock(m_rw_mutex);
     return m_faces_map.contains(faces_name);
 }
