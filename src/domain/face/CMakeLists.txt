@@ -34,5 +34,6 @@ target_link_libraries(domain_face
 add_subdirectory(detector)
 add_subdirectory(classifier)
 add_subdirectory(landmarker)
+add_subdirectory(recognizer)
 
 
