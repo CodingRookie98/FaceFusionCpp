@@ -62,14 +62,17 @@ trigger: always_on
 ## 禁止的操作
 
 - 不要递归删除 build 目录及目录下的文件
-- 禁止在 master/main 主分支上直接开发或提交代码
+- 禁止直接修改主分支的代码，只能通过创建新分支进行开发和测试。
 
 ### 工作流程
 工作流程请参见文档：`@docs/dev_docs/workflow.md`
 
 ## 必须遵守的规范
+
 - 移动文件或重命名文件等操作优先使用git命令，避免直接操作文件系统
 - 代码要经过完全测试才能提交
 - 所有开发工作应在其他分支上进行，如 feature/branch、fix/branch 等
 
 ## 其他事项
+
+- 系统为windows且编译器为msvc时不要进行 clang-tidy 分析
