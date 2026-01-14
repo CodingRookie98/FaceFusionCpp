@@ -33,10 +33,12 @@ function(add_facefusion_test TEST_NAME)
     message(STATUS "Setting test ${TEST_NAME} working directory to: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
     gtest_discover_tests(${TEST_NAME}
         WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+        TEST_PREFIX "${TEST_NAME}."
         PROPERTIES
             LABELS "facefusion"
             TIMEOUT 300
     )
+
 endfunction()
 
 add_subdirectory(unit)

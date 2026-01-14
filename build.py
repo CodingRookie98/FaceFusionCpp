@@ -48,14 +48,16 @@ def get_cmake_preset(config, os_name):
         return f"default-{config}"
 
 
-def run_command(cmd, env=None, cwd=None, check=True):
+def run_command(cmd, env=None, cwd=None, check=True, exit_on_error=True):
     cmd_str = " ".join(cmd)
     log(f"Executing: {cmd_str}", "info")
     try:
-        subprocess.run(cmd, env=env, cwd=cwd, check=check)
+        return subprocess.run(cmd, env=env, cwd=cwd, check=check)
     except subprocess.CalledProcessError as e:
-        log(f"Command failed with exit code {e.returncode}", "error")
-        sys.exit(e.returncode)
+        if exit_on_error:
+            log(f"Command failed with exit code {e.returncode}", "error")
+            sys.exit(e.returncode)
+        raise e
 
 
 def main():
@@ -130,8 +132,22 @@ def main():
             # Run build first if not explicitly skipped? user usually manages this.
             # But let's follow ctest preset
             ctest_exe = "ctest"
-            cmd = [ctest_exe, "--preset", preset]
-            run_command(cmd, env=env, cwd=project_root)
+            cmd = [ctest_exe, "--preset", preset, "--no-tests=error"]
+            if args.target != "all":
+                cmd.extend(["-R", args.target])
+
+            try:
+                run_command(cmd, env=env, cwd=project_root, exit_on_error=False)
+            except subprocess.CalledProcessError as e:
+                if e.returncode == 8 and args.target != "all":
+                    log(f"\nNo tests matched the pattern '{args.target}'.", "warning")
+                    log(
+                        "Check if the test target is correctly registered and named.",
+                        "info",
+                    )
+                else:
+                    log(f"Tests failed with exit code {e.returncode}", "error")
+                sys.exit(e.returncode)
 
         elif action == "install":
             cmd = [cmake_exe, "--install", str(build_dir)]

@@ -20,6 +20,9 @@ python build.py --config Release --action build
 # 运行测试
 python build.py --config Debug --action test
 
+# 运行特定测试 (例如名称包含 "vision" 的测试)
+python build.py --action test --target vision
+
 # 安装项目
 python build.py --config Release --action install
 
@@ -41,9 +44,13 @@ python build.py --clean --action both
 | :--- | :--- | :--- | :--- |
 | `--config` | 构建配置类型 | `Debug`, `Release` | `Debug` |
 | `--action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (先执行构建，成功后运行测试)<br>`install` (安装)<br>`package` (打包)<br>`both` (配置+构建) | `both` |
-| `--target` | 构建目标 | `all` 或具体目标名 | `all` |
+| `--target` | 构建或测试目标 | `all` 或具体名称/正则 | `all` |
 | `--preset` | 手动指定 CMake Preset | CMakePresets.json 中定义的名称 | 自动检测 |
 | `--clean` | 清理构建目录 | `[flag]` | `False` |
+
+> **提示**: 当执行 `--action test` 时，`--target` 参数具有双重作用：
+> 1. 首先仅构建指定的 Target（如果该 Target 是一个测试可执行文件）。
+> 2. 随后 `ctest` 会利用该参数作为正则表达式来筛选并运行匹配的测试。
 
 > **注意**: 脚本会自动利用系统所有可用核心进行并行构建，无需手动指定 `-j` 参数。
 
