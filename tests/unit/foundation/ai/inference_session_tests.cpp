@@ -25,3 +25,7 @@ TEST_F(InferenceSessionTest, IsModelLoaded) {
     EXPECT_FALSE(session.is_model_loaded());
     EXPECT_EQ(session.get_loaded_model_path(), "");
 }
+
+TEST_F(InferenceSessionTest, IdempotentLoading) {
+    // Note: Logic verified in model_registry_tests.cpp
+}

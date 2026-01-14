@@ -221,6 +221,13 @@ struct InferenceSession::Impl {
 
         std::lock_guard lock(m_mutex);
         ensure_resources();
+
+        if (m_is_model_loaded && m_model_path == model_path && m_options == options) {
+            m_logger->trace(
+                std::format("Model already loaded with same options, skipping: {}", model_path));
+            return;
+        }
+
         reset_internal();
         m_options = options;
 

@@ -10,6 +10,7 @@ module;
 module domain.face.analyser;
 
 import domain.face;
+import domain.face.model_registry;
 import domain.face.detector;
 import domain.face.landmarker;
 import domain.face.recognizer;
@@ -27,48 +28,15 @@ using namespace domain::face::recognizer;
 using namespace domain::face::classifier;
 using namespace domain::face::store;
 
-FaceAnalyser::FaceAnalyser(const Options& options) : m_options(options) {
-    // Detector
-    m_detector = FaceDetectorFactory::create(options.face_detector_options.type);
-    std::string det_path;
-    switch (options.face_detector_options.type) {
-    case DetectorType::Yolo: det_path = options.model_paths.face_detector_yolo; break;
-    case DetectorType::SCRFD: det_path = options.model_paths.face_detector_scrfd; break;
-    case DetectorType::RetinaFace: det_path = options.model_paths.face_detector_retina; break;
-    }
-    if (m_detector && !det_path.empty())
-        m_detector->load_model(det_path, options.inference_session_options);
-
-    // Landmarker
-    m_landmarker = create_landmarker(options.face_landmarker_options.type);
-    std::string lm_path;
-    switch (options.face_landmarker_options.type) {
-    case LandmarkerType::_2DFAN: lm_path = options.model_paths.face_landmarker_2dfan; break;
-    case LandmarkerType::Peppawutz: lm_path = options.model_paths.face_landmarker_peppawutz; break;
-    case LandmarkerType::_68By5: lm_path = options.model_paths.face_landmarker_68by5; break;
-    }
-    if (m_landmarker && !lm_path.empty())
-        m_landmarker->load_model(lm_path, options.inference_session_options);
-
-    // Recognizer
-    m_recognizer = create_face_recognizer(options.face_recognizer_type);
-    if (m_recognizer && !options.model_paths.face_recognizer_arcface.empty())
-        m_recognizer->load_model(options.model_paths.face_recognizer_arcface,
-                                 options.inference_session_options);
-
-    // Classifier
-    m_classifier = create_classifier(options.face_classifier_type);
-    if (m_classifier && !options.model_paths.face_classifier_fairface.empty())
-        m_classifier->load_model(options.model_paths.face_classifier_fairface,
-                                 options.inference_session_options);
-
+FaceAnalyser::FaceAnalyser(const Options& options) {
+    apply_options(options);
     m_face_store = std::make_unique<FaceStore>();
 }
 
-FaceAnalyser::FaceAnalyser(const Options& options, std::unique_ptr<IFaceDetector> detector,
-                           std::unique_ptr<IFaceLandmarker> landmarker,
-                           std::unique_ptr<FaceRecognizer> recognizer,
-                           std::unique_ptr<IFaceClassifier> classifier,
+FaceAnalyser::FaceAnalyser(const Options& options, std::shared_ptr<IFaceDetector> detector,
+                           std::shared_ptr<IFaceLandmarker> landmarker,
+                           std::shared_ptr<FaceRecognizer> recognizer,
+                           std::shared_ptr<IFaceClassifier> classifier,
                            std::unique_ptr<FaceStore> store) :
     m_options(options), m_detector(std::move(detector)), m_landmarker(std::move(landmarker)),
     m_recognizer(std::move(recognizer)), m_classifier(std::move(classifier)) {
@@ -77,6 +45,75 @@ FaceAnalyser::FaceAnalyser(const Options& options, std::unique_ptr<IFaceDetector
 }
 
 FaceAnalyser::~FaceAnalyser() = default;
+
+void FaceAnalyser::update_options(const Options& options) {
+    apply_options(options);
+}
+
+void FaceAnalyser::apply_options(const Options& options) {
+    auto& registry = FaceModelRegistry::get_instance();
+
+    // Detector
+    auto get_det_path = [](const Options& opts) {
+        switch (opts.face_detector_options.type) {
+        case DetectorType::Yolo: return opts.model_paths.face_detector_yolo;
+        case DetectorType::SCRFD: return opts.model_paths.face_detector_scrfd;
+        case DetectorType::RetinaFace: return opts.model_paths.face_detector_retina;
+        default: return std::string();
+        }
+    };
+    std::string det_path = get_det_path(options);
+    std::string old_det_path = get_det_path(m_options);
+
+    if (!m_detector || options.face_detector_options.type != m_options.face_detector_options.type
+        || det_path != old_det_path
+        || options.inference_session_options != m_options.inference_session_options) {
+        m_detector = registry.get_detector(options.face_detector_options.type, det_path,
+                                           options.inference_session_options);
+    }
+
+    // Landmarker
+    auto get_lm_path = [](const Options& opts) {
+        switch (opts.face_landmarker_options.type) {
+        case LandmarkerType::_2DFAN: return opts.model_paths.face_landmarker_2dfan;
+        case LandmarkerType::Peppawutz: return opts.model_paths.face_landmarker_peppawutz;
+        case LandmarkerType::_68By5: return opts.model_paths.face_landmarker_68by5;
+        default: return std::string();
+        }
+    };
+    std::string lm_path = get_lm_path(options);
+    std::string old_lm_path = get_lm_path(m_options);
+
+    if (!m_landmarker
+        || options.face_landmarker_options.type != m_options.face_landmarker_options.type
+        || lm_path != old_lm_path
+        || options.inference_session_options != m_options.inference_session_options) {
+        m_landmarker = registry.get_landmarker(options.face_landmarker_options.type, lm_path,
+                                               options.inference_session_options);
+    }
+
+    // Recognizer
+    if (!m_recognizer || options.face_recognizer_type != m_options.face_recognizer_type
+        || options.model_paths.face_recognizer_arcface
+               != m_options.model_paths.face_recognizer_arcface
+        || options.inference_session_options != m_options.inference_session_options) {
+        m_recognizer = registry.get_recognizer(options.face_recognizer_type,
+                                               options.model_paths.face_recognizer_arcface,
+                                               options.inference_session_options);
+    }
+
+    // Classifier
+    if (!m_classifier || options.face_classifier_type != m_options.face_classifier_type
+        || options.model_paths.face_classifier_fairface
+               != m_options.model_paths.face_classifier_fairface
+        || options.inference_session_options != m_options.inference_session_options) {
+        m_classifier = registry.get_classifier(options.face_classifier_type,
+                                               options.model_paths.face_classifier_fairface,
+                                               options.inference_session_options);
+    }
+
+    m_options = options;
+}
 
 // Helpers
 static cv::Point2f rotate_point_back(const cv::Point2f& pt, int angle,

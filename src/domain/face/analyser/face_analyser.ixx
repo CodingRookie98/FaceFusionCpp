@@ -8,6 +8,7 @@ module;
 export module domain.face.analyser;
 
 import domain.face;
+import domain.face.model_registry;
 import domain.face.detector;
 import domain.face.landmarker;
 import domain.face.recognizer;
@@ -59,16 +60,23 @@ class FaceAnalyser {
 public:
     explicit FaceAnalyser(const Options& options);
 
-    FaceAnalyser(const Options& options, std::unique_ptr<detector::IFaceDetector> detector,
-                 std::unique_ptr<landmarker::IFaceLandmarker> landmarker,
-                 std::unique_ptr<recognizer::FaceRecognizer> recognizer,
-                 std::unique_ptr<classifier::IFaceClassifier> classifier,
+    FaceAnalyser(const Options& options, std::shared_ptr<detector::IFaceDetector> detector,
+                 std::shared_ptr<landmarker::IFaceLandmarker> landmarker,
+                 std::shared_ptr<recognizer::FaceRecognizer> recognizer,
+                 std::shared_ptr<classifier::IFaceClassifier> classifier,
                  std::unique_ptr<store::FaceStore> store = nullptr);
 
     ~FaceAnalyser();
 
     FaceAnalyser(const FaceAnalyser&) = delete;
     FaceAnalyser& operator=(const FaceAnalyser&) = delete;
+
+    /**
+     * @brief Update options.
+     * @details If model paths or inference session options are changed,
+     *          the underlying model components will be updated via the registry.
+     */
+    void update_options(const Options& options);
 
     std::vector<Face> get_many_faces(const cv::Mat& vision_frame);
     Face get_one_face(const cv::Mat& vision_frame, unsigned int position = 0);
@@ -93,11 +101,13 @@ private:
                domain::common::types::Race>
     classify_face(const cv::Mat& vision_frame, const types::Landmarks& face_landmark_5);
 
+    void apply_options(const Options& options);
+
     Options m_options;
-    std::unique_ptr<detector::IFaceDetector> m_detector;
-    std::unique_ptr<landmarker::IFaceLandmarker> m_landmarker;
-    std::unique_ptr<recognizer::FaceRecognizer> m_recognizer;
-    std::unique_ptr<classifier::IFaceClassifier> m_classifier;
+    std::shared_ptr<detector::IFaceDetector> m_detector;
+    std::shared_ptr<landmarker::IFaceLandmarker> m_landmarker;
+    std::shared_ptr<recognizer::FaceRecognizer> m_recognizer;
+    std::shared_ptr<classifier::IFaceClassifier> m_classifier;
     std::unique_ptr<store::FaceStore> m_face_store;
 };
 

@@ -20,6 +20,7 @@ target_sources(domain_face
         face_store.cpp
 )
 
+
 target_link_libraries(domain_face
     PUBLIC
         ${OpenCV_LIBS}
