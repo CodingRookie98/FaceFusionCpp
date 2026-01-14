@@ -26,8 +26,13 @@ target_link_libraries(domain_face
         OpenSSL::SSL
         OpenSSL::Crypto
         domain_common
+        foundation_ai
+        domain_ai
 )
+
 
 add_subdirectory(detector)
 add_subdirectory(classifier)
+add_subdirectory(landmarker)
+
 

@@ -25,8 +25,15 @@ public:
         auto input_dims = get_input_node_dims();
         if (!input_dims.empty() && input_dims[0].size() >= 4) {
             // NCHW: [1, 3, 640, 640]
-            input_height_ = static_cast<int>(input_dims[0][2]);
-            input_width_ = static_cast<int>(input_dims[0][3]);
+            int h = static_cast<int>(input_dims[0][2]);
+            int w = static_cast<int>(input_dims[0][3]);
+
+            if (h > 0) input_height_ = h;
+            else input_height_ = 640;
+
+            if (w > 0) input_width_ = w;
+            else input_width_ = 640;
+
             faceDetectorSize_ = cv::Size(input_width_, input_height_);
         }
     }

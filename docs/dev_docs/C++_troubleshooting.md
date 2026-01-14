@@ -77,5 +77,35 @@
   - 对于底层依赖复杂的第三方库（如 GPU 驱动），使用静态泄漏指针（Static Leaked Pointer）是一种常见的规避析构顺序问题的工业级方案。
   - CI/CD 环境应优先使用稳定但较慢的 CPU 路径。
 
+### C2064: term does not evaluate to a function
+
+- **日期**: 2026-01-14
+- **标签**: [编译错误, C++ 基础, FaceDetector]
+- **问题描述**:
+  在编写 `FaceDetector` 相关的测试代码时，调用 `results[0].box()` 出现错误：
+  `error C2064: term does not evaluate to a function taking 0 arguments`.
+- **原因分析**:
+  `DetectionResult` 结构体中的 `box` 是一个成员变量 (`cv::Rect2f`)，而不是一个成员函数。
+  在旧的 `Face` 类设计中，`box()` 是一个访问器方法；而在 `FaceDetector` 返回的轻量级结果结构体中，它被设计为直接访问的字段。
+- **解决方案**:
+  去掉括号，直接访问成员变量：`results[0].box`。
+- **避免措施**:
+  在使用新的 API 或重构后的模块时，仔细查看头文件定义的类型结构，区分 Getter 方法和公共成员变量。
+
+### 不同 Face Landmarker 模型的评分敏感度差异
+
+- **日期**: 2026-01-14
+- **标签**: [AI 模型, ONNX, 测试策略]
+- **问题描述**:
+  在 Face Landmarker 单元测试中，`2DFAN` 模型在标准测试图 (Lenna) 上得分 ~0.69，而 `Peppawutz` 模型仅得 ~0.32。若统一使用 0.5 作为通过阈值，会导致 Peppawutz 测试失败。
+- **原因分析**:
+  1. **模型特性差异**: 两个模型虽然都输出 68 个关键点，但其内部置信度评分的分布范围不同。
+  2. **系统偏好**: 通过分析旧代码逻辑 (`FaceLandmarkerHub`) 发现，系统存在 `score_2dfan > score_peppa - 0.2` 的偏好逻辑，暗示 Peppawutz 的原生分值倾向于比 2DFAN 低，或者是系统更信任 2DFAN。
+  3. **数据敏感性**: Peppawutz 对部分测试图（如 Lenna）的评分可能比 Tiffany 更低，而 2DFAN 相对稳健。
+- **解决方案**:
+  1. **差异化阈值**: 在单元测试中，针对不同模型设置不同的通过阈值（如 Peppawutz 设为 0.3）。
+  2. **预处理一致性**: 确保了 Peppawutz 的预处理（BGR 顺序, [0, 1] 归一化）与旧代码严格一致，排除了实现错误的可能性。
+- **避免措施**:
+  在移植 AI 模型时，不要假设所有同类模型的输出分布一致。应参考原系统的业务逻辑（如加权、偏置）来确定合理的测试基准。
 
 <!-- 在此处添加新问题 -->

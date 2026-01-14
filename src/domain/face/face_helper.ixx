@@ -78,4 +78,6 @@ std::vector<float> interp(const std::vector<float>& x, const std::vector<float>&
 
 float get_iou(const cv::Rect2f& box1, const cv::Rect2f& box2);
 
+cv::Mat conditional_optimize_contrast(const cv::Mat& vision_frame);
+
 } // namespace domain::face::helper

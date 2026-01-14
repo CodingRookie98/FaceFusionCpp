@@ -27,8 +27,16 @@ public:
         InferenceSession::load_model(model_path, options);
         auto input_dims = get_input_node_dims();
         if (!input_dims.empty() && input_dims[0].size() >= 4) {
-            m_inputHeight = static_cast<int>(input_dims[0][2]);
-            m_inputWidth = static_cast<int>(input_dims[0][3]);
+            int h = static_cast<int>(input_dims[0][2]);
+            int w = static_cast<int>(input_dims[0][3]);
+
+            // 处理动态维度或无效维度，默认为 640
+            if (h > 0) m_inputHeight = h;
+            else m_inputHeight = 640;
+
+            if (w > 0) m_inputWidth = w;
+            else m_inputWidth = 640;
+
             m_faceDetectorSize = cv::Size(m_inputWidth, m_inputHeight);
         }
     }

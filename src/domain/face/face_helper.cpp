@@ -35,6 +35,25 @@ float get_iou(const cv::Rect2f& box1, const cv::Rect2f& box2) {
     return over_area / union_area;
 }
 
+cv::Mat conditional_optimize_contrast(const cv::Mat& vision_frame) {
+    cv::Mat result;
+    cv::cvtColor(vision_frame, result, cv::COLOR_BGR2Lab);
+
+    cv::Scalar mean = cv::mean(result.reshape(1, 0));
+    if (mean[0] < 30.0) {
+        std::vector<cv::Mat> lab_channels;
+        cv::split(result, lab_channels);
+
+        cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(2.0, cv::Size(8, 8));
+        clahe->apply(lab_channels[0], lab_channels[0]);
+
+        cv::merge(lab_channels, result);
+    }
+
+    cv::cvtColor(result, result, cv::COLOR_Lab2BGR);
+    return result;
+}
+
 std::vector<int> apply_nms(const std::vector<cv::Rect2f>& boxes, std::vector<float> confidences,
                            const float nms_thresh) {
     std::vector<size_t> indices(confidences.size());
