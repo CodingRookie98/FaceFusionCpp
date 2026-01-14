@@ -61,12 +61,21 @@
   2. **驱动级冲突**: TensorRT 插件在 DLL 卸载时的内存释放机制有时与 Windows 的 `LdrUnloadDll` 存在时序冲突。
   3. **单元测试环境**: 在单元测试中，由于测试框架的并行执行或非预期析构顺序，可能导致推理 Session 还没完全清理，主环境就已经销毁。此外，复杂的资源依赖图可能导致在程序退出阶段触发非法地址访问。
 - **解决方案**:
-  1. **显式析构顺序**: 在 `InferenceSession` 的 PIMPL 实现中显式定义析构函数，按照“先清空名称指针 -> 后释放 Session -> 最后重置 Provider Options”的顺序执行。
-  2. **资源隔离**: 确保 `Ort::Env` 作为 `shared_ptr` 被持有，且在 Session 销毁前保持有效。
+  1. **Leaked Static Ort::Env (核心修复)**: 在 `InferenceSession` 内部使用“故意泄漏”的静态指针来持有 `Ort::Env`。
+     ```cpp
+     static const Ort::Env& get_static_env() {
+         static Ort::Env* env = new Ort::Env(ORT_LOGGING_LEVEL_WARNING, "FaceFusionCpp");
+         return *env;
+     }
+     ```
+     这确保了 ONNX 环境在进程整个生命周期内始终有效，直到操作系统回收进程资源，从而避开了由于 C++ 静态对象析构顺序不确定导致的崩溃。
+  2. **显式析构顺序**: 在 `InferenceSession` 的 PIMPL 实现中显式定义析构函数，按照“先清空名称指针 -> 后释放 Session -> 最后重置 Provider Options”的顺序执行。
   3. **死锁防护**: 内部使用 `std::recursive_mutex` 替换普通 `mutex`，防止在复杂的初始化或多阶段 `load_model` 过程中发生递归加锁死锁。
-  4. **环境清理**: 运行测试前清理 `build` 目录下可能存在的旧 `assets` 目录副本，避免测试框架定位到错误的资源路径。
+  4. **环境变量控制**: 引入 `FACEFUSION_PROVIDER=cpu` 强制切换逻辑，用于 CI/CD 等无 GPU 或驱动不稳定的环境。
 - **避免措施**:
   - 推理引擎应提供显式的 `reset()` 或销毁接口，而不是完全依赖自动析构。
-  - 在 CI 环境中，若 GPU 驱动无法稳定清理，可考虑强制切换至 CPU 提供者以确保测试流程通过。
+  - 对于底层依赖复杂的第三方库（如 GPU 驱动），使用静态泄漏指针（Static Leaked Pointer）是一种常见的规避析构顺序问题的工业级方案。
+  - CI/CD 环境应优先使用稳定但较慢的 CPU 路径。
+
 
 <!-- 在此处添加新问题 -->

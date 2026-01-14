@@ -4,6 +4,7 @@
  */
 
 module;
+#include <algorithm>
 #include <unordered_set>
 #include <filesystem>
 #include <mutex>
@@ -12,6 +13,7 @@ module;
 #include <memory>
 #include <string>
 #include <vector>
+#include <cctype>
 
 module foundation.ai.inference_session;
 import foundation.infrastructure.logger;
@@ -20,8 +22,25 @@ namespace foundation::ai::inference_session {
 
 using namespace foundation::infrastructure;
 
+/**
+ * @brief Static ONNX Runtime Environment to ensure it outlives all sessions.
+ * Using a leaked pointer to avoid destruction order issues during process exit,
+ * which is a known cause of SEH exceptions with TensorRT/CUDA providers.
+ */
+static const Ort::Env& get_static_env() {
+    static auto* const kEnv = new Ort::Env(ORT_LOGGING_LEVEL_WARNING, "FaceFusionCpp");
+    return *kEnv;
+}
+
 // Get available providers from ONNX Runtime and return best ones
 std::unordered_set<ExecutionProvider> get_best_available_providers() {
+    // Check for environment variable to force CPU (useful for CI or troubleshooting)
+    // Using a simple check to avoid discovery-time crashes seen previously
+    if (const char* env_p = std::getenv("FACEFUSION_PROVIDER")) {
+        const std::string kProvider = env_p;
+        if (kProvider == "cpu" || kProvider == "CPU") { return {ExecutionProvider::CPU}; }
+    }
+
     std::unordered_set<ExecutionProvider> result;
     auto available = Ort::GetAvailableProviders();
     std::unordered_set<std::string> available_set(available.begin(), available.end());
@@ -53,7 +72,7 @@ struct InferenceSession::Impl {
     std::unique_ptr<Ort::MemoryInfo> m_memory_info;
 
     std::recursive_mutex m_mutex;
-    std::shared_ptr<Ort::Env> m_ort_env;
+    // m_ort_env removed: using static global env via get_static_env()
     std::unordered_set<std::string> m_available_providers;
     Options m_options;
     std::vector<Ort::AllocatedStringPtr> m_input_names_ptrs;
@@ -88,10 +107,7 @@ struct InferenceSession::Impl {
 
     void ensure_resources() {
         if (!m_logger) { m_logger = logger::Logger::get_instance(); }
-        if (!m_ort_env) {
-            m_ort_env =
-                std::make_shared<Ort::Env>(Ort::Env(ORT_LOGGING_LEVEL_WARNING, "FaceFusionCpp"));
-        }
+        // Env is now static, no need to ensure specific instance
     }
 
     void reset() {
@@ -225,11 +241,11 @@ struct InferenceSession::Impl {
         try {
 #if defined(WIN32) || defined(_WIN32)
             auto wide_model_path = std::filesystem::path(model_path).wstring();
-            m_ort_session = std::make_unique<Ort::Session>(*m_ort_env, wide_model_path.c_str(),
-                                                           m_session_options);
+            m_ort_session = std::make_unique<Ort::Session>(
+                get_static_env(), wide_model_path.c_str(), m_session_options);
 #else
-            m_ort_session =
-                std::make_unique<Ort::Session>(*m_ort_env, model_path.c_str(), m_session_options);
+            m_ort_session = std::make_unique<Ort::Session>(get_static_env(), model_path.c_str(),
+                                                           m_session_options);
 #endif
         } catch (const std::exception& e) {
             m_logger->error(std::format("CreateSession: {}", e.what()));
