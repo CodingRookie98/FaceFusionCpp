@@ -9,7 +9,8 @@ trigger: always_on
 ## C++ 20 开发规范
 - **标准与模块**：强制 C++20。使用模块化（`.ixx`/`.cppm` 接口，`.cpp` 实现）替代传统头文件。
 - **构建工具** (`python build.py`)：
-  - `configure` | `build` | `test` (通过 `--action` 指定)
+  - 核心指令：`configure` | `build` | `test` | `install` | `package`
+  - 详细用法参见：`@docs/build.md`
 - **质量控制**：
   - 格式化：`python scripts/format_code.py`
   - 静态分析：`python scripts/run_clang_tidy.py` (Windows + MSVC 环境下跳过)
