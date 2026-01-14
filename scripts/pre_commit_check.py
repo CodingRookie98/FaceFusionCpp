@@ -9,6 +9,8 @@ from pathlib import Path
 script_dir = Path(__file__).parent.resolve()
 sys.path.append(str(script_dir.parent))
 
+from scripts.utils.msvc import is_msvc_build
+
 
 def log(message, level="info"):
     colors = {
@@ -81,17 +83,7 @@ def main():
                     break
 
         if compile_commands_path:
-            try:
-                with open(compile_commands_path, "r", encoding="utf-8") as f:
-                    content = f.read(4096)
-                    if (
-                        "cl.exe" in content
-                        or "CL.exe" in content
-                        or "CL.EXE" in content
-                    ):
-                        is_msvc = True
-            except:
-                pass
+            is_msvc = is_msvc_build(compile_commands_path)
 
     if not is_msvc:
         tidy_extensions.update({".ixx", ".cppm"})

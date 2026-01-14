@@ -81,3 +81,22 @@ def get_msvc_env():
             new_env[key] = value
 
     return new_env
+
+
+def is_msvc_build(compile_commands_path):
+    """
+    Detects if the build used MSVC based on compile_commands.json content.
+    """
+    if not compile_commands_path or not os.path.exists(compile_commands_path):
+        return False
+
+    try:
+        with open(compile_commands_path, "r", encoding="utf-8") as f:
+            # Read first 4KB, usually enough to see the compiler command
+            content = f.read(4096)
+            if "cl.exe" in content or "CL.exe" in content or "CL.EXE" in content:
+                return True
+    except Exception:
+        pass
+
+    return False

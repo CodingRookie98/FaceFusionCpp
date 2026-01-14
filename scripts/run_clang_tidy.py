@@ -10,6 +10,8 @@ import math
 script_dir = Path(__file__).parent.resolve()
 sys.path.append(str(script_dir.parent))
 
+from scripts.utils.msvc import is_msvc_build
+
 
 def log(message, level="info"):
     colors = {
@@ -67,16 +69,7 @@ def main():
     extensions = {".cpp", ".cc", ".c"}
 
     # Check if using MSVC - if so, skip module files (.ixx, .cppm) as clang-tidy often struggles with MSVC modules
-    is_msvc = False
-    try:
-        # Simple heuristic: check if cl.exe is used in the compile commands
-        with open(compile_commands_path, "r", encoding="utf-8") as f:
-            # Read enough to likely hit the first command
-            content = f.read(4096)
-            if "cl.exe" in content or "CL.exe" in content or "CL.EXE" in content:
-                is_msvc = True
-    except Exception:
-        pass  # default false
+    is_msvc = is_msvc_build(compile_commands_path)
 
     if not is_msvc:
         extensions.update({".ixx", ".cppm"})
