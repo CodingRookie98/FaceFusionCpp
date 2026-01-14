@@ -40,7 +40,7 @@ python build.py --clean --action both
 | 参数 | 说明 | 可选值 | 默认值 |
 | :--- | :--- | :--- | :--- |
 | `--config` | 构建配置类型 | `Debug`, `Release` | `Debug` |
-| `--action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (构建并运行测试)<br>`install` (安装)<br>`package` (打包)<br>`both` (配置+构建) | `both` |
+| `--action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (先执行构建，成功后运行测试)<br>`install` (安装)<br>`package` (打包)<br>`both` (配置+构建) | `both` |
 | `--target` | 构建目标 | `all` 或具体目标名 | `all` |
 | `--preset` | 手动指定 CMake Preset | CMakePresets.json 中定义的名称 | 自动检测 |
 | `--clean` | 清理构建目录 | `[flag]` | `False` |

@@ -108,6 +108,8 @@ def main():
     actions = []
     if args.action == "both":
         actions = ["configure", "build"]
+    elif args.action == "test":
+        actions = ["build", "test"]
     else:
         actions = [args.action]
 

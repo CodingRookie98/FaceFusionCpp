@@ -7,12 +7,13 @@ add_facefusion_test(
         face_store_test.cpp
         face_landmarker_tests.cpp
         face_recognizer_tests.cpp
+        face_masker_tests.cpp
 
     LINK_LIBRARIES
         domain_face
         domain_face_detector
         domain_face_recognizer
-
+        domain_face_masker
 )
 
 add_subdirectory(detector)
