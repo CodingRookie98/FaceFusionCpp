@@ -127,7 +127,16 @@ def main():
 
     # 3. Clang-Tidy (Simplified)
     if clang_tidy and files_to_tidy:
-        if build_path_used:
+        if is_msvc:
+            log(
+                "Detected MSVC. Disabling clang-tidy hook check due to C++20 Modules compatibility issues.",
+                "warning",
+            )
+            log(
+                "Please run 'python scripts/run_clang_tidy.py' manually if needed.",
+                "info",
+            )
+        elif build_path_used:
             log(
                 f"Running static analysis using build directory: {build_path_used}",
                 "info",
