@@ -13,7 +13,9 @@ FairFace::FairFace() = default;
 
 void FairFace::load_model(const std::string& model_path,
                           const foundation::ai::inference_session::Options& options) {
-    InferenceSession::load_model(model_path, options);
+    m_session =
+        foundation::ai::inference_session::InferenceSessionRegistry::get_instance().get_session(
+            model_path, options);
     auto input_dims = get_input_node_dims();
     m_inputWidth = static_cast<int>(input_dims[0][2]);
     m_inputHeight = static_cast<int>(input_dims[0][3]);

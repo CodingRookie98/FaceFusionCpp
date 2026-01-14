@@ -2,7 +2,9 @@ module;
 #include <memory>
 #include <array>
 #include <vector>
+#include <string>
 #include <opencv2/core/types.hpp>
+#include <onnxruntime_cxx_api.h>
 
 export module domain.face.classifier:fair_face;
 import :api;
@@ -10,8 +12,7 @@ import domain.face.helper;
 import foundation.ai.inference_session;
 
 export namespace domain::face::classifier {
-class FairFace final : public foundation::ai::inference_session::InferenceSession,
-                       public IFaceClassifier {
+class FairFace final : public IFaceClassifier {
 public:
     FairFace();
     ~FairFace() override = default;
@@ -22,7 +23,25 @@ public:
     ClassificationResult classify(const cv::Mat& image,
                                   const domain::face::types::Landmarks& face_landmark_5) override;
 
+    [[nodiscard]] bool is_model_loaded() const { return m_session && m_session->is_model_loaded(); }
+
+    [[nodiscard]] std::vector<std::vector<int64_t>> get_input_node_dims() const {
+        if (!m_session) return {};
+        return m_session->get_input_node_dims();
+    }
+
+    [[nodiscard]] std::vector<std::vector<int64_t>> get_output_node_dims() const {
+        if (!m_session) return {};
+        return m_session->get_output_node_dims();
+    }
+
+    std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors) {
+        if (!m_session) return {};
+        return m_session->run(input_tensors);
+    }
+
 private:
+    std::shared_ptr<foundation::ai::inference_session::InferenceSession> m_session;
     domain::face::helper::WarpTemplateType m_WarpTemplateType =
         domain::face::helper::WarpTemplateType::Arcface_112_v2;
     cv::Size m_size{224, 224};

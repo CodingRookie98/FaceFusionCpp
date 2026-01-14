@@ -13,7 +13,7 @@ import foundation.ai.inference_session;
 namespace domain::face::landmarker {
 
 struct Peppawutz::Impl {
-    foundation::ai::inference_session::InferenceSession session;
+    std::shared_ptr<foundation::ai::inference_session::InferenceSession> session;
     int input_height{0};
     int input_width{0};
     cv::Size input_size{256, 256};
@@ -60,8 +60,10 @@ Peppawutz::~Peppawutz() = default;
 
 void Peppawutz::load_model(const std::string& model_path,
                            const foundation::ai::inference_session::Options& options) {
-    p_impl->session.load_model(model_path, options);
-    auto input_dims = p_impl->session.get_input_node_dims();
+    p_impl->session =
+        foundation::ai::inference_session::InferenceSessionRegistry::get_instance().get_session(
+            model_path, options);
+    auto input_dims = p_impl->session->get_input_node_dims();
     if (!input_dims.empty() && input_dims[0].size() >= 4) {
         p_impl->input_height = static_cast<int>(input_dims[0][2]);
         p_impl->input_width = static_cast<int>(input_dims[0][3]);
@@ -80,7 +82,7 @@ void Peppawutz::load_model(const std::string& model_path,
 }
 
 LandmarkerResult Peppawutz::detect(const cv::Mat& image, const cv::Rect2f& bbox) {
-    if (!p_impl->session.is_model_loaded()) { return {}; }
+    if (!p_impl->session || !p_impl->session->is_model_loaded()) { return {}; }
 
     auto [input_data, inv_affine_matrix] = p_impl->pre_process(image, bbox);
     const std::vector<int64_t> input_shape{1, 3, p_impl->input_height, p_impl->input_width};
@@ -92,7 +94,7 @@ LandmarkerResult Peppawutz::detect(const cv::Mat& image, const cv::Rect2f& bbox)
     std::vector<Ort::Value> inputs;
     inputs.push_back(std::move(input_tensor));
 
-    auto outputs = p_impl->session.run(inputs);
+    auto outputs = p_impl->session->run(inputs);
     if (outputs.empty()) { return {}; }
 
     const float* landmark_data = outputs[0].GetTensorMutableData<float>();

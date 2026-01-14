@@ -21,7 +21,7 @@ public:
     ~Yolo() override = default;
 
     void load_model(const std::string& model_path, const InferenceOptions& options) override {
-        InferenceSession::load_model(model_path, options);
+        FaceDetectorImplBase::load_model(model_path, options);
         auto input_dims = get_input_node_dims();
         if (!input_dims.empty() && input_dims[0].size() >= 4) {
             // NCHW: [1, 3, 640, 640]
