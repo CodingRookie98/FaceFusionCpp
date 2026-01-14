@@ -1,33 +1,36 @@
-# 使用 `build.ps1` 脚本配置和构建
+# 使用 `build.py` 脚本配置和构建
 
-本项目提供了 `build.ps1` 脚本，旨在简化配置、构建、测试和打包的流程。该脚本会自动检测系统环境（如最大处理器核心数），并支持 Debug 和 Release 两种配置。
+本项目提供了 `build.py` 脚本，旨在简化配置、构建、测试和打包的流程。该脚本会自动检测系统环境，并支持 Windows、Linux 和 macOS（实验性）。
 
 ## 1. 快速开始
 
-在 PowerShell 中执行以下命令即可开始构建：
+在终端中执行以下命令即可开始构建：
 
-```powershell
+```bash
 # 默认行为：配置并构建 Debug 版本
-.\build.ps1
+python build.py
 ```
 
 ## 2. 常用命令
 
-```powershell
+```bash
 # 仅构建 Release 版本
-.\build.ps1 -Configuration Release -Action build
+python build.py --config Release --action build
 
 # 运行测试
-.\build.ps1 -Configuration Debug -Action test
+python build.py --config Debug --action test
 
 # 安装项目
-.\build.ps1 -Configuration Release -Action install
+python build.py --config Release --action install
 
 # 打包项目
-.\build.ps1 -Configuration Release -Action package
+python build.py --config Release --action package
 
-# 仅构建主程序 (旧默认行为)
-.\build.ps1 -Target FaceFusionCpp
+# 仅构建主程序
+python build.py --target FaceFusionCpp
+
+# 清理构建目录并重新构建
+python build.py --clean --action both
 ```
 
 ## 3. 参数说明
@@ -36,37 +39,33 @@
 
 | 参数 | 说明 | 可选值 | 默认值 |
 | :--- | :--- | :--- | :--- |
-| `-Configuration` | 构建配置类型 | `Debug`, `Release` | `Debug` |
-| `-Action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (构建并运行测试)<br>`install` (安装)<br>`package` (打包)<br>`both` (配置+构建) | `both` |
-| `-Target` | 构建目标 | `all` 或具体目标名 | `all` |
-| `-EnableCoverage` | 启用代码覆盖率 | `[switch]` | `False` |
-| `-EnableStaticAnalysis` | 启用静态分析 | `[switch]` | `False` |
-| `-SkipBuild` | 跳过自动构建 (仅对 test 有效) | `[switch]` | `False` |
+| `--config` | 构建配置类型 | `Debug`, `Release` | `Debug` |
+| `--action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (构建并运行测试)<br>`install` (安装)<br>`package` (打包)<br>`both` (配置+构建) | `both` |
+| `--target` | 构建目标 | `all` 或具体目标名 | `all` |
+| `--preset` | 手动指定 CMake Preset | CMakePresets.json 中定义的名称 | 自动检测 |
+| `--clean` | 清理构建目录 | `[flag]` | `False` |
 
 > **注意**: 脚本会自动利用系统所有可用核心进行并行构建，无需手动指定 `-j` 参数。
 
 ## 4. 完整工作流示例
 
 ### 开发流程
-```powershell
+```bash
 # 1. 首次构建 Debug 版本
-.\build.ps1
+python build.py
 
 # 2. 运行测试并查看结果
-.\build.ps1 -Action test
-
-# 3. (可选) 生成覆盖率报告
-.\build.ps1 -Action test -EnableCoverage
+python build.py --action test
 ```
 
 ### 发布流程
-```powershell
+```bash
 # 1. 一键构建并测试 Release 版本
-.\build.ps1 -Configuration Release -Action both
-.\build.ps1 -Configuration Release -Action test
+python build.py --config Release --action both
+python build.py --config Release --action test
 
 # 2. 生成安装包
-.\build.ps1 -Configuration Release -Action package
+python build.py --config Release --action package
 ```
 
 ## 5. 代码风格与静态检查
@@ -75,43 +74,44 @@
 
 ### 代码格式化 (Clang-Format)
 
-使用 `scripts/format_code.ps1` 脚本自动格式化代码。该脚本会根据 `.clang-format` 配置文件递归扫描 `src`, `facefusionCpp`, `tests` 目录下的 C++ 源文件。
+使用 `scripts/format_code.py` 脚本自动格式化代码。该脚本会根据 `.clang-format` 配置文件递归扫描 `src`, `facefusionCpp`, `tests` 目录下的 C++ 源文件。
 
-```powershell
-.\scripts\format_code.ps1
+```bash
+python scripts/format_code.py
 ```
 
 ### 静态分析 (Clang-Tidy)
 
-使用 `scripts/run_clang_tidy.ps1` 脚本运行静态分析。该脚本依赖于 CMake 配置生成的 `compile_commands.json`。
+使用 `scripts/run_clang_tidy.py` 脚本运行静态分析。该脚本依赖于 CMake 配置生成的 `compile_commands.json`。
 
-```powershell
+```bash
 # 1. 确保已配置项目 (生成 compile_commands.json)
-.\build.ps1 -Action configure
+python build.py --action configure
 
 # 2. 运行 Clang-Tidy 检查
-.\scripts\run_clang_tidy.ps1
+python scripts/run_clang_tidy.py
 ```
 
-### 构建时静态分析
+> **MSVC 用户注意**: 当检测到使用 MSVC 编译器时，静态分析脚本会自动跳过 `.ixx` 和 `.cppm` (C++ 模块) 文件，因为 Clang-Tidy 对 MSVC 模块的支持尚不完善。
 
-可以在 CMake 构建过程中启用 Clang-Tidy 检查。
+### Git Pre-commit Hook
 
-```powershell
-# 启用 Clang-Tidy 配置
-cmake -DENABLE_CLANG_TIDY=ON --preset msvc-x64-debug
+本项目提供了 pre-commit hook，可以在提交前自动格式化代码并运行静态检查。
 
-# 或者直接修改 CMakeLists.txt 中的 option 默认值
+```bash
+# 安装 hook
+python scripts/install_hooks.py
 ```
 
 ## 6. 输出目录
 
 构建产物将位于 `build` 目录下：
 
-- **Debug 构建**: `build/msvc-x64-debug/`
-- **Release 构建**: `build/msvc-x64-release/`
-- **安装目录**: 对应构建目录下的 install 文件夹（如未指定其他前缀）
-- **打包文件**: `build/packages/` (通常) 或构建根目录
+- **Windows Debug**: `build/msvc-x64-debug/`
+- **Linux Debug**: `build/linux-debug/`
+- **Release 构建**: `build/*-release/`
+- **安装目录**: 对应构建目录下的 install 文件夹
+- **打包文件**: 对应构建目录下或 `build/packages/`
 
 ---
 
@@ -121,14 +121,14 @@ cmake -DENABLE_CLANG_TIDY=ON --preset msvc-x64-debug
 
 ## 1. 环境准备
 
-在开始之前，请确保已满足以下条件：
-
 - **CMake**: 3.25 或更高版本。
-- **编译器**: Visual Studio 2022 (MSVC)。
-- **构建系统**: Ninja (推荐) 或 Visual Studio 生成器。
-- **环境设置**: 执行 CMake 命令前，必须处于 MSVC 开发环境中。
-    - 方法一：使用 `Visual Studio 2022 Developer PowerShell`。
-    - 方法二：运行项目提供的脚本：`.\scripts\set_msvc_compiler_env.ps1`。
+- **编译器**: 
+  - Windows: Visual Studio 2022 (MSVC)。
+  - Linux: GCC 或 Clang。
+- **构建系统**: Ninja (推荐)。
+- **Windows 环境设置**:
+  - 如果使用 `python build.py`，脚本会自动加载 MSVC 环境。
+  - 如果手动运行 `cmake`，请在 `Visual Studio 2022 Developer PowerShell` 中运行。
 
 ## 2. 常用操作
 
@@ -136,70 +136,35 @@ cmake -DENABLE_CLANG_TIDY=ON --preset msvc-x64-debug
 
 ### 配置 (Configure)
 
-```powershell
+```bash
 # 查看所有可用预设
 cmake --list-presets
 
-# 配置 Debug 版本
+# 配置 Debug 版本 (Windows)
 cmake --preset msvc-x64-debug
 
-# 配置 Release 版本
-cmake --preset msvc-x64-release
+# 配置 Debug 版本 (Linux)
+cmake --preset linux-debug
 ```
 
 ### 构建 (Build)
 
-```powershell
-# 构建 Debug 版本 (自动使用多线程)
+```bash
+# 构建 Debug 版本
 cmake --build --preset msvc-x64-debug
-
-# 构建 Release 版本 (自动使用多线程)
-cmake --build --preset msvc-x64-release
 ```
-> **提示**: 这里的 `--preset` 已经定义了构建参数。如果需要手动指定并发数，可以在命令末尾添加 `-j <核心数>`，例如 `cmake --build --preset msvc-x64-debug -- -j 8` (取决于生成器) 或直接 `cmake --build --preset msvc-x64-debug -j 8` (CMake 3.12+)。
 
 ### 测试 (Test)
 
-```powershell
+```bash
 # 运行 Debug 测试
 ctest --preset msvc-x64-debug
-
-# 运行 Release 测试
-ctest --preset msvc-x64-release
 ```
 
-### 打包 (Package)
+## 3. 常见问题 (FAQ)
 
-```powershell
-# 进入构建目录进行打包
-cd build/msvc-x64-release
-cpack -C Release
-```
+### Q: 提示 `clang-format` 或 `clang-tidy` not found?
+**A**: 请安装 LLVM/Clang 工具链并确保其 bin 目录在系统 PATH 中。
 
-## 3. 工作流 (Workflow)
-
-CMake 3.25+ 引入了工作流预设，允许通过一条命令顺序执行 **配置 -> 构建 -> 测试 -> 打包** (如果配置了打包步骤)。
-
-```powershell
-# 执行完整的 Debug 工作流
-cmake --workflow --preset msvc-x64-debug
-
-# 执行完整的 Release 工作流
-cmake --workflow --preset msvc-x64-release
-```
-
----
-
-## 常见问题 (FAQ)
-
-### Q: 提示 `CMake executable not found`?
-**A**: 请安装 CMake 并确保将其添加到系统 PATH 中。推荐安装位置：`C:\Program Files\CMake\bin\`。
-
-### Q: 提示 `Visual Studio DevShell module not found`?
-**A**: 请确保安装了 Visual Studio 2022 及其 C++桌面开发工作负载。如果安装位置非默认，请修改 `build.ps1` 脚本中的路径。
-
-## 相关文档
-
-- [CMake Documentation](https://cmake.org/documentation/)
-- [CPack Documentation](https://cmake.org/cmake/help/latest/manual/cpack.1.html)
-- [CTest Documentation](https://cmake.org/cmake/help/latest/manual/ctest.1.html)
+### Q: Windows 上手动运行 CMake 找不到编译器?
+**A**: 确保您在 Visual Studio Developer Command Prompt/PowerShell 中运行，或者使用 `python build.py` (它会自动处理环境)。
