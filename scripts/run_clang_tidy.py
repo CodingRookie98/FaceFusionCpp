@@ -64,8 +64,27 @@ def main():
     # 3. Scan files
     # clang-tidy typically runs on implementation files
     dirs_to_scan = ["src"]
-    # Excluding .ixx/.cppm for MSVC as clang-tidy often struggles with MSVC modules commands
     extensions = {".cpp", ".cc", ".c"}
+
+    # Check if using MSVC - if so, skip module files (.ixx, .cppm) as clang-tidy often struggles with MSVC modules
+    is_msvc = False
+    try:
+        # Simple heuristic: check if cl.exe is used in the compile commands
+        with open(compile_commands_path, "r", encoding="utf-8") as f:
+            # Read enough to likely hit the first command
+            content = f.read(4096)
+            if "cl.exe" in content or "CL.exe" in content or "CL.EXE" in content:
+                is_msvc = True
+    except Exception:
+        pass  # default false
+
+    if not is_msvc:
+        extensions.update({".ixx", ".cppm"})
+    else:
+        log(
+            "Detected MSVC compiler usage. Skipping .ixx/.cppm files for static analysis.",
+            "info",
+        )
 
     files_to_check = []
 

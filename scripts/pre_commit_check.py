@@ -63,8 +63,40 @@ def main():
 
     # Filter for C++ files
     format_extensions = {".cpp", ".h", ".hpp", ".ixx", ".cppm", ".c", ".cc"}
-    # Excluding .ixx/.cppm for MSVC as clang-tidy often struggles with MSVC modules commands
     tidy_extensions = {".cpp", ".c", ".cc"}
+
+    # Detect MSVC and optional modules support
+    is_msvc = False
+    compile_commands_path = None
+    build_path_used = None
+
+    # Try to find compile_commands.json to detect MSVC
+    if clang_tidy:
+        build_dir = project_root / "build"
+        if build_dir.exists():
+            for child in build_dir.iterdir():
+                if child.is_dir() and (child / "compile_commands.json").exists():
+                    compile_commands_path = child / "compile_commands.json"
+                    build_path_used = child
+                    break
+
+        if compile_commands_path:
+            try:
+                with open(compile_commands_path, "r", encoding="utf-8") as f:
+                    content = f.read(4096)
+                    if (
+                        "cl.exe" in content
+                        or "CL.exe" in content
+                        or "CL.EXE" in content
+                    ):
+                        is_msvc = True
+            except:
+                pass
+
+    if not is_msvc:
+        tidy_extensions.update({".ixx", ".cppm"})
+    else:
+        log("Detected MSVC. Skipping .ixx/.cppm files for static analysis.", "info")
 
     files_to_format = []
     files_to_tidy = []
@@ -102,20 +134,7 @@ def main():
         sys.exit(1)
 
     # 3. Clang-Tidy (Simplified)
-    # Finding build dir with compile_commands.json
-    # This logic matches run_clang_tidy.py
     if clang_tidy and files_to_tidy:
-        build_dir = project_root / "build"
-        compile_commands_path = None
-        build_path_used = None
-
-        if build_dir.exists():
-            for child in build_dir.iterdir():
-                if child.is_dir() and (child / "compile_commands.json").exists():
-                    compile_commands_path = child / "compile_commands.json"
-                    build_path_used = child
-                    break
-
         if build_path_used:
             log(
                 f"Running static analysis using build directory: {build_path_used}",
