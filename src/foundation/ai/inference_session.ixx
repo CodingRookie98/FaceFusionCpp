@@ -111,6 +111,9 @@ public:
 
     [[nodiscard]] std::vector<std::vector<int64_t>> get_output_node_dims() const;
 
+    [[nodiscard]] std::vector<std::string> get_input_names() const;
+    [[nodiscard]] std::vector<std::string> get_output_names() const;
+
 private:
     struct Impl;
     std::unique_ptr<Impl> m_impl;

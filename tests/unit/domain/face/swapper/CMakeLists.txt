@@ -1,0 +1,13 @@
+add_facefusion_test(
+    domain_face_swapper_tests
+    SOURCES
+        face_swapper_tests.cpp
+    LINK_LIBRARIES
+        domain_face_swapper
+        domain_face_masker
+        domain_face_detector
+        domain_face_recognizer
+        domain_ai
+        foundation_infrastructure
+        ${OpenCV_LIBS}
+)

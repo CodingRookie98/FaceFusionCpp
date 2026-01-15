@@ -328,6 +328,20 @@ std::vector<std::vector<int64_t>> InferenceSession::get_output_node_dims() const
     return m_impl->m_output_node_dims;
 }
 
+std::vector<std::string> InferenceSession::get_input_names() const {
+    std::vector<std::string> names;
+    names.reserve(m_impl->m_input_names.size());
+    for (const char* name : m_impl->m_input_names) { names.emplace_back(name); }
+    return names;
+}
+
+std::vector<std::string> InferenceSession::get_output_names() const {
+    std::vector<std::string> names;
+    names.reserve(m_impl->m_output_names.size());
+    for (const char* name : m_impl->m_output_names) { names.emplace_back(name); }
+    return names;
+}
+
 // InferenceSessionRegistry Implementation
 
 InferenceSessionRegistry& InferenceSessionRegistry::get_instance() {

@@ -13,8 +13,9 @@ module;
 
 export module processor_hub;
 export import :processor_pool;
-export import face_swapper;
+// export import face_swapper;
 export import face_enhancer;
+
 export import expression_restorer;
 import inference_session;
 

@@ -1,5 +1,5 @@
-add_subdirectory(./face_swapper)
 add_subdirectory(./face_enhancer)
+
 add_subdirectory(./expression_restorer)
 add_subdirectory(./frame_enhancer)
 target_sources(${app_facefusioncpp} PRIVATE
