@@ -10,6 +10,7 @@ export module domain.face.recognizer:api;
 
 import domain.face;
 import foundation.ai.inference_session;
+import foundation.ai.inference_session_registry;
 
 namespace domain::face::recognizer {
 

@@ -83,6 +83,8 @@ bool download(const std::string& url, const std::string& output_dir) {
 
     std::string file_name = get_file_name_from_url(url);
     std::filesystem::path output_file_path = output_dir_path / file_name;
+    std::filesystem::path temp_file_path = output_file_path;
+    temp_file_path += ".tmp";
 
     CurlHandle curl;
     CURL* curl_handle = curl.get();
@@ -94,9 +96,9 @@ bool download(const std::string& url, const std::string& output_dir) {
     curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT, 30L);
     curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 300L);
 
-    std::ofstream output_file(output_file_path.string(), std::ios::binary);
+    std::ofstream output_file(temp_file_path.string(), std::ios::binary);
     if (!output_file.is_open()) {
-        throw std::runtime_error("Failed to open output file: " + output_file_path.string());
+        throw std::runtime_error("Failed to open output file: " + temp_file_path.string());
     }
 
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_callback);
@@ -106,17 +108,19 @@ bool download(const std::string& url, const std::string& output_dir) {
     output_file.close();
 
     if (res != CURLE_OK) {
-        std::filesystem::remove(output_file_path);
+        std::filesystem::remove(temp_file_path);
         throw std::runtime_error("Failed to download file: "
                                  + std::string(curl_easy_strerror(res)));
     }
 
     long http_code = 0;
     curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
-    if (http_code != 200) {
-        std::filesystem::remove(output_file_path);
+    if (http_code != 0 && http_code != 200) {
+        std::filesystem::remove(temp_file_path);
         throw std::runtime_error("HTTP error: " + std::to_string(http_code));
     }
+
+    std::filesystem::rename(temp_file_path, output_file_path);
 
     return true;
 }

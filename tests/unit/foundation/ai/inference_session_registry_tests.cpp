@@ -3,6 +3,7 @@
 #include <string>
 
 import foundation.ai.inference_session;
+import foundation.ai.inference_session_registry;
 
 using namespace foundation::ai::inference_session;
 

@@ -9,6 +9,7 @@ module domain.face.landmarker;
 import :impl;
 import domain.face.helper;
 import foundation.ai.inference_session;
+import foundation.ai.inference_session_registry;
 
 namespace domain::face::landmarker {
 
