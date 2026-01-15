@@ -6,8 +6,10 @@ target_sources(foundation_ai
         BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
         FILES
         inference_session.ixx
+        inference_session_registry.ixx
         PRIVATE
         inference_session.cpp
+        inference_session_registry.cpp
 )
 
 target_link_libraries(foundation_ai

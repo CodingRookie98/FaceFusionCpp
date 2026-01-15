@@ -9,6 +9,7 @@ export module domain.face.swapper:impl_base;
 
 import :api;
 import foundation.ai.inference_session;
+import foundation.ai.inference_session_registry;
 
 export namespace domain::face::swapper {
 

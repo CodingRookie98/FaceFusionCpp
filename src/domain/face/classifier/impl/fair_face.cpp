@@ -6,6 +6,7 @@ module domain.face.classifier;
 import :fair_face;
 import domain.face;
 import domain.face.helper;
+import foundation.ai.inference_session_registry;
 
 namespace domain::face::classifier {
 
