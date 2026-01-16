@@ -15,7 +15,7 @@ module;
 
 export module foundation.media.vision;
 
-export namespace foundation::media::vision {
+namespace foundation::media::vision {
 export cv::Mat read_static_image(const std::string& image_path);
 
 export std::vector<cv::Mat> read_static_images(const std::unordered_set<std::string>& image_paths,
