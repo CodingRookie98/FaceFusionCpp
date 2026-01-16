@@ -19,17 +19,17 @@ module;
 
 #include <opencv2/opencv.hpp>
 
-module foundation.media.ffmpeg;
-import foundation.infrastructure.logger;
-import foundation.infrastructure.file_system;
-import foundation.infrastructure.process;
-import foundation.media.vision;
-
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 }
+
+module foundation.media.ffmpeg;
+import foundation.infrastructure.logger;
+import foundation.infrastructure.file_system;
+import foundation.infrastructure.process;
+import foundation.media.vision;
 
 namespace foundation::media::ffmpeg {
 
