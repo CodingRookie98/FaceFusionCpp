@@ -29,6 +29,11 @@ function(add_facefusion_test TEST_NAME)
         target_link_libraries(${TEST_NAME} PRIVATE ${ARG_LINK_LIBRARIES})
     endif()
 
+    # 自动添加资源复制依赖 (如果资源机制已初始化)
+    if(COMMAND setup_resource_copying)
+        setup_resource_copying(${TEST_NAME})
+    endif()
+
     # 启用测试发现并设置属性
     message(STATUS "Setting test ${TEST_NAME} working directory to: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
     gtest_discover_tests(${TEST_NAME}

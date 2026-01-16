@@ -28,8 +28,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
-#set(CMAKE_EXPERIMENTAL_CXX_MODULE_CMAKE_API "3.31")
-#set(CMAKE_EXPERIMENTAL_CXX_MODULE_DYNDEP ON)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_compile_options(
@@ -63,6 +61,7 @@ else()
 endif()
 
 include(cmake/modules_lib.cmake)
+include(cmake/resources.cmake)
 
 add_subdirectory(src)
 
@@ -141,13 +140,7 @@ target_link_libraries(${app_facefusioncpp} PRIVATE yaml-cpp::yaml-cpp)
 target_link_libraries(${app_facefusioncpp} PRIVATE foundation_ai)
 target_link_libraries(${app_facefusioncpp} PRIVATE domain_ai)
 
-add_custom_target(copy_resource_files
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/assets"
-        "$<TARGET_FILE_DIR:${app_facefusioncpp}>/assets"
-        COMMENT "Copying assets directory to runtime output directory"
-)
-add_dependencies(${app_facefusioncpp} copy_resource_files)
+setup_resource_copying(${app_facefusioncpp})
 
 set(X_VCPKG_APPLOCAL_DEPS_INSTALL TRUE CACHE BOOL "Automatically COPY dependencies into the install target directory for executables.")
 set(X_VCPKG_APPLOCAL_DEPS_SERIALIZED ON) # 控制VCPKG的依赖项是否被序列化处理
