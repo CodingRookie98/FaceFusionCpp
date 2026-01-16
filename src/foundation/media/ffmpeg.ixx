@@ -13,10 +13,10 @@ module;
 
 export module foundation.media.ffmpeg;
 
-export namespace foundation::media::ffmpeg {
+namespace foundation::media::ffmpeg {
 enum Audio_Codec { Codec_AAC, Codec_MP3, Codec_OPUS, Codec_VORBIS, Codec_UNKNOWN };
 
-class VideoPrams {
+export class VideoPrams {
 public:
     // Initialize the `frameRate`, `width`, and `height` member variables.
     explicit VideoPrams(const std::string& videoPath);
