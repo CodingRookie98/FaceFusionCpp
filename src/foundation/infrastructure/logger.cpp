@@ -8,6 +8,7 @@ module;
 #include <mutex>
 #include <vector>
 #include <iostream>
+#include <algorithm>
 
 module foundation.infrastructure.logger;
 
