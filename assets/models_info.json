@@ -109,19 +109,19 @@
       "path": "./assets/models/fairface.onnx"
     },
     {
-      "name": "feature_extractor",
+      "name": "live_portrait_feature_extractor",
       "type": "expression_restorer",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/live_portrait_feature_extractor.onnx",
       "path": "./assets/models/live_portrait_feature_extractor.onnx"
     },
     {
-      "name": "motion_extractor",
+      "name": "live_portrait_motion_extractor",
       "type": "expression_restorer",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/live_portrait_motion_extractor.onnx",
       "path": "./assets/models/live_portrait_motion_extractor.onnx"
     },
     {
-      "name": "generator",
+      "name": "live_portrait_generator",
       "type": "expression_restorer",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/live_portrait_generator.onnx",
       "path": "./assets/models/live_portrait_generator.onnx"
