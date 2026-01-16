@@ -19,6 +19,5 @@ add_facefusion_test(
 add_subdirectory(detector)
 add_subdirectory(swapper)
 add_subdirectory(classifier)
-
 add_subdirectory(analyser)
-
+add_subdirectory(enhancer)

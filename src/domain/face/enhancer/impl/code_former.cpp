@@ -55,7 +55,7 @@ cv::Mat CodeFormer::enhance_face(const EnhanceInput& input) {
     }
 
     for (auto& cropped_frame : cropped_target_frames) {
-        cv::Mat mask = cv::Mat::ones(m_size, CV_8UC1) * 255;
+        cv::Mat mask = cv::Mat::ones(m_size, CV_32FC1);
         best_masks.push_back(mask);
     }
 
