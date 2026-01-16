@@ -28,7 +28,13 @@ endif ()
 set(ORT_DOWNLOAD_FILE "${ORT_DOWNLOAD_DIR}/${ORT_FILE_NAME}")
 
 set(ORT_EXTRACT_DIR "${THIRD_PARTY_DIR}")
-# 检查是否已经下载并解压
+
+if (NOT EXISTS "${ORT_EXTRACT_DIR}")
+    # 确保解压目录存在
+    file(MAKE_DIRECTORY "${ORT_EXTRACT_DIR}")
+endif ()
+
+# 检查是否已经下载
 if (NOT EXISTS "${ORT_DOWNLOAD_FILE}")
     # 确保下载目录存在
     file(MAKE_DIRECTORY "${ORT_DOWNLOAD_DIR}")
@@ -38,9 +44,6 @@ if (NOT EXISTS "${ORT_DOWNLOAD_FILE}")
     file(DOWNLOAD "${ORT_DOWNLOAD_URL}" "${ORT_DOWNLOAD_FILE}.tmp" SHOW_PROGRESS)
     # 重命名临时文件为最终文件名
     file(RENAME "${ORT_DOWNLOAD_FILE}.tmp" "${ORT_DOWNLOAD_FILE}")
-
-    # 确保解压目录存在
-    file(MAKE_DIRECTORY "${ORT_EXTRACT_DIR}")
 else ()
     message(STATUS "${ORT_FILE_NAME} has already been downloaded.")
 endif ()
