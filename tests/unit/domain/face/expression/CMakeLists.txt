@@ -1,0 +1,10 @@
+add_facefusion_test(
+    domain_face_expression_tests
+    SOURCES
+        face_expression_tests.cpp
+    LINK_LIBRARIES
+        domain_face_expression
+        domain_face_detector
+        domain_ai
+        foundation_infrastructure
+)

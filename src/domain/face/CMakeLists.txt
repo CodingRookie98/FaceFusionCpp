@@ -40,6 +40,7 @@ add_subdirectory(masker)
 add_subdirectory(analyser)
 add_subdirectory(swapper)
 add_subdirectory(enhancer)
+add_subdirectory(expression)
 
 
 
