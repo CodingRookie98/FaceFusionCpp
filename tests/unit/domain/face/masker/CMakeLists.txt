@@ -1,0 +1,11 @@
+add_facefusion_test(
+    domain_face_masker_tests
+    SOURCES
+        face_masker_tests.cpp
+    LINK_LIBRARIES
+        domain_face_masker
+        domain_face
+        domain_ai
+        foundation_ai
+        GTest::gmock
+)
