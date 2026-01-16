@@ -14,7 +14,7 @@ module;
 export module foundation.media.ffmpeg;
 
 namespace foundation::media::ffmpeg {
-enum Audio_Codec { Codec_AAC, Codec_MP3, Codec_OPUS, Codec_VORBIS, Codec_UNKNOWN };
+export enum Audio_Codec { Codec_AAC, Codec_MP3, Codec_OPUS, Codec_VORBIS, Codec_UNKNOWN };
 
 export class VideoPrams {
 public:
