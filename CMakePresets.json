@@ -102,6 +102,20 @@
             "description": "Build Release configuration for Windows x64",
             "configurePreset": "msvc-x64-release",
             "configuration": "Release"
+        },
+        {
+            "name": "linux-debug",
+            "displayName": "Build Linux x64 Debug",
+            "description": "Build Debug configuration for Linux x64",
+            "configurePreset": "linux-debug",
+            "configuration": "Debug"
+        },
+        {
+            "name": "linux-release",
+            "displayName": "Build Linux x64 Release",
+            "description": "Build Release configuration for Linux x64",
+            "configurePreset": "linux-release",
+            "configuration": "Release"
         }
     ],
     "testPresets": [
@@ -126,6 +140,32 @@
             "configuration": "Release",
             "execution": {
                 "workingDirectory": "${sourceDir}/build/msvc-x64-release/bin"
+            },
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "linux-debug",
+            "displayName": "Test Linux x64 Debug",
+            "description": "Run tests for Debug configuration",
+            "configurePreset": "linux-debug",
+            "configuration": "Debug",
+            "execution": {
+                "workingDirectory": "${sourceDir}/build/linux-x64-debug/bin"
+            },
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "linux-release",
+            "displayName": "Test Linux x64 Release",
+            "description": "Run tests for Release configuration",
+            "configurePreset": "linux-release",
+            "configuration": "Release",
+            "execution": {
+                "workingDirectory": "${sourceDir}/build/linux-x64-release/bin"
             },
             "output": {
                 "outputOnFailure": true
@@ -168,6 +208,44 @@
                 {
                     "type": "test",
                     "name": "msvc-x64-debug"
+                }
+            ]
+        },
+        {
+            "name": "linux-release",
+            "displayName": "Release Workflow",
+            "description": "Configure, build and test release configuration",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux-release"
+                },
+                {
+                    "type": "build",
+                    "name": "linux-release"
+                },
+                {
+                    "type": "test",
+                    "name": "linux-release"
+                }
+            ]
+        },
+        {
+            "name": "linux-debug",
+            "displayName": "Debug Workflow",
+            "description": "Configure, build and test debug configuration",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux-debug"
+                },
+                {
+                    "type": "build",
+                    "name": "linux-debug"
+                },
+                {
+                    "type": "test",
+                    "name": "linux-debug"
                 }
             ]
         }
