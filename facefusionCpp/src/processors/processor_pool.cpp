@@ -1,13 +1,3 @@
-/**
- ******************************************************************************
- * @file           : processor_pool.cpp
- * @author         : CodingRookie
- * @brief          : None
- * @attention      : None
- * @date           : 24-12-25
- ******************************************************************************
- */
-
 module;
 #include <mutex>
 #include <onnxruntime_cxx_api.h>
@@ -94,7 +84,7 @@ std::shared_ptr<FaceSwapperBase> ProcessorPool::get_face_swapper(
     return ptr;
 }
 
-std::shared_ptr<FaceEnhancerBase> ProcessorPool::get_face_enhancer(
+std::shared_ptr<domain::face::enhancer::IFaceEnhancer> ProcessorPool::get_face_enhancer(
     const FaceEnhancerType& face_enhancer_type, const model_manager::Model& model) {
     std::lock_guard lock(mutex4FaceEnhancers_);
     if (m_face_enhancers.contains(face_enhancer_type)) {
@@ -102,19 +92,23 @@ std::shared_ptr<FaceEnhancerBase> ProcessorPool::get_face_enhancer(
             return m_face_enhancers[face_enhancer_type].first;
         }
     }
-    if (faceMaskerHub_ == nullptr) {
-        faceMaskerHub_ = std::make_shared<FaceMaskerHub>(env_, is_options_);
-    }
 
-    std::shared_ptr<FaceEnhancerBase> ptr = nullptr;
+    // faceMaskerHub_ is no longer directly set to enhancers in the new architecture
+    // because new enhancers create their own masker hub or use a different mechanism.
+    // However, if we want to share the masker hub, we might need to expose a setter on
+    // IFaceEnhancer or pass it via Factory. The current IFaceEnhancer doesn't have
+    // setFaceMaskerHub. For now, new implementations create their own FaceMaskerHub. Optimization:
+    // Inject shared FaceMaskerHub later if needed.
+
+    std::shared_ptr<domain::face::enhancer::IFaceEnhancer> ptr = nullptr;
+
+    using Factory = domain::face::enhancer::FaceEnhancerFactory;
+
     if (face_enhancer_type == FaceEnhancerType::CodeFormer) {
         if (model != model_manager::Model::Codeformer) {
             throw std::invalid_argument("model is not supported for codeformer!");
         }
-        const auto codeFormer = std::make_shared<CodeFormer>(env_);
-        codeFormer->load_model(ModelManager::get_instance()->get_model_path(model), is_options_);
-        if (!codeFormer->hasFaceMaskerHub()) { codeFormer->setFaceMaskerHub(faceMaskerHub_); }
-        ptr = codeFormer;
+        ptr = Factory::create(Factory::Type::CodeFormer);
     }
 
     if (face_enhancer_type == FaceEnhancerType::GFP_GAN) {
@@ -122,13 +116,17 @@ std::shared_ptr<FaceEnhancerBase> ProcessorPool::get_face_enhancer(
             && model != model_manager::Model::Gfpgan_14) {
             throw std::invalid_argument("model is not supported for gfpgan!");
         }
-        const auto gfpgan = std::make_shared<GFP_GAN>(env_);
-        gfpgan->load_model(ModelManager::get_instance()->get_model_path(model), is_options_);
-        if (!gfpgan->hasFaceMaskerHub()) { gfpgan->setFaceMaskerHub(faceMaskerHub_); }
-        ptr = gfpgan;
+        ptr = Factory::create(Factory::Type::GfpGan);
     }
 
-    if (ptr) { m_face_enhancers[face_enhancer_type] = {ptr, model}; }
+    if (ptr) {
+        // Load model
+        // Note: is_options_ needs to be converted or passed.
+        // Foundation::ai::inference_session::Options matches?
+        // Let's check imports. Both use foundation.ai.inference_session.
+        ptr->load_model(ModelManager::get_instance()->get_model_path(model), is_options_);
+        m_face_enhancers[face_enhancer_type] = {ptr, model};
+    }
     return ptr;
 }
 

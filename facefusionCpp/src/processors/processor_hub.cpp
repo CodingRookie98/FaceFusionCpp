@@ -1,13 +1,3 @@
-/**
- ******************************************************************************
- * @file           : processor_hub.cpp
- * @author         : CodingRookie
- * @brief          : None
- * @attention      : None
- * @date           : 25-1-7
- ******************************************************************************
- */
-
 module;
 #include <memory>
 #include <stdexcept>
@@ -36,25 +26,15 @@ cv::Mat ProcessorHub::swapFace(const FaceSwapperType& _faceSwapperType,
 cv::Mat ProcessorHub::enhanceFace(const FaceEnhancerType& _faceEnhancerType,
                                   const model_manager::Model& _model,
                                   const FaceEnhancerInput& _faceEnhancerInput) {
-    if (_faceEnhancerType == FaceEnhancerType::CodeFormer) {
-        const auto ptr = std::dynamic_pointer_cast<CodeFormer>(
-            processorPool_.get_face_enhancer(_faceEnhancerType, _model));
-        if (!_faceEnhancerInput.code_former_input) {
-            throw std::invalid_argument("Invalid input for CodeFormer");
-        }
-        return ptr->enhanceFace(*_faceEnhancerInput.code_former_input);
+    if (!_faceEnhancerInput.enhance_input) {
+        throw std::invalid_argument("Invalid input for FaceEnhancer");
     }
 
-    if (_faceEnhancerType == FaceEnhancerType::GFP_GAN) {
-        const auto ptr = std::dynamic_pointer_cast<GFP_GAN>(
-            processorPool_.get_face_enhancer(_faceEnhancerType, _model));
-        if (!_faceEnhancerInput.gfp_gan_input) {
-            throw std::invalid_argument("Invalid input for GFP_GAN");
-        }
-        return ptr->enhanceFace(*_faceEnhancerInput.gfp_gan_input);
-    }
+    // Both types now share the same interface IFaceEnhancer
+    auto ptr = processorPool_.get_face_enhancer(_faceEnhancerType, _model);
+    if (!ptr) { throw std::invalid_argument("Failed to get FaceEnhancer instance"); }
 
-    return {};
+    return ptr->enhance_face(*_faceEnhancerInput.enhance_input);
 }
 
 cv::Mat ProcessorHub::restoreExpression(const ExpressionRestorerType& _type,

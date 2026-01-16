@@ -1,13 +1,3 @@
-/**
- ******************************************************************************
- * @file           : processor_pool.h
- * @author         : CodingRookie
- * @brief          : None
- * @attention      : None
- * @date           : 24-12-25
- ******************************************************************************
- */
-
 module;
 #include <optional>
 #include <mutex>
@@ -18,7 +8,8 @@ export import processor_base;
 export import face_swapper;
 import face_masker_hub;
 import inference_session;
-export import face_enhancer;
+// export import face_enhancer; // Remove old module
+export import domain.face.enhancer; // Import new domain module
 export import expression_restorer;
 export import frame_enhancer;
 export import model_manager;
@@ -26,7 +17,8 @@ export import model_manager;
 namespace ffc {
 
 using namespace faceSwapper;
-using namespace faceEnhancer;
+// using namespace faceEnhancer; // Remove old namespace
+using namespace domain::face::enhancer; // Use new namespace
 using namespace face_masker;
 using namespace expressionRestore;
 using namespace frame_enhancer;
@@ -100,8 +92,9 @@ public:
     std::shared_ptr<FaceSwapperBase> get_face_swapper(const FaceSwapperType& face_swapper_type,
                                                       const ai::model_manager::Model& model);
 
-    std::shared_ptr<FaceEnhancerBase> get_face_enhancer(const FaceEnhancerType& face_enhancer_type,
-                                                        const ai::model_manager::Model& model);
+    // Use IFaceEnhancer from new module
+    std::shared_ptr<IFaceEnhancer> get_face_enhancer(const FaceEnhancerType& face_enhancer_type,
+                                                     const ai::model_manager::Model& model);
 
     std::shared_ptr<ExpressionRestorerBase> get_expression_restorer(
         const ExpressionRestorerType& expression_restorer);
@@ -114,10 +107,13 @@ private:
                        std::pair<std::shared_ptr<FaceSwapperBase>, ai::model_manager::Model>>
         m_face_swappers;
     std::mutex m_mutex_face_swappers;
+
+    // Update map to use IFaceEnhancer
     std::unordered_map<FaceEnhancerType,
-                       std::pair<std::shared_ptr<FaceEnhancerBase>, ai::model_manager::Model>>
+                       std::pair<std::shared_ptr<IFaceEnhancer>, ai::model_manager::Model>>
         m_face_enhancers;
     std::mutex mutex4FaceEnhancers_;
+
     std::unordered_map<ExpressionRestorerType, std::shared_ptr<ExpressionRestorerBase>>
         expressionRestorers_;
     std::mutex mutex4ExpressionRestorers_;

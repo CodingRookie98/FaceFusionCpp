@@ -1,35 +1,25 @@
-/**
- ******************************************************************************
- * @file           : processor_hub.ixx
- * @author         : CodingRookie
- * @brief          : None
- * @attention      : None
- * @date           : 25-1-7
- ******************************************************************************
- */
-
 module;
 #include <opencv2/opencv.hpp>
+#include <memory>
 
 export module processor_hub;
 export import :processor_pool;
-// export import face_swapper;
-export import face_enhancer;
-
+export import domain.face.enhancer;
 export import expression_restorer;
 import inference_session;
 
 namespace ffc {
 
 using namespace ai;
+using namespace domain::face::enhancer;
 
 export struct FaceSwapperInput {
     std::unique_ptr<InSwapperInput> in_swapper_input{nullptr};
 };
 
 export struct FaceEnhancerInput {
-    std::unique_ptr<CodeFormerInput> code_former_input{nullptr};
-    std::unique_ptr<GFP_GAN_Input> gfp_gan_input{nullptr};
+    // Both enhancers now use the same input structure
+    std::unique_ptr<EnhanceInput> enhance_input{nullptr};
 };
 
 export struct ExpressionRestorerInput {

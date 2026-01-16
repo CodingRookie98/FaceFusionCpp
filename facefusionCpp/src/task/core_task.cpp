@@ -1,13 +1,3 @@
-/**
- ******************************************************************************
- * @file           : core_run_options.cpp
- * @author         : CodingRookie
- * @brief          : None
- * @attention      : None
- * @date           : 25-2-20
- ******************************************************************************
- */
-
 module;
 #include <memory>
 #include <mutex>
@@ -22,10 +12,11 @@ import processor_hub;
 import vision;
 import file_system;
 import logger;
+import domain.face.enhancer;
 
 namespace ffc::task {
 using namespace faceSwapper;
-using namespace faceEnhancer;
+using namespace domain::face::enhancer;
 using namespace expressionRestore;
 using namespace frame_enhancer;
 using namespace media;
@@ -182,33 +173,25 @@ FaceEnhancerInput CoreTask::GetFaceEnhancerInput(
     }
 
     FaceEnhancerInput face_enhancer_input;
-    const auto target_frame =
-        std::make_shared<cv::Mat>(vision::read_static_image(target_paths.at(target_paths_index)));
+    const auto target_frame = vision::read_static_image(target_paths.at(target_paths_index));
 
-    if (processor_minor_types.at(ProcessorMajorType::FaceEnhancer)
-        == ProcessorMinorType::FaceEnhancer_CodeFormer) {
-        face_enhancer_input.code_former_input = std::make_unique<CodeFormerInput>();
-        face_enhancer_input.code_former_input->target_frame = target_frame;
-        for (const std::vector<Face> target_faces = GetTargetFaces(
-                 *face_enhancer_input.code_former_input->target_frame, face_analyser);
-             const auto& face : target_faces) {
-            face_enhancer_input.code_former_input->target_faces_5_landmarks.emplace_back(
-                face.m_landmark5_from_68);
-        }
-        face_enhancer_input.code_former_input->args_for_get_best_mask = GetArgsForGetBestMask();
+    face_enhancer_input.enhance_input = std::make_unique<EnhanceInput>();
+    face_enhancer_input.enhance_input->target_frame = target_frame;
+
+    for (const std::vector<Face> target_faces =
+             GetTargetFaces(face_enhancer_input.enhance_input->target_frame, face_analyser);
+         const auto& face : target_faces) {
+        face_enhancer_input.enhance_input->target_faces_landmarks.emplace_back(
+            face.m_landmark5_from_68);
     }
-    if (processor_minor_types.at(ProcessorMajorType::FaceEnhancer)
-        == ProcessorMinorType::FaceEnhancer_GfpGan) {
-        face_enhancer_input.gfp_gan_input = std::make_unique<GFP_GAN_Input>();
-        face_enhancer_input.gfp_gan_input->target_frame = target_frame;
-        for (const std::vector<Face> target_faces =
-                 GetTargetFaces(*face_enhancer_input.gfp_gan_input->target_frame, face_analyser);
-             const auto& face : target_faces) {
-            face_enhancer_input.gfp_gan_input->target_faces_5_landmarks.emplace_back(
-                face.m_landmark5_from_68);
-        }
-        face_enhancer_input.gfp_gan_input->args_for_get_best_mask = GetArgsForGetBestMask();
-    }
+    // We construct MaskOptions from scratch or map from ArgsForGetBestMask
+    // For now, let's use default MaskOptions which includes Box mask
+
+    // Old: face_enhancer_input.enhance_input->args_for_get_best_mask = GetArgsForGetBestMask();
+    // New:
+    face_enhancer_input.enhance_input->mask_options.mask_types = {MaskType::Box}; // Default
+    face_enhancer_input.enhance_input->face_blend =
+        static_cast<unsigned short>(face_enhancer_blend.value());
 
     return face_enhancer_input;
 }

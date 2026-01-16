@@ -1,0 +1,36 @@
+module;
+#include <string>
+#include <vector>
+#include <memory>
+#include <opencv2/core.hpp>
+
+export module domain.face.enhancer:code_former;
+import :impl_base;
+// import domain.face.masker; // Removed dependency for now to simplify build
+import domain.face.helper;
+
+export namespace domain::face::enhancer {
+
+class CodeFormer final : public FaceEnhancerImplBase {
+public:
+    CodeFormer();
+    ~CodeFormer() override = default;
+
+    void load_model(const std::string& model_path,
+                    const foundation::ai::inference_session::Options& options = {}) override;
+
+    cv::Mat enhance_face(const EnhanceInput& input) override;
+
+private:
+    int m_input_height = 0;
+    int m_input_width = 0;
+    cv::Size m_size{0, 0};
+    domain::face::helper::WarpTemplateType m_warp_template_type =
+        domain::face::helper::WarpTemplateType::Ffhq_512;
+    // std::unique_ptr<domain::face::masker::IFaceMasker> m_face_masker; // Removed
+
+    std::vector<float> get_input_image_data(const cv::Mat& cropped_image) const;
+    cv::Mat apply_enhance(const cv::Mat& cropped_frame) const;
+};
+
+} // namespace domain::face::enhancer
