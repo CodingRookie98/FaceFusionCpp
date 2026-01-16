@@ -14,6 +14,12 @@ trigger: always_on
 - **质量控制**：
   - 格式化：`python scripts/format_code.py`
   - 静态分析：`python scripts/run_clang_tidy.py` (Windows + MSVC 环境下跳过)
+- **开发原则**：
+  - **智能指针优先于裸指针**。
+  - **RAII**。
+  - **PIMPL**。
+  - **组合优于继承**。
+  - **避免使用全局变量**。
 
 ## 项目管理规范
 - **分支策略**：
