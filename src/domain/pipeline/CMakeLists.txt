@@ -19,9 +19,9 @@ target_link_libraries(domain_pipeline
     PUBLIC
         foundation_infrastructure
         domain_face_swapper
-        domain_face_enhancer
         domain_face_expression
         domain_frame
+        domain_face # For enhancer
         ${OpenCV_LIBS}
 )
 
