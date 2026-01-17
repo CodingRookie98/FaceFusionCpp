@@ -219,7 +219,7 @@ public:
     }
 };
 
-TEST_F(PipelineIntegrationTest, SchedulerLogic) {
+TEST(PipelineSchedulerTest, SchedulerLogic) {
     PipelineConfig config;
     config.worker_thread_count = 4;
     config.max_queue_size = 10;
