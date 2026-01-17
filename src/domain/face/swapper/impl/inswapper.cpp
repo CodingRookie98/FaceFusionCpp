@@ -84,12 +84,12 @@ void InSwapper::init() {
     }
 
     if (!initializer) {
-        // Fallback to last one if not found (legacy behavior), or throw
+        // Fallback to last one if not found (legacy behavior)
         if (modelProto.graph().initializer_size() > 0) {
             initializer =
                 &modelProto.graph().initializer(modelProto.graph().initializer_size() - 1);
         } else {
-            throw std::runtime_error("No initializer found in model.");
+            throw std::runtime_error("No initializers found in model.");
         }
     }
 
@@ -201,14 +201,30 @@ cv::Mat InSwapper::apply_swap(const Embedding& source_embedding,
     int outputHeight = static_cast<int>(outsShape[2]);
     int outputWidth = static_cast<int>(outsShape[3]);
     int channelStep = outputHeight * outputWidth;
-
     std::vector<cv::Mat> channelMats(3);
+    // Legacy mapping: Plane 0 = R, Plane 2 = B.
     channelMats[2] = cv::Mat(outputHeight, outputWidth, CV_32FC1, pdata);                   // R
     channelMats[1] = cv::Mat(outputHeight, outputWidth, CV_32FC1, pdata + channelStep);     // G
     channelMats[0] = cv::Mat(outputHeight, outputWidth, CV_32FC1, pdata + 2 * channelStep); // B
 
+    // Find Global Min/Max manually (proven to work)
+    float minVal = std::numeric_limits<float>::max();
+    float maxVal = std::numeric_limits<float>::lowest();
+    int totalElements = outputHeight * outputWidth * 3;
+    for (int i = 0; i < totalElements; ++i) {
+        if (pdata[i] < minVal) minVal = pdata[i];
+        if (pdata[i] > maxVal) maxVal = pdata[i];
+    }
+
+    float range = maxVal - minVal;
+    if (range < 0.00001f) range = 1.0f;
+    float scale = 255.0f / range;
+
     for (auto& mat : channelMats) {
+        // Simple scaling as the model output is in [0, 1] range.
+        // Matrix transposition fixed the structure, so we trust the model's color balance now.
         mat *= 255.f;
+
         // Clamp
         cv::threshold(mat, mat, 0, 0, cv::THRESH_TOZERO);
         cv::threshold(mat, mat, 255, 255, cv::THRESH_TRUNC);
@@ -229,6 +245,7 @@ std::vector<float> InSwapper::prepare_source_embedding(const Embedding& source_e
     for (size_t i = 0; i < lenFeature; ++i) {
         double sum = 0.0f;
         for (size_t j = 0; j < lenFeature; ++j) {
+            // Legacy behavior: M[j * len + i]
             sum += source_embedding.at(j) * m_initializer_array.at(j * lenFeature + i);
         }
         result.at(i) = static_cast<float>(sum / norm);

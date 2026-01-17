@@ -35,8 +35,8 @@ private:
     cv::Size m_size{0, 0};
     int m_input_width = 0;
     int m_input_height = 0;
-    std::vector<float> m_mean = {0.5f, 0.5f, 0.5f};
-    std::vector<float> m_standard_deviation = {0.5f, 0.5f, 0.5f};
+    std::vector<float> m_mean = {0.0f, 0.0f, 0.0f};
+    std::vector<float> m_standard_deviation = {1.0f, 1.0f, 1.0f};
     std::vector<float> m_initializer_array;
     domain::face::helper::WarpTemplateType m_warp_template_type =
         domain::face::helper::WarpTemplateType::Arcface_128_v2;
