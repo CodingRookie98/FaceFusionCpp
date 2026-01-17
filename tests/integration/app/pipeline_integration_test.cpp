@@ -92,22 +92,7 @@ TEST_F(PipelineIntegrationTest, VideoProcessingThroughput) {
     config.max_concurrent_gpu_tasks = 2;
 
     auto pipeline = std::make_shared<Pipeline>(config);
-    pipeline->add_processor(std::make_shared<SwapperAdapter>(swapper));
-
-    // Detector needed for each frame?
-    // Wait, SwapperAdapter as implemented expects `SwapInput` in metadata.
-    // `SwapInput` needs `target_faces_landmarks`.
-    // So we need a DetectorAdapter or perform detection before Swapper.
-    // Let's implement a simple DetectorProcessor here locally or use a Lambda/Adapter.
-
-    // For this test, to simulate a real pipeline, we should ideally have a Detector in the
-    // pipeline. But since we haven't implemented DetectorAdapter yet (was not in Phase 2 task list
-    // explicitly, but needed), We can do detection in the Producer thread for simplicity, OR
-    // implement a quick Ad-hoc processor.
-
-    // Let's do detection in Producer for now to keep it simple,
-    // as "DetectorAdapter" wasn't explicitly tasked but is logical.
-    // Actually, let's just create a custom Processor for detection here in the test.
+    // pipeline->add_processor(std::make_shared<SwapperAdapter>(swapper)); // Manually added later
 
     class TestDetectorProcessor : public IFrameProcessor {
     public:
@@ -117,19 +102,12 @@ TEST_F(PipelineIntegrationTest, VideoProcessingThroughput) {
             auto results = detector->detect(frame.image);
             if (!results.empty()) {
                 // Pass landmarks to metadata for Swapper
-                // SwapperAdapter expects "swap_input" which is domain::face::swapper::SwapInput
-
                 domain::face::swapper::SwapInput input;
                 input.target_frame = frame.image;
                 input.target_faces_landmarks = {results[0].landmarks}; // Swap first face
 
                 // We also need source embedding.
-                // In a real app, this comes from context. Here we inject it via some mechanism?
-                // Or we can just set it in metadata in Producer?
-                // Let's assume metadata already has "source_embedding".
                 if (frame.metadata.contains("source_embedding")) {
-                    // Use std::vector<float> directly to avoid namespace resolution issues with
-                    // alias
                     input.source_embedding =
                         std::any_cast<std::vector<float>>(frame.metadata.at("source_embedding"));
                 }
@@ -155,63 +133,78 @@ TEST_F(PipelineIntegrationTest, VideoProcessingThroughput) {
 
     pipeline->start();
 
-    // 3. Start Producer
-    std::jthread producer([&]() {
-        cv::VideoCapture cap(video_path.string());
-        if (!cap.isOpened()) return;
+    {
+        // 3. Start Producer
+        std::jthread producer([&]() {
+            cv::VideoCapture cap(video_path.string());
+            if (!cap.isOpened()) return;
 
-        int frame_count = 0;
-        int max_frames = 30; // Limit frames for test speed
+            int frame_count = 0;
+            int max_frames = 30; // Limit frames for test speed
 
-        cv::Mat frame;
-        while (cap.read(frame) && frame_count < max_frames) {
-            FrameData data;
-            data.sequence_id = frame_count++;
-            data.timestamp_ms = cap.get(cv::CAP_PROP_POS_MSEC);
-            data.image = frame.clone();
+            cv::Mat frame;
+            while (cap.read(frame) && frame_count < max_frames) {
+                FrameData data;
+                data.sequence_id = frame_count++;
+                data.timestamp_ms = cap.get(cv::CAP_PROP_POS_MSEC);
+                data.image = frame.clone();
 
-            // Inject source embedding into metadata so DetectorProcessor can use it
-            data.metadata["source_embedding"] = source_embedding;
+                // Inject source embedding into metadata so DetectorProcessor can use it
+                data.metadata["source_embedding"] = source_embedding;
 
-            pipeline->push_frame(std::move(data));
-        }
-
-        // Push EOS
-        FrameData eos;
-        eos.is_end_of_stream = true;
-        // Ensure EOS has sequence_id > last frame to keep ordering if we had reordering (we don't
-        // yet)
-        eos.sequence_id = frame_count;
-        pipeline->push_frame(std::move(eos));
-    });
-
-    // 4. Start Consumer
-    std::atomic<int> processed_count = 0;
-    std::jthread consumer([&]() {
-        cv::VideoWriter writer;
-        // Delayed open until we get first frame to know size
-
-        while (true) {
-            auto data_opt = pipeline->pop_frame();
-            if (!data_opt) break; // Shutdown
-
-            FrameData& data = *data_opt;
-            if (data.is_end_of_stream) break;
-
-            if (!writer.isOpened()) {
-                writer.open(output_path.string(),
-                            cv::VideoWriter::fourcc('a', 'v', 'c', '1'), // H.264
-                            30.0, data.image.size());
+                pipeline->push_frame(std::move(data));
             }
 
-            if (writer.isOpened()) { writer.write(data.image); }
-            processed_count++;
-        }
-    });
+            // Push EOS
+            FrameData eos;
+            eos.is_end_of_stream = true;
+            eos.sequence_id = frame_count;
+            pipeline->push_frame(std::move(eos));
+        });
 
-    // Wait for threads (jthread joins on destruct, but we want to measure time/assert)
-    // Actually jthread will join at end of scope.
-    // We can just let the test finish.
+        // 4. Start Consumer
+        std::atomic<int> processed_count = 0;
+        std::jthread consumer([&]() {
+            cv::VideoWriter writer;
+            // Delayed open until we get first frame to know size
+
+            while (true) {
+                auto data_opt = pipeline->pop_frame();
+                if (!data_opt) break; // Shutdown
+
+                FrameData& data = *data_opt;
+                if (data.is_end_of_stream) break;
+
+                if (!writer.isOpened()) {
+                    // Try mp4v for better compatibility in test environments
+                    writer.open(output_path.string(), cv::VideoWriter::fourcc('m', 'p', '4', 'v'),
+                                30.0, data.image.size());
+                }
+
+                if (writer.isOpened()) {
+                    writer.write(data.image);
+                } else {
+                    std::cerr << "Failed to open video writer for " << output_path << std::endl;
+                }
+                processed_count++;
+            }
+        });
+    } // Threads join here
+
+    // 5. Verification
+    EXPECT_TRUE(std::filesystem::exists(output_path)) << "Output video file should exist";
+    if (std::filesystem::exists(output_path)) {
+        EXPECT_GT(std::filesystem::file_size(output_path), 1024)
+            << "Output video should not be empty";
+
+        // Verify valid video
+        cv::VideoCapture cap_out(output_path.string());
+        EXPECT_TRUE(cap_out.isOpened()) << "Should be able to open output video";
+        if (cap_out.isOpened()) {
+            cv::Mat frame;
+            EXPECT_TRUE(cap_out.read(frame)) << "Should have at least one frame";
+        }
+    }
 }
 
 class MockProcessor : public IFrameProcessor {
@@ -267,10 +260,6 @@ TEST_F(PipelineIntegrationTest, SchedulerLogic) {
     EXPECT_EQ(consumed_count, frame_count);
 
     // Verify all frames received.
-    // Order SHOULD be guaranteed by the new Reordering logic in Pipeline implementation.
-    // So we don't strictly need to sort, but let's verify if they are sorted as they pop.
-    // If pop_frame() returns unordered, ReorderBuffer logic is broken.
-
     // Check strict order
     for (size_t i = 0; i < sequence_ids.size(); ++i) {
         EXPECT_EQ(sequence_ids[i], i) << "Frame order mismatch at index " << i;
