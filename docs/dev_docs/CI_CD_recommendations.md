@@ -2,29 +2,7 @@
 
 为了确保 FaceFusionCpp 在持续集成（CI）和持续交付（CD）环境中的稳定性，建议遵循以下准则。
 
-## 1. 推理引擎后端选择
-
-在 CI 环境（如 GitHub Actions, Jenkins, GitLab CI）中，通常缺乏稳定的 GPU 支持，或者 GPU 驱动在容器/虚拟机中运行不稳定。
-
-### 强制 CPU 推理
-
-**建议**：在执行自动化测试步骤前，设置以下环境变量：
-
-```bash
-# Windows (PowerShell)
-$env:FACEFUSION_PROVIDER="cpu"
-python build.py --action test
-
-# Linux / macOS
-export FACEFUSION_PROVIDER="cpu"
-python build.py --action test
-```
-
-**原因**：
-- **稳定性**：避开 TensorRT 和 CUDA 驱动在析构阶段可能产生的 SEH 异常或非法访问。
-- **一致性**：确保在没有 GPU 的机器上测试逻辑正确性，而不受硬件驱动缺失的影响。
-
-## 2. 资源路径配置
+## 1. 资源路径配置
 
 CI 环境中的文件结构可能与本地开发环境不同。
 
@@ -36,7 +14,7 @@ CI 环境中的文件结构可能与本地开发环境不同。
 export FACEFUSION_ASSETS_PATH="/absolute/path/to/project/assets"
 ```
 
-## 3. 构建配置
+## 2. 构建配置
 
 ### 使用 Release 配置进行集成测试
 
@@ -46,7 +24,7 @@ export FACEFUSION_ASSETS_PATH="/absolute/path/to/project/assets"
 python build.py --config Release --action test
 ```
 
-## 4. 故障排查
+## 3. 故障排查
 
 如果在 CI 中遇到 `Access Violation` 或退出码 `0xc0000005`：
 1. 首先确认是否已设置 `FACEFUSION_PROVIDER="cpu"`。
