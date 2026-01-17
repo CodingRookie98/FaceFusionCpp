@@ -4,6 +4,8 @@ module;
 #include <memory>
 #include <atomic>
 #include <optional>
+#include <map>
+#include <mutex>
 
 export module domain.pipeline:impl;
 
@@ -64,18 +66,42 @@ private:
 
             FrameData frame = std::move(*frame_opt);
 
-            // End of stream marker? Pass it through but don't process?
-            // Or maybe process it if it carries data.
-            // Assuming EOS might still carry the last frame or just a signal.
-            // Let's assume EOS marker handles independently or flows through.
-
             if (!frame.is_end_of_stream) {
                 for (auto& processor : m_processors) {
                     if (processor) { processor->process(frame); }
                 }
             }
 
-            if (m_active) { m_output_queue.push(std::move(frame)); }
+            if (m_active) { push_to_output_ordered(std::move(frame)); }
+        }
+    }
+
+    // Ensures frames are pushed to output queue in strictly increasing sequence_id order
+    void push_to_output_ordered(FrameData frame) {
+        std::lock_guard<std::mutex> lock(m_reorder_mutex);
+
+        // If frame is what we expect next, push it and check pending buffer
+        if (frame.sequence_id == m_next_sequence_id) {
+            m_output_queue.push(std::move(frame));
+            m_next_sequence_id++;
+
+            // Drain pending buffer
+            while (!m_reorder_buffer.empty()) {
+                auto it = m_reorder_buffer.begin();
+                if (it->first == m_next_sequence_id) {
+                    m_output_queue.push(std::move(it->second));
+                    m_reorder_buffer.erase(it);
+                    m_next_sequence_id++;
+                } else {
+                    break;
+                }
+            }
+        } else {
+            // Not next, buffer it
+            // Note: If multiple workers process, frame.sequence_id > m_next_sequence_id is normal.
+            // If frame.sequence_id < m_next_sequence_id, it's a duplicate or error, but we
+            // buffer/ignore it. Assuming unique sequence_ids.
+            m_reorder_buffer.emplace(frame.sequence_id, std::move(frame));
         }
     }
 
@@ -87,5 +113,10 @@ private:
     std::vector<std::jthread> m_workers;
 
     std::atomic<bool> m_active{false};
+
+    // Reordering logic
+    std::mutex m_reorder_mutex;
+    long long m_next_sequence_id = 0;
+    std::map<long long, FrameData> m_reorder_buffer;
 };
 } // namespace domain::pipeline

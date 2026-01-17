@@ -266,9 +266,13 @@ TEST_F(PipelineIntegrationTest, SchedulerLogic) {
 
     EXPECT_EQ(consumed_count, frame_count);
 
-    // Verify all frames received (order is NOT guaranteed by Pipeline implementation yet,
-    // but should be mostly ordered. Since we don't reorder, it's FIFO if processing time is
-    // constant? Parallel workers might shuffle. Just verify uniqueness and count.
-    std::sort(sequence_ids.begin(), sequence_ids.end());
-    for (int i = 0; i < frame_count; ++i) { EXPECT_EQ(sequence_ids[i], i); }
+    // Verify all frames received.
+    // Order SHOULD be guaranteed by the new Reordering logic in Pipeline implementation.
+    // So we don't strictly need to sort, but let's verify if they are sorted as they pop.
+    // If pop_frame() returns unordered, ReorderBuffer logic is broken.
+
+    // Check strict order
+    for (size_t i = 0; i < sequence_ids.size(); ++i) {
+        EXPECT_EQ(sequence_ids[i], i) << "Frame order mismatch at index " << i;
+    }
 }
