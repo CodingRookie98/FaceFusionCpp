@@ -74,22 +74,43 @@ void InSwapper::init() {
         throw std::runtime_error("Failed to parse model protobuf.");
     }
 
-    const onnx::TensorProto& initializer =
-        modelProto.graph().initializer(modelProto.graph().initializer_size() - 1);
-    bool isFp16 = false;
-
-    for (const auto& tensor : modelProto.graph().initializer()) {
-        if (tensor.data_type() == onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16) {
-            isFp16 = true;
+    const onnx::TensorProto* initializer = nullptr;
+    // Robustly find the 512x512 initializer (Arcface embedding transform)
+    for (const auto& init : modelProto.graph().initializer()) {
+        if (init.dims_size() == 2 && init.dims(0) == 512 && init.dims(1) == 512) {
+            initializer = &init;
             break;
         }
     }
 
+    if (!initializer) {
+        // Fallback to last one if not found (legacy behavior), or throw
+        if (modelProto.graph().initializer_size() > 0) {
+            initializer =
+                &modelProto.graph().initializer(modelProto.graph().initializer_size() - 1);
+        } else {
+            throw std::runtime_error("No initializer found in model.");
+        }
+    }
+
+    bool isFp16 = false;
+
+    if (initializer->data_type() == onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16) {
+        isFp16 = true;
+    }
+
     if (!isFp16) {
-        m_initializer_array.assign(initializer.float_data().begin(),
-                                   initializer.float_data().end());
+        if (initializer->float_data_size() > 0) {
+            m_initializer_array.assign(initializer->float_data().begin(),
+                                       initializer->float_data().end());
+        } else if (!initializer->raw_data().empty()) {
+            // Handle float data in raw_data
+            std::string rawData = initializer->raw_data();
+            auto data = reinterpret_cast<const float*>(rawData.data());
+            m_initializer_array.assign(data, data + rawData.size() / sizeof(float));
+        }
     } else {
-        std::string rawData = initializer.raw_data();
+        std::string rawData = initializer->raw_data();
         auto data = reinterpret_cast<const float*>(rawData.data());
         m_initializer_array.assign(data, data + rawData.size() / sizeof(float));
     }
@@ -195,6 +216,7 @@ cv::Mat InSwapper::apply_swap(const Embedding& source_embedding,
 
     cv::Mat resultMat;
     cv::merge(channelMats, resultMat);
+    resultMat.convertTo(resultMat, CV_8UC3);
     return resultMat;
 }
 
