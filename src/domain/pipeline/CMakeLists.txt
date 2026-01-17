@@ -9,13 +9,20 @@ target_sources(domain_pipeline
         FILES
             pipeline.ixx
             pipeline_types.ixx
+            pipeline_api.ixx
+            pipeline_adapters.ixx
             queue.ixx
+            impl/pipeline_impl.ixx
 )
 
 target_link_libraries(domain_pipeline
     PUBLIC
         foundation_infrastructure
-        # domain_face # 暂时注释，避免循环依赖或未找到定义，等后续添加
+        domain_face_swapper
+        domain_face_enhancer
+        domain_face_expression
+        domain_frame
         ${OpenCV_LIBS}
 )
+
 
