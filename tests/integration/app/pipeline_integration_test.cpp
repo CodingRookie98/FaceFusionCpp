@@ -143,7 +143,7 @@ TEST_F(PipelineIntegrationTest, VideoProcessingThroughput) {
             int max_frames = 30; // Limit frames for test speed
 
             cv::Mat frame;
-            while (cap.read(frame) && frame_count < max_frames) {
+            while (frame_count < max_frames && cap.read(frame)) {
                 FrameData data;
                 data.sequence_id = frame_count++;
                 data.timestamp_ms = cap.get(cv::CAP_PROP_POS_MSEC);
@@ -173,7 +173,7 @@ TEST_F(PipelineIntegrationTest, VideoProcessingThroughput) {
                 if (!data_opt) break; // Shutdown
 
                 FrameData& data = *data_opt;
-                if (data.is_end_of_stream) break;
+                if (data.is_end_of_stream) { break; }
 
                 if (!writer.isOpened()) {
                     // Try mp4v for better compatibility in test environments
@@ -188,6 +188,7 @@ TEST_F(PipelineIntegrationTest, VideoProcessingThroughput) {
                 }
                 processed_count++;
             }
+            writer.release();
         });
     } // Threads join here
 
@@ -204,6 +205,7 @@ TEST_F(PipelineIntegrationTest, VideoProcessingThroughput) {
             cv::Mat frame;
             EXPECT_TRUE(cap_out.read(frame)) << "Should have at least one frame";
         }
+        cap_out.release();
     }
 }
 
