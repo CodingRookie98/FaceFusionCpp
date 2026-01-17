@@ -5,6 +5,43 @@
 
 **核心原则**：所有开发工作必须在独立的功能/修复分支上进行，严禁直接修改主分支。
 
+---
+
+#### 上下文管理规则 (Context Management)
+
+> 基于 Manus AI 的"上下文工程"理念，确保关键信息不丢失。
+
+**1. 2-Action Rule（双操作规则）**
+> 每 2 次查看/浏览/研究操作后，**立即**将关键发现写入文档。
+
+| 操作类型 | 示例                   | 记录位置                 |
+| -------- | ---------------------- | ------------------------ |
+| 代码浏览 | 阅读源码、查看接口     | 计划文档的"研究发现"章节 |
+| 文档阅读 | 查阅 API 文档、规范    | 计划文档的"研究发现"章节 |
+| 测试运行 | 执行测试、观察输出     | 任务文档的"问题记录"章节 |
+| 搜索研究 | 搜索解决方案、查阅示例 | 计划文档的"研究发现"章节 |
+
+**2. 持久化优先原则**
+```
+上下文窗口 = 内存 (易失性, 有限)
+文件系统 = 磁盘 (持久性, 无限)
+
+→ 任何重要信息都应写入磁盘。
+```
+
+**3. 读写决策矩阵**
+
+| 场景           | 操作                 | 原因                     |
+| -------------- | -------------------- | ------------------------ |
+| 刚写完文件     | **不读**             | 内容仍在上下文中         |
+| 查看了图像/PDF | **立即写**           | 多模态信息需转为文本保存 |
+| 研究返回数据   | **写入文件**         | 研究结果不会持久保留     |
+| 开始新阶段     | **读取计划**         | 重新定位目标             |
+| 发生错误       | **读取相关文件**     | 需要当前状态来修复       |
+| 中断后恢复     | **读取所有计划文件** | 恢复工作状态             |
+
+---
+
 #### 评估路径（需要代码质量评估）
 
 **阶段一：代码评估**
@@ -117,67 +154,67 @@
 ```mermaid
 graph TD
     Start[工作流程入口] --> IsEvaluationNeeded{是否需要代码评估?}
-    
+
     IsEvaluationNeeded -->|是| EvaluationPath[评估路径]
     IsEvaluationNeeded -->|否| DirectPath[直接实现路径]
-    
+
     %% 评估路径
     EvaluationPath --> EvalCode[评估代码质量]
     EvalCode --> WriteEvalDoc[编写评估文档]
     WriteEvalDoc --> CheckConfirm1{用户要求确认?}
-    
+
     CheckConfirm1 -->|是| UserConfirmEval{用户确认评估?}
     CheckConfirm1 -->|否| CreatePlan
-    
+
     UserConfirmEval -->|确认| CreatePlan[制定实施计划]
     UserConfirmEval -->|拒绝| ReEval[重新评估或返回评估]
     ReEval --> EvalCode
-    
+
     %% 直接实现路径
     DirectPath --> CreatePlan
-    
+
     %% 计划阶段
     CreatePlan --> CheckConfirm2{用户要求确认?}
     CheckConfirm2 -->|是| UserConfirmPlan{用户确认计划?}
     CheckConfirm2 -->|否| GenTaskDocs
-    
+
     UserConfirmPlan -->|确认| GenTaskDocs[生成子任务文档]
     UserConfirmPlan -->|拒绝| ReCreatePlan[重新制定计划]
     ReCreatePlan --> CreatePlan
-    
+
     %% 任务生成阶段
     GenTaskDocs --> CheckConfirm3{用户要求确认?}
     CheckConfirm3 -->|是| UserConfirmTaskDocs{用户确认子任务文档?}
     CheckConfirm3 -->|否| CreateBranch
-    
+
     UserConfirmTaskDocs -->|确认| CreateBranch[创建功能分支]
     UserConfirmTaskDocs -->|拒绝| ModifyTaskDocs[修改任务文档]
     ModifyTaskDocs --> GenTaskDocs
-    
+
     %% 分支操作
     CreateBranch --> ImplementTasks[批量实现子任务]
-    
+
     %% 任务实现阶段
     ImplementTasks --> CheckConfirm4{用户要求确认?}
     CheckConfirm4 -->|是| UserConfirmImpl{用户确认子任务实现?}
     CheckConfirm4 -->|否| CommitGit
-    
+
     UserConfirmImpl -->|确认| CommitGit[提交更改到当前分支]
     UserConfirmImpl -->|拒绝| ReImplement[重新实现子任务]
     ReImplement --> ImplementTasks
-    
+
     CommitGit --> UpdateTaskDoc[更新任务文档状态]
     UpdateTaskDoc --> UpdateStatus[更新流程状态]
-    
+
     UpdateStatus --> AllTasksDone{所有子任务完成?}
-    
+
     AllTasksDone -->|否| NextTask[继续下一子任务]
     NextTask --> ImplementTasks
-    
+
     AllTasksDone -->|是| CheckConfirm5{用户要求确认?}
     CheckConfirm5 -->|是| UserConfirmDone[用户确认完成]
     CheckConfirm5 -->|否| MergeBranch
-    
+
     %% 完成与合并阶段
     UserConfirmDone --> MergeBranch[合并并删除分支]
     MergeBranch --> UpdatePlanStatus[更新计划状态]
