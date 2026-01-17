@@ -134,3 +134,36 @@ if action_failed:
   在移植 AI 模型时，不要假设所有同类模型的输出分布一致。应参考原系统的业务逻辑（如加权、偏置）来确定合理的测试基准。
 
 <!-- 在此处添加新问题 -->
+
+## FFmpeg VideoWriter 输出异常排查报告
+
+### 1. 问题描述
+用户反馈输出视频播放不正常：
+- 原视频：6张图合成，时长6秒。
+- 输出视频：仅显示两张图，播放异常。
+- `ffprobe` 分析：
+    - `fps`: 31034.48 (异常高)
+    - `duration`: 0.000967s (极短)
+
+### 2. 原因分析
+FFmpeg 编码过程中，每一帧的 `pts` (显示时间戳) 至关重要。如果在 `avcodec_send_frame` 之前没有正确设置 `AVFrame` 的 `pts`，或者设置的 `pts` 与编码器/流的 `time_base` 不匹配，会导致：
+1.  **时长错误**：解码器无法计算帧间距，导致所有帧瞬间播放完毕或堆叠。
+2.  **帧率异常**：元数据中统计的帧率是基于错误的 PTS 计算的。
+3.  **丢帧**：某些播放器会丢弃时间戳混乱的帧。
+
+检查代码 (`ffmpeg.cpp`) 发现 `VideoWriter::Imp::write_frame` 方法中可能缺少了 PTS 的递增逻辑或设置不正确。
+
+### 3. 修复方案
+在 `VideoWriter::Impl` 中维护一个 `frame_counter` 或 `current_pts`。
+在每次 `write_frame` 时：
+1.  计算当前帧的 PTS：`pts = frame_count++`。
+2.  将 PTS 赋值给 `AVFrame`：`frame->pts = pts`。
+3.  确保流的 `time_base` 设置为帧率的倒数（例如 `1/30`），或者按照标准 `1/90000` 并相应缩放 PTS。
+    - 通常最简单的是设置流的 `time_base` 为 `1/fps`，帧的 `pts` 每次加 1。
+
+### 5. 修复验证结果
+- **代码修改**：在 `ffmpeg.cpp` 中将 `codec_ctx->time_base` 设置为 `1/fps`。
+- **验证结果**：
+    - `ffprobe` 显示 `duration` 为 `0.966667s`（约 1秒），与测试代码中限制读取 30 帧 (30 FPS) 相符。
+    - `tbr` (Target Bit Rate/Time Base Rate) 显示为 `30`，正常。
+- **结论**：播放异常问题已解决。输出视频时长和帧率恢复正常。

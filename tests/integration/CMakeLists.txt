@@ -11,6 +11,7 @@ add_facefusion_test(
         domain_ai
         foundation_ai
         foundation_infrastructure
+        foundation_media
         ${OpenCV_LIBS}
 )
 

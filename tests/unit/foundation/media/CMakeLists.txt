@@ -15,3 +15,12 @@ add_facefusion_test(
     foundation_media
     foundation_infrastructure
 )
+
+add_facefusion_test(
+    ffmpeg_stream_tests
+    SOURCES
+    ffmpeg_stream_tests.cpp
+    LINK_LIBRARIES
+    foundation_media
+    foundation_infrastructure
+)

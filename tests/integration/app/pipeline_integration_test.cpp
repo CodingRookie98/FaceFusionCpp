@@ -16,11 +16,13 @@ import domain.face.swapper;
 import domain.face.detector;
 import domain.face.recognizer;
 import domain.ai.model_repository;
+import foundation.media.ffmpeg; // Added foundation.media.ffmpeg
 import foundation.ai.inference_session;
 import foundation.infrastructure.test_support;
 
 using namespace domain::pipeline;
 using namespace foundation::infrastructure::test;
+using namespace foundation::media::ffmpeg; // Use namespace
 
 class PipelineIntegrationTest : public ::testing::Test {
 protected:
@@ -136,17 +138,20 @@ TEST_F(PipelineIntegrationTest, VideoProcessingThroughput) {
     {
         // 3. Start Producer
         std::jthread producer([&]() {
-            cv::VideoCapture cap(video_path.string());
-            if (!cap.isOpened()) return;
+            VideoReader reader(video_path.string());
+            if (!reader.open()) return;
 
             int frame_count = 0;
-            int max_frames = 30; // Limit frames for test speed
+            // int max_frames = 30; // Removed limit
 
             cv::Mat frame;
-            while (frame_count < max_frames && cap.read(frame)) {
+            while (true) {
+                frame = reader.read_frame();
+                if (frame.empty()) break;
+
                 FrameData data;
                 data.sequence_id = frame_count++;
-                data.timestamp_ms = cap.get(cv::CAP_PROP_POS_MSEC);
+                data.timestamp_ms = reader.get_current_timestamp_ms();
                 data.image = frame.clone();
 
                 // Inject source embedding into metadata so DetectorProcessor can use it
@@ -165,7 +170,7 @@ TEST_F(PipelineIntegrationTest, VideoProcessingThroughput) {
         // 4. Start Consumer
         std::atomic<int> processed_count = 0;
         std::jthread consumer([&]() {
-            cv::VideoWriter writer;
+            std::unique_ptr<VideoWriter> writer;
             // Delayed open until we get first frame to know size
 
             while (true) {
@@ -175,20 +180,23 @@ TEST_F(PipelineIntegrationTest, VideoProcessingThroughput) {
                 FrameData& data = *data_opt;
                 if (data.is_end_of_stream) { break; }
 
-                if (!writer.isOpened()) {
-                    // Try mp4v for better compatibility in test environments
-                    writer.open(output_path.string(), cv::VideoWriter::fourcc('m', 'p', '4', 'v'),
-                                30.0, data.image.size());
+                if (!writer) {
+                    VideoPrams params("");
+                    params.width = data.image.cols;
+                    params.height = data.image.rows;
+                    params.frameRate = 30.0;
+                    params.videoCodec = "mpeg4"; // Use mpeg4 for test compatibility
+
+                    writer = std::make_unique<VideoWriter>(output_path.string(), params);
+                    if (!writer->open()) {
+                        std::cerr << "Failed to open video writer for " << output_path << std::endl;
+                    }
                 }
 
-                if (writer.isOpened()) {
-                    writer.write(data.image);
-                } else {
-                    std::cerr << "Failed to open video writer for " << output_path << std::endl;
-                }
+                if (writer && writer->is_opened()) { writer->write_frame(data.image); }
                 processed_count++;
             }
-            writer.release();
+            if (writer) writer->close();
         });
     } // Threads join here
 
@@ -198,14 +206,14 @@ TEST_F(PipelineIntegrationTest, VideoProcessingThroughput) {
         EXPECT_GT(std::filesystem::file_size(output_path), 1024)
             << "Output video should not be empty";
 
-        // Verify valid video
-        cv::VideoCapture cap_out(output_path.string());
-        EXPECT_TRUE(cap_out.isOpened()) << "Should be able to open output video";
-        if (cap_out.isOpened()) {
-            cv::Mat frame;
-            EXPECT_TRUE(cap_out.read(frame)) << "Should have at least one frame";
+        // Verify valid video using VideoReader
+        VideoReader reader(output_path.string());
+        EXPECT_TRUE(reader.open()) << "Should be able to open output video";
+        if (reader.is_opened()) {
+            cv::Mat frame = reader.read_frame();
+            EXPECT_FALSE(frame.empty()) << "Should have at least one frame";
         }
-        cap_out.release();
+        reader.close();
     }
 }
 
