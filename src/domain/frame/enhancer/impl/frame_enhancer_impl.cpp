@@ -23,13 +23,13 @@ FrameEnhancerImpl::FrameEnhancerImpl(const std::string& model_path,
 }
 
 cv::Mat FrameEnhancerImpl::enhance_frame(const FrameEnhancerInput& input) const {
-    if (!input.target_frame || input.target_frame->empty()) { return {}; }
+    if (input.target_frame.empty()) { return {}; }
 
-    const int temp_width = input.target_frame->cols;
-    const int temp_height = input.target_frame->rows;
+    const int temp_width = input.target_frame.cols;
+    const int temp_height = input.target_frame.rows;
 
     auto [tile_vision_frames, pad_width, pad_height] =
-        foundation::media::vision::create_tile_frames(*input.target_frame, m_tile_size);
+        foundation::media::vision::create_tile_frames(input.target_frame, m_tile_size);
 
     for (auto& tile_frame : tile_vision_frames) {
         std::vector<float> input_image_data = get_input_data(tile_frame);
@@ -67,9 +67,9 @@ cv::Mat FrameEnhancerImpl::enhance_frame(const FrameEnhancerInput& input) const 
          m_tile_size[2] * m_model_scale});
 
     if (input.blend > 100) {
-        output_image = blend_frame(*input.target_frame, output_image, 100);
+        output_image = blend_frame(input.target_frame, output_image, 100);
     } else {
-        output_image = blend_frame(*input.target_frame, output_image, input.blend);
+        output_image = blend_frame(input.target_frame, output_image, input.blend);
     }
 
     return output_image;
