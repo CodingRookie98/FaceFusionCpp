@@ -63,6 +63,9 @@ endif()
 include(cmake/modules_lib.cmake)
 include(cmake/resources.cmake)
 
+# make onnxruntime available
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/onnxruntime-gpu.cmake")
+
 add_subdirectory(src)
 
 # 添加测试支持
@@ -125,9 +128,6 @@ target_include_directories(${app_facefusioncpp} PRIVATE ${FFMPEG_INCLUDE_DIRS})
 target_link_directories(${app_facefusioncpp} PRIVATE ${FFMPEG_LIBRARY_DIRS})
 target_link_libraries(${app_facefusioncpp} PRIVATE ${FFMPEG_LIBRARIES})
 target_link_libraries(${app_facefusioncpp} PRIVATE ${OpenCV_LIBS})
-
-# make onnxruntime available
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/onnxruntime-gpu.cmake")
 target_link_libraries(${app_facefusioncpp} PRIVATE ONNXRuntime::ONNXRuntime)
 target_link_libraries(${app_facefusioncpp} PRIVATE ONNX::onnx ONNX::onnx_proto)
 target_link_libraries(${app_facefusioncpp} PRIVATE nlohmann_json::nlohmann_json)
@@ -139,6 +139,8 @@ target_link_libraries(${app_facefusioncpp} PRIVATE dp::thread-pool)
 target_link_libraries(${app_facefusioncpp} PRIVATE yaml-cpp::yaml-cpp)
 target_link_libraries(${app_facefusioncpp} PRIVATE foundation_ai)
 target_link_libraries(${app_facefusioncpp} PRIVATE domain_ai)
+
+copy_onnxruntime_libs(${app_facefusioncpp})
 
 setup_resource_copying(${app_facefusioncpp})
 

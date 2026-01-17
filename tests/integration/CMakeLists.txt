@@ -13,3 +13,6 @@ add_facefusion_test(
         foundation_infrastructure
         ${OpenCV_LIBS}
 )
+
+# Ensure ONNX Runtime DLLs are copied to the test executable directory
+copy_onnxruntime_libs(app_test_pipeline)

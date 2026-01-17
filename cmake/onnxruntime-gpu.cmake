@@ -60,18 +60,21 @@ else ()
     message(STATUS "${ORT_FILE_NAME} has already been extracted.")
 endif ()
 
-if (WIN32 OR WIN64)
-    FILE(GLOB ONNXRUNTIME_LIBS "${ORT_PATH}/lib/*.dll")
-elseif (LINUX)
-    FILE(GLOB ONNXRUNTIME_LIBS "${ORT_PATH}/lib/*.so*")
-endif ()
+# Define helper function to copy ORT libs to target output directory
+function(copy_onnxruntime_libs TARGET_NAME)
+    if (WIN32 OR WIN64)
+        FILE(GLOB ONNXRUNTIME_LIBS "${ORT_PATH}/lib/*.dll")
+    elseif (LINUX)
+        FILE(GLOB ONNXRUNTIME_LIBS "${ORT_PATH}/lib/*.so*")
+    endif ()
 
-add_custom_command(TARGET ${app_facefusioncpp} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${ONNXRUNTIME_LIBS}
-        $<TARGET_FILE_DIR:${app_facefusioncpp}>
-        COMMENT "Copying ONNX Runtime libs to runtime output directory"
-)
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ONNXRUNTIME_LIBS}
+            $<TARGET_FILE_DIR:${TARGET_NAME}>
+            COMMENT "Copying ONNX Runtime libs to ${TARGET_NAME} output directory"
+    )
+endfunction()
 
 if (NOT TARGET ONNXRuntime::ONNXRuntime)
     add_library(ONNXRuntime::ONNXRuntime INTERFACE IMPORTED GLOBAL)
