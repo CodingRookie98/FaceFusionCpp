@@ -60,8 +60,8 @@ else()
     target_compile_options(${app_facefusioncpp} PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
-include(cmake/modules_lib.cmake)
 include(cmake/resources.cmake)
+include(cmake/modules_lib.cmake)
 
 # make onnxruntime available
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/onnxruntime-gpu.cmake")

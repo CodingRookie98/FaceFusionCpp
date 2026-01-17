@@ -16,4 +16,5 @@ function(add_modules_library TARGET_NAME)
             /wd5050
         )
     endif()
+    setup_resource_copying(${TARGET_NAME})
 endfunction()
