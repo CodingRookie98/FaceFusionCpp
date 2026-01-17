@@ -106,18 +106,7 @@ public:
         if (!m_enhancer) return;
 
         frame::enhancer::FrameEnhancerInput input;
-
-        // The FrameEnhancerInput takes a shared_ptr<cv::Mat>
-        // We need to create one. Ideally FrameData could hold shared_ptr to avoid copies,
-        // but current FrameData holds cv::Mat by value (ref counted).
-        // We can create a shared_ptr alias to it, but we need to be careful about lifetime.
-        // Since process() is blocking, it's fine to pass a shared_ptr to a local copy or heap
-        // alloc.
-
-        // However, domain.frame.enhancer expects shared_ptr<cv::Mat>.
-        // We'll create a new shared_ptr pointing to a copy of the frame to be safe and consistent
-        // with ownership. Or better, make a shared_ptr from the current frame.
-        input.target_frame = std::make_shared<cv::Mat>(frame.image);
+        input.target_frame = frame.image; // cv::Mat shallow copy (ref counted)
 
         if (frame.metadata.contains("frame_enhancer_blend")) {
             try {

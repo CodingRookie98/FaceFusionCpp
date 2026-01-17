@@ -72,7 +72,7 @@ TEST_F(FrameEnhancerTest, EnhanceFrameRealEsrGan) {
     ASSERT_NE(enhancer, nullptr);
 
     FrameEnhancerInput input;
-    input.target_frame = std::make_shared<cv::Mat>(source_img);
+    input.target_frame = source_img;
     input.blend = 100;
 
     cv::Mat result;

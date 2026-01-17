@@ -1,5 +1,4 @@
 module;
-#include <memory>
 #include <vector>
 #include <opencv2/opencv.hpp>
 
@@ -10,7 +9,7 @@ export namespace domain::frame::enhancer {
 enum class FrameEnhancerType { RealEsrGan, RealHatGan };
 
 struct FrameEnhancerInput {
-    std::shared_ptr<cv::Mat> target_frame{nullptr};
+    cv::Mat target_frame;
     unsigned short blend{80};
 };
 
