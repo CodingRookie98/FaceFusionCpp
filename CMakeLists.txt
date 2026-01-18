@@ -23,19 +23,8 @@ foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
 endforeach()
 # -------------------------
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    add_compile_options(
-            /utf-8
-            /EHsc
-    )
-    add_definitions(-D_WIN32_WINNT=0x0A00 -DWIN32_LEAN_AND_MEAN -DNOMINMAX)
-endif ()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_link_options(-static-libgcc -static-libstdc++)
@@ -52,29 +41,26 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
-if(MSVC)
-    target_compile_options(${app_facefusioncpp} PRIVATE /W4)
-    # /permissive-编译选项以增强标准一致性
-    target_compile_options(${app_facefusioncpp} PRIVATE /permissive-)
-else()
-    target_compile_options(${app_facefusioncpp} PRIVATE -Wall -Wextra -Wpedantic)
-endif()
-
-include(cmake/resources.cmake)
-include(cmake/modules_lib.cmake)
+target_link_libraries(${app_facefusioncpp} PRIVATE project_options)
 
 # make onnxruntime available
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/onnxruntime-gpu.cmake")
-
-add_subdirectory(src)
 
 # 添加测试支持
 enable_testing()
 
 # 配置 GoogleTest 依赖（使用 vcpkg）
 option(BUILD_TESTING "Build tests" ON)
+
+include(cmake/resources.cmake)
+include(cmake/options.cmake)
+include(cmake/modules_lib.cmake)
+include(cmake/dependencies.cmake)
+
+add_subdirectory(src)
+
 if(BUILD_TESTING)
-    find_package(GTest CONFIG REQUIRED)
+    # find_package(GTest) moved to cmake/dependencies.cmake
 
     # 添加测试子目录
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")

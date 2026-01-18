@@ -9,12 +9,7 @@ function(add_modules_library TARGET_NAME)
         CXX_EXTENSIONS OFF
     )
 
-    if (MSVC)
-        target_compile_options(${TARGET_NAME} PRIVATE
-            /permissive-
-            /bigobj
-            /wd5050
-        )
-    endif()
+    target_link_libraries(${TARGET_NAME} PRIVATE project_options)
+
     setup_resource_copying(${TARGET_NAME})
 endfunction()
