@@ -1,14 +1,5 @@
 set(module_name domain_face_expression)
 
-# add_modules_library might be a custom macro, but let's assume it exists and use it,
-# or fallback to standard add_library if I check cmake/modules.
-# Looking at domain_face_swapper, it uses add_modules_library.
-# Let's try to match exactly.
-
-# But wait, I don't know where add_modules_library is defined.
-# It works for swapper.
-# I will use add_library but with FILE_SET.
-
 add_library(${module_name})
 
 target_sources(${module_name}
@@ -36,4 +27,3 @@ target_link_libraries(${module_name}
         # domain_face_helper # Included in domain_face
         ONNXRuntime::ONNXRuntime # If needed for symbols
 )
-
