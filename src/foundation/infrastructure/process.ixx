@@ -1,10 +1,3 @@
-/**
- ******************************************************************************
- * @file           : process.ixx
- * @brief          : Process management module interface (based on TinyProcessLib)
- ******************************************************************************
- */
-
 module;
 #include <string>
 #include <vector>
@@ -12,10 +5,19 @@ module;
 #include <memory>
 #include <unordered_map>
 
+/**
+ * @file process.ixx
+ * @brief Process management module based on TinyProcessLib
+ * @author CodingRookie
+ * @date 2026-01-18
+ */
 export module foundation.infrastructure.process;
 
 export namespace foundation::infrastructure::process {
 
+/**
+ * @brief Configuration for process execution
+ */
 struct Config {
     std::size_t buffer_size = 131072;
     bool inherit_file_descriptors = false;
@@ -40,6 +42,9 @@ struct Config {
     ShowWindow show_window{ShowWindow::show_default};
 };
 
+/**
+ * @brief Process class for spawning and controlling child processes
+ */
 class Process {
 public:
 #ifdef _WIN32
@@ -53,13 +58,29 @@ public:
 #endif
     using environment_type = std::unordered_map<string_type, string_type>;
 
-    // Constructor with command string
+    /**
+     * @brief Constructor with command string
+     * @param command Command to execute
+     * @param path Working directory
+     * @param read_stdout Callback for stdout
+     * @param read_stderr Callback for stderr
+     * @param open_stdin Whether to open stdin
+     * @param config Process configuration
+     */
     Process(const string_type& command, const string_type& path = string_type(),
             std::function<void(const char* bytes, size_t n)> read_stdout = nullptr,
             std::function<void(const char* bytes, size_t n)> read_stderr = nullptr,
             bool open_stdin = false, const Config& config = {}) noexcept;
 
-    // Constructor with arguments vector
+    /**
+     * @brief Constructor with arguments vector
+     * @param arguments List of arguments (first is executable)
+     * @param path Working directory
+     * @param read_stdout Callback for stdout
+     * @param read_stderr Callback for stderr
+     * @param open_stdin Whether to open stdin
+     * @param config Process configuration
+     */
     Process(const std::vector<string_type>& arguments, const string_type& path = string_type(),
             std::function<void(const char* bytes, size_t n)> read_stdout = nullptr,
             std::function<void(const char* bytes, size_t n)> read_stderr = nullptr,
@@ -67,15 +88,56 @@ public:
 
     ~Process() noexcept;
 
+    /**
+     * @brief Get process ID
+     * @return Process ID
+     */
     id_type get_id() const noexcept;
+
+    /**
+     * @brief Get exit status (blocking)
+     * @return Exit status code
+     */
     int get_exit_status() noexcept;
+
+    /**
+     * @brief Try to get exit status (non-blocking)
+     * @param exit_status Output parameter for exit status
+     * @return True if process has exited, false otherwise
+     */
     bool try_get_exit_status(int& exit_status) noexcept;
 
+    /**
+     * @brief Write to stdin
+     * @param bytes Data buffer
+     * @param n Size of data
+     * @return True if successful
+     */
     bool write(const char* bytes, size_t n);
+
+    /**
+     * @brief Write string to stdin
+     * @param str String to write
+     * @return True if successful
+     */
     bool write(const std::string& str);
+
+    /**
+     * @brief Close stdin
+     */
     void close_stdin() noexcept;
 
+    /**
+     * @brief Kill the process
+     * @param force Force kill
+     */
     void kill(bool force = false) noexcept;
+
+    /**
+     * @brief Static helper to kill a process by ID
+     * @param id Process ID
+     * @param force Force kill
+     */
     static void kill(id_type id, bool force = false) noexcept;
 
     // PIMPL idiom to hide platform details and avoiding including windows.h in module interface
