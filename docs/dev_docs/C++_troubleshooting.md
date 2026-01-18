@@ -133,6 +133,21 @@ if action_failed:
 - **避免措施**:
   在移植 AI 模型时，不要假设所有同类模型的输出分布一致。应参考原系统的业务逻辑（如加权、偏置）来确定合理的测试基准。
 
+### LivePortraitTest GPU 超时 (Timeout)
+
+- **日期**: 2026-01-18
+- **标签**: [单元测试, Timeout, TensorRT, GPU]
+- **问题描述**:
+  `LivePortraitTest.RestoreExpressionBasic` 测试在有 GPU 的机器上运行失败，报错 `Timeout` (300.25 sec)。
+- **原因分析**:
+  该测试需要加载 3 个 ONNX 模型，其中 `live_portrait_generator` 模型较大且复杂。
+  当 `InferenceSession` 自动检测并使用 `TensorRT` 提供者时，首次运行会触发耗时的 TensorRT 引擎构建（Engine Build）和图优化过程。
+  默认的 CTest 超时时间（300秒）不足以完成这三个模型的串行初始化，导致测试被强制终止。
+- **解决方案**:
+  在 `tests/CMakeLists.txt` 中将该测试（或全局）的 `TIMEOUT` 属性设置为 `0`（无限制），以允许慢速初始化完成。
+- **验证**:
+  修改超时设置后，测试应能成功通过（虽然耗时较长）。
+
 <!-- 在此处添加新问题 -->
 
 ## FFmpeg VideoWriter 输出异常排查报告
