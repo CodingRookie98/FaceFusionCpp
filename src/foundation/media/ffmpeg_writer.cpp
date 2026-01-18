@@ -14,6 +14,8 @@ module;
 
 #include <opencv2/opencv.hpp>
 
+module foundation.media.ffmpeg;
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -22,7 +24,6 @@ extern "C" {
 #include <libavutil/opt.h>
 }
 
-module foundation.media.ffmpeg;
 import foundation.infrastructure.logger;
 
 namespace foundation::media::ffmpeg {
@@ -37,7 +38,7 @@ using namespace foundation::infrastructure::logger;
 struct VideoWriter::Impl {
     std::string output_path;
     std::string audio_source_path;
-    VideoPrams params;
+    VideoParams params;
     AVFormatContext* format_ctx = nullptr;
     AVCodecContext* codec_ctx = nullptr;
     SwsContext* sws_ctx = nullptr;
@@ -48,7 +49,7 @@ struct VideoWriter::Impl {
     int written_frame_count = 0;
     int64_t next_pts = 0;
 
-    explicit Impl(const VideoPrams& p) : params(p) {}
+    explicit Impl(const VideoParams& p) : params(p) {}
 
     ~Impl() { cleanup(); }
 
@@ -95,7 +96,6 @@ struct VideoWriter::Impl {
     bool open() {
         cleanup();
 
-        // Allocate output format context
         if (avformat_alloc_output_context2(&format_ctx, nullptr, nullptr, output_path.c_str())
             < 0) {
             Logger::get_instance()->error("VideoWriter: Failed to allocate output context");
@@ -119,7 +119,6 @@ struct VideoWriter::Impl {
             }
         }
 
-        // Create video stream
         video_stream = avformat_new_stream(format_ctx, codec);
         if (!video_stream) {
             Logger::get_instance()->error("VideoWriter: Failed to create stream");
@@ -127,7 +126,6 @@ struct VideoWriter::Impl {
             return false;
         }
 
-        // Create codec context
         codec_ctx = avcodec_alloc_context3(codec);
         if (!codec_ctx) {
             Logger::get_instance()->error("VideoWriter: Failed to allocate codec context");
@@ -157,14 +155,12 @@ struct VideoWriter::Impl {
             codec_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
         }
 
-        // Open codec
         if (avcodec_open2(codec_ctx, codec, nullptr) < 0) {
             Logger::get_instance()->error("VideoWriter: Failed to open encoder");
             cleanup();
             return false;
         }
 
-        // Copy codec params to stream
         if (avcodec_parameters_from_context(video_stream->codecpar, codec_ctx) < 0) {
             Logger::get_instance()->error("VideoWriter: Failed to copy codec params to stream");
             cleanup();
@@ -173,7 +169,6 @@ struct VideoWriter::Impl {
 
         video_stream->time_base = codec_ctx->time_base;
 
-        // Open output file
         if (!(format_ctx->oformat->flags & AVFMT_NOFILE)) {
             if (avio_open(&format_ctx->pb, output_path.c_str(), AVIO_FLAG_WRITE) < 0) {
                 Logger::get_instance()->error(
@@ -183,14 +178,12 @@ struct VideoWriter::Impl {
             }
         }
 
-        // Write header
         if (avformat_write_header(format_ctx, nullptr) < 0) {
             Logger::get_instance()->error("VideoWriter: Failed to write header");
             cleanup();
             return false;
         }
 
-        // Allocate frame
         frame = av_frame_alloc();
         packet = av_packet_alloc();
         if (!frame || !packet) {
@@ -204,7 +197,6 @@ struct VideoWriter::Impl {
         frame->height = codec_ctx->height;
         av_frame_get_buffer(frame, 32);
 
-        // Create scaler (BGR24 -> YUV420P)
         sws_ctx = sws_getContext(codec_ctx->width, codec_ctx->height, AV_PIX_FMT_BGR24,
                                  codec_ctx->width, codec_ctx->height, AV_PIX_FMT_YUV420P,
                                  SWS_BILINEAR, nullptr, nullptr, nullptr);
@@ -273,7 +265,7 @@ struct VideoWriter::Impl {
     }
 };
 
-VideoWriter::VideoWriter(const std::string& outputPath, const VideoPrams& params) :
+VideoWriter::VideoWriter(const std::string& outputPath, const VideoParams& params) :
     impl_(std::make_unique<Impl>(params)) {
     impl_->output_path = outputPath;
 }

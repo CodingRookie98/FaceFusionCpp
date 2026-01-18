@@ -15,6 +15,8 @@ module;
 
 #include <opencv2/opencv.hpp>
 
+module foundation.media.ffmpeg;
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -23,7 +25,6 @@ extern "C" {
 #include <libavutil/imgutils.h>
 }
 
-module foundation.media.ffmpeg;
 import foundation.infrastructure.logger;
 import foundation.infrastructure.file_system;
 import foundation.media.vision;
@@ -33,22 +34,31 @@ namespace foundation::media::ffmpeg {
 using namespace foundation::infrastructure;
 using namespace foundation::infrastructure::logger;
 
+namespace {
+struct AVFormatContextDeleter {
+    void operator()(AVFormatContext* ptr) const {
+        if (ptr) { avformat_close_input(&ptr); }
+    }
+};
+using FormatCtxPtr = std::unique_ptr<AVFormatContext, AVFormatContextDeleter>;
+} // namespace
+
 bool is_video(const std::string& videoPath) {
     if (foundation::media::vision::is_image(videoPath)) { return false; }
 
-    AVFormatContext* format_ctx = nullptr;
+    AVFormatContext* raw_ctx = nullptr;
     // Suppress logs for probing
     int original_level = av_log_get_level();
     av_log_set_level(AV_LOG_QUIET);
 
-    int ret = avformat_open_input(&format_ctx, videoPath.c_str(), nullptr, nullptr);
+    int ret = avformat_open_input(&raw_ctx, videoPath.c_str(), nullptr, nullptr);
     if (ret < 0) {
         av_log_set_level(original_level);
         return false;
     }
+    FormatCtxPtr format_ctx(raw_ctx);
 
-    if (avformat_find_stream_info(format_ctx, nullptr) < 0) {
-        avformat_close_input(&format_ctx);
+    if (avformat_find_stream_info(format_ctx.get(), nullptr) < 0) {
         av_log_set_level(original_level);
         return false;
     }
@@ -61,7 +71,6 @@ bool is_video(const std::string& videoPath) {
         }
     }
 
-    avformat_close_input(&format_ctx);
     av_log_set_level(original_level);
     return has_video;
 }
@@ -114,12 +123,10 @@ void extract_frames(const std::string& videoPath, const std::string& outputImage
 }
 
 bool compose_video_from_images(const std::string& inputImagePattern,
-                               const std::string& outputVideoPath, const VideoPrams& videoPrams) {
-    // Determine input directory and verify basics
+                               const std::string& outputVideoPath, const VideoParams& videoParams) {
     // OpenCV VideoCapture supports patterns like "path/img_%04d.jpg"
 
     cv::VideoCapture cap(inputImagePattern);
-    // Try to open to check if pattern is valid or matches files
     if (!cap.isOpened()) {
         Logger::get_instance()->error(std::format("{} : Failed to open input images sequence: {}",
                                                   __FUNCTION__, inputImagePattern));
@@ -132,14 +139,9 @@ bool compose_video_from_images(const std::string& inputImagePattern,
         fs::create_directories(outPath.parent_path());
     }
 
-    // Adjust params if needed based on input?
-    // Usually we trust videoPrams provided by Caller, but we might want to check dimensions from
-    // first frame. However, VideoWriter needs fixed dimensions.
+    // TODO: Validate or adjust params based on first frame dimensions if needed
 
-    // We can read first frame to check dims if videoPrams are default?
-    // Let's assume caller provides correct params matching the images.
-
-    VideoWriter writer(outputVideoPath, videoPrams);
+    VideoWriter writer(outputVideoPath, videoParams);
     if (!writer.open()) {
         Logger::get_instance()->error(
             std::format("{} : Failed to open video writer: {}", __FUNCTION__, outputVideoPath));
@@ -151,11 +153,10 @@ bool compose_video_from_images(const std::string& inputImagePattern,
         if (!cap.read(frame)) break;
         if (frame.empty()) break;
 
-        // Resize if doesn't match params? VideoWriter::write_frame requires exact match.
-        // Doing resize here for robustness
-        if (static_cast<unsigned int>(frame.cols) != videoPrams.width
-            || static_cast<unsigned int>(frame.rows) != videoPrams.height) {
-            cv::resize(frame, frame, cv::Size(videoPrams.width, videoPrams.height));
+        // Resize if doesn't match params (VideoWriter requires exact match)
+        if (static_cast<unsigned int>(frame.cols) != videoParams.width
+            || static_cast<unsigned int>(frame.rows) != videoParams.height) {
+            cv::resize(frame, frame, cv::Size(videoParams.width, videoParams.height));
         }
 
         if (!writer.write_frame(frame)) {
@@ -167,23 +168,24 @@ bool compose_video_from_images(const std::string& inputImagePattern,
     return true;
 }
 
-VideoPrams::VideoPrams(const std::string& videoPath) {
+VideoParams::VideoParams(const std::string& videoPath) {
     if (videoPath.empty()) {
         return; // default values
     }
 
-    AVFormatContext* format_ctx = nullptr;
+    AVFormatContext* raw_ctx = nullptr;
     int original_level = av_log_get_level();
     av_log_set_level(AV_LOG_QUIET);
 
-    if (avformat_open_input(&format_ctx, videoPath.c_str(), nullptr, nullptr) < 0) {
+    if (avformat_open_input(&raw_ctx, videoPath.c_str(), nullptr, nullptr) < 0) {
         av_log_set_level(original_level);
         Logger::get_instance()->error(
             std::format("{} : Failed to open video : {}", __FUNCTION__, videoPath));
         return;
     }
+    FormatCtxPtr format_ctx(raw_ctx);
 
-    if (avformat_find_stream_info(format_ctx, nullptr) >= 0) {
+    if (avformat_find_stream_info(format_ctx.get(), nullptr) >= 0) {
         for (unsigned int i = 0; i < format_ctx->nb_streams; i++) {
             if (format_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
                 AVStream* stream = format_ctx->streams[i];
@@ -203,7 +205,6 @@ VideoPrams::VideoPrams(const std::string& videoPath) {
         }
     }
 
-    avformat_close_input(&format_ctx);
     av_log_set_level(original_level);
 }
 

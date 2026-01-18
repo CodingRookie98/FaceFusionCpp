@@ -181,7 +181,7 @@ TEST_F(PipelineIntegrationTest, VideoProcessingThroughput) {
                 if (data.is_end_of_stream) { break; }
 
                 if (!writer) {
-                    VideoPrams params("");
+                    VideoParams params("");
                     params.width = data.image.cols;
                     params.height = data.image.rows;
                     params.frameRate = 30.0;

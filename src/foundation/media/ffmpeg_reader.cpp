@@ -14,6 +14,8 @@ module;
 
 #include <opencv2/opencv.hpp>
 
+module foundation.media.ffmpeg;
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -22,7 +24,6 @@ extern "C" {
 #include <libavutil/opt.h>
 }
 
-module foundation.media.ffmpeg;
 import foundation.infrastructure.logger;
 
 namespace foundation::media::ffmpeg {
@@ -85,14 +86,12 @@ struct VideoReader::Impl {
     bool open() {
         cleanup();
 
-        // Open input file
         if (avformat_open_input(&format_ctx, video_path.c_str(), nullptr, nullptr) < 0) {
             Logger::get_instance()->error(
                 std::format("VideoReader: Failed to open input file: {}", video_path));
             return false;
         }
 
-        // Get stream info
         if (avformat_find_stream_info(format_ctx, nullptr) < 0) {
             Logger::get_instance()->error("VideoReader: Failed to find stream info");
             cleanup();
@@ -116,7 +115,6 @@ struct VideoReader::Impl {
         AVStream* video_stream = format_ctx->streams[video_stream_index];
         AVCodecParameters* codecpar = video_stream->codecpar;
 
-        // Find decoder
         const AVCodec* codec = avcodec_find_decoder(codecpar->codec_id);
         if (!codec) {
             Logger::get_instance()->error("VideoReader: Decoder not found");
@@ -124,7 +122,6 @@ struct VideoReader::Impl {
             return false;
         }
 
-        // Create codec context
         codec_ctx = avcodec_alloc_context3(codec);
         if (!codec_ctx) {
             Logger::get_instance()->error("VideoReader: Failed to allocate codec context");
@@ -138,14 +135,12 @@ struct VideoReader::Impl {
             return false;
         }
 
-        // Open codec
         if (avcodec_open2(codec_ctx, codec, nullptr) < 0) {
             Logger::get_instance()->error("VideoReader: Failed to open codec");
             cleanup();
             return false;
         }
 
-        // Allocate frames
         frame = av_frame_alloc();
         frame_bgr = av_frame_alloc();
         packet = av_packet_alloc();
@@ -164,7 +159,6 @@ struct VideoReader::Impl {
         frame_bgr->height = height;
         av_frame_get_buffer(frame_bgr, 32);
 
-        // Create scaler context
         sws_ctx = sws_getContext(width, height, codec_ctx->pix_fmt, width, height, AV_PIX_FMT_BGR24,
                                  SWS_BILINEAR, nullptr, nullptr, nullptr);
 

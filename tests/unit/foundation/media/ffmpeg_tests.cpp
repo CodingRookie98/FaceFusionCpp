@@ -28,10 +28,10 @@ TEST_F(FfmpegTest, IsVideoValid) {
     EXPECT_TRUE(is_video(video_path.string()));
 }
 
-TEST_F(FfmpegTest, VideoPramsValid) {
+TEST_F(FfmpegTest, VideoParamsValid) {
     auto video_path = get_test_data_path("standard_face_test_videos/slideshow_scaled.mp4");
     if (!fs::exists(video_path)) { GTEST_SKIP() << "Test video not found: " << video_path; }
-    VideoPrams params(video_path.string());
+    VideoParams params(video_path.string());
     EXPECT_GT(params.width, 0);
     EXPECT_GT(params.height, 0);
 
@@ -79,7 +79,7 @@ TEST_F(FfmpegTest, ComposeVideoFromImages) {
     std::string input_pattern = (temp_dir / "img_%03d.bmp").string();
     std::string output_video = (temp_dir / "output.mp4").string();
 
-    VideoPrams params("");
+    VideoParams params("");
     // params("") should produce default initialized struct or initialized from empty (no file)
     params.width = 512;
     params.height = 512;

@@ -84,7 +84,7 @@ TEST_F(FfmpegStreamTest, VideoReader_Seek) {
 TEST_F(FfmpegStreamTest, VideoWriter_WriteVideo) {
     fs::path output_path = output_dir / "output.mp4";
 
-    VideoPrams params("");
+    VideoParams params("");
     params.width = 640;
     params.height = 480;
     params.frameRate = 30;

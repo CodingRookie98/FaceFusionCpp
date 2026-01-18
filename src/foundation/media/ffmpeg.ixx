@@ -18,10 +18,10 @@ export module foundation.media.ffmpeg;
 
 namespace foundation::media::ffmpeg {
 
-export class VideoPrams {
+export class VideoParams {
 public:
-    explicit VideoPrams(const std::string& videoPath);
-    VideoPrams() = default;
+    explicit VideoParams(const std::string& videoPath);
+    VideoParams() = default;
 
     double frameRate = 0.0;
     unsigned int width = 0;
@@ -36,7 +36,7 @@ export void extract_frames(const std::string& videoPath, const std::string& outp
 
 export bool compose_video_from_images(const std::string& inputImagePattern,
                                       const std::string& outputVideoPath,
-                                      const VideoPrams& videoPrams);
+                                      const VideoParams& videoParams);
 
 // ============================================================================
 // VideoReader - 流式视频解码器
@@ -82,7 +82,7 @@ private:
 // ============================================================================
 export class VideoWriter {
 public:
-    VideoWriter(const std::string& outputPath, const VideoPrams& params);
+    VideoWriter(const std::string& outputPath, const VideoParams& params);
     ~VideoWriter();
 
     // 禁止拷贝
