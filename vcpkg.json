@@ -4,14 +4,26 @@
   "dependencies": [
     "curl",
     "dp-thread-pool",
-    "ffmpeg",
     "indicators",
     "nlohmann-json",
     "onnx",
     {
       "name": "opencv",
+      "features": []
+    },
+    {
+      "name": "ffmpeg",
       "features": [
-        "ffmpeg"
+        "avcodec",
+        "avformat",
+        "avfilter",
+        "avdevice",
+        "swscale",
+        "swresample",
+        "gpl",
+        "x264",
+        "x265",
+        "nvcodec"
       ]
     },
     "openssl",

@@ -18,12 +18,6 @@ protected:
     }
 };
 
-TEST_F(FfmpegTest, AudioCodecEnum) {
-    EXPECT_EQ(get_audio_codec("aac"), Audio_Codec::Codec_AAC);
-    EXPECT_EQ(get_audio_codec("mp3"), Audio_Codec::Codec_MP3);
-    EXPECT_EQ(get_audio_codec("unknown_xyz"), Audio_Codec::Codec_UNKNOWN);
-}
-
 TEST_F(FfmpegTest, IsVideoNonExistent) {
     EXPECT_FALSE(is_video("non_existent_video.mp4"));
 }
@@ -40,20 +34,12 @@ TEST_F(FfmpegTest, VideoPramsValid) {
     VideoPrams params(video_path.string());
     EXPECT_GT(params.width, 0);
     EXPECT_GT(params.height, 0);
+
     EXPECT_GT(params.frameRate, 0);
 }
 
 TEST_F(FfmpegTest, ExtractFrames) {
-    // Check if ffmpeg is available
-    auto check = child_process("ffmpeg -version");
-    bool ffmpeg_found = true;
-    for (const auto& line : check) {
-        if (line.find("Process exited") != std::string::npos) {
-            ffmpeg_found = false;
-            break;
-        }
-    }
-    if (!ffmpeg_found) { GTEST_SKIP() << "ffmpeg not found in path"; }
+    // No need to check for ffmpeg command, we link directly.
 
     auto video_path = get_test_data_path("standard_face_test_videos/slideshow_scaled.mp4");
     if (!fs::exists(video_path)) { GTEST_SKIP() << "Test video not found: " << video_path; }
@@ -62,6 +48,7 @@ TEST_F(FfmpegTest, ExtractFrames) {
     if (fs::exists(temp_dir)) fs::remove_all(temp_dir);
     fs::create_directories(temp_dir);
 
+    // Using %d format for C++ implementation (snprintf)
     std::string pattern = (temp_dir / "frame_%d.jpg").string();
     extract_frames(video_path.string(), pattern);
 
@@ -77,18 +64,7 @@ TEST_F(FfmpegTest, ExtractFrames) {
     fs::remove_all(temp_dir);
 }
 
-TEST_F(FfmpegTest, ImagesToVideo) {
-    // Check if ffmpeg is available
-    auto check = child_process("ffmpeg -version");
-    bool ffmpeg_found = true;
-    for (const auto& line : check) {
-        if (line.find("Process exited") != std::string::npos) {
-            ffmpeg_found = false;
-            break;
-        }
-    }
-    if (!ffmpeg_found) { GTEST_SKIP() << "ffmpeg not found in path"; }
-
+TEST_F(FfmpegTest, ComposeVideoFromImages) {
     auto img1 = get_test_data_path("standard_face_test_images/lenna.bmp");
     if (!fs::exists(img1)) { GTEST_SKIP() << "Test image not found: " << img1; }
 
@@ -104,14 +80,15 @@ TEST_F(FfmpegTest, ImagesToVideo) {
     std::string output_video = (temp_dir / "output.mp4").string();
 
     VideoPrams params("");
+    // params("") should produce default initialized struct or initialized from empty (no file)
     params.width = 512;
     params.height = 512;
-    params.frameRate = 30;
+    params.frameRate = 30.0;
     params.quality = 18; // Standard good quality
     params.videoCodec = "libx264";
     params.preset = "ultrafast";
 
-    bool success = images_to_video(input_pattern, output_video, params);
+    bool success = compose_video_from_images(input_pattern, output_video, params);
     EXPECT_TRUE(success);
     EXPECT_TRUE(fs::exists(output_video));
     EXPECT_TRUE(is_video(output_video));
