@@ -3,6 +3,12 @@ module;
 #include <string>
 #include <vector>
 
+/**
+ * @file face_detector_api.ixx
+ * @brief Face detector interface definition
+ * @author CodingRookie
+ * @date 2026-01-18
+ */
 export module domain.face.detector:api;
 
 import :types;
@@ -12,10 +18,18 @@ export namespace domain::face::detector {
 
 using InferenceOptions = foundation::ai::inference_session::Options;
 
+/**
+ * @brief Interface for Face Detectors
+ */
 class IFaceDetector {
 public:
     virtual ~IFaceDetector() = default;
 
+    /**
+     * @brief Load the detection model
+     * @param model_path Path to the model file
+     * @param options Inference session options
+     */
     virtual void load_model(const std::string& model_path,
                             const InferenceOptions& options = {}) = 0;
 

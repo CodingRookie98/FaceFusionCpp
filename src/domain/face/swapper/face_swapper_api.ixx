@@ -2,6 +2,12 @@ module;
 #include <string>
 #include <opencv2/core.hpp>
 
+/**
+ * @file face_swapper_api.ixx
+ * @brief Face swapper interface definition
+ * @author CodingRookie
+ * @date 2026-01-18
+ */
 export module domain.face.swapper:api;
 
 import :types;
@@ -9,6 +15,9 @@ import foundation.ai.inference_session;
 
 export namespace domain::face::swapper {
 
+/**
+ * @brief Interface for Face Swappers
+ */
 class IFaceSwapper {
 public:
     virtual ~IFaceSwapper() = default;

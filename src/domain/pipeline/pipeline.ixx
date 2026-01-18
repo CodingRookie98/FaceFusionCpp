@@ -1,3 +1,9 @@
+/**
+ * @file pipeline.ixx
+ * @brief Pipeline module aggregation
+ * @author CodingRookie
+ * @date 2026-01-18
+ */
 export module domain.pipeline;
 
 export import :types;

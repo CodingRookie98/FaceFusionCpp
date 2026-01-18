@@ -119,47 +119,6 @@ DetectionResults Scrfd::detect(const cv::Mat& visionFrame) {
     // Parse outputs
     // SCRFD outputs are usually 3 feature levels (8, 16, 32 strides)
     // Each level has Score, BBox, Landmarks (if enabled)
-    // Original code logic:
-    // Output order usually: score8, bbox8, kps8, score16, bbox16, kps16, ...
-    // Check `ortOutputs` size.
-
-    // Assuming m_featureStrides = {8, 16, 32}
-    // m_featureMapChannel = 1? In original code: `ortOutputs[index + m_featureMapChannel]`
-    // This implies outputs are interleaved or grouped.
-    // Let's assume standard structure or follow original exactly.
-
-    // Original loop:
-    /*
-    for (size_t index = 0; index < m_featureStrides.size(); ++index) {
-        int size = ortOutputs[index].GetTensorTypeAndShapeInfo().GetShape()[0]; // Batch * Height *
-    Width * Anchors? No, usually Flattened?
-        // Original code: size is dimension 0?
-        // SCRFD outputs are usually [N, H*W*A, 1] for score?
-
-        // Original code access:
-        // pdataScore = ortOutputs[index].GetTensorMutableData<float>();
-        // pdataBbox = ortOutputs[index + m_featureMapChannel].GetTensorMutableData<float>();
-        // pdataLandmark = ortOutputs[index + 2 *
-    m_featureMapChannel].GetTensorMutableData<float>();
-    }
-    */
-
-    // If m_featureStrides.size() is 3.
-    // m_featureMapChannel = 3?
-    // Usually SCRFD has 9 outputs (3 strides * 3 types).
-    // Types: Score, BBox, KPS.
-    // So indices:
-    // Stride 8: 0 (score), 1 (bbox), 2 (kps)
-    // Stride 16: 3 (score), 4 (bbox), 5 (kps)
-    // ...
-    // But original code says: `index + m_featureMapChannel`
-    // If index goes 0, 1, 2.
-    // If m_featureMapChannel is 3.
-    // index=0: 0, 3, 6
-    // index=1: 1, 4, 7
-    // index=2: 2, 5, 8
-    // This makes sense if outputs are [Score8, Score16, Score32, Bbox8, Bbox16, ..., Kps8...]
-    // OR [Score8, Bbox8, Kps8, Score16...]
 
     // Let's assume 3 strides, 3 outputs per stride. Total 9 outputs.
     // If outputs are grouped by type:

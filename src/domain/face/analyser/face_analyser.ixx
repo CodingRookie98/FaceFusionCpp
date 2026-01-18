@@ -5,6 +5,12 @@ module;
 #include <tuple>
 #include <opencv2/core.hpp>
 
+/**
+ * @file face_analyser.ixx
+ * @brief High-level face analysis and processing module
+ * @author CodingRookie
+ * @date 2026-01-18
+ */
 export module domain.face.analyser;
 
 import domain.face;
@@ -20,6 +26,9 @@ import foundation.ai.inference_session;
 
 export namespace domain::face::analyser {
 
+/**
+ * @brief Paths for all face models
+ */
 struct ModelPaths {
     std::string face_detector_yolo;
     std::string face_detector_scrfd;
@@ -31,17 +40,26 @@ struct ModelPaths {
     std::string face_classifier_fairface;
 };
 
+/**
+ * @brief Options for face detection
+ */
 struct FaceDetectorOptions {
     detector::DetectorType type = detector::DetectorType::Yolo;
     float min_score = 0.5f;
     float iou_threshold = 0.4f;
 };
 
+/**
+ * @brief Options for face landmarking
+ */
 struct FaceLandmarkerOptions {
     landmarker::LandmarkerType type = landmarker::LandmarkerType::_2DFAN;
     float min_score = 0.5f;
 };
 
+/**
+ * @brief Configuration options for FaceAnalyser
+ */
 struct Options {
     ModelPaths model_paths;
 
@@ -56,6 +74,11 @@ struct Options {
     foundation::ai::inference_session::Options inference_session_options;
 };
 
+/**
+ * @brief FaceAnalyser orchestrates face detection, recognition, and analysis
+ * @details This class manages the lifecycle of various face models and provides high-level APIs
+ *          to extract face information from images.
+ */
 class FaceAnalyser {
 public:
     explicit FaceAnalyser(const Options& options);
@@ -72,21 +95,65 @@ public:
     FaceAnalyser& operator=(const FaceAnalyser&) = delete;
 
     /**
-     * @brief Update options.
-     * @details If model paths or inference session options are changed,
-     *          the underlying model components will be updated via the registry.
+     * @brief Update options and reload models if necessary
+     * @param options New configuration options
      */
     void update_options(const Options& options);
 
+    /**
+     * @brief Detect and analyze multiple faces in a frame
+     * @param vision_frame Input image frame
+     * @return Vector of detected Face objects
+     */
     std::vector<Face> get_many_faces(const cv::Mat& vision_frame);
+
+    /**
+     * @brief Detect and get a single face (based on selection strategy)
+     * @param vision_frame Input image frame
+     * @param position Face position index (if applicable)
+     * @return Detected Face object, or empty Face if none found
+     */
     Face get_one_face(const cv::Mat& vision_frame, unsigned int position = 0);
+
+    /**
+     * @brief Calculate the average face embedding from multiple frames
+     * @param vision_frames List of image frames containing the same face
+     * @return A virtual Face object representing the average face
+     */
     Face get_average_face(const std::vector<cv::Mat>& vision_frames);
+
+    /**
+     * @brief Calculate the average face from a list of pre-detected faces
+     * @param faces List of Face objects
+     * @return A virtual Face object representing the average face
+     */
     Face get_average_face(const std::vector<Face>& faces);
 
+    /**
+     * @brief Find faces similar to reference faces in a target frame
+     * @param reference_faces List of known faces to search for
+     * @param target_vision_frame Frame to search in
+     * @param face_distance Similarity threshold (distance)
+     * @return Vector of matching Face objects found in the target frame
+     */
     std::vector<Face> find_similar_faces(const std::vector<Face>& reference_faces,
                                          const cv::Mat& target_vision_frame, float face_distance);
 
+    /**
+     * @brief Compare two faces for similarity
+     * @param face Detected face
+     * @param reference_face Reference face
+     * @param face_distance Max distance threshold for match
+     * @return True if faces match
+     */
     static bool compare_face(const Face& face, const Face& reference_face, float face_distance);
+
+    /**
+     * @brief Calculate Euclidean distance between face embeddings
+     * @param face1 First face
+     * @param face2 Second face
+     * @return Distance value
+     */
     static float calculate_face_distance(const Face& face1, const Face& face2);
 
 private:

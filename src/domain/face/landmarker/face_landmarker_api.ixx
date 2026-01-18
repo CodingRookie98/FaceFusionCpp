@@ -3,6 +3,12 @@ module;
 #include <string>
 #include <vector>
 
+/**
+ * @file face_landmarker_api.ixx
+ * @brief Face landmarker interface definition
+ * @author CodingRookie
+ * @date 2026-01-18
+ */
 export module domain.face.landmarker:api;
 import domain.face;
 import foundation.ai.inference_session;
@@ -10,40 +16,40 @@ import foundation.ai.inference_session;
 export namespace domain::face::landmarker {
 
 /**
- * @brief 人脸关键点检测结果
+ * @brief Face landmarker result structure
  */
 struct LandmarkerResult {
-    domain::face::types::Landmarks landmarks; ///< 检测到的关键点
-    float score;                              ///< 置信度得分
+    domain::face::types::Landmarks landmarks; ///< Detected landmarks
+    float score;                              ///< Confidence score
 };
 
 /**
- * @brief 人脸关键点检测器接口
+ * @brief Interface for Face Landmarkers
  */
 class IFaceLandmarker {
 public:
     virtual ~IFaceLandmarker() = default;
 
     /**
-     * @brief 加载模型
-     * @param model_path 模型路径
-     * @param options 推理会话选项
+     * @brief Load the landmarker model
+     * @param model_path Path to the model file
+     * @param options Inference session options
      */
     virtual void load_model(const std::string& model_path,
                             const foundation::ai::inference_session::Options& options = {}) = 0;
 
     /**
-     * @brief 检测关键点
-     * @param image 输入图像
-     * @param bbox 人脸边界框
-     * @return LandmarkerResult 检测结果
+     * @brief Detect face landmarks
+     * @param image Input image
+     * @param bbox Bounding box of the face
+     * @return LandmarkerResult containing landmarks and score
      */
     virtual LandmarkerResult detect(const cv::Mat& image, const cv::Rect2f& bbox) = 0;
 
     /**
-     * @brief 从5点关键点扩展到68点 (专门用于 68By5 模型)
-     * @param landmarks5 5点关键点
-     * @return 68点关键点
+     * @brief Expand 5-point landmarks to 68-point (Helper)
+     * @param landmarks5 Input 5-point landmarks
+     * @return 68-point landmarks (interpolated or predicted)
      */
     virtual domain::face::types::Landmarks expand_68_from_5(
         const domain::face::types::Landmarks& landmarks5) {
