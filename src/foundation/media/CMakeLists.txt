@@ -13,6 +13,8 @@ target_sources(foundation_media
     PRIVATE
         vision.cpp
         ffmpeg.cpp
+        ffmpeg_reader.cpp
+        ffmpeg_writer.cpp
 )
 
 target_link_libraries(foundation_media
