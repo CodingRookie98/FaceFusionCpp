@@ -2,6 +2,62 @@
 
 本文档定义了 FaceFusionCpp 项目的 C++ 代码质量标准、评估工具使用指南以及详细的评分规则。
 
+## 3. Doxygen 注释标准 (New)
+
+> @brief 所有 Public Module Interface (.ixx) 必须遵循以下 Doxygen 注释规范。
+
+### 3.1 文件头模板
+每个 `.ixx` 文件开头必须包含：
+```cpp
+/**
+ * @file {filename}
+ * @brief {Short description}
+ * @author CodingRookie
+ * @date {YYYY-MM-DD}
+ * @note {Optional detailed notes}
+ */
+```
+
+### 3.2 类与接口模板
+所有导出的类和公共方法必须包含：
+```cpp
+/**
+ * @brief {Brief description}
+ * @details {Detailed description if needed}
+ * @param {name} {description}
+ * @return {description}
+ */
+```
+
+### 3.3 示例 (InferenceSession)
+```cpp
+/**
+ * @file inference_session.ixx
+ * @brief ONNX Runtime inference session wrapper module
+ * @author CodingRookie
+ * @date 2024-07-12
+ */
+
+export module foundation.ai.inference_session;
+
+namespace foundation::ai::inference_session {
+
+    /**
+     * @brief ONNX Runtime inference session wrapper class
+     * @details Provides high-level interface for loading ONNX models...
+     */
+    export class InferenceSession {
+    public:
+        /**
+         * @brief Load an ONNX model with specified options
+         * @param model_path Path to the ONNX model file
+         * @param options Session options
+         */
+        virtual void load_model(const std::string& model_path, const Options& options);
+    };
+}
+```
+
 ## 1. 评估工具使用指南
 
 ### 1.1 静态分析工具
