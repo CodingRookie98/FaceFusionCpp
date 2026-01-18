@@ -6,6 +6,12 @@ module;
 #include <vector>
 #include <iostream>
 
+/**
+ * @file pipeline_adapters.ixx
+ * @brief Adapter classes to bridge Domain services to Pipeline FrameProcessors
+ * @author CodingRookie
+ * @date 2026-01-18
+ */
 export module domain.pipeline:adapters;
 
 import :api;
@@ -16,10 +22,13 @@ import domain.face.enhancer;
 import domain.face.expression;
 import domain.frame.enhancer;
 
-export namespace domain::pipeline {
+namespace domain::pipeline {
 
-// Swapper Adapter
-class SwapperAdapter : public IFrameProcessor {
+/**
+ * @brief Adapter for Face Swapper
+ * @details Wraps IFaceSwapper to implement IFrameProcessor
+ */
+export class SwapperAdapter : public IFrameProcessor {
 public:
     explicit SwapperAdapter(std::shared_ptr<face::swapper::IFaceSwapper> swapper) :
         m_swapper(std::move(swapper)) {}
@@ -45,8 +54,11 @@ private:
     std::shared_ptr<face::swapper::IFaceSwapper> m_swapper;
 };
 
-// Face Enhancer Adapter
-class FaceEnhancerAdapter : public IFrameProcessor {
+/**
+ * @brief Adapter for Face Enhancer
+ * @details Wraps IFaceEnhancer to implement IFrameProcessor
+ */
+export class FaceEnhancerAdapter : public IFrameProcessor {
 public:
     explicit FaceEnhancerAdapter(std::shared_ptr<face::enhancer::IFaceEnhancer> enhancer) :
         m_enhancer(std::move(enhancer)) {}
@@ -70,8 +82,11 @@ private:
     std::shared_ptr<face::enhancer::IFaceEnhancer> m_enhancer;
 };
 
-// Expression Adapter
-class ExpressionAdapter : public IFrameProcessor {
+/**
+ * @brief Adapter for Face Expression Restorer
+ * @details Wraps IFaceExpressionRestorer to implement IFrameProcessor
+ */
+export class ExpressionAdapter : public IFrameProcessor {
 public:
     explicit ExpressionAdapter(
         std::shared_ptr<face::expression::IFaceExpressionRestorer> restorer) :
@@ -96,8 +111,11 @@ private:
     std::shared_ptr<face::expression::IFaceExpressionRestorer> m_restorer;
 };
 
-// Frame Enhancer Adapter
-class FrameEnhancerAdapter : public IFrameProcessor {
+/**
+ * @brief Adapter for Frame Enhancer
+ * @details Wraps IFrameEnhancer to implement IFrameProcessor
+ */
+export class FrameEnhancerAdapter : public IFrameProcessor {
 public:
     explicit FrameEnhancerAdapter(std::shared_ptr<frame::enhancer::IFrameEnhancer> enhancer) :
         m_enhancer(std::move(enhancer)) {}

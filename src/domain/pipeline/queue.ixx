@@ -4,19 +4,37 @@ module;
 #include <condition_variable>
 #include <optional>
 
+/**
+ * @file queue.ixx
+ * @brief Thread-safe queue implementation for the pipeline
+ * @author CodingRookie
+ * @date 2026-01-18
+ */
 export module domain.pipeline:queue;
 
-export namespace domain::pipeline {
+namespace domain::pipeline {
 
+/**
+ * @brief Thread-safe queue with blocking push/pop and shutdown capability
+ * @tparam T Type of elements in the queue
+ */
 template <typename T> class ThreadSafeQueue {
 public:
+    /**
+     * @brief Construct a new Thread Safe Queue
+     * @param max_size Maximum number of elements in the queue
+     */
     explicit ThreadSafeQueue(size_t max_size) : m_max_size(max_size) {}
 
     // 禁止拷贝
     ThreadSafeQueue(const ThreadSafeQueue&) = delete;
     ThreadSafeQueue& operator=(const ThreadSafeQueue&) = delete;
 
-    // 阻塞直到有空间或被关闭
+    /**
+     * @brief Push a value into the queue (blocking)
+     * @details Blocks until there is space or the queue is shut down
+     * @param value The value to push
+     */
     void push(T value) {
         std::unique_lock<std::mutex> lock(m_mutex);
         // 等待直到队列不满 或 被关闭
@@ -28,8 +46,11 @@ public:
         m_not_empty.notify_one();
     }
 
-    // 阻塞直到有数据或被关闭
-    // 返回 std::nullopt 表示队列已关闭且为空
+    /**
+     * @brief Pop a value from the queue (blocking)
+     * @details Blocks until there is data or the queue is shut down
+     * @return std::optional<T> The value, or std::nullopt if queue is shutdown and empty
+     */
     std::optional<T> pop() {
         std::unique_lock<std::mutex> lock(m_mutex);
         // 等待直到队列不空 或 被关闭
@@ -45,7 +66,10 @@ public:
         return val;
     }
 
-    // 关闭队列，不再接受新数据，唤醒所有等待者
+    /**
+     * @brief Shutdown the queue
+     * @details Wakes up all waiting threads and stops accepting new elements
+     */
     void shutdown() {
         {
             std::lock_guard<std::mutex> lock(m_mutex);
@@ -56,11 +80,19 @@ public:
         m_not_full.notify_all();
     }
 
+    /**
+     * @brief Check if queue is empty
+     * @return True if empty
+     */
     bool empty() const {
         std::lock_guard<std::mutex> lock(m_mutex);
         return m_queue.empty();
     }
 
+    /**
+     * @brief Get current size of the queue
+     * @return Number of elements
+     */
     size_t size() const {
         std::lock_guard<std::mutex> lock(m_mutex);
         return m_queue.size();
