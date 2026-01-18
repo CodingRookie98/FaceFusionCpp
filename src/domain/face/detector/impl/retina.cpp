@@ -113,12 +113,8 @@ DetectionResults Retina::detect(const cv::Mat& visionFrame) {
 
         int featureStride = m_featureStrides[index];
 
-        auto& outputTensor = ortOutputs[index]; // Score?
+        auto& outputTensor = ortOutputs[index];
         // RetinaFace outputs structure depends on export.
-        // Original code uses:
-        // ortOutputs[index]: Score?
-        // ortOutputs[index + m_featureMapChannel]: BBox?
-        // ortOutputs[index + 2 * m_featureMapChannel]: Landmark?
         // Assuming interleaved outputs similar to SCRFD.
 
         const float* pdataScore = ortOutputs[index].GetTensorData<float>();
@@ -130,12 +126,8 @@ DetectionResults Retina::detect(const cv::Mat& visionFrame) {
                                 .GetTensorTypeAndShapeInfo()
                                 .GetElementCount(); // Typically flattened [N*H*W*A]
 
-        // In RetinaFace, score shape might include channel=2 (fg/bg) or just 1.
-        // Usually RetinaFace has 2 channels for score (bg, fg).
-        // But element count is total elements.
-        // Let's check original code:
-        // int size = ortOutputs[index].GetTensorTypeAndShapeInfo().GetShape()[0]; -> This looks
-        // like 1st dim if flattened? Or maybe [Batch, Size, ...]
+        // Score tensor usually has 1 or 2 channels.
+        // We assume 1 channel per anchor for face confidence (or use the FG class if 2 channels).
 
         int strideHeight = static_cast<int>(std::floor(m_faceDetectorSize.height / featureStride));
         int strideWidth = static_cast<int>(std::floor(m_faceDetectorSize.width / featureStride));
@@ -143,10 +135,7 @@ DetectionResults Retina::detect(const cv::Mat& visionFrame) {
         auto anchors = domain::face::helper::create_static_anchors(featureStride, m_anchorTotal,
                                                                    strideHeight, strideWidth);
 
-        // Assuming pdataScore has 1 value per anchor (confidence of face)
-        // If it has 2 values (bg, fg), we need to stride by 2?
-        // Original code: float tempScore = *(pdataScoreRaw + j);
-        // It implies 1 value per anchor.
+        // Assuming pdataScore provides confidence score for each anchor.
 
         for (size_t j = 0; j < anchors.size() && j < numAnchors; ++j) {
             float score = pdataScore[j];

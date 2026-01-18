@@ -90,7 +90,7 @@ DetectionResults Yolo::detect(const cv::Mat& visionFrame) {
 
     if (!is_model_loaded()) { return results; }
 
-    // Check support sizes? Yolo supports 640x640 only for now as per original code
+    // Verify input size. Yolo currently supports 640x640.
 
     auto [inputData, ratioHeight, ratioWidth] = preProcess(visionFrame, faceDetectorSize_);
 
