@@ -25,8 +25,3 @@ python build.py --config Release --action test
 ```
 
 ## 3. 故障排查
-
-如果在 CI 中遇到 `Access Violation` 或退出码 `0xc0000005`：
-1. 首先确认是否已设置 `FACEFUSION_PROVIDER="cpu"`。
-2. 检查日志（默认输出到 `logs/app.log`）以定位崩溃发生在哪个阶段。
-3. 参考 `docs/dev_docs/C++_troubleshooting.md` 中的“ONNX Runtime + TensorRT 导致的 SEH 异常”章节。
