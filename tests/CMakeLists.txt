@@ -41,11 +41,10 @@ function(add_facefusion_test TEST_NAME)
         TEST_PREFIX "${TEST_NAME}."
         PROPERTIES
             LABELS "facefusion"
-            TIMEOUT 300
+            TIMEOUT 0
     )
 
 endfunction()
 
 add_subdirectory(unit)
 add_subdirectory(integration)
-

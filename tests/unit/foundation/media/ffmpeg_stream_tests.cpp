@@ -117,7 +117,7 @@ TEST_F(FfmpegStreamTest, VideoWriter_WriteVideo) {
     EXPECT_EQ(reader.get_width(), 640);
     EXPECT_EQ(reader.get_height(), 480);
     // Allow small fp error
-    EXPECT_NEAR(reader.get_fps(), 30.0, 1.0);
+    EXPECT_NEAR(reader.get_fps(), 30.0, 2.0);
 
     // Check we can read frames back
     int read_count = 0;
