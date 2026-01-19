@@ -55,7 +55,7 @@ TEST_F(FaceMaskerTest, CreateRegionMaskerThrowsOnInvalidPath) {
 
 TEST_F(FaceMaskerTest, OcclusionMaskerInference) {
     // Get model path
-    std::string model_path = repo->ensure_model("face_occluder");
+    std::string model_path = repo->ensure_model("xseg_1");
     if (model_path.empty()) { GTEST_SKIP() << "face_occluder model not available"; }
 
     // Load test image
@@ -105,7 +105,7 @@ TEST_F(FaceMaskerTest, OcclusionMaskerInference) {
 
 TEST_F(FaceMaskerTest, RegionMaskerInference) {
     // Get model path
-    std::string model_path = repo->ensure_model("face_parser");
+    std::string model_path = repo->ensure_model("bisenet_resnet_18");
     if (model_path.empty()) { GTEST_SKIP() << "face_parser model not available"; }
 
     // Load test image
@@ -155,7 +155,7 @@ TEST_F(FaceMaskerTest, RegionMaskerInference) {
 }
 
 TEST_F(FaceMaskerTest, RegionMaskerMultipleRegions) {
-    std::string model_path = repo->ensure_model("face_parser");
+    std::string model_path = repo->ensure_model("bisenet_resnet_18");
     if (model_path.empty()) { GTEST_SKIP() << "face_parser model not available"; }
 
     if (!fs::exists(test_image_path)) { GTEST_SKIP() << "Test image not found"; }
