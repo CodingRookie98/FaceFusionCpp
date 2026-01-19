@@ -1,6 +1,6 @@
 # 应用层配置设计备忘录 (Application Layer Configuration Design)
 
-> **文档版本**: V1.4
+> **文档版本**: V1.5
 > **文档说明**: 基于模块化与 Pipeline 设计模式，定义配置结构、设计原则及工程化约束。
 
 ---
@@ -87,7 +87,11 @@ models:
   # 模型基础目录
   # 逻辑: 完整路径 = app_config.models.path + models_info.item.file_name
   path: "./assets/models"
-  download_strategy: "auto" # force, skip, auto
+  # 下载策略:
+  # force: 无论模型是否存在都强制下载
+  # skip: 模型不存在时跳过下载，从 model_repository 返回空路径，后续加载模型报错退出程序
+  # auto: 模型不存在时自动下载 (默认)
+  download_strategy: "auto"
 
 # 6. 临时文件管理 (Temp File Management)
 temp_directory: "./temp"
@@ -163,12 +167,23 @@ resource:
 # 若多个步骤共享检测结果，可在此统一定义
 face_analysis:
   face_detector:
-    models: ["yolo", "retina", "scrfd"] # 融合策略
+    # Models: [retinaface, scrfd, yoloface]
+    models: ["yoloface", "retinaface", "scrfd"] # 融合策略
     score_threshold: 0.5
   face_landmarker:
+    # Models: [2dfan4, peppa_wutz, face_landmarker_68_5]
     model: "2dfan4"
+  face_recognizer:
+    # 人脸识别/相似度匹配 (用于 reference 模式)
+    # Models: [arcface_w600k_r50]
+    model: "arcface_w600k_r50"
+    # 相似度阈值: 低于此值认为不是同一人，跳过处理
+    # Range: [0.0, 1.0] (越高越严格)
+    similarity_threshold: 0.6
   face_masker:
     # 多遮罩融合策略 (Mask Fusion)
+    # Face Occluder Models: [xseg_1, xseg_2]
+    # Face Parser Models: [bisenet_resnet_18, bisenet_resnet_34]
     types: ["box", "occlusion", "region"]
     # Supported Regions: [skin, left-eyebrow, right-eyebrow, left-eye, right-eye,
     #                     eye-glasses, left-ear, right-ear, earring, nose, mouth,
@@ -199,7 +214,7 @@ face_analysis:
 #          - 同上：仅处理与参考人脸相似的人脸
 #
 # 3. expression_restorer
-#    - Models: [live_portrait]
+#    - Models: [live_portrait] (internally uses: feature_extractor, motion_extractor, generator)
 #    - Params:
 #        restore_factor: 0.0 - 1.0 (default: 0.8)
 #        face_selector_mode: [reference, one, many] (default: many)
@@ -207,8 +222,8 @@ face_analysis:
 #          - 同上：仅处理与参考人脸相似的人脸
 #
 # 4. frame_enhancer
-#    - Models: [real_hatgan_x4, real_esrgan_x2, real_esrgan_x2_fp16,
-#               real_esrgan_x4, real_esrgan_x4_fp16, real_esrgan_x8, real_esrgan_x8_fp16]
+#    - Models: [real_esrgan_x2, real_esrgan_x2_fp16, real_esrgan_x4, real_esrgan_x4_fp16,
+#               real_esrgan_x8, real_esrgan_x8_fp16, real_hatgan_x4]
 #    - Params:
 #        enhance_factor: 0.0 - 1.0 (default: 0.8)
 #
