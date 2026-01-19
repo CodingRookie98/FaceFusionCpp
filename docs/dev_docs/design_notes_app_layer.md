@@ -1,39 +1,50 @@
 # 应用层配置设计备忘录 (Application Layer Configuration Design) - V1.1 (Refined)
 
-## 1. 核心架构：关注点分离
+> **文档说明**：基于 [配置文件设计思路] 优化，采用模块化与 Pipeline 设计模式。本文档详细定义配置结构、设计原则及工程化约束。
 
-我们将配置严格划分为**静态环境 (App Config)** 与 **动态逻辑 (Task Config)**。
+## 1. 核心架构：关注点分离 (Separation of Concerns)
+
+为了提高系统的可维护性与扩展性，我们将配置严格划分为**静态环境**与**动态逻辑**。
 
 ### 1.1 App Config (环境与基础设施)
-*   **特性**: 静态、全局、启动时加载、不可变。
-*   **结构**: 模块化分层 (Server, Logging, Inference, Resource)。
-*   **格式**: `app_config.yaml`
+*   **定位**：通过 `app_config.yaml` 定义整个应用的运行时环境。
+*   **特性**：
+    *   **静态 (Static)**：程序启动时加载。
+    *   **全局 (Global)**：作用于整个应用生命周期。
+    *   **不可变 (Immutable)**：运行时一般不修改。
+    *   **模块化 (Modular)**：包含 Server、Logging、Inference、Resource 等基础设施配置。
 
 ### 1.2 Task Config (业务流水线)
-*   **特性**: 动态、任务级、运行时加载、可变。
-*   **结构**: 基于 Pipeline (Steps) 或 Actions。
-*   **格式**: `task_config.yaml` 或 `task_*.yaml`
+*   **定位**：通过 `task_config.yaml` 或 `task_*.yaml` 定义具体的业务处理逻辑。
+*   **特性**：
+    *   **动态 (Dynamic)**：每次执行任务时加载。
+    *   **任务级 (Task-Scoped)**：针对单次任务有效。
+    *   **可变 (Mutable)**：用户可根据需求灵活调整 Pipeline。
+    *   **架构模式 (Pattern)**：基于 Pipeline (Steps) 或 Actions 设计。
 
 ### 1.3 运行模式 (Execution Modes)
-*   **命令行模式 (CLI)**: 当前重点。通过命令行参数传入任务配置文件路径（e.g., `--config task.yaml`）。
-*   **服务模式 (Server)**: 未来规划。通过 HTTP/Socket 接收动态任务配置。
-*   **设计原则**: 核心接口 `RunPipeline(TaskConfig)` 必须与输入源解耦，确保 CLI 和 Server 模式仅在"配置加载层"有所不同，底层逻辑完全复用。
+*   **命令行模式 (CLI)**：
+    *   **当前重点**。
+    *   通过命令行参数传入任务配置文件路径（e.g., `--config task.yaml`）。
+*   **服务模式 (Server)**：
+    *   **未来规划**。
+    *   通过 HTTP/Socket 接收动态 JSON/YAML 任务配置。
+*   **设计原则**：核心接口 `RunPipeline(TaskConfig)` 必须与输入源解耦，确保 CLI 和 Server 模式仅在"配置加载层"有所不同，底层逻辑完全复用。
 
 ---
 
-## 2. 详细设计规范
+## 2. 详细设计规范 (Detailed Design Specification)
 
 ### 2.1 App Config 设计 (`app_config.yaml`)
 
-不再使用扁平结构，而是分层组织：
+采用分层结构而非扁平结构，以增强可读性。
 
 ```yaml
 # Schema Version
 config_version: "1.0"
 
-# 1. 核心应用信息 (移除)
-# App Name 和 Version 不在配置文件中定义，而是由编译系统 (CMake) 注入到二进制中。
-# 原因：版本是程序的固有属性，防止用户配置文件与二进制版本不一致。
+# 1. 核心应用信息
+# 注意：App Name 和 Version 不在此定义，由编译期注入 (见 Sec 6.5)
 
 # 2. 推理基础设施 (Inference Infrastructure)
 inference:
@@ -42,7 +53,7 @@ inference:
   # 引擎缓存策略
   engine_cache:
     enable: true
-    path: "./.cache/tensorrt"
+    path: "./.cache/tensorrt" # 相对路径，参考 Sec 6.1
   # 默认推理后端优先级 (Multiselect & Priority)
   default_providers:
     - tensorrt
@@ -60,14 +71,13 @@ resource:
 logging:
   # 支持级别: trace, debug, info, warn, error
   level: "info"
-  # 仅能设置程序日志目录，不能设置日志文件名
+  # 日志存储目录 (注意：文件名固定为 app.log 或程序指定，不可配置，仅目录可配)
   directory: "./logs"
   rotation: "daily"
 
 # 5. 模型管理 (Model Management)
 models:
-  # 模型基础目录 (Base Directory)
-  # 结构变更: `models_info.json` 将废弃 `path` 字段，新增 `file_name` 字段
+  # 模型基础目录
   # 逻辑: 完整路径 = app_config.models.path + models_info.item.file_name
   path: "./assets/models"
   download_strategy: "auto" # force, skip, auto
@@ -75,7 +85,7 @@ models:
 
 ### 2.2 Task Config 设计 (`task_config.yaml`)
 
-采用 **Pipeline** 模式，强调步骤 (Step)与参数 (Params) 的自包含性。
+采用 **Pipeline** 模式，强调步骤 (Step) 与参数 (Params) 的自包含性。
 
 ```yaml
 # Schema Version
@@ -84,58 +94,50 @@ config_version: "1.0"
 # 1. 任务元数据 (Task Metadata)
 task_info:
   # 唯一任务标识 (Runtime Unique ID)
-  # 格式: [a-zA-Z0-9_] (数字字母下划线)
-  # 策略:
-  #   - 若为空: 程序自动生成 (e.g., task_timestamp_random)
-  #   - 若用户指定且已存在: 程序拒绝添加任务 (Reject)
+  # 格式: [a-zA-Z0-9_]
+  # 策略: 若为空由程序生成；若指定且冲突则拒绝的任务。
   id: "task_default_001"
   description: "Face swap and enhancement pipeline"
   # 是否启用独立任务日志 (Optional)
-  # 若启用，将在日志目录生成 {task_id}.log，仅包含本任务日志
+  # 若启用，将在日志目录生成 {task_id}.log
   enable_logging: true
 
 # 2. 输入输出 (I/O)
 io:
-  # 支持多输入源 (Source: The media to be processed/referenced)
-  # Examples: Replacement Face Image, Source Video for enhancement
+  # 输入源列表 (支持多源)
   source_paths:
-    - "./data/source_face.jpg"
+    - "D:/projects/faceFusionCpp/data/source_face.jpg" # 强制绝对路径 (Sec 6.1)
 
-  # 目标路径 (Target: The content to be swapped/modified)
-  # Examples: Target Video/Image
+  # 目标列表
   target_paths:
-    - "./data/target_video.mp4"
+    - "D:/projects/faceFusionCpp/data/target_video.mp4" # 强制绝对路径
+
   # 输出配置
   output:
-    path: "./data/output/"
+    path: "D:/projects/faceFusionCpp/data/output/"     # 强制绝对路径
     prefix: "result_"
     subfix: "_v1"
-    # 图片输出配置
-    # Supported: [png, jpg, bmp]
-    image_format: "png"
-    # 视频输出配置
-    # Supported: [libx264, libx265, libvpx-vp9, h264_nvenc, hevc_nvenc]
-    video_encoder: "libx264"
-    # Range: [0, 100] (Higher is better quality)
-    video_quality: 80
 
-# 3. 资源控制 (Resource Control)
-resource:
+    # 格式配置
+    image_format: "png"        # [png, jpg, bmp]
+    video_encoder: "libx264"   # [libx264, libx265, h264_nvenc, ...]
+    video_quality: 80          # [0-100]
+
 # 3. 资源控制 (Resource Control)
 resource:
   # 任务并发线程数 (Thread count for this specific task)
-  thread_count: 1
-  # 处理顺序策略 (Execution Order)
-  # sequential: 顺序模式 (默认). 每个媒体文件依次完成所有步骤 (Asset 1 [S1->S2], Asset 2 [S1->S2]). 省空间，低延迟。
-  # batch: 批处理模式 (Stage-First). 所有媒体文件完成步骤 1 后，再进行步骤 2 (Step 1 [A1, A2], Step 2 [A1, A2]). 适合最大化单一模型吞吐量，但需要保存中间结果。
+  # 0: Auto (默认为机器最大线程数的一半 / 50% of CPU Cores)
+  thread_count: 0
+  # 处理顺序策略:
+  # sequential: 顺序模式 (默认, 省空间). Asset 1 [S1->S2] -> Asset 2 [S1->S2]
+  # batch: 批处理模式 (吞吐量优先). Step 1 [A1, A2] -> Step 2 [A1, A2]
   execution_order: "sequential"
 
 # 4. 人脸分析配置 (Shared Analysis Config)
 # 若多个步骤共享检测结果，可在此统一定义
 face_analysis:
   face_detector:
-    # 多模型并集策略 (Fusion Strategy)
-    models: ["yolo", "retina", "scrfd"]
+    models: ["yolo", "retina", "scrfd"] # 融合策略
     score_threshold: 0.5
   face_landmarker:
     model: "2dfan4"
@@ -144,11 +146,11 @@ face_analysis:
     types: ["box", "occlusion", "region"]
     # Supported Regions: [skin, left-eyebrow, right-eyebrow, left-eye, right-eye, eye-glasses, left-ear, right-ear, earring, nose, mouth, upper-lip, lower-lip, neck, necklace, cloth, hair, hat]
     # Default: "all" (if not specified or empty)
-    region: ["face", "eyes"]
+    region: ["face", "eyes"] # 遮罩区域
     # 融合逻辑: 将由代码内部实现最佳遮罩计算
 
-# 4. 处理流水线 (Processing Pipeline)
-# 核心变化：使用列表定义有序步骤
+# 5. 处理流水线 (Processing Pipeline)
+# 有序定义处理步骤
 # Supported Processors & Parameters:
 #
 # 1. face_swapper
@@ -178,12 +180,12 @@ face_analysis:
 
 pipeline:
   - step: "face_swapper"
-    name: "swap_main_face" # Optional alias
+    name: "swap_main_face" # Step 别名
     enabled: true
     params:
       model: "inswapper_128_fp16"
       face_selector_mode: "reference"
-      reference_face_path: "./assets/ref_face.jpg"
+      reference_face_path: "D:/ref_face.jpg" # 绝对路径
 
   - step: "face_enhancer"
     name: "enhance_face"
@@ -204,51 +206,113 @@ pipeline:
     enabled: false
     params:
       model: "real_esrgan_x4"
-      enhance_factor: 1.0  # (Note: previously called blend)
+      enhance_factor: 1.0
 ```
 
 ---
 
-## 3. 实现路线图
+## 3. 核心业务逻辑 (Core Business Logic)
 
-1.  **Schema Definition**: Struct (C++) 数据结构以匹配上述 YAML。
-2.  **Parser Implementation**: 使用 `yaml-cpp` 实现解析器。
-    *   实现层级 App Config 解析。
-    *   实现多态 Task Config 解析 (根据 `step` 字段分发创建不同的 Processor)。
-3.  **Validation**: 在加载阶段加入 Schema 校验（缺省值填充、类型检查）。
+系统根据不同的 `step` 类型，定义的处理器逻辑与 I/O 交互规则如下：
 
-## 4. 优势总结
+### 3.1 Face Swapper (换脸)
+*   **I/O 依赖**: 必须提供 `source_paths` 和 `target_paths`。
+*   **Source 处理逻辑**:
+    *   读取 `source_paths` 中列出的所有图片。
+    *   提取每张图片中的人脸特征。
+    *   **平均融合**: 计算所有源人脸的平均特征向量 (Average Embedding)，生成一个稳定的参考人脸。这能有效抵消单张图片的质量问题。
+*   **Target 处理逻辑**:
+    *   遍历 `target_paths` 的每一帧/图，将计算出的参考人脸“映射”到目标人脸位置。
 
-*   **清晰度**: `pipeline` 列表让处理流程一目了然，不像旧版 `frame_processors` 只是一个名字列表。
-*   **灵活性**: `params` 随 `step` 而定，不再是大杂烩。
-*   **扩展性**: 新增 Processor 只需在 Pipeline 中增加一种 `step` 类型。
-*   **健壮性**: `inference` 和 `logging` 等环境配置与业务逻辑分离，降低误操作风险。
+### 3.2 Face Enhancer (人脸增强)
+*   **I/O 依赖**: 仅需 `target_paths`。**忽略** `source_paths`。
+*   **逻辑**: 专注于检测 `target_paths` 媒体中的人脸区域，并对其进行超分辨率修复和细节增强。
+
+### 3.3 Expression Restorer (表情迁移)
+*   **I/O 依赖**: 必须提供 `source_paths` 和 `target_paths`。
+*   **逻辑**:
+    *   从 `source_paths` 中提取源人脸的表情特征。
+    *   **表情复制**: 将源表情直接驱动/应用到 `target_paths` 中的目标人脸上，实现“表情克隆”或驱动效果。
+
+### 3.4 Frame Enhancer (全帧增强)
+*   **I/O 依赖**: 仅需 `target_paths`。**忽略** `source_paths`。
+*   **逻辑**: 对 `target_paths` 的整个画面（背景+人物）进行超分辨率处理 (Super-Resolution)，提升视频/图片的整体画质，不局限于人脸区域。
 
 ---
 
-## 5. 工程化约束与最佳实践 (Engineering Constraints)
+## 4. 实现路线图 (Implementation Roadmap)
 
-### 5.1 路径锚定规则 (Path Resolution)
-*   **App Config**: 所有相对路径必须相对于**程序安装根目录**。
-*   **Task Config**: 所有文件路径（输入/输出/资源）必须强制使用**绝对路径**，以避免 CLI 和 服务模式下的路径歧义。
+1.  **数据结构定义 (Schema)**
+    *   定义 C++ Struct/Class 严格对应上述 YAML 结构。
+2.  **解析器实现 (Parser)**
+    *   引入 `yaml-cpp`。
+    *   App Config: 实现层级解析。
+    *   Task Config: 实现多态解析（基于 `step` 字段工厂模式创建 Processor）。
+3.  **校验逻辑 (Validation)**
+    *   加载时进行 Schema 校验（默认值回填、类型检查、路径存在性检查）。
 
-### 5.2 进度汇报解耦 (Progress Reporting)
-*   核心接口 `RunPipeline` 不应直接打印日志或操作控制台。
-*   **回调机制**: 接受 `std::function<void(TaskProgress)>` 回调。
-    *   **CLI 模式**: 在回调中更新控制台进度条。
-    *   **Server 模式**: 在回调中推送 WebSocket 消息。
+---
 
-### 5.3 错误处理与容错 (Error Handling)
-*   **人脸未检测到 (No Face Detected)**:
-    *   **行为**: 打印警告日志 (WARN)，并**跳过**后续处理。
-    *   **Sequential 模式**: 跳过当前 Step。
-    *   **Batch 模式**: 跳过当前图片/帧。
+## 5. 优势总结 (Benefits)
 
-### 5.4 配置版本控制 (Versioning)
-*   所有 YAML 配置文件根节点必须包含 `config_version` 字段 (e.g., `config_version: "1.0"`).
-*   程序加载时必须校验版本号，不兼容则报错。
+*   **清晰度 (Clarity)**：Pipeline 列表结构直观展示处理流，优于旧版扁平列表。
+*   **灵活性 (Flexibility)**：参数 (`params`) 与步骤 (`step`) 绑定，实现高内聚。
+*   **扩展性 (Extensibility)**：新增功能只需注册新的 Processor 类型，无需修改核心配置结构。
+*   **健壮性 (Robustness)**：环境配置与业务逻辑物理隔离，降低误操作风险。
 
-### 5.5 应用元数据 (Application Metadata)
-*   **来源**: **编译期注入** (Compile-time Injection)。
-*   **实现**: CMake 生成 `config.h` / `version.h`，包含 `#define APP_NAME "FaceFusionCpp"` 和 `#define APP_VERSION "0.3.3"`.
-*   **启动打印**: `main` 函数启动时直接读取宏定义打印 Banner，不依赖外部文件，确保任何环境下（包括丢失配置文件时）都能正确报告版本。
+---
+
+## 6. 工程化约束与最佳实践 (Engineering Constraints)
+
+为确保代码的工业级质量与可维护性，必须遵循以下约束：
+
+### 6.1 路径锚定规则 (Path Resolution)
+*   **App Config**：所有相对路径必须相对于**程序安装根目录**。
+*   **Task Config**：所有文件路径（输入源、输出目录、资源引用）必须强制使用**绝对路径**。
+    *   *目的*：彻底消除 CLI 模式（CWD 可能变动）与 Server 模式下的路径歧义。
+
+### 6.2 进度汇报解耦 (Progress Reporting)
+*   **禁止直接 I/O**：核心 Pipeline 接口 `RunPipeline` 严禁直接打印日志或操作控制台。
+*   **回调机制**：必须通过 `std::function<void(TaskProgress)>` 注入回调。
+    *   **CLI**：在 Callback 中更新控制台进度条 (tqdm-like)。
+    *   **Server**：在 Callback 中通过 WebSocket 推送状态。
+
+### 6.3 错误处理策略 (Error Handling)
+*   **人脸检测失败 (No Face Detected)**：
+    *   **Sequential 模式**：打印 WARN 日志，**跳过**当前 Step，继续后续 Step（若逻辑允许）或终止当前 Asset 处理。
+    *   **Batch 模式**：打印 WARN 日志，**跳过**当前帧/图片，不中断整个批次。
+    *   *原则*：非致命错误不应导致整个任务崩溃。
+
+### 6.4 配置版本控制 (Versioning)
+*   **强制版本号**：所有 YAML 根节点必须包含 `config_version` 字段 (e.g., `"1.0"`)。
+*   **兼容性检查**：程序启动/任务加载时必须校验版本号，不兼容（如 Major 版本只有差异）应直接报错。
+
+### 6.5 应用元数据 (Application Metadata)
+*   **编译期注入**：App Name 和 Version 不在配置文件中维护。
+*   **实现方式**：
+    *   CMake 生成 `config.h` / `version.h`。
+    *   包含宏 `#define APP_NAME "FaceFusionCpp"` 和 `#define APP_VERSION "0.3.3"`。
+*   **启动展示**：`main` 函数启动时直接读取宏打印 Banner，确保版本信息的绝对真实性。
+
+### 6.6 优雅退出 (Graceful Shutdown)
+*   **信号处理**: 捕获 `SIGINT` (Ctrl+C) / `SIGTERM`。
+*   **退出策略**:
+    *   **停止接收**: 立即停止 Pipeline 接收新的输入帧/图片。
+    *   **等待完成**: 等待当前正在推理/处理的帧完成（避免数据损坏），设定超时强制退出。
+    *   **资源释放**: 有序释放显存和句柄。
+
+### 6.7 试运行模式 (Dry-Run Mode)
+*   **CLI 参数**: 支持 `--dry-run` 标志。
+*   **行为**:
+    *   加载并校验 App/Task 配置文件格式。
+    *   检查所有输入/输出路径是否存在/可写。
+    *   检查所需模型文件是否完备。
+    *   **不执行**: 不加载模型到显存，不执行实际推理，仅打印 Pipeline 执行计划。
+
+### 6.8 资源并发安全 (Concurrency Safety)
+*   **目标**: 即使当前单线程，底层设计必须预留多线程/多任务并发支持。
+### 6.9 内存流控与背压 (Memory Flow Control & Backpressure)
+*   **问题**: 生产者 (解码/读取) 速度 > 消费者 (模型推理) 速度时，内存会无限膨胀。
+*   **解决方案**: **有界阻塞队列 (Bounded Blocking Queue)**。
+    *   **机制**: 设定队列最大容量 (e.g., 32帧)。当队列满时，强制**阻塞生产者线程**，直到消费者取走数据。
+    *   **效果**: 自动平衡生产与消费速度，确保低配机器内存不溢出 (OOM)。
