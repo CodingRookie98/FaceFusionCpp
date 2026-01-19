@@ -1,6 +1,6 @@
 # 应用层配置设计备忘录 (Application Layer Configuration Design)
 
-> **文档版本**: V1.3
+> **文档版本**: V1.4
 > **文档说明**: 基于模块化与 Pipeline 设计模式，定义配置结构、设计原则及工程化约束。
 
 ---
@@ -342,10 +342,15 @@ pipeline:
 
 ### 6.5 应用元数据 (Application Metadata)
 
-*   **编译期注入**: App Name 和 Version 不在配置文件中维护。
+*   **编译期注入**: App Name、Version、描述、LICENSE 等信息不在配置文件中维护。
 *   **实现方式**:
     *   CMake 生成 `config.h` / `version.h`。
-    *   包含宏 `#define APP_NAME "FaceFusionCpp"` 和 `#define APP_VERSION "x.x.x"`。
+    *   包含以下宏定义：
+        *   `#define APP_NAME "FaceFusionCpp"`
+        *   `#define APP_VERSION "x.x.x"`
+        *   `#define APP_DESCRIPTION "High-performance face processing toolkit"`
+        *   `#define APP_LICENSE "GPL-3.0"`
+        *   `#define APP_GITHUB_URL "https://github.com/CodingRookie98/faceFusionCpp"`
 *   **启动展示**: `main` 函数启动时直接读取宏打印 Banner，确保版本信息的绝对真实性。
 
 ### 6.6 优雅退出 (Graceful Shutdown)
