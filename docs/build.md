@@ -23,6 +23,12 @@ python build.py --config Debug --action test
 # 运行特定测试 (例如名称包含 "vision" 的测试)
 python build.py --action test --target vision
 
+# 使用正则筛选测试 (推荐方式，不影响构建目标)
+python build.py --action test --test-regex "domain_face.*"
+
+# 仅运行测试，跳过构建 (明确跳过构建步骤)
+python build.py --action test --no-build --test-regex "face"
+
 # 安装项目
 python build.py --config Release --action install
 
@@ -44,7 +50,9 @@ python build.py --clean --action both
 | :--- | :--- | :--- | :--- |
 | `--config` | 构建配置类型 | `Debug`, `Release` | `Debug` |
 | `--action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (先执行构建，成功后运行测试)<br>`install` (安装)<br>`package` (打包)<br>`both` (配置+构建) | `both` |
-| `--target` | 构建或测试目标 | `all` 或具体名称/正则 | `all` |
+| `--target` | 构建或测试目标 | `all` 或具体名称 | `all` |
+| `--test-regex` | 测试筛选正则 (传递给 `ctest -R`) | 正则表达式 | `None` (默认使用 `--target` 当作筛选若非 `all`) |
+| `--no-build` | 跳过构建步骤(仅测试时有效) | `[flag]` | `False` |
 | `--preset` | 手动指定 CMake Preset | CMakePresets.json 中定义的名称 | 自动检测 |
 | `--clean` | 清理构建目录 | `[flag]` | `False` |
 
@@ -129,7 +137,7 @@ python scripts/install_hooks.py
 ## 1. 环境准备
 
 - **CMake**: 3.25 或更高版本。
-- **编译器**: 
+- **编译器**:
   - Windows: Visual Studio 2022 (MSVC)。
   - Linux: GCC 或 Clang。
 - **构建系统**: Ninja (推荐)。

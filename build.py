@@ -81,6 +81,15 @@ def main():
     parser.add_argument(
         "--clean", action="store_true", help="Clean build directory before starting"
     )
+    parser.add_argument(
+        "--test-regex",
+        help="Regex for tests to run (passed to ctest -R). If specified, --target is ignored for testing.",
+    )
+    parser.add_argument(
+        "--no-build",
+        action="store_true",
+        help="Skip the build step when action is test",
+    )
 
     args = parser.parse_args()
 
@@ -123,6 +132,10 @@ def main():
             run_command(cmd, env=env, cwd=project_root)
 
         elif action == "build":
+            if args.action == "test" and args.no_build:
+                log("Skipping build step as requested.", "info")
+                continue
+
             cmd = [cmake_exe, "--build", "--preset", preset]
             if args.target != "all":
                 cmd.extend(["--target", args.target])
@@ -133,14 +146,23 @@ def main():
             # But let's follow ctest preset
             ctest_exe = "ctest"
             cmd = [ctest_exe, "--preset", preset, "--no-tests=error"]
-            if args.target != "all":
-                cmd.extend(["-R", args.target])
+
+            # Determine test filter
+            test_filter = None
+            if args.test_regex:
+                test_filter = args.test_regex
+            elif args.target != "all":
+                test_filter = args.target
+
+            if test_filter:
+                cmd.extend(["-R", test_filter])
 
             try:
                 run_command(cmd, env=env, cwd=project_root, exit_on_error=False)
             except subprocess.CalledProcessError as e:
-                if e.returncode == 8 and args.target != "all":
-                    log(f"\nNo tests matched the pattern '{args.target}'.", "warning")
+                filter_msg = f" '{test_filter}'" if test_filter else ""
+                if e.returncode == 8:
+                    log(f"\nNo tests matched the pattern{filter_msg}.", "warning")
                     log(
                         "Check if the test target is correctly registered and named.",
                         "info",
