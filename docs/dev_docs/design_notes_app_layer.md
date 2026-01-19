@@ -1,6 +1,6 @@
 # 应用层配置设计备忘录 (Application Layer Configuration Design)
 
-> **文档版本**: V1.2
+> **文档版本**: V1.3
 > **文档说明**: 基于模块化与 Pipeline 设计模式，定义配置结构、设计原则及工程化约束。
 
 ---
@@ -187,6 +187,8 @@ face_analysis:
 #    - Params:
 #        face_selector_mode: [reference, one, many] (default: many)
 #        reference_face_path: "path/to/face.jpg" (required if mode=reference)
+#          - 只有当图/帧中检测到与此参考图片中人脸相似的人脸时，才对该相似人脸进行处理
+#          - 若参考图片中无人脸，则此图/帧跳过当前 Step
 #
 # 2. face_enhancer
 #    - Models: [codeformer, gfpgan_1.2, gfpgan_1.3, gfpgan_1.4]
@@ -194,6 +196,7 @@ face_analysis:
 #        blend_factor: 0.0 - 1.0 (default: 0.8)
 #        face_selector_mode: [reference, one, many] (default: many)
 #        reference_face_path: "path/to/face.jpg" (required if mode=reference)
+#          - 同上：仅处理与参考人脸相似的人脸
 #
 # 3. expression_restorer
 #    - Models: [live_portrait]
@@ -201,6 +204,7 @@ face_analysis:
 #        restore_factor: 0.0 - 1.0 (default: 0.8)
 #        face_selector_mode: [reference, one, many] (default: many)
 #        reference_face_path: "path/to/face.jpg" (required if mode=reference)
+#          - 同上：仅处理与参考人脸相似的人脸
 #
 # 4. frame_enhancer
 #    - Models: [real_hatgan_x4, real_esrgan_x2, real_esrgan_x2_fp16,
@@ -226,6 +230,7 @@ pipeline:
       model: "codeformer"
       blend_factor: 0.8
       face_selector_mode: "many"
+      reference_face_path: "D:/ref_face.jpg" # 绝对路径
 
   - step: "expression_restorer"
     enabled: false
@@ -233,6 +238,7 @@ pipeline:
       model: "live_portrait"
       restore_factor: 0.8
       face_selector_mode: "many"
+      reference_face_path: "D:/ref_face.jpg" # 绝对路径
 
   - step: "frame_enhancer"
     enabled: false
