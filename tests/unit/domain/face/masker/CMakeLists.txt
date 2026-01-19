@@ -5,7 +5,10 @@ add_facefusion_test(
     LINK_LIBRARIES
         domain_face_masker
         domain_face
+        domain_face_test_support
         domain_ai
         foundation_ai
-        GTest::gmock
+        foundation_infrastructure
+        GTest::gtest
+        ${OpenCV_LIBS}
 )

@@ -7,6 +7,7 @@ add_facefusion_test(
         domain_face_masker
         domain_face_detector
         domain_face_recognizer
+        domain_face_test_support
         domain_ai
         foundation_infrastructure
         ${OpenCV_LIBS}

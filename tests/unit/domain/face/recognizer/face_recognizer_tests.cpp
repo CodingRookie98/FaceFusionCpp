@@ -6,43 +6,27 @@
 #include <vector>
 
 import domain.face.recognizer;
-import domain.face.detector;
+import domain.face.test_support;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
+import foundation.infrastructure.test_support;
 import domain.face;
+
+using namespace domain::face::recognizer;
+using namespace domain::face::test_support;
+using namespace foundation::infrastructure::test;
+namespace fs = std::filesystem;
 
 class FaceRecognizerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        model_repo = domain::ai::model_repository::ModelRepository::get_instance();
-        model_repo->set_model_info_file_path("./assets/models_info.json");
-
-        std::string image_path = "./assets/standard_face_test_images/lenna.bmp";
-        if (std::filesystem::exists(image_path)) { test_image = cv::imread(image_path); }
-    }
-
-    // Helper to get face landmarks (5 points)
-    domain::face::types::Landmarks get_face_landmarks() {
-        if (test_image.empty()) return {};
-
-        // Use YoloFace or SCRFD as they output 5 points
-        auto detector = domain::face::detector::FaceDetectorFactory::create(
-            domain::face::detector::DetectorType::SCRFD);
-
-        std::string model_path = model_repo->ensure_model("face_detector_scrfd");
-        if (model_path.empty()) return {};
-
-        detector->load_model(model_path,
-                             foundation::ai::inference_session::Options::with_best_providers());
-
-        auto results = detector->detect(test_image);
-        if (results.empty()) return {};
-
-        return results[0].landmarks;
+        auto assets_path = get_assets_path();
+        model_repo = setup_model_repository(assets_path);
+        test_image_path = get_test_data_path("standard_face_test_images/lenna.bmp");
     }
 
     std::shared_ptr<domain::ai::model_repository::ModelRepository> model_repo;
-    cv::Mat test_image;
+    fs::path test_image_path;
 };
 
 TEST_F(FaceRecognizerTest, FactoryCreatesArcFace) {
@@ -52,9 +36,14 @@ TEST_F(FaceRecognizerTest, FactoryCreatesArcFace) {
 }
 
 TEST_F(FaceRecognizerTest, ArcFaceInference) {
-    if (test_image.empty()) GTEST_SKIP() << "Test image not found";
+    if (!fs::exists(test_image_path)) {
+        GTEST_SKIP() << "Test image not found: " << test_image_path;
+    }
 
-    auto landmarks = get_face_landmarks();
+    cv::Mat test_image = cv::imread(test_image_path.string());
+    if (test_image.empty()) GTEST_SKIP() << "Failed to read test image";
+
+    auto landmarks = detect_face_landmarks(test_image, model_repo);
     if (landmarks.empty()) GTEST_SKIP() << "Could not detect face for testing";
 
     auto recognizer = domain::face::recognizer::create_face_recognizer(

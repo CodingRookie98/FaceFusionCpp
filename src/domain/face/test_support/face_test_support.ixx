@@ -1,0 +1,158 @@
+module;
+#include <opencv2/opencv.hpp>
+#include <vector>
+#include <memory>
+#include <string>
+#include <filesystem>
+
+/**
+ * @file face_test_support.ixx
+ * @brief Test support utilities for face module
+ * @details Provides helper functions for creating test faces and detecting faces in images.
+ *          This module is intended for test code only - production code should not depend on it.
+ * @author CodingRookie
+ * @date 2026-01-18
+ */
+export module domain.face.test_support;
+
+export import domain.face;
+import domain.face.detector;
+import domain.face.recognizer;
+import domain.ai.model_repository;
+import foundation.ai.inference_session;
+
+export namespace domain::face::test_support {
+
+/**
+ * @brief Create an empty face object for testing
+ * @return Empty Face instance
+ */
+Face create_empty_face() {
+    return Face();
+}
+
+/**
+ * @brief Create a test face with basic properties
+ * @return Face instance with 5-point landmarks and default scores
+ */
+Face create_test_face() {
+    Face face;
+    face.set_box({10.0f, 10.0f, 100.0f, 100.0f});
+
+    types::Landmarks kps;
+    for (int i = 0; i < 5; ++i) {
+        kps.emplace_back(static_cast<float>(10.0f + i * 10), static_cast<float>(10.0f + i * 10));
+    }
+    face.set_kps(std::move(kps));
+
+    face.set_detector_score(0.95f);
+    face.set_landmarker_score(0.98f);
+
+    return face;
+}
+
+/**
+ * @brief Create a test face with 68-point landmarks
+ * @return Face instance with 68-point landmarks
+ */
+Face create_face_with_68_kps() {
+    Face face;
+    face.set_box({0.0f, 0.0f, 200.0f, 200.0f});
+
+    types::Landmarks kps;
+    kps.reserve(68);
+    for (int i = 0; i < 68; ++i) { kps.emplace_back(static_cast<float>(i), static_cast<float>(i)); }
+    face.set_kps(std::move(kps));
+
+    return face;
+}
+
+/**
+ * @brief Setup model repository with assets path
+ * @param assets_path Path to assets directory containing models_info.json
+ * @return Configured ModelRepository instance
+ */
+inline std::shared_ptr<domain::ai::model_repository::ModelRepository> setup_model_repository(
+    const std::filesystem::path& assets_path) {
+    auto repo = domain::ai::model_repository::ModelRepository::get_instance();
+    auto models_info_path = assets_path / "models_info.json";
+    if (std::filesystem::exists(models_info_path)) {
+        repo->set_model_info_file_path(models_info_path.string());
+    }
+    return repo;
+}
+
+/**
+ * @brief Detect face landmarks from an image using YoloFace detector
+ * @param image Input image (BGR format)
+ * @param repo Model repository instance
+ * @return Vector of 2D points representing face landmarks (5 points), empty if no face detected
+ */
+inline types::Landmarks detect_face_landmarks(
+    const cv::Mat& image, std::shared_ptr<domain::ai::model_repository::ModelRepository> repo) {
+    if (image.empty()) return {};
+
+    auto detector = detector::FaceDetectorFactory::create(detector::DetectorType::Yolo);
+
+    std::string model_path = repo->ensure_model("face_detector_yoloface");
+    if (model_path.empty()) return {};
+
+    detector->load_model(model_path,
+                         foundation::ai::inference_session::Options::with_best_providers());
+
+    auto results = detector->detect(image);
+    if (results.empty()) return {};
+
+    return results[0].landmarks;
+}
+
+/**
+ * @brief Detect face bounding box from an image
+ * @param image Input image (BGR format)
+ * @param repo Model repository instance
+ * @return Bounding box of detected face, empty rect if no face detected
+ */
+inline cv::Rect2f detect_face_bbox(
+    const cv::Mat& image, std::shared_ptr<domain::ai::model_repository::ModelRepository> repo) {
+    if (image.empty()) return {};
+
+    auto detector = detector::FaceDetectorFactory::create(detector::DetectorType::SCRFD);
+
+    std::string model_path = repo->ensure_model("face_detector_scrfd");
+    if (model_path.empty()) return {};
+
+    detector->load_model(model_path,
+                         foundation::ai::inference_session::Options::with_best_providers());
+
+    auto results = detector->detect(image);
+    if (results.empty()) return {};
+
+    return results[0].box;
+}
+
+/**
+ * @brief Get face embedding from an image
+ * @param image Input image (BGR format)
+ * @param landmarks Face landmarks (5 points)
+ * @param repo Model repository instance
+ * @return Normalized face embedding vector, empty if failed
+ */
+inline types::Embedding get_face_embedding(
+    const cv::Mat& image, const types::Landmarks& landmarks,
+    std::shared_ptr<domain::ai::model_repository::ModelRepository> repo) {
+    if (image.empty() || landmarks.empty()) return {};
+
+    auto recognizer_ptr =
+        recognizer::create_face_recognizer(recognizer::FaceRecognizerType::ArcFace_w600k_r50);
+
+    std::string model_path = repo->ensure_model("face_recognizer_arcface_w600k_r50");
+    if (model_path.empty()) return {};
+
+    recognizer_ptr->load_model(model_path,
+                               foundation::ai::inference_session::Options::with_best_providers());
+
+    auto result = recognizer_ptr->recognize(image, landmarks);
+    return result.second; // Normalized embedding
+}
+
+} // namespace domain::face::test_support

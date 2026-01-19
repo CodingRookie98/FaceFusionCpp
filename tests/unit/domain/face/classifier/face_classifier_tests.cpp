@@ -25,11 +25,6 @@ protected:
 
 TEST_F(FaceClassifierTest, FactoryCreatesFairFace) {
     auto classifier = create_classifier(ClassifierType::FairFace);
-    EXPECT_NE(classifier, nullptr);
-}
-
-TEST_F(FaceClassifierTest, ClassifierNotLoadedInitially) {
-    auto classifier = create_classifier(ClassifierType::FairFace);
     ASSERT_NE(classifier, nullptr);
 }
 

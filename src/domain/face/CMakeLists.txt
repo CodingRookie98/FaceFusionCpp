@@ -12,7 +12,6 @@ target_sources(domain_face
             face_helper.ixx
             face_selector.ixx
             face_store.ixx
-            face_test_support.ixx
     PRIVATE
         face.cpp
         face_helper.cpp
@@ -41,6 +40,7 @@ add_subdirectory(analyser)
 add_subdirectory(swapper)
 add_subdirectory(enhancer)
 add_subdirectory(expression)
+add_subdirectory(test_support)
 
 
 

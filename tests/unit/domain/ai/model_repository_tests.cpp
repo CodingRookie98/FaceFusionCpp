@@ -100,7 +100,8 @@ TEST_F(ModelRepositoryTest, LoadRealAssetsModelInfo) {
             EXPECT_EQ(instance->get_model_json_file_path(), real_path);
 
             if (instance->has_model("face_detector_yoloface")) {
-                EXPECT_TRUE(instance->has_model("face_detector_yoloface"));
+                auto info = instance->get_model_info("face_detector_yoloface");
+                EXPECT_FALSE(info.path.empty());
             }
         }
     } catch (const std::exception& e) { FAIL() << "Failed to load real assets: " << e.what(); }

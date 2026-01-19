@@ -77,9 +77,30 @@ ctest --output-on-failure
 ```cpp
 #include <gtest/gtest.h>
 #include "your_module_header.h"
+import foundation.infrastructure.test_support; // 使用测试支持模块
 ```
 
-### 3. 编写测试用例
+### 3. 使用 Test Support (推荐)
+
+项目提供了 `domain.face.test_support` 和 `foundation.infrastructure.test_support` 模块来简化测试编写。
+
+```cpp
+import domain.face.test_support;
+using namespace domain::face::test_support;
+
+// 获取测试资源路径
+auto assets_path = get_assets_path();
+auto image_path = get_test_data_path("standard_face_test_images/lenna.bmp");
+
+// 初始化模型仓库
+auto repo = setup_model_repository(assets_path);
+
+// 使用辅助函数检测人脸
+auto landmarks = detect_face_landmarks(image, repo);
+auto embedding = get_face_embedding(image, landmarks, repo);
+```
+
+### 4. 编写测试用例
 
 ```cpp
 TEST(YourTestSuite, YourTestCase) {

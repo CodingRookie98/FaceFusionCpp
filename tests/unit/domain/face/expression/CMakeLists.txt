@@ -5,6 +5,7 @@ add_facefusion_test(
     LINK_LIBRARIES
         domain_face_expression
         domain_face_detector
+        domain_face_test_support
         domain_ai
         foundation_infrastructure
 )
