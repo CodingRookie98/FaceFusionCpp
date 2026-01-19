@@ -18,6 +18,9 @@ import foundation.media.vision;
 
 namespace domain::face::detector {
 
+/**
+ * @brief SCRFD detector implementation
+ */
 class Scrfd final : public FaceDetectorImplBase {
 public:
     Scrfd() = default;

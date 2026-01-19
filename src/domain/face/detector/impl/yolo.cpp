@@ -15,6 +15,9 @@ import foundation.media.vision;
 
 namespace domain::face::detector {
 
+/**
+ * @brief YOLOv8 detector implementation
+ */
 class Yolo final : public FaceDetectorImplBase {
 public:
     Yolo() = default;

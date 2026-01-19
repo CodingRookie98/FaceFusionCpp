@@ -18,6 +18,9 @@ import foundation.media.vision;
 
 namespace domain::face::detector {
 
+/**
+ * @brief RetinaFace detector implementation
+ */
 class Retina final : public FaceDetectorImplBase {
 public:
     Retina() = default;
