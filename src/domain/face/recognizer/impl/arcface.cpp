@@ -23,8 +23,8 @@ void ArcFace::load_model(const std::string& model_path,
     }
 }
 
-std::vector<float> ArcFace::pre_process(const cv::Mat& vision_frame,
-                                        const types::Landmarks& face_landmark_5) const {
+std::tuple<std::vector<float>, std::vector<int64_t>> ArcFace::prepare_input(
+    const cv::Mat& vision_frame, const types::Landmarks& face_landmark_5) const {
     using namespace domain::face::helper;
 
     // Get warp template
@@ -63,27 +63,17 @@ std::vector<float> ArcFace::pre_process(const cv::Mat& vision_frame,
     // B channel
     std::memcpy(input_data.data() + image_area * 2, channels[0].data, image_area * sizeof(float));
 
-    return input_data;
-}
-
-std::pair<types::Embedding, types::Embedding> ArcFace::recognize(
-    const cv::Mat& vision_frame, const types::Landmarks& face_landmark_5) {
-    auto input_data = pre_process(vision_frame, face_landmark_5);
-
     std::vector<int64_t> input_shape = {1, 3, m_input_height, m_input_width};
 
-    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-    auto input_tensor = Ort::Value::CreateTensor<float>(
-        memory_info, input_data.data(), input_data.size(), input_shape.data(), input_shape.size());
+    return std::make_tuple(std::move(input_data), std::move(input_shape));
+}
 
-    std::vector<Ort::Value> input_tensors;
-    input_tensors.reserve(1);
-    input_tensors.push_back(std::move(input_tensor));
-
-    auto output_tensors = run(input_tensors);
+std::pair<types::Embedding, types::Embedding> ArcFace::process_output(
+    const std::vector<Ort::Value>& output_tensors) const {
+    if (output_tensors.empty()) return {};
 
     // Process output
-    float* raw_data = output_tensors[0].GetTensorMutableData<float>();
+    const float* raw_data = output_tensors[0].GetTensorData<float>();
     auto shape_info = output_tensors[0].GetTensorTypeAndShapeInfo();
     size_t feature_len = shape_info.GetShape()[1]; // Should be 512
 
@@ -100,6 +90,21 @@ std::pair<types::Embedding, types::Embedding> ArcFace::recognize(
     for (size_t i = 0; i < feature_len; ++i) { normed_embedding[i] = embedding[i] / norm_val; }
 
     return {embedding, normed_embedding};
+}
+
+std::pair<types::Embedding, types::Embedding> ArcFace::recognize(
+    const cv::Mat& vision_frame, const types::Landmarks& face_landmark_5) {
+    auto [input_data, input_shape] = prepare_input(vision_frame, face_landmark_5);
+
+    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    std::vector<Ort::Value> input_tensors;
+
+    input_tensors.emplace_back(Ort::Value::CreateTensor<float>(
+        memory_info, input_data.data(), input_data.size(), input_shape.data(), input_shape.size()));
+
+    auto output_tensors = run(input_tensors);
+
+    return process_output(output_tensors);
 }
 
 } // namespace domain::face::recognizer

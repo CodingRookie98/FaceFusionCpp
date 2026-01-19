@@ -44,6 +44,11 @@ public:
     DetectionResults detect(const cv::Mat& visionFrame) override;
 
 private:
+    std::tuple<std::vector<float>, std::vector<int64_t>, float, float> prepare_input(
+        const cv::Mat& visionFrame);
+    DetectionResults process_output(const std::vector<Ort::Value>& ortOutputs, float ratioHeight,
+                                    float ratioWidth);
+
     std::tuple<std::vector<float>, float, float> preProcess(const cv::Mat& visionFrame,
                                                             const cv::Size& faceDetectorSize);
 
@@ -95,65 +100,56 @@ DetectionResults Scrfd::detect(const cv::Mat& visionFrame) {
     DetectionResults results;
     if (visionFrame.empty() || !is_model_loaded()) return results;
 
-    auto [inputData, ratioHeight, ratioWidth] = preProcess(visionFrame, m_faceDetectorSize);
+    auto [inputData, inputNodeDims, ratioHeight, ratioWidth] = prepare_input(visionFrame);
 
-    std::vector<int64_t> inputImgShape = {1, 3, m_faceDetectorSize.height,
-                                          m_faceDetectorSize.width};
-
+    // Create Tensor
     auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-
     std::vector<Ort::Value> inputTensors;
     inputTensors.reserve(1);
     inputTensors.emplace_back(
         Ort::Value::CreateTensor<float>(memory_info, inputData.data(), inputData.size(),
-                                        inputImgShape.data(), inputImgShape.size()));
+                                        inputNodeDims.data(), inputNodeDims.size()));
 
-    std::vector<Ort::Value> ortOutputs = run(inputTensors);
+    auto ortOutputs = run(inputTensors); // Run Inference
 
+    return process_output(ortOutputs, ratioHeight, ratioWidth); // Process Output
+}
+
+std::tuple<std::vector<float>, std::vector<int64_t>, float, float> Scrfd::prepare_input(
+    const cv::Mat& visionFrame) {
+    auto [inputData, ratioHeight, ratioWidth] = preProcess(visionFrame, m_faceDetectorSize);
+    std::vector<int64_t> inputImgShape = {1, 3, m_faceDetectorSize.height,
+                                          m_faceDetectorSize.width};
+    return {std::move(inputData), std::move(inputImgShape), ratioHeight, ratioWidth};
+}
+
+DetectionResults Scrfd::process_output(const std::vector<Ort::Value>& ortOutputs, float ratioHeight,
+                                       float ratioWidth) {
+    DetectionResults results;
     if (ortOutputs.empty()) return results;
 
     std::vector<cv::Rect2f> boundingBoxesRaw;
     std::vector<Landmarks> faceLandmarksRaw;
     std::vector<float> confidencesRaw;
 
-    // Parse outputs
-    // SCRFD outputs are usually 3 feature levels (8, 16, 32 strides)
-    // Each level has Score, BBox, Landmarks (if enabled)
-
-    // Let's assume 3 strides, 3 outputs per stride. Total 9 outputs.
-    // If outputs are grouped by type:
-    // 0,1,2 -> Scores
-    // 3,4,5 -> BBoxes
-    // 6,7,8 -> KPS
-    // Then `m_featureMapChannel = 3`.
-    // index=0 (Stride8): Score(0), Bbox(0+3=3), Kps(0+6=6).
-
-    int featureMapChannel = 3; // Hardcoded based on common SCRFD export
+    int featureMapChannel = 3;
 
     for (size_t index = 0; index < m_featureStrides.size(); ++index) {
-        if (index >= ortOutputs.size()) break; // Safety
+        if (index >= ortOutputs.size()) break;
 
         int featureStride = m_featureStrides[index];
 
-        // Score tensor
         auto& scoreTensor = ortOutputs[index];
         auto scoreInfo = scoreTensor.GetTensorTypeAndShapeInfo();
-        int numAnchors = static_cast<int>(
-            scoreInfo.GetElementCount()); // Assuming shape is [N, H*W*A, 1] or similar flattened
-
-        // In SCRFD, shape might be [1, N_anchors, 1]
+        int numAnchors = static_cast<int>(scoreInfo.GetElementCount());
 
         const float* pdataScore = scoreTensor.GetTensorData<float>();
         const float* pdataBbox = ortOutputs[index + featureMapChannel].GetTensorData<float>();
         const float* pdataLandmark =
             ortOutputs[index + 2 * featureMapChannel].GetTensorData<float>();
 
-        // Generate anchors
         int strideHeight = static_cast<int>(std::floor(m_faceDetectorSize.height / featureStride));
         int strideWidth = static_cast<int>(std::floor(m_faceDetectorSize.width / featureStride));
-
-        // Check if numAnchors matches stride * stride * 2
-        // 640/8 = 80. 80*80*2 = 12800.
 
         auto anchors = domain::face::helper::create_static_anchors(featureStride, m_anchorTotal,
                                                                    strideHeight, strideWidth);
@@ -161,8 +157,6 @@ DetectionResults Scrfd::detect(const cv::Mat& visionFrame) {
         for (int i = 0; i < numAnchors; ++i) {
             float score = pdataScore[i];
             if (score >= m_detectorScore) {
-                // Extract BBox
-                // BBox data is [numAnchors, 4]
                 float x1 = pdataBbox[i * 4 + 0] * featureStride;
                 float y1 = pdataBbox[i * 4 + 1] * featureStride;
                 float x2 = pdataBbox[i * 4 + 2] * featureStride;
@@ -174,8 +168,6 @@ DetectionResults Scrfd::detect(const cv::Mat& visionFrame) {
                 bbox.width = x2 - x1;
                 bbox.height = y2 - y1;
 
-                // Extract Landmarks
-                // KPS data is [numAnchors, 10]
                 Landmarks kps;
                 for (int k = 0; k < 5; ++k) {
                     float kx = pdataLandmark[i * 10 + k * 2 + 0] * featureStride;
@@ -183,13 +175,11 @@ DetectionResults Scrfd::detect(const cv::Mat& visionFrame) {
                     kps.emplace_back(kx, ky);
                 }
 
-                // Anchor adjustment
                 if (i < anchors.size()) {
                     bbox = domain::face::helper::distance_2_bbox(anchors[i], bbox);
                     kps = domain::face::helper::distance_2_face_landmark_5(anchors[i], kps);
                 }
 
-                // Scale back
                 bbox.x *= ratioWidth;
                 bbox.y *= ratioHeight;
                 bbox.width *= ratioWidth;
@@ -207,9 +197,7 @@ DetectionResults Scrfd::detect(const cv::Mat& visionFrame) {
         }
     }
 
-    // NMS
-    auto keepIndices = domain::face::helper::apply_nms(boundingBoxesRaw, confidencesRaw,
-                                                       0.4f); // 0.4 NMS threshold
+    auto keepIndices = domain::face::helper::apply_nms(boundingBoxesRaw, confidencesRaw, 0.4f);
 
     for (int idx : keepIndices) {
         DetectionResult res;

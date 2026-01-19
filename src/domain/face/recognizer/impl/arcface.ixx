@@ -2,7 +2,9 @@ module;
 #include <vector>
 #include <string>
 #include <utility>
+#include <tuple>
 #include <opencv2/opencv.hpp>
+#include <onnxruntime_cxx_api.h>
 
 export module domain.face.recognizer:impl.arcface;
 
@@ -27,8 +29,10 @@ private:
     int m_input_width = 112;
     int m_input_height = 112;
 
-    std::vector<float> pre_process(const cv::Mat& vision_frame,
-                                   const types::Landmarks& face_landmark_5) const;
+    std::tuple<std::vector<float>, std::vector<int64_t>> prepare_input(
+        const cv::Mat& vision_frame, const types::Landmarks& face_landmark_5) const;
+    std::pair<types::Embedding, types::Embedding> process_output(
+        const std::vector<Ort::Value>& output_tensors) const;
 };
 
 } // namespace domain::face::recognizer

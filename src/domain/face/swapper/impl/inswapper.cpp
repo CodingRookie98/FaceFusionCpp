@@ -165,37 +165,59 @@ cv::Mat InSwapper::swap_face(const SwapInput& input) {
     return resultFrame;
 }
 
-cv::Mat InSwapper::apply_swap(const Embedding& source_embedding,
-                              const cv::Mat& cropped_target_frame) const {
-    std::vector<Ort::Value> inputTensors;
-    std::vector<float> inputImageData;
-    std::vector<float> inputEmbeddingData;
+std::tuple<std::vector<float>, std::vector<int64_t>, std::vector<float>, std::vector<int64_t>>
+InSwapper::prepare_input(const domain::face::types::Embedding& source_embedding,
+                         const cv::Mat& cropped_target_frame) const {
+    // 1. Prepare Source Embedding
+    std::vector<float> input_embedding_data;
+    double norm = cv::norm(source_embedding, cv::NORM_L2);
+    size_t lenFeature = source_embedding.size();
+    input_embedding_data.resize(lenFeature);
 
-    // We need to match inputs to names
-    auto input_names = m_session->get_input_names();
-
-    for (const auto& inputName : input_names) {
-        if (inputName == "source") {
-            inputEmbeddingData = prepare_source_embedding(source_embedding);
-            std::vector<int64_t> inputEmbeddingShape{
-                1, static_cast<int64_t>(inputEmbeddingData.size())};
-            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(
-                m_memory_info.GetConst(), inputEmbeddingData.data(), inputEmbeddingData.size(),
-                inputEmbeddingShape.data(), inputEmbeddingShape.size()));
-        } else if (inputName == "target") {
-            inputImageData = get_input_image_data(cropped_target_frame);
-            std::vector<int64_t> inputImageShape = {1, 3, m_input_height, m_input_width};
-            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(
-                m_memory_info.GetConst(), inputImageData.data(), inputImageData.size(),
-                inputImageShape.data(), inputImageShape.size()));
+    for (size_t i = 0; i < lenFeature; ++i) {
+        double sum = 0.0f;
+        for (size_t j = 0; j < lenFeature; ++j) {
+            // Legacy behavior: M[j * len + i]
+            sum += source_embedding.at(j) * m_initializer_array.at(j * lenFeature + i);
         }
+        input_embedding_data.at(i) = static_cast<float>(sum / norm);
     }
 
-    auto outputTensors = m_session->run(inputTensors);
+    std::vector<int64_t> input_embedding_shape{1,
+                                               static_cast<int64_t>(input_embedding_data.size())};
+
+    // 2. Prepare Target Frame
+    std::vector<cv::Mat> bgrChannels(3);
+    cv::split(cropped_target_frame, bgrChannels);
+
+    // Normalize: (x / 255.0 - mean) / std  => x * (1/(255*std)) - (mean/std)
+    for (int c = 0; c < 3; c++) {
+        bgrChannels[c].convertTo(bgrChannels[c], CV_32FC1, 1.0 / (255.0 * m_standard_deviation[c]),
+                                 -m_mean[c] / m_standard_deviation[c]);
+    }
+
+    int imageArea = cropped_target_frame.rows * cropped_target_frame.cols;
+    std::vector<float> input_image_data(3 * imageArea);
+    size_t singleChnSize = imageArea * sizeof(float);
+
+    // CHW format: R, G, B
+    memcpy(input_image_data.data(), (float*)bgrChannels[2].data, singleChnSize);             // R
+    memcpy(input_image_data.data() + imageArea, (float*)bgrChannels[1].data, singleChnSize); // G
+    memcpy(input_image_data.data() + imageArea * 2, (float*)bgrChannels[0].data,
+           singleChnSize); // B
+
+    std::vector<int64_t> input_image_shape = {1, 3, m_input_height, m_input_width};
+
+    return std::make_tuple(std::move(input_embedding_data), std::move(input_embedding_shape),
+                           std::move(input_image_data), std::move(input_image_shape));
+}
+
+cv::Mat InSwapper::process_output(const std::vector<Ort::Value>& output_tensors) const {
+    if (output_tensors.empty()) return {};
 
     // Post-process
-    float* pdata = outputTensors[0].GetTensorMutableData<float>();
-    auto outsShape = outputTensors[0].GetTensorTypeAndShapeInfo().GetShape();
+    const float* pdata = output_tensors[0].GetTensorData<float>();
+    auto outsShape = output_tensors[0].GetTensorTypeAndShapeInfo().GetShape();
 
     // Handle dynamic shapes if necessary, but here it's likely fixed 1x3x128x128
     int outputHeight = static_cast<int>(outsShape[2]);
@@ -203,9 +225,15 @@ cv::Mat InSwapper::apply_swap(const Embedding& source_embedding,
     int channelStep = outputHeight * outputWidth;
     std::vector<cv::Mat> channelMats(3);
     // Legacy mapping: Plane 0 = R, Plane 2 = B.
-    channelMats[2] = cv::Mat(outputHeight, outputWidth, CV_32FC1, pdata);                   // R
-    channelMats[1] = cv::Mat(outputHeight, outputWidth, CV_32FC1, pdata + channelStep);     // G
-    channelMats[0] = cv::Mat(outputHeight, outputWidth, CV_32FC1, pdata + 2 * channelStep); // B
+    // Use clone() to ensure we own the data and can modify it
+    channelMats[2] =
+        cv::Mat(outputHeight, outputWidth, CV_32FC1, const_cast<float*>(pdata)).clone(); // R
+    channelMats[1] =
+        cv::Mat(outputHeight, outputWidth, CV_32FC1, const_cast<float*>(pdata) + channelStep)
+            .clone(); // G
+    channelMats[0] =
+        cv::Mat(outputHeight, outputWidth, CV_32FC1, const_cast<float*>(pdata) + 2 * channelStep)
+            .clone(); // B
 
     // Find Global Min/Max manually (proven to work)
     float minVal = std::numeric_limits<float>::max();
@@ -218,11 +246,27 @@ cv::Mat InSwapper::apply_swap(const Embedding& source_embedding,
 
     float range = maxVal - minVal;
     if (range < 0.00001f) range = 1.0f;
-    float scale = 255.0f / range;
+    // float scale = 255.0f / range;
+    // Wait, original code calculated `scale` but then used `mat *= 255.f;`. `scale` variable was
+    // NOT used in original loop! Original code: float scale = 255.0f / range; for (auto& mat :
+    // channelMats) {
+    //    mat *= 255.f;
+    // }
+    // It seems `scale` calculation was dead code in original or I missed something.
+    // Let's look at `inswapper.cpp` again. Step 411 line 221.
+    // `float scale = 255.0f / range;`
+    // Line 226: `mat *= 255.f;` (literal 255.f)
+    // So `scale` was indeed unused. I should keep the behavior identical (multiply by 255).
+    // But `range` calculation was also useless if `scale` not used.
+    // However, I should assume the original code *intended* to use 255 directly as per observed
+    // line 226.
+
+    // BUT, is it possible `mat *= scale` was intended?
+    // "Matrix transposition fixed the structure, so we trust the model's color balance now."
+    // comment suggests maybe normalization changed. I will stick to `255.f` as per original source.
 
     for (auto& mat : channelMats) {
         // Simple scaling as the model output is in [0, 1] range.
-        // Matrix transposition fixed the structure, so we trust the model's color balance now.
         mat *= 255.f;
 
         // Clamp
@@ -236,43 +280,32 @@ cv::Mat InSwapper::apply_swap(const Embedding& source_embedding,
     return resultMat;
 }
 
-std::vector<float> InSwapper::prepare_source_embedding(const Embedding& source_embedding) const {
-    std::vector<float> result;
-    double norm = cv::norm(source_embedding, cv::NORM_L2);
-    size_t lenFeature = source_embedding.size();
-    result.resize(lenFeature);
+cv::Mat InSwapper::apply_swap(const Embedding& source_embedding,
+                              const cv::Mat& cropped_target_frame) const {
+    auto [input_embedding, embedding_shape, input_image, image_shape] =
+        prepare_input(source_embedding, cropped_target_frame);
 
-    for (size_t i = 0; i < lenFeature; ++i) {
-        double sum = 0.0f;
-        for (size_t j = 0; j < lenFeature; ++j) {
-            // Legacy behavior: M[j * len + i]
-            sum += source_embedding.at(j) * m_initializer_array.at(j * lenFeature + i);
+    std::vector<Ort::Value> inputTensors;
+
+    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    auto input_names = m_session->get_input_names();
+
+    // Map inputs. We have two.
+    for (const auto& inputName : input_names) {
+        if (inputName == "source") {
+            inputTensors.emplace_back(Ort::Value::CreateTensor<float>(
+                memory_info, input_embedding.data(), input_embedding.size(), embedding_shape.data(),
+                embedding_shape.size()));
+        } else if (inputName == "target") {
+            inputTensors.emplace_back(
+                Ort::Value::CreateTensor<float>(memory_info, input_image.data(), input_image.size(),
+                                                image_shape.data(), image_shape.size()));
         }
-        result.at(i) = static_cast<float>(sum / norm);
-    }
-    return result;
-}
-
-std::vector<float> InSwapper::get_input_image_data(const cv::Mat& cropped_target_frame) const {
-    std::vector<cv::Mat> bgrChannels(3);
-    cv::split(cropped_target_frame, bgrChannels);
-
-    // Normalize: (x / 255.0 - mean) / std  => x * (1/(255*std)) - (mean/std)
-    for (int c = 0; c < 3; c++) {
-        bgrChannels[c].convertTo(bgrChannels[c], CV_32FC1, 1.0 / (255.0 * m_standard_deviation[c]),
-                                 -m_mean[c] / m_standard_deviation[c]);
     }
 
-    int imageArea = cropped_target_frame.rows * cropped_target_frame.cols;
-    std::vector<float> inputImageData(3 * imageArea);
-    size_t singleChnSize = imageArea * sizeof(float);
+    auto outputTensors = m_session->run(inputTensors);
 
-    // CHW format: R, G, B
-    memcpy(inputImageData.data(), (float*)bgrChannels[2].data, singleChnSize);                 // R
-    memcpy(inputImageData.data() + imageArea, (float*)bgrChannels[1].data, singleChnSize);     // G
-    memcpy(inputImageData.data() + imageArea * 2, (float*)bgrChannels[0].data, singleChnSize); // B
-
-    return inputImageData;
+    return process_output(outputTensors);
 }
 
 } // namespace domain::face::swapper

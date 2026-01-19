@@ -23,7 +23,22 @@ void FairFace::load_model(const std::string& model_path,
     m_size = cv::Size(m_inputWidth, m_inputHeight);
 }
 
-std::vector<float> FairFace::getInputImageData(
+ClassificationResult FairFace::classify(const cv::Mat& image,
+                                        const domain::face::types::Landmarks& face_landmark_5) {
+    auto [inputData, inputShape] = prepare_input(image, face_landmark_5);
+    if (inputData.empty()) return {};
+
+    Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    std::vector<Ort::Value> inputTensor;
+    inputTensor.emplace_back(Ort::Value::CreateTensor<float>(
+        memory_info, inputData.data(), inputData.size(), inputShape.data(), inputShape.size()));
+
+    std::vector<Ort::Value> outputTensor = run(inputTensor);
+
+    return process_output(outputTensor);
+}
+
+std::pair<std::vector<float>, std::vector<int64_t>> FairFace::prepare_input(
     const cv::Mat& image, const domain::face::types::Landmarks& face_landmark_5) const {
     cv::Mat inputImage;
     std::tie(inputImage, std::ignore) = helper::warp_face_by_face_landmarks_5(
@@ -46,24 +61,15 @@ std::vector<float> FairFace::getInputImageData(
            singleChannelSize); // G
     memcpy(inputData.data() + 2 * imageArea, reinterpret_cast<float*>(inputChannels[0].data),
            singleChannelSize); // B
-    return inputData;
+
+    std::vector<int64_t> inputShape{1, 3, m_inputHeight, m_inputWidth};
+    return {std::move(inputData), std::move(inputShape)};
 }
 
-ClassificationResult FairFace::classify(const cv::Mat& image,
-                                        const domain::face::types::Landmarks& face_landmark_5) {
-    std::vector<float> inputData = getInputImageData(image, face_landmark_5);
-    std::vector<int64_t> inputShape{1, 3, m_inputHeight, m_inputWidth};
-
-    Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-    std::vector<Ort::Value> inputTensor;
-    inputTensor.emplace_back(Ort::Value::CreateTensor<float>(
-        memory_info, inputData.data(), inputData.size(), inputShape.data(), inputShape.size()));
-
-    std::vector<Ort::Value> outputTensor = run(inputTensor);
-
-    int64_t raceId = outputTensor[0].GetTensorMutableData<int64_t>()[0];
-    int64_t genderId = outputTensor[1].GetTensorMutableData<int64_t>()[0];
-    int64_t ageId = outputTensor[2].GetTensorMutableData<int64_t>()[0];
+ClassificationResult FairFace::process_output(const std::vector<Ort::Value>& outputTensor) const {
+    int64_t raceId = outputTensor[0].GetTensorData<int64_t>()[0];
+    int64_t genderId = outputTensor[1].GetTensorData<int64_t>()[0];
+    int64_t ageId = outputTensor[2].GetTensorData<int64_t>()[0];
 
     ClassificationResult result{};
     result.age = categorizeAge(ageId);

@@ -36,8 +36,10 @@ public:
     DetectionResults detect(const cv::Mat& visionFrame) override;
 
 private:
-    std::tuple<std::vector<float>, float, float> preProcess(const cv::Mat& visionFrame,
-                                                            const cv::Size& faceDetectorSize);
+    std::tuple<std::vector<float>, std::vector<int64_t>, float, float> prepare_input(
+        const cv::Mat& visionFrame);
+    DetectionResults process_output(const std::vector<Ort::Value>& ortOutputs, float ratioHeight,
+                                    float ratioWidth);
 
     int m_inputHeight{640};
     int m_inputWidth{640};
@@ -50,10 +52,29 @@ private:
     int m_featureMapChannel = 3;
 };
 
-std::tuple<std::vector<float>, float, float> Retina::preProcess(const cv::Mat& visionFrame,
-                                                                const cv::Size& faceDetectorSize) {
-    const int faceDetectorHeight = faceDetectorSize.height;
-    const int faceDetectorWidth = faceDetectorSize.width;
+DetectionResults Retina::detect(const cv::Mat& visionFrame) {
+    DetectionResults results;
+    if (visionFrame.empty() || !is_model_loaded()) return results;
+
+    auto [inputData, inputImgShape, ratioHeight, ratioWidth] = prepare_input(visionFrame);
+
+    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+
+    std::vector<Ort::Value> inputTensors;
+    inputTensors.reserve(1);
+    inputTensors.emplace_back(
+        Ort::Value::CreateTensor<float>(memory_info, inputData.data(), inputData.size(),
+                                        inputImgShape.data(), inputImgShape.size()));
+
+    std::vector<Ort::Value> ortOutputs = run(inputTensors);
+
+    return process_output(ortOutputs, ratioHeight, ratioWidth);
+}
+
+std::tuple<std::vector<float>, std::vector<int64_t>, float, float> Retina::prepare_input(
+    const cv::Mat& visionFrame) {
+    const int faceDetectorHeight = m_faceDetectorSize.height;
+    const int faceDetectorWidth = m_faceDetectorSize.width;
 
     const cv::Mat tempVisionFrame = foundation::media::vision::resize_frame(
         visionFrame, cv::Size(faceDetectorWidth, faceDetectorHeight));
@@ -80,28 +101,14 @@ std::tuple<std::vector<float>, float, float> Retina::preProcess(const cv::Mat& v
     memcpy(inputData.data() + imageArea, (float*)bgrChannels[1].data, singleChnSize);
     memcpy(inputData.data() + imageArea * 2, (float*)bgrChannels[2].data, singleChnSize);
 
-    return std::make_tuple(inputData, ratioHeight, ratioWidth);
-}
-
-DetectionResults Retina::detect(const cv::Mat& visionFrame) {
-    DetectionResults results;
-    if (visionFrame.empty() || !is_model_loaded()) return results;
-
-    auto [inputData, ratioHeight, ratioWidth] = preProcess(visionFrame, m_faceDetectorSize);
-
     std::vector<int64_t> inputImgShape = {1, 3, m_faceDetectorSize.height,
                                           m_faceDetectorSize.width};
+    return {std::move(inputData), std::move(inputImgShape), ratioHeight, ratioWidth};
+}
 
-    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-
-    std::vector<Ort::Value> inputTensors;
-    inputTensors.reserve(1);
-    inputTensors.emplace_back(
-        Ort::Value::CreateTensor<float>(memory_info, inputData.data(), inputData.size(),
-                                        inputImgShape.data(), inputImgShape.size()));
-
-    std::vector<Ort::Value> ortOutputs = run(inputTensors);
-
+DetectionResults Retina::process_output(const std::vector<Ort::Value>& ortOutputs,
+                                        float ratioHeight, float ratioWidth) {
+    DetectionResults results;
     if (ortOutputs.empty()) return results;
 
     std::vector<cv::Rect2f> boundingBoxesRaw;
@@ -113,7 +120,6 @@ DetectionResults Retina::detect(const cv::Mat& visionFrame) {
 
         int featureStride = m_featureStrides[index];
 
-        auto& outputTensor = ortOutputs[index];
         // RetinaFace outputs structure depends on export.
         // Assuming interleaved outputs similar to SCRFD.
 
@@ -122,12 +128,8 @@ DetectionResults Retina::detect(const cv::Mat& visionFrame) {
         const float* pdataLandmark =
             ortOutputs[index + 2 * m_featureMapChannel].GetTensorData<float>();
 
-        size_t numAnchors = ortOutputs[index]
-                                .GetTensorTypeAndShapeInfo()
-                                .GetElementCount(); // Typically flattened [N*H*W*A]
-
-        // Score tensor usually has 1 or 2 channels.
-        // We assume 1 channel per anchor for face confidence (or use the FG class if 2 channels).
+        auto& outputTensor = ortOutputs[index];
+        size_t numAnchors = outputTensor.GetTensorTypeAndShapeInfo().GetElementCount();
 
         int strideHeight = static_cast<int>(std::floor(m_faceDetectorSize.height / featureStride));
         int strideWidth = static_cast<int>(std::floor(m_faceDetectorSize.width / featureStride));
@@ -135,13 +137,9 @@ DetectionResults Retina::detect(const cv::Mat& visionFrame) {
         auto anchors = domain::face::helper::create_static_anchors(featureStride, m_anchorTotal,
                                                                    strideHeight, strideWidth);
 
-        // Assuming pdataScore provides confidence score for each anchor.
-
         for (size_t j = 0; j < anchors.size() && j < numAnchors; ++j) {
             float score = pdataScore[j];
             if (score >= m_detectorScore) {
-                // Extract BBox
-                // BBox: 4 values per anchor
                 float x1 = pdataBbox[j * 4 + 0] * featureStride;
                 float y1 = pdataBbox[j * 4 + 1] * featureStride;
                 float x2 = pdataBbox[j * 4 + 2] * featureStride;
@@ -153,8 +151,6 @@ DetectionResults Retina::detect(const cv::Mat& visionFrame) {
                 bbox.width = x2 - x1;
                 bbox.height = y2 - y1;
 
-                // Extract Landmarks
-                // 10 values per anchor (5 points x 2)
                 Landmarks kps;
                 for (int k = 0; k < 5; ++k) {
                     float kx = pdataLandmark[j * 10 + k * 2 + 0] * featureStride;
@@ -162,11 +158,9 @@ DetectionResults Retina::detect(const cv::Mat& visionFrame) {
                     kps.emplace_back(kx, ky);
                 }
 
-                // Adjust
                 bbox = domain::face::helper::distance_2_bbox(anchors[j], bbox);
                 kps = domain::face::helper::distance_2_face_landmark_5(anchors[j], kps);
 
-                // Scale
                 bbox.x *= ratioWidth;
                 bbox.y *= ratioHeight;
                 bbox.width *= ratioWidth;
@@ -184,7 +178,6 @@ DetectionResults Retina::detect(const cv::Mat& visionFrame) {
         }
     }
 
-    // NMS
     auto keepIndices = domain::face::helper::apply_nms(boundingBoxesRaw, confidencesRaw, 0.4f);
 
     for (int idx : keepIndices) {

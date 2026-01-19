@@ -1,8 +1,9 @@
-module;
 #include <vector>
 #include <string>
 #include <memory>
+#include <tuple>
 #include <opencv2/core.hpp>
+#include <onnxruntime_cxx_api.h>
 
 export module domain.face.expression:live_portrait;
 
@@ -33,6 +34,11 @@ private:
         [[nodiscard]] bool is_model_loaded() const;
         [[nodiscard]] std::vector<float> extract_feature(const cv::Mat& frame) const;
 
+        [[nodiscard]] std::tuple<std::vector<float>, std::vector<int64_t>> prepare_input(
+            const cv::Mat& frame) const;
+        [[nodiscard]] std::vector<float> process_output(
+            const std::vector<Ort::Value>& output_tensors) const;
+
     private:
         mutable foundation::ai::inference_session::InferenceSession m_session;
     };
@@ -43,6 +49,11 @@ private:
                         const foundation::ai::inference_session::Options& options);
         [[nodiscard]] bool is_model_loaded() const;
         [[nodiscard]] std::vector<std::vector<float>> extract_motion(const cv::Mat& frame) const;
+
+        [[nodiscard]] std::tuple<std::vector<float>, std::vector<int64_t>> prepare_input(
+            const cv::Mat& frame) const;
+        [[nodiscard]] std::vector<std::vector<float>> process_output(
+            const std::vector<Ort::Value>& output_tensors) const;
 
     private:
         mutable foundation::ai::inference_session::InferenceSession m_session;
@@ -57,6 +68,12 @@ private:
                                              std::vector<float>& source_motion_points,
                                              std::vector<float>& target_motion_points) const;
         [[nodiscard]] cv::Size get_output_size() const;
+
+        [[nodiscard]] std::tuple<std::vector<float>, std::vector<int64_t>, std::vector<float>,
+                                 std::vector<int64_t>, std::vector<float>, std::vector<int64_t>>
+        prepare_input(std::vector<float>& feature_volume, std::vector<float>& source_motion_points,
+                      std::vector<float>& target_motion_points) const;
+        [[nodiscard]] cv::Mat process_output(const std::vector<Ort::Value>& output_tensors) const;
 
     private:
         mutable foundation::ai::inference_session::InferenceSession m_session;

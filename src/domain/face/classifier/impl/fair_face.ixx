@@ -5,6 +5,7 @@ module;
 #include <string>
 #include <opencv2/core/types.hpp>
 #include <onnxruntime_cxx_api.h>
+#include <utility>
 
 export module domain.face.classifier:fair_face;
 import :api;
@@ -50,8 +51,9 @@ private:
     int m_inputWidth{0};
     int m_inputHeight{0};
 
-    std::vector<float> getInputImageData(
+    std::pair<std::vector<float>, std::vector<int64_t>> prepare_input(
         const cv::Mat& image, const domain::face::types::Landmarks& face_landmark_5) const;
+    ClassificationResult process_output(const std::vector<Ort::Value>& outputTensor) const;
     static domain::face::Gender categorizeGender(int64_t genderId);
     static domain::face::AgeRange categorizeAge(int64_t age_id);
     static domain::face::Race categorizeRace(int64_t raceId);

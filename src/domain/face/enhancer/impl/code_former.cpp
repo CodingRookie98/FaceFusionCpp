@@ -73,51 +73,47 @@ cv::Mat CodeFormer::enhance_face(const EnhanceInput& input) {
     return result_frame;
 }
 
-std::vector<float> CodeFormer::get_input_image_data(const cv::Mat& cropped_image) const {
+std::tuple<std::vector<float>, std::vector<int64_t>, std::vector<double>, std::vector<int64_t>>
+CodeFormer::prepare_input(const cv::Mat& cropped_frame) const {
     std::vector<cv::Mat> bgr_channels(3);
-    cv::split(cropped_image, bgr_channels);
+    cv::split(cropped_frame, bgr_channels);
     for (int c = 0; c < 3; c++) {
         bgr_channels[c].convertTo(bgr_channels[c], CV_32FC1, 1 / (255.0 * 0.5), -1.0);
     }
 
-    const int image_area = cropped_image.cols * cropped_image.rows;
+    const int image_area = cropped_frame.cols * cropped_frame.rows;
     std::vector<float> input_image_data(3 * image_area);
     const size_t single_chn_size = image_area * sizeof(float);
     memcpy(input_image_data.data(), bgr_channels[2].data, single_chn_size); // RGB order
     memcpy(input_image_data.data() + image_area, bgr_channels[1].data, single_chn_size);
     memcpy(input_image_data.data() + image_area * 2, bgr_channels[0].data, single_chn_size);
-    return input_image_data;
+
+    std::vector<int64_t> input_shape{1, 3, m_input_height, m_input_width};
+    std::vector<double> input_weight_data{1.0};
+    std::vector<int64_t> weight_shape{1, 1};
+
+    return std::make_tuple(std::move(input_image_data), std::move(input_shape),
+                           std::move(input_weight_data), std::move(weight_shape));
 }
 
-cv::Mat CodeFormer::apply_enhance(const cv::Mat& cropped_frame) const {
-    std::vector<float> input_image_data = get_input_image_data(cropped_frame);
-    const std::vector<int64_t> input_shape{1, 3, m_input_height, m_input_width};
-    std::vector<double> input_weight_data{1.0};
-    const std::vector<int64_t> weight_shape{1, 1};
-
-    std::vector<Ort::Value> input_tensors;
-    input_tensors.emplace_back(Ort::Value::CreateTensor<float>(
-        m_memory_info.GetConst(), input_image_data.data(), input_image_data.size(),
-        input_shape.data(), input_shape.size()));
-
-    input_tensors.emplace_back(Ort::Value::CreateTensor<double>(
-        m_memory_info.GetConst(), input_weight_data.data(), input_weight_data.size(),
-        weight_shape.data(), weight_shape.size()));
-
-    auto output_tensors = m_session->run(input_tensors);
-
+cv::Mat CodeFormer::process_output(const std::vector<Ort::Value>& output_tensors) const {
     if (output_tensors.empty()) return {};
 
-    auto* pdata = output_tensors[0].GetTensorMutableData<float>();
+    const float* pdata = output_tensors[0].GetTensorData<float>();
     const auto outs_shape = output_tensors[0].GetTensorTypeAndShapeInfo().GetShape();
     const int output_height = static_cast<int>(outs_shape[2]);
     const int output_width = static_cast<int>(outs_shape[3]);
 
     const long long channel_step = output_height * output_width;
     std::vector<cv::Mat> channel_mats(3);
-    channel_mats[2] = cv::Mat(output_height, output_width, CV_32FC1, pdata);                    // R
-    channel_mats[1] = cv::Mat(output_height, output_width, CV_32FC1, pdata + channel_step);     // G
-    channel_mats[0] = cv::Mat(output_height, output_width, CV_32FC1, pdata + 2 * channel_step); // B
+    channel_mats[2] =
+        cv::Mat(output_height, output_width, CV_32FC1, const_cast<float*>(pdata)).clone(); // R
+    channel_mats[1] =
+        cv::Mat(output_height, output_width, CV_32FC1, const_cast<float*>(pdata + channel_step))
+            .clone(); // G
+    channel_mats[0] =
+        cv::Mat(output_height, output_width, CV_32FC1, const_cast<float*>(pdata + 2 * channel_step))
+            .clone(); // B
 
     for (auto& mat : channel_mats) {
         cv::max(mat, -1.0f, mat);
@@ -131,6 +127,24 @@ cv::Mat CodeFormer::apply_enhance(const cv::Mat& cropped_frame) const {
     cv::merge(channel_mats, result_mat);
     result_mat.convertTo(result_mat, CV_8UC3);
     return result_mat;
+}
+
+cv::Mat CodeFormer::apply_enhance(const cv::Mat& cropped_frame) const {
+    auto [input_image_data, input_shape, input_weight_data, weight_shape] =
+        prepare_input(cropped_frame);
+
+    std::vector<Ort::Value> input_tensors;
+    input_tensors.emplace_back(Ort::Value::CreateTensor<float>(
+        m_memory_info.GetConst(), input_image_data.data(), input_image_data.size(),
+        input_shape.data(), input_shape.size()));
+
+    input_tensors.emplace_back(Ort::Value::CreateTensor<double>(
+        m_memory_info.GetConst(), input_weight_data.data(), input_weight_data.size(),
+        weight_shape.data(), weight_shape.size()));
+
+    auto output_tensors = m_session->run(input_tensors);
+
+    return process_output(output_tensors);
 }
 
 } // namespace domain::face::enhancer

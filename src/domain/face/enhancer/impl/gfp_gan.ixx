@@ -2,7 +2,9 @@ module;
 #include <string>
 #include <vector>
 #include <memory>
+#include <tuple>
 #include <opencv2/core.hpp>
+#include <onnxruntime_cxx_api.h>
 
 export module domain.face.enhancer:gfp_gan;
 import :impl_base;
@@ -29,7 +31,9 @@ private:
         domain::face::helper::WarpTemplateType::Ffhq_512;
     // std::unique_ptr<domain::face::masker::IFaceMasker> m_face_masker;
 
-    std::vector<float> get_input_image_data(const cv::Mat& cropped_image) const;
+    std::tuple<std::vector<float>, std::vector<int64_t>> prepare_input(
+        const cv::Mat& cropped_frame) const;
+    cv::Mat process_output(const std::vector<Ort::Value>& output_tensors) const;
     cv::Mat apply_enhance(const cv::Mat& cropped_frame) const;
 };
 

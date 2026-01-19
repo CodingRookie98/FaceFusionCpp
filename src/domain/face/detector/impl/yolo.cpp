@@ -41,8 +41,10 @@ public:
     DetectionResults detect(const cv::Mat& visionFrame) override;
 
 private:
-    static std::tuple<std::vector<float>, float, float> preProcess(
-        const cv::Mat& visionFrame, const cv::Size& faceDetectorSize);
+    std::tuple<std::vector<float>, std::vector<int64_t>, float, float> prepare_input(
+        const cv::Mat& visionFrame);
+    DetectionResults process_output(const std::vector<Ort::Value>& ortOutputs, float ratioHeight,
+                                    float ratioWidth, const cv::Size& originalSize);
 
     int input_height_{640};
     int input_width_{640};
@@ -50,13 +52,34 @@ private:
     float score_threshold_ = 0.5f;
 };
 
-std::tuple<std::vector<float>, float, float> Yolo::preProcess(const cv::Mat& visionFrame,
-                                                              const cv::Size& faceDetectorSize) {
-    const int faceDetectorHeight = faceDetectorSize.height;
-    const int faceDetectorWidth = faceDetectorSize.width;
+DetectionResults Yolo::detect(const cv::Mat& visionFrame) {
+    DetectionResults results;
+    if (visionFrame.empty()) { return results; }
+
+    if (!is_model_loaded()) { return results; }
+
+    auto [inputData, inputImgShape, ratioHeight, ratioWidth] = prepare_input(visionFrame);
+
+    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+
+    std::vector<Ort::Value> inputTensors;
+    inputTensors.reserve(1);
+    inputTensors.emplace_back(
+        Ort::Value::CreateTensor<float>(memory_info, inputData.data(), inputData.size(),
+                                        inputImgShape.data(), inputImgShape.size()));
+
+    std::vector<Ort::Value> ortOutputs = run(inputTensors);
+
+    return process_output(ortOutputs, ratioHeight, ratioWidth, visionFrame.size());
+}
+
+std::tuple<std::vector<float>, std::vector<int64_t>, float, float> Yolo::prepare_input(
+    const cv::Mat& visionFrame) {
+    const int faceDetectorHeight = faceDetectorSize_.height;
+    const int faceDetectorWidth = faceDetectorSize_.width;
 
     cv::Mat tempVisionFrame =
-        foundation::media::vision::resize_frame(visionFrame, faceDetectorSize);
+        foundation::media::vision::resize_frame(visionFrame, faceDetectorSize_);
     float ratioHeight =
         static_cast<float>(visionFrame.rows) / static_cast<float>(tempVisionFrame.rows);
     float ratioWidth =
@@ -79,37 +102,18 @@ std::tuple<std::vector<float>, float, float> Yolo::preProcess(const cv::Mat& vis
     memcpy(inputData.data(), (float*)bgrChannels[0].data, singleChnSize);
     memcpy(inputData.data() + imageArea, (float*)bgrChannels[1].data, singleChnSize);
     memcpy(inputData.data() + imageArea * 2, (float*)bgrChannels[2].data, singleChnSize);
-    return std::make_tuple(inputData, ratioHeight, ratioWidth);
+
+    std::vector<int64_t> inputImgShape{1, 3, faceDetectorSize_.height, faceDetectorSize_.width};
+
+    return {std::move(inputData), std::move(inputImgShape), ratioHeight, ratioWidth};
 }
 
-DetectionResults Yolo::detect(const cv::Mat& visionFrame) {
+DetectionResults Yolo::process_output(const std::vector<Ort::Value>& ortOutputs, float ratioHeight,
+                                      float ratioWidth, const cv::Size& originalSize) {
     DetectionResults results;
-    if (visionFrame.empty()) {
-        return results; // Or throw
-    }
-
-    if (!is_model_loaded()) { return results; }
-
-    // Verify input size. Yolo currently supports 640x640.
-
-    auto [inputData, ratioHeight, ratioWidth] = preProcess(visionFrame, faceDetectorSize_);
-
-    const std::vector<int64_t> inputImgShape{1, 3, faceDetectorSize_.height,
-                                             faceDetectorSize_.width};
-
-    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-
-    std::vector<Ort::Value> inputTensors;
-    inputTensors.reserve(1);
-    inputTensors.emplace_back(
-        Ort::Value::CreateTensor<float>(memory_info, inputData.data(), inputData.size(),
-                                        inputImgShape.data(), inputImgShape.size()));
-
-    std::vector<Ort::Value> ortOutputs = run(inputTensors);
-
     if (ortOutputs.empty()) return results;
 
-    float* pdata = ortOutputs[0].GetTensorMutableData<float>();
+    const float* pdata = ortOutputs[0].GetTensorData<float>();
     const int numBox = static_cast<int>(ortOutputs[0].GetTensorTypeAndShapeInfo().GetShape()[2]);
 
     for (int i = 0; i < numBox; i++) {
@@ -120,10 +124,10 @@ DetectionResults Yolo::detect(const cv::Mat& visionFrame) {
             float xmax = (pdata[i] + 0.5f * pdata[2 * numBox + i]) * ratioWidth;
             float ymax = (pdata[numBox + i] + 0.5f * pdata[3 * numBox + i]) * ratioHeight;
 
-            xmin = std::max(0.0f, std::min(xmin, static_cast<float>(visionFrame.cols)));
-            ymin = std::max(0.0f, std::min(ymin, static_cast<float>(visionFrame.rows)));
-            xmax = std::max(0.0f, std::min(xmax, static_cast<float>(visionFrame.cols)));
-            ymax = std::max(0.0f, std::min(ymax, static_cast<float>(visionFrame.rows)));
+            xmin = std::max(0.0f, std::min(xmin, static_cast<float>(originalSize.width)));
+            ymin = std::max(0.0f, std::min(ymin, static_cast<float>(originalSize.height)));
+            xmax = std::max(0.0f, std::min(xmax, static_cast<float>(originalSize.width)));
+            ymax = std::max(0.0f, std::min(ymax, static_cast<float>(originalSize.height)));
 
             DetectionResult result;
             result.box = cv::Rect2f(xmin, ymin, xmax - xmin, ymax - ymin);

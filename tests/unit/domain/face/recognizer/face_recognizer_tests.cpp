@@ -69,3 +69,5 @@ TEST_F(FaceRecognizerTest, ArcFaceInference) {
     double raw_norm = cv::norm(result.first, cv::NORM_L2);
     EXPECT_GT(raw_norm, 0.0);
 }
+
+// Force rebuild

@@ -2,7 +2,9 @@ module;
 #include <vector>
 #include <string>
 #include <memory>
+#include <tuple>
 #include <opencv2/core.hpp>
+#include <onnxruntime_cxx_api.h>
 
 export module domain.face.swapper:inswapper;
 
@@ -25,9 +27,13 @@ public:
 
 private:
     void init();
-    std::vector<float> prepare_source_embedding(
-        const domain::face::types::Embedding& source_embedding) const;
-    std::vector<float> get_input_image_data(const cv::Mat& cropped_target_frame) const;
+
+    std::tuple<std::vector<float>, std::vector<int64_t>, std::vector<float>, std::vector<int64_t>>
+    prepare_input(const domain::face::types::Embedding& source_embedding,
+                  const cv::Mat& cropped_target_frame) const;
+    cv::Mat process_output(const std::vector<Ort::Value>& output_tensors) const;
+
+    // Helper to orchestrate the swap for a single face
     cv::Mat apply_swap(const domain::face::types::Embedding& source_embedding,
                        const cv::Mat& cropped_target_frame) const;
 

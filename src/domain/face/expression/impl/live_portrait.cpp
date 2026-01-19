@@ -26,31 +26,45 @@ bool LivePortrait::FeatureExtractor::is_model_loaded() const {
     return m_session.is_model_loaded();
 }
 
-std::vector<float> LivePortrait::FeatureExtractor::extract_feature(const cv::Mat& frame) const {
-    if (!is_model_loaded()) { throw std::runtime_error("FeatureExtractor model is not loaded"); }
-
+std::tuple<std::vector<float>, std::vector<int64_t>> LivePortrait::FeatureExtractor::prepare_input(
+    const cv::Mat& frame) const {
     auto input_node_dims = m_session.get_input_node_dims();
     const int width = static_cast<int>(input_node_dims[0][2]);
     const int height = static_cast<int>(input_node_dims[0][3]);
 
     std::vector<float> input_image_data =
         LivePortrait::get_input_image_data(frame, cv::Size(width, height));
-    std::vector<Ort::Value> input_tensors;
-    const std::vector<int64_t> input_shape = {1, 3, width, height};
+    std::vector<int64_t> input_shape = {1, 3, width, height};
+
+    return std::make_tuple(std::move(input_image_data), std::move(input_shape));
+}
+
+std::vector<float> LivePortrait::FeatureExtractor::process_output(
+    const std::vector<Ort::Value>& output_tensors) const {
+    if (output_tensors.empty()) return {};
+    auto* output_data =
+        output_tensors[0].GetTensorData<float>(); // Use GetTensorData for const correctness
+    // Output size: 1 * 32 * 16 * 64 * 64
+    constexpr size_t output_size = 1 * 32 * 16 * 64 * 64;
+    return std::vector<float>(output_data, output_data + output_size);
+}
+
+std::vector<float> LivePortrait::FeatureExtractor::extract_feature(const cv::Mat& frame) const {
+    if (!is_model_loaded()) { throw std::runtime_error("FeatureExtractor model is not loaded"); }
+
+    auto [input_image_data, input_shape] = prepare_input(frame);
 
     // Create memory info locally
     auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
 
+    std::vector<Ort::Value> input_tensors;
     input_tensors.emplace_back(Ort::Value::CreateTensor<float>(
         memory_info, input_image_data.data(), input_image_data.size(), input_shape.data(),
         input_shape.size()));
 
     auto output_tensor = m_session.run(input_tensors);
 
-    auto* output_data = output_tensor.front().GetTensorMutableData<float>();
-    // Output size: 1 * 32 * 16 * 64 * 64
-    constexpr size_t output_size = 1 * 32 * 16 * 64 * 64;
-    return std::vector<float>(output_data, output_data + output_size);
+    return process_output(output_tensor);
 }
 
 // MotionExtractor Implementation
@@ -63,39 +77,31 @@ bool LivePortrait::MotionExtractor::is_model_loaded() const {
     return m_session.is_model_loaded();
 }
 
-std::vector<std::vector<float>> LivePortrait::MotionExtractor::extract_motion(
+std::tuple<std::vector<float>, std::vector<int64_t>> LivePortrait::MotionExtractor::prepare_input(
     const cv::Mat& frame) const {
-    if (!is_model_loaded()) { throw std::runtime_error("MotionExtractor model is not loaded"); }
-
     auto input_node_dims = m_session.get_input_node_dims();
     const int width = static_cast<int>(input_node_dims[0][2]);
     const int height = static_cast<int>(input_node_dims[0][3]);
 
     std::vector<float> input_image_data =
         LivePortrait::get_input_image_data(frame, cv::Size(width, height));
-    std::vector<Ort::Value> input_tensors;
-    const std::vector<int64_t> input_shape = {1, 3, width, height};
+    std::vector<int64_t> input_shape = {1, 3, width, height};
 
-    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    return std::make_tuple(std::move(input_image_data), std::move(input_shape));
+}
 
-    input_tensors.emplace_back(Ort::Value::CreateTensor<float>(
-        memory_info, input_image_data.data(), input_image_data.size(), input_shape.data(),
-        input_shape.size()));
-
-    auto output_tensor = m_session.run(input_tensors);
-    auto output_names = m_session.get_output_names();
+std::vector<std::vector<float>> LivePortrait::MotionExtractor::process_output(
+    const std::vector<Ort::Value>& output_tensors) const {
+    if (output_tensors.empty()) return {};
+    auto output_names = m_session.get_output_names(); // Still need names to know structure, or
+                                                      // index? Original logic used index i.
 
     std::vector<std::vector<float>> output_data_vec;
-    for (size_t i = 0; i < output_names.size(); ++i) {
-        auto* output_data = output_tensor[i].GetTensorMutableData<float>();
-        // Based on index logic from original code, assuming output order is consistent
-        // Or we should check output names? Original code checked index i.
-        // i==0..3 -> size 1
-        // i==4 -> size 3
-        // i==5,6 -> size 21*3
+    for (size_t i = 0; i < output_names.size();
+         ++i) { // Assuming output_tensors size matches output_names size
+        if (i >= output_tensors.size()) break;
+        const auto* output_data = output_tensors[i].GetTensorData<float>();
 
-        // Let's stick to index based logic as ONNX output order is deterministic if model doesn't
-        // change
         if (i <= 3) {
             output_data_vec.emplace_back(output_data, output_data + 1);
         } else if (i == 4) {
@@ -105,6 +111,24 @@ std::vector<std::vector<float>> LivePortrait::MotionExtractor::extract_motion(
         }
     }
     return output_data_vec;
+}
+
+std::vector<std::vector<float>> LivePortrait::MotionExtractor::extract_motion(
+    const cv::Mat& frame) const {
+    if (!is_model_loaded()) { throw std::runtime_error("MotionExtractor model is not loaded"); }
+
+    auto [input_image_data, input_shape] = prepare_input(frame);
+
+    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    std::vector<Ort::Value> input_tensors;
+
+    input_tensors.emplace_back(Ort::Value::CreateTensor<float>(
+        memory_info, input_image_data.data(), input_image_data.size(), input_shape.data(),
+        input_shape.size()));
+
+    auto output_tensor = m_session.run(input_tensors);
+
+    return process_output(output_tensor);
 }
 
 // Generator Implementation
@@ -125,49 +149,43 @@ cv::Size LivePortrait::Generator::get_output_size() const {
     return {output_width, output_height};
 }
 
-cv::Mat LivePortrait::Generator::generate_frame(std::vector<float>& feature_volume,
-                                                std::vector<float>& source_motion_points,
-                                                std::vector<float>& target_motion_points) const {
-    if (!is_model_loaded()) { throw std::runtime_error("Generator model is not loaded"); }
-
-    std::vector<Ort::Value> input_tensors;
+std::tuple<std::vector<float>, std::vector<int64_t>, std::vector<float>, std::vector<int64_t>,
+           std::vector<float>, std::vector<int64_t>>
+LivePortrait::Generator::prepare_input(std::vector<float>& feature_volume,
+                                       std::vector<float>& source_motion_points,
+                                       std::vector<float>& target_motion_points) const {
     const std::vector<int64_t> input_feature_shape{1, 32, 16, 64, 64};
     const std::vector<int64_t> input_motion_shape{1, 21, 3};
+    // Note: inputs are passed by reference, but we need to return copies/moves if we follow the
+    // pattern rigorously. However, the original function used them directly. To return a
+    // self-contained tuple, we should copy them. Or we could return const reference wrappers if we
+    // were sure of lifetime, but vector<float> return is safer.
 
-    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-    auto input_names = m_session.get_input_names();
+    return std::make_tuple(feature_volume, input_feature_shape, source_motion_points,
+                           input_motion_shape, target_motion_points, input_motion_shape);
+}
 
-    for (const auto& name : input_names) {
-        if (name == "feature_volume") {
-            input_tensors.emplace_back(Ort::Value::CreateTensor<float>(
-                memory_info, feature_volume.data(), feature_volume.size(),
-                input_feature_shape.data(), input_feature_shape.size()));
-        } else if (name == "source") {
-            input_tensors.emplace_back(Ort::Value::CreateTensor<float>(
-                memory_info, source_motion_points.data(), source_motion_points.size(),
-                input_motion_shape.data(), input_motion_shape.size()));
-        } else if (name == "target") {
-            input_tensors.emplace_back(Ort::Value::CreateTensor<float>(
-                memory_info, target_motion_points.data(), target_motion_points.size(),
-                input_motion_shape.data(), input_motion_shape.size()));
-        }
-    }
+cv::Mat LivePortrait::Generator::process_output(
+    const std::vector<Ort::Value>& output_tensors) const {
+    if (output_tensors.empty()) return {};
 
-    auto output_tensor = m_session.run(input_tensors);
-
-    auto* output_data = output_tensor.front().GetTensorMutableData<float>();
-    std::vector<int64_t> outs_shape = output_tensor[0].GetTensorTypeAndShapeInfo().GetShape();
+    const float* output_data = output_tensors[0].GetTensorData<float>();
+    std::vector<int64_t> outs_shape = output_tensors[0].GetTensorTypeAndShapeInfo().GetShape();
     const int output_height = static_cast<int>(outs_shape[2]);
     const int output_width = static_cast<int>(outs_shape[3]);
 
     const int channel_step = output_height * output_width;
     std::vector<cv::Mat> channel_mats(3);
     // Create matrices for each channel and scale/clamp values
-    channel_mats[2] = cv::Mat(output_height, output_width, CV_32FC1, output_data); // R
-    channel_mats[1] =
-        cv::Mat(output_height, output_width, CV_32FC1, output_data + channel_step); // G
-    channel_mats[0] =
-        cv::Mat(output_height, output_width, CV_32FC1, output_data + 2 * channel_step); // B
+    channel_mats[2] =
+        cv::Mat(output_height, output_width, CV_32FC1, const_cast<float*>(output_data))
+            .clone(); // R
+    channel_mats[1] = cv::Mat(output_height, output_width, CV_32FC1,
+                              const_cast<float*>(output_data) + channel_step)
+                          .clone(); // G
+    channel_mats[0] = cv::Mat(output_height, output_width, CV_32FC1,
+                              const_cast<float*>(output_data) + 2 * channel_step)
+                          .clone(); // B
 
     for (auto& mat : channel_mats) {
         mat *= 255.f;
@@ -179,6 +197,48 @@ cv::Mat LivePortrait::Generator::generate_frame(std::vector<float>& feature_volu
     cv::Mat result_mat;
     cv::merge(channel_mats, result_mat);
     return result_mat;
+}
+
+cv::Mat LivePortrait::Generator::generate_frame(std::vector<float>& feature_volume,
+                                                std::vector<float>& source_motion_points,
+                                                std::vector<float>& target_motion_points) const {
+    if (!is_model_loaded()) { throw std::runtime_error("Generator model is not loaded"); }
+
+    auto [input_feature, feature_shape, input_source, source_shape, input_target, target_shape] =
+        prepare_input(feature_volume, source_motion_points, target_motion_points);
+
+    std::vector<Ort::Value> input_tensors;
+    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    auto input_names = m_session.get_input_names();
+
+    // Map inputs by name. We have 3 known inputs.
+    // Order in prepare_input tuple: feature, source, target.
+    // If we iterate names, we need to match them.
+    // Or we can just assume names if fixed, but `get_input_names` iteration is safer if order
+    // varies. But original code iterated.
+
+    // Simplification: We have the data and shapes ready. We can just loop and create tensors.
+    // BUT we need to associate data with the correct name.
+
+    for (const auto& name : input_names) {
+        if (name == "feature_volume") {
+            input_tensors.emplace_back(Ort::Value::CreateTensor<float>(
+                memory_info, input_feature.data(), input_feature.size(), feature_shape.data(),
+                feature_shape.size()));
+        } else if (name == "source") {
+            input_tensors.emplace_back(Ort::Value::CreateTensor<float>(
+                memory_info, input_source.data(), input_source.size(), source_shape.data(),
+                source_shape.size()));
+        } else if (name == "target") {
+            input_tensors.emplace_back(Ort::Value::CreateTensor<float>(
+                memory_info, input_target.data(), input_target.size(), target_shape.data(),
+                target_shape.size()));
+        }
+    }
+
+    auto output_tensor = m_session.run(input_tensors);
+
+    return process_output(output_tensor);
 }
 
 // LivePortrait Implementation
