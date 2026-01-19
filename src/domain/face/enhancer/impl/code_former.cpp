@@ -10,6 +10,7 @@ module domain.face.enhancer;
 import :code_former;
 
 namespace domain::face::enhancer {
+using namespace domain::face::types;
 
 CodeFormer::CodeFormer() {
     // Masker initialization deferred
@@ -31,46 +32,33 @@ void CodeFormer::load_model(const std::string& model_path,
     m_output_names = {"output"};
 }
 
-cv::Mat CodeFormer::enhance_face(const EnhanceInput& input) {
+std::vector<FaceProcessResult> CodeFormer::enhance_face(const EnhanceInput& input) {
     if (input.target_frame.empty()) { return {}; }
-    if (input.target_faces_landmarks.empty()) { return input.target_frame.clone(); }
+    if (input.target_faces_landmarks.empty()) { return {}; }
 
     if (!is_model_loaded()) { throw std::runtime_error("model is not loaded"); }
 
-    std::vector<cv::Mat> cropped_target_frames;
-    std::vector<cv::Mat> affine_matrices;
-    std::vector<cv::Mat> cropped_result_frames;
-    std::vector<cv::Mat> best_masks;
+    std::vector<FaceProcessResult> results;
+    const auto& targetFrame = input.target_frame;
 
     for (const auto& landmarks : input.target_faces_landmarks) {
-        auto [cropped_frame, affine_matrix] = domain::face::helper::warp_face_by_face_landmarks_5(
-            input.target_frame, landmarks,
-            domain::face::helper::get_warp_template(m_warp_template_type), m_size);
-        cropped_target_frames.push_back(cropped_frame);
-        affine_matrices.push_back(affine_matrix);
+        auto [croppedFrame, affineMatrix] = domain::face::helper::warp_face_by_face_landmarks_5(
+            targetFrame, landmarks, domain::face::helper::get_warp_template(m_warp_template_type),
+            m_size);
+
+        cv::Mat enhancedFrame = apply_enhance(croppedFrame);
+
+        FaceProcessResult result;
+        result.crop_frame = enhancedFrame;
+        result.target_crop_frame = croppedFrame;
+        result.affine_matrix = affineMatrix;
+        result.target_landmarks = landmarks;
+        result.mask_options = input.mask_options;
+
+        results.push_back(result);
     }
 
-    for (const auto& cropped_frame : cropped_target_frames) {
-        cropped_result_frames.push_back(apply_enhance(cropped_frame));
-    }
-
-    for (auto& cropped_frame : cropped_target_frames) {
-        cv::Mat mask = cv::Mat::ones(m_size, CV_32FC1);
-        best_masks.push_back(mask);
-    }
-
-    cv::Mat result_frame = input.target_frame.clone();
-    for (size_t i = 0; i < best_masks.size(); ++i) {
-        result_frame = domain::face::helper::paste_back(result_frame, cropped_result_frames[i],
-                                                        best_masks[i], affine_matrices[i]);
-    }
-
-    if (input.face_blend > 100) {
-        result_frame = blend_frame(input.target_frame, result_frame, 100);
-    } else {
-        result_frame = blend_frame(input.target_frame, result_frame, input.face_blend);
-    }
-    return result_frame;
+    return results;
 }
 
 std::tuple<std::vector<float>, std::vector<int64_t>, std::vector<double>, std::vector<int64_t>>

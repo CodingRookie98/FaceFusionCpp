@@ -53,11 +53,14 @@ TEST_F(FaceEnhancerIntegrationTest, EnhanceFaceWithCodeFormer) {
     input.face_blend = 100; // Full enhancement
 
     // 3. Run Enhancement
-    cv::Mat result_img = enhancer->enhance_face(input);
-    ASSERT_FALSE(result_img.empty());
+    // 3. Run Enhancement
+    auto results = enhancer->enhance_face(input);
+    ASSERT_FALSE(results.empty());
+    cv::Mat result_img = results[0].crop_frame;
 
     // 4. Verify Result
-    EXPECT_EQ(result_img.size(), target_img.size());
+    // EXPECT_EQ(result_img.size(), target_img.size()); // Crop size != target size usually
+    EXPECT_FALSE(result_img.empty());
     EXPECT_EQ(result_img.type(), target_img.type());
 
     // Save result for visual inspection
@@ -91,11 +94,13 @@ TEST_F(FaceEnhancerIntegrationTest, EnhanceFaceWithGfpGan) {
     input.face_blend = 100;
 
     // 3. Run Enhancement
-    cv::Mat result_img = enhancer->enhance_face(input);
-    ASSERT_FALSE(result_img.empty());
+    auto results = enhancer->enhance_face(input);
+    ASSERT_FALSE(results.empty());
+    cv::Mat result_img = results[0].crop_frame;
 
     // 4. Verify Result
-    EXPECT_EQ(result_img.size(), target_img.size());
+    // EXPECT_EQ(result_img.size(), target_img.size());
+    EXPECT_FALSE(result_img.empty());
 
     // Save result for visual inspection
     fs::create_directories("tests_output");

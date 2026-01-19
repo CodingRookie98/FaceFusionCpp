@@ -1,5 +1,6 @@
 module;
 #include <string>
+#include <vector>
 #include <opencv2/core.hpp>
 
 /**
@@ -10,6 +11,7 @@ module;
  */
 export module domain.face.enhancer:api;
 import :types;
+import domain.face;
 import foundation.ai.inference_session;
 
 export namespace domain::face::enhancer {
@@ -32,9 +34,10 @@ public:
     /**
      * @brief Enhance/Restore a face
      * @param input Enhancement parameters including the cropped face image
-     * @return Enhanced face image
+     * @return List of processed face results
      */
-    virtual cv::Mat enhance_face(const EnhanceInput& input) = 0;
+    virtual std::vector<domain::face::types::FaceProcessResult> enhance_face(
+        const EnhanceInput& input) = 0;
 };
 
 } // namespace domain::face::enhancer

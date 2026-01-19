@@ -5,25 +5,18 @@ module;
 
 export module domain.face.swapper:types;
 
-import domain.face;
+export import domain.face;
 
 export namespace domain::face::swapper {
 
-enum class MaskType { Box, Occlusion, Region };
-
-struct MaskOptions {
-    std::vector<MaskType> mask_types = {MaskType::Box};
-    float box_mask_blur = 0.3f;
-    std::array<int, 4> box_mask_padding = {0, 0, 0, 0};
-    // Region mask specific options could go here
-    // Occlusion mask specific options could go here
-};
+// using MaskType = domain::face::types::MaskType; // Redundant
+// using MaskOptions = domain::face::types::MaskOptions; // Redundant
 
 struct SwapInput {
     domain::face::types::Embedding source_embedding;
     std::vector<domain::face::types::Landmarks> target_faces_landmarks;
     cv::Mat target_frame;
-    MaskOptions mask_options;
+    domain::face::types::MaskOptions mask_options;
 };
 
 } // namespace domain::face::swapper

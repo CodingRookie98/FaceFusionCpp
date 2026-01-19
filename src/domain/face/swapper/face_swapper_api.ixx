@@ -1,5 +1,6 @@
 module;
 #include <string>
+#include <vector>
 #include <opencv2/core.hpp>
 
 /**
@@ -11,6 +12,7 @@ module;
 export module domain.face.swapper:api;
 
 import :types;
+import domain.face;
 import foundation.ai.inference_session;
 
 export namespace domain::face::swapper {
@@ -33,9 +35,10 @@ public:
     /**
      * @brief Perform face swapping
      * @param input Swap parameters including source embedding and target frame
-     * @return Result image with faces swapped
+     * @return List of processed face results (crop, matrix, etc.)
      */
-    virtual cv::Mat swap_face(const SwapInput& input) = 0;
+    virtual std::vector<domain::face::types::FaceProcessResult> swap_face(
+        const SwapInput& input) = 0;
 };
 
 } // namespace domain::face::swapper

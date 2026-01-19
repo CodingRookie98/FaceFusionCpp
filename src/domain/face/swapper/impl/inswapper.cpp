@@ -10,12 +10,12 @@ module;
 
 module domain.face.swapper;
 
+// module domain.face.swapper; // Top lines assumed unchanged for now, using partial update
+
 import :impl_base;
 import :types;
 import :inswapper;
-import :mask_compositor;
 import domain.face.helper;
-import domain.face.masker;
 import foundation.ai.inference_session;
 
 namespace domain::face::swapper {
@@ -30,32 +30,6 @@ void InSwapper::load_model(const std::string& model_path,
     FaceSwapperImplBase::load_model(model_path, options);
     m_initializer_array.clear();
     init();
-
-    // Load Maskers (TODO: Path should be configurable or standard resource path)
-    // For now, assume standard models exist in "models" directory relative to binary or hardcoded
-    // for now? In legacy code, they were loaded via Hub. Let's assume user provides model paths via
-    // some config, but here interface only takes swapper model path. We will lazy load or use
-    // hardcoded paths relative to the swapper model path or a known location.
-
-    // TEMPORARY: Hardcoded paths for Phase 2 proof of concept.
-    // Ideally this should be passed in Options or via a Resource Manager.
-    try {
-        // m_occluder = domain::face::masker::create_occlusion_masker("models/face_occluder.onnx",
-        // options); m_region_masker =
-        // domain::face::masker::create_region_masker("models/face_parser.onnx", options); Commented
-        // out to avoid crash if files don't exist. We will initialize them only if they are
-        // requested in swap options? No, swap options are per-frame. Models must be preloaded.
-
-        // Let's check if models exist next to the swapper model?
-        // std::filesystem::path base_path = std::filesystem::path(model_path).parent_path();
-        // ...
-
-        // For now, keep them null. We need a mechanism to load them.
-        // Maybe add `load_masker_models(occluder_path, region_path)` to IFaceSwapper?
-        // Or just lazy load if we had paths.
-    } catch (...) {
-        // Log warning
-    }
 }
 
 void InSwapper::init() {
@@ -117,52 +91,33 @@ void InSwapper::init() {
     input.close();
 }
 
-cv::Mat InSwapper::swap_face(const SwapInput& input) {
+std::vector<FaceProcessResult> InSwapper::swap_face(const SwapInput& input) {
     if (input.source_embedding.empty() || input.target_frame.empty()) { return {}; }
-    if (input.target_faces_landmarks.empty()) { return input.target_frame.clone(); }
+    if (input.target_faces_landmarks.empty()) { return {}; } // No faces to swap
 
     if (!is_model_loaded()) { throw std::runtime_error("Model is not loaded!"); }
     if (m_initializer_array.empty()) { init(); }
 
+    std::vector<FaceProcessResult> results;
     const auto& targetFrame = input.target_frame;
-    std::vector<cv::Mat> croppedTargetFrames;
-    std::vector<cv::Mat> affineMatrices;
-    std::vector<cv::Mat> croppedResultFrames;
 
-    // 1. Warp faces
     for (const auto& landmarks5 : input.target_faces_landmarks) {
         auto [croppedTargetFrame, affineMat] = warp_face_by_face_landmarks_5(
             targetFrame, landmarks5, get_warp_template(m_warp_template_type), m_size);
-        croppedTargetFrames.emplace_back(croppedTargetFrame);
-        affineMatrices.emplace_back(affineMat);
+
+        cv::Mat swappedFace = apply_swap(input.source_embedding, croppedTargetFrame);
+
+        FaceProcessResult result;
+        result.crop_frame = swappedFace;
+        result.target_crop_frame = croppedTargetFrame;
+        result.affine_matrix = affineMat;
+        result.target_landmarks = landmarks5;
+        result.mask_options = input.mask_options; // Pass through options
+
+        results.push_back(result);
     }
 
-    // 2. Apply Swap
-    for (const auto& croppedTargetFrame : croppedTargetFrames) {
-        croppedResultFrames.emplace_back(apply_swap(input.source_embedding, croppedTargetFrame));
-    }
-
-    // 3. Masking
-    // TODO: Phase 3 - Restore MaskCompositor with Box/Occlusion/Region support
-    cv::Mat resultFrame = targetFrame.clone();
-
-    for (size_t i = 0; i < croppedResultFrames.size(); ++i) {
-        // Prepare composition input
-        MaskCompositor::CompositionInput maskInput;
-        maskInput.size = m_size;
-        maskInput.options = input.mask_options;
-        maskInput.crop_frame = croppedTargetFrames[i];
-        maskInput.occluder = m_occluder.get();
-        maskInput.region_masker = m_region_masker.get();
-
-        cv::Mat composedMask = MaskCompositor::compose(maskInput);
-
-        // Paste back
-        resultFrame =
-            paste_back(resultFrame, croppedResultFrames[i], composedMask, affineMatrices[i]);
-    }
-
-    return resultFrame;
+    return results;
 }
 
 std::tuple<std::vector<float>, std::vector<int64_t>, std::vector<float>, std::vector<int64_t>>

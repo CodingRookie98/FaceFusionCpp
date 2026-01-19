@@ -7,26 +7,24 @@ module;
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
-export module domain.face.swapper:mask_compositor;
+export module domain.face.masker:compositor;
 
-import :types;
-import domain.face.masker;
+import domain.face; // for types
+import :api;        // for IFaceOccluder, IFaceRegionMasker
 import foundation.infrastructure.thread_pool;
 
-export namespace domain::face::swapper {
+export namespace domain::face::masker {
 
 class MaskCompositor {
 public:
     struct CompositionInput {
         cv::Size size;
-        MaskOptions options;
+        domain::face::types::MaskOptions options; // Updated to use centralized types
         cv::Mat crop_frame;
 
         // Raw pointers used as non-owning references.
-        // Ownership belongs to InSwapper.
-        // Lifetime is guaranteed because compose() blocks until all tasks complete (Fork-Join).
-        domain::face::masker::IFaceOccluder* occluder = nullptr;
-        domain::face::masker::IFaceRegionMasker* region_masker = nullptr;
+        IFaceOccluder* occluder = nullptr;
+        IFaceRegionMasker* region_masker = nullptr;
     };
 
     /**
@@ -40,7 +38,7 @@ public:
         // 1. Box Mask Task
         bool box_mask_enabled = false;
         for (auto t : opts.mask_types)
-            if (t == MaskType::Box) box_mask_enabled = true;
+            if (t == domain::face::types::MaskType::Box) box_mask_enabled = true;
 
         if (box_mask_enabled) {
             futures.emplace_back(pool.enqueue([&]() {
@@ -51,7 +49,7 @@ public:
         // 2. Occlusion Mask Task
         bool occlusion_mask_enabled = false;
         for (auto t : opts.mask_types)
-            if (t == MaskType::Occlusion) occlusion_mask_enabled = true;
+            if (t == domain::face::types::MaskType::Occlusion) occlusion_mask_enabled = true;
 
         if (occlusion_mask_enabled && input.occluder && !input.crop_frame.empty()) {
             futures.emplace_back(pool.enqueue([&]() -> cv::Mat {
@@ -67,12 +65,12 @@ public:
         // 3. Region Mask Task
         bool region_mask_enabled = false;
         for (auto t : opts.mask_types)
-            if (t == MaskType::Region) region_mask_enabled = true;
+            if (t == domain::face::types::MaskType::Region) region_mask_enabled = true;
 
         if (region_mask_enabled && input.region_masker && !input.crop_frame.empty()) {
             futures.emplace_back(pool.enqueue([&]() {
-                using domain::face::masker::FaceRegion;
-                std::unordered_set<domain::face::masker::FaceRegion> default_regions;
+                using FaceRegion = domain::face::masker::FaceRegion;
+                std::unordered_set<FaceRegion> default_regions;
                 default_regions.insert(FaceRegion::Skin);
                 default_regions.insert(FaceRegion::Nose);
                 default_regions.insert(FaceRegion::LeftEyebrow);
@@ -92,12 +90,8 @@ public:
 
         if (masks.empty()) {
             // If no mask generated, return full white (swap everything)
-            return cv::Mat::ones(
-                input.size,
-                CV_32FC1); // Wait, paste_back usually takes float 0.0-1.0 or uchar 0-255?
             // Legacy face_helper::paste_back expects CV_32FC1 (0.0-1.0).
-            // But maskers return CV_8UC1 (0-255).
-            // We should convert here.
+            return cv::Mat::ones(input.size, CV_32FC1);
         }
 
         // Fusion (Min)
@@ -114,16 +108,13 @@ public:
                 next_mask.convertTo(next_mask, CV_32FC1, 1.0 / 255.0);
             }
 
-            // Resize if needed (robustness)
+            // Resize if needed
             if (next_mask.size() != final_mask.size()) {
                 cv::resize(next_mask, next_mask, final_mask.size());
             }
 
             cv::min(final_mask, next_mask, final_mask);
         }
-
-        // Soft threshold / Clamp
-        // final_mask = max(0, min(1, final_mask))
 
         return final_mask;
     }
@@ -149,7 +140,6 @@ private:
 
         // Blur
         if (blur_amount > 0) {
-            // Ensure kernel size is odd
             if (blur_amount % 2 == 0) blur_amount++;
             cv::GaussianBlur(mask, mask, cv::Size(0, 0), blur_amount * 0.25);
         }
@@ -158,4 +148,4 @@ private:
     }
 };
 
-} // namespace domain::face::swapper
+} // namespace domain::face::masker

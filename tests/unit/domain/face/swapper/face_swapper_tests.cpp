@@ -67,9 +67,19 @@ TEST_F(FaceSwapperIntegrationTest, SwapFaceAndVerifySimilarity) {
     input.target_frame = target_img;
     input.source_embedding = source_embedding;
     input.target_faces_landmarks = {target_kps};
-    input.mask_options.mask_types = {MaskType::Box}; // Use basic mask for now
+    input.mask_options.mask_types = {domain::face::types::MaskType::Box}; // Use basic mask for now
 
-    cv::Mat result_img = swapper->swap_face(input);
+    // Act
+    auto results = swapper->swap_face(input);
+
+    // Assert
+    ASSERT_FALSE(results.empty());
+    EXPECT_FALSE(results[0].crop_frame.empty());
+    // Basic dimension check (depends on model output, e.g., 128x128)
+    // EXPECT_EQ(result.cols, 128);
+    // EXPECT_EQ(result.rows, 128);
+
+    cv::Mat result_img = results[0].crop_frame;
     ASSERT_FALSE(result_img.empty());
 
     // 4. Verify Result

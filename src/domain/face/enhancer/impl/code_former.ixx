@@ -8,7 +8,8 @@ module;
 
 export module domain.face.enhancer:code_former;
 import :impl_base;
-// import domain.face.masker; // Removed dependency for now to simplify build
+import :types;
+import :api;
 import domain.face.helper;
 
 export namespace domain::face::enhancer {
@@ -21,7 +22,8 @@ public:
     void load_model(const std::string& model_path,
                     const foundation::ai::inference_session::Options& options = {}) override;
 
-    cv::Mat enhance_face(const EnhanceInput& input) override;
+    std::vector<domain::face::types::FaceProcessResult> enhance_face(
+        const EnhanceInput& input) override;
 
 private:
     int m_input_height = 0;

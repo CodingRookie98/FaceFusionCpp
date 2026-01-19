@@ -15,7 +15,6 @@ target_sources(domain_face_swapper
             face_swapper_factory.ixx
             impl/swapper_impl_base.ixx
             impl/inswapper.ixx
-            impl/mask_compositor.ixx
     PRIVATE
             impl/inswapper.cpp
 )
