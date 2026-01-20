@@ -23,6 +23,7 @@ trigger: always_on
   - 核心指令：`--action {configure,build,test,install,package,both}`
   - **开发阶段必须使用 Debug 模式**：`python build.py --action both --config Debug`
   - Release 模式仅用于最终发布验证
+  - 二进制输出路径 (Debug): `build/msvc-x64-debug/bin` (测试文件位于 `tests/unit/...`)
   - 详细用法参见：`docs/build.md`
 - **质量控制**：
   - 格式化：`python scripts/format_code.py`
