@@ -27,6 +27,10 @@ public:
      */
     static FaceModelRegistry& get_instance();
 
+    // Testing support
+    static void set_instance_for_testing(std::unique_ptr<FaceModelRegistry> instance);
+    static void reset_instance();
+
     /**
      * @brief Get a shared face detector.
      */

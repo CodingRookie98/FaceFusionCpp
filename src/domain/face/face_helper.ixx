@@ -80,4 +80,9 @@ float get_iou(const cv::Rect2f& box1, const cv::Rect2f& box2);
 
 cv::Mat conditional_optimize_contrast(const cv::Mat& vision_frame);
 
+// Rotation helpers
+cv::Point2f rotate_point_back(const cv::Point2f& pt, int angle, const cv::Size& original_size);
+cv::Rect2f rotate_box_back(const cv::Rect2f& box, int angle, const cv::Size& original_size);
+void rotate_image_90n(const cv::Mat& src, cv::Mat& dst, int angle);
+
 } // namespace domain::face::helper

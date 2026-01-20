@@ -348,4 +348,49 @@ std::vector<float> interp(const std::vector<float>& x, const std::vector<float>&
     return result;
 }
 
+cv::Point2f rotate_point_back(const cv::Point2f& pt, int angle, const cv::Size& original_size) {
+    if (angle == 0) return pt;
+    const float W = static_cast<float>(original_size.width);
+    const float H = static_cast<float>(original_size.height);
+
+    if (angle == 90) {
+        return cv::Point2f(W - pt.y, pt.x);
+    } else if (angle == 180) {
+        return cv::Point2f(W - pt.x, H - pt.y);
+    } else if (angle == 270) {
+        return cv::Point2f(pt.y, H - pt.x);
+    }
+    return pt;
+}
+
+cv::Rect2f rotate_box_back(const cv::Rect2f& box, int angle, const cv::Size& original_size) {
+    if (angle == 0) return box;
+
+    std::vector<cv::Point2f> corners = {box.tl(), cv::Point2f(box.x + box.width, box.y),
+                                        cv::Point2f(box.x + box.width, box.y + box.height),
+                                        cv::Point2f(box.x, box.y + box.height)};
+
+    float min_x = 1e9f, min_y = 1e9f, max_x = -1e9f, max_y = -1e9f;
+    for (const auto& p : corners) {
+        auto p_back = rotate_point_back(p, angle, original_size);
+        min_x = std::min(min_x, p_back.x);
+        min_y = std::min(min_y, p_back.y);
+        max_x = std::max(max_x, p_back.x);
+        max_y = std::max(max_y, p_back.y);
+    }
+    return cv::Rect2f(cv::Point2f(min_x, min_y), cv::Point2f(max_x, max_y));
+}
+
+void rotate_image_90n(const cv::Mat& src, cv::Mat& dst, int angle) {
+    if (angle == 90) cv::rotate(src, dst, cv::ROTATE_90_COUNTERCLOCKWISE);
+    else if (angle == 180) cv::rotate(src, dst, cv::ROTATE_180);
+    else if (angle == 270) cv::rotate(src, dst, cv::ROTATE_90_CLOCKWISE);
+    else
+        dst = src; // No copy if same matrix? Or explicit copy?
+                   // cv::rotate supports in-place? No.
+                   // If src and dst are different, we shoud copy.
+                   // For now assume caller handles dst correctly or we copy.
+                   // If angle==0, simplistic assignment shares data.
+}
+
 } // namespace domain::face::helper

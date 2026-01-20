@@ -108,3 +108,48 @@ TEST(FaceHelperTest, CalcAverageEmbedding) {
     EXPECT_FLOAT_EQ(avg[1], 2.0f);
     EXPECT_FLOAT_EQ(avg[2], 2.0f);
 }
+
+TEST(FaceHelperTest, RotatePointBack) {
+    cv::Size original_size(100, 50); // W=100, H=50
+    cv::Point2f pt(10, 20);          // Point on "rotated" or processed frame
+
+    // Angle 0: Identity
+    EXPECT_EQ(rotate_point_back(pt, 0, original_size), pt);
+
+    // Angle 90 (Counter-Clockwise)
+    // Formula: (W - y, x) = (100 - 20, 10) = (80, 10)
+    EXPECT_EQ(rotate_point_back(pt, 90, original_size), cv::Point2f(80, 10));
+
+    // Angle 180
+    // Formula: (W - x, H - y) = (100 - 10, 50 - 20) = (90, 30)
+    EXPECT_EQ(rotate_point_back(pt, 180, original_size), cv::Point2f(90, 30));
+
+    // Angle 270 (Clockwise)
+    // Formula: (y, H - x) = (20, 50 - 10) = (20, 40)
+    EXPECT_EQ(rotate_point_back(pt, 270, original_size), cv::Point2f(20, 40));
+}
+
+TEST(FaceHelperTest, RotateBoxBack) {
+    cv::Size original_size(100, 50);
+    cv::Rect2f box(10, 10, 20, 20);
+
+    // Angle 0
+    EXPECT_EQ(rotate_box_back(box, 0, original_size), box);
+
+    // Angle 90
+    // Box TL(10,10), BR(30,30)
+    // Rotate 90 back:
+    // P1(10,10) -> (90, 10)
+    // P2(30,10) -> (90, 30)
+    // P3(30,30) -> (70, 30)
+    // P4(10,30) -> (70, 10)
+    // Min X=70, Max X=90. Min Y=10, Max Y=30.
+    // Result Rect(70, 10, 20, 20)
+    EXPECT_EQ(rotate_box_back(box, 90, original_size), cv::Rect2f(70, 10, 20, 20));
+
+    // Angle 180
+    // P1(10,10) -> (90, 40)
+    // P3(30,30) -> (70, 20)
+    // Rect(70, 20, 20, 20)
+    EXPECT_EQ(rotate_box_back(box, 180, original_size), cv::Rect2f(70, 20, 20, 20));
+}

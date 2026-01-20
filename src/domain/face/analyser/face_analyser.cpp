@@ -115,40 +115,7 @@ void FaceAnalyser::apply_options(const Options& options) {
     m_options = options;
 }
 
-// Helpers
-static cv::Point2f rotate_point_back(const cv::Point2f& pt, int angle,
-                                     const cv::Size& original_size) {
-    if (angle == 0) return pt;
-    float W = static_cast<float>(original_size.width);
-    float H = static_cast<float>(original_size.height);
-
-    if (angle == 90) {
-        return cv::Point2f(W - pt.y, pt.x);
-    } else if (angle == 180) {
-        return cv::Point2f(W - pt.x, H - pt.y);
-    } else if (angle == 270) {
-        return cv::Point2f(pt.y, H - pt.x);
-    }
-    return pt;
-}
-
-static cv::Rect2f rotate_box_back(const cv::Rect2f& box, int angle, const cv::Size& original_size) {
-    if (angle == 0) return box;
-
-    std::vector<cv::Point2f> corners = {box.tl(), cv::Point2f(box.x + box.width, box.y),
-                                        cv::Point2f(box.x + box.width, box.y + box.height),
-                                        cv::Point2f(box.x, box.y + box.height)};
-
-    float min_x = 1e9f, min_y = 1e9f, max_x = -1e9f, max_y = -1e9f;
-    for (const auto& p : corners) {
-        auto p_back = rotate_point_back(p, angle, original_size);
-        min_x = std::min(min_x, p_back.x);
-        min_y = std::min(min_y, p_back.y);
-        max_x = std::max(max_x, p_back.x);
-        max_y = std::max(max_y, p_back.y);
-    }
-    return cv::Rect2f(cv::Point2f(min_x, min_y), cv::Point2f(max_x, max_y));
-}
+// Helpers are moved to domain.face.helper
 
 std::vector<Face> FaceAnalyser::get_many_faces(const cv::Mat& vision_frame) {
     if (vision_frame.empty()) return {};
@@ -163,12 +130,8 @@ std::vector<Face> FaceAnalyser::get_many_faces(const cv::Mat& vision_frame) {
         cv::Mat frame_to_detect;
         if (angle == 0) {
             frame_to_detect = vision_frame;
-        } else if (angle == 90) {
-            cv::rotate(vision_frame, frame_to_detect, cv::ROTATE_90_COUNTERCLOCKWISE);
-        } else if (angle == 180) {
-            cv::rotate(vision_frame, frame_to_detect, cv::ROTATE_180);
-        } else if (angle == 270) {
-            cv::rotate(vision_frame, frame_to_detect, cv::ROTATE_90_CLOCKWISE);
+        } else {
+            domain::face::helper::rotate_image_90n(vision_frame, frame_to_detect, angle);
         }
 
         auto results = m_detector->detect(frame_to_detect);
@@ -218,10 +181,8 @@ std::vector<Face> FaceAnalyser::create_faces(const cv::Mat& vision_frame,
 
     cv::Mat rotated_frame;
     if (detected_angle != 0) {
-        int angle = static_cast<int>(detected_angle);
-        if (angle == 90) cv::rotate(vision_frame, rotated_frame, cv::ROTATE_90_COUNTERCLOCKWISE);
-        else if (angle == 180) cv::rotate(vision_frame, rotated_frame, cv::ROTATE_180);
-        else if (angle == 270) cv::rotate(vision_frame, rotated_frame, cv::ROTATE_90_CLOCKWISE);
+        domain::face::helper::rotate_image_90n(vision_frame, rotated_frame,
+                                               static_cast<int>(detected_angle));
     } else {
         rotated_frame = vision_frame;
     }
@@ -244,11 +205,12 @@ std::vector<Face> FaceAnalyser::create_faces(const cv::Mat& vision_frame,
 
         domain::face::types::Landmarks kps5_back;
         for (const auto& p : res.landmarks) {
-            kps5_back.push_back(
-                rotate_point_back(p, static_cast<int>(detected_angle), original_size));
+            kps5_back.push_back(domain::face::helper::rotate_point_back(
+                p, static_cast<int>(detected_angle), original_size));
         }
 
-        face.set_box(rotate_box_back(res.box, static_cast<int>(detected_angle), original_size));
+        face.set_box(domain::face::helper::rotate_box_back(
+            res.box, static_cast<int>(detected_angle), original_size));
         face.set_kps(kps5_back);
 
         if (m_options.face_landmarker_options.min_score > 0 && m_landmarker) {
@@ -265,8 +227,8 @@ std::vector<Face> FaceAnalyser::create_faces(const cv::Mat& vision_frame,
                 if (lm_res.score > m_options.face_landmarker_options.min_score) {
                     domain::face::types::Landmarks kps68_back;
                     for (const auto& p : lm_res.landmarks) {
-                        kps68_back.push_back(
-                            rotate_point_back(p, static_cast<int>(detected_angle), original_size));
+                        kps68_back.push_back(domain::face::helper::rotate_point_back(
+                            p, static_cast<int>(detected_angle), original_size));
                     }
                     face.set_kps(kps68_back);
                 }
