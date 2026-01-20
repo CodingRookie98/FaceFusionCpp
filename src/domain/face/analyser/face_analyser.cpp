@@ -153,8 +153,7 @@ static cv::Rect2f rotate_box_back(const cv::Rect2f& box, int angle, const cv::Si
 std::vector<Face> FaceAnalyser::get_many_faces(const cv::Mat& vision_frame) {
     if (vision_frame.empty()) return {};
 
-    std::string hash = FaceStore::create_frame_hash(vision_frame);
-    if (m_face_store->is_contains(hash)) { return m_face_store->get_faces(hash); }
+    if (m_face_store->is_contains(vision_frame)) { return m_face_store->get_faces(vision_frame); }
 
     std::vector<DetectionResult> detection_results;
     double detected_angle = 0;
@@ -190,7 +189,7 @@ std::vector<Face> FaceAnalyser::get_many_faces(const cv::Mat& vision_frame) {
 
     auto result_faces = create_faces(vision_frame, detection_results, detected_angle);
 
-    m_face_store->insert_faces(hash, result_faces);
+    m_face_store->insert_faces(vision_frame, result_faces);
 
     if (result_faces.empty()) return {};
 

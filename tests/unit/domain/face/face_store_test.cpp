@@ -13,7 +13,7 @@ using namespace domain::face::store;
 
 class FaceStoreTest : public ::testing::Test {
 protected:
-    FaceStore store;
+    FaceStore store; // Default options: FNV1a, LRU enabled
     cv::Mat frame1;
     cv::Mat frame2;
     std::vector<Face> faces1;
@@ -36,12 +36,17 @@ protected:
 };
 
 TEST_F(FaceStoreTest, FrameHashConsistency) {
-    std::string hash1 = FaceStore::create_frame_hash(frame1);
-    std::string hash1_again = FaceStore::create_frame_hash(frame1);
+    // Test FNV1a Default
+    std::string hash1 = FaceStore::calculate_hash(frame1, HashStrategy::FNV1a);
+    std::string hash1_again = FaceStore::calculate_hash(frame1, HashStrategy::FNV1a);
     EXPECT_EQ(hash1, hash1_again);
 
-    std::string hash2 = FaceStore::create_frame_hash(frame2);
+    std::string hash2 = FaceStore::calculate_hash(frame2, HashStrategy::FNV1a);
     EXPECT_NE(hash1, hash2);
+
+    // Test SHA1 Backwards Compatibility
+    std::string sha1_hash = FaceStore::calculate_hash(frame1, HashStrategy::SHA1);
+    EXPECT_NE(hash1, sha1_hash);
 }
 
 TEST_F(FaceStoreTest, InsertAndGetByFrame) {
@@ -101,13 +106,29 @@ TEST_F(FaceStoreTest, ClearFaces) {
     EXPECT_FALSE(store.is_contains("group"));
 }
 
-TEST_F(FaceStoreTest, EmptyInsert) {
-    std::vector<Face> empty_faces;
-    store.insert_faces(frame1, empty_faces);
+TEST_F(FaceStoreTest, MaxCapacityAndLRU) {
+    FaceStoreOptions opts;
+    opts.max_capacity = 2; // Very small capacity
+    opts.enable_lru = true;
+    FaceStore lru_store(opts);
 
-    // Implementation says: if faces.empty() return;
-    // So map should remain empty/unchanged
-    EXPECT_FALSE(store.is_contains(frame1));
+    // Insert A
+    lru_store.insert_faces("A", faces1);
+    // Insert B
+    lru_store.insert_faces("B", faces2);
+
+    EXPECT_TRUE(lru_store.is_contains("A"));
+    EXPECT_TRUE(lru_store.is_contains("B"));
+
+    // Access A (makes it MRU)
+    lru_store.get_faces("A");
+
+    // Insert C (Should evict B because A was just accessed)
+    lru_store.insert_faces("C", faces1);
+
+    EXPECT_TRUE(lru_store.is_contains("A"));  // Kept
+    EXPECT_TRUE(lru_store.is_contains("C"));  // New
+    EXPECT_FALSE(lru_store.is_contains("B")); // Evicted
 }
 
 TEST_F(FaceStoreTest, ConcurrentReadWrite) {
@@ -147,7 +168,10 @@ TEST_F(FaceStoreTest, ConcurrentReadWrite) {
 }
 
 TEST_F(FaceStoreTest, ConcurrentReadOnly) {
-    // Pre-populate store
+    // Disable LRU for pure read concurrency test to avoid lock contention simulation
+    // Or keep it to test thread safety of LRU updates.
+    // Let's keep default (LRU enabled) to stress test the locking mechanism.
+
     store.insert_faces("test_key", faces1);
     store.insert_faces(frame1, faces2);
 
