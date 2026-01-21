@@ -5,6 +5,12 @@ module;
 #include <string>
 #include <vector>
 
+/**
+ * @file face_detector_impl_base.ixx
+ * @brief Face detector implementation base class interface
+ * @author CodingRookie
+ * @date 2026-01-18
+ */
 export module domain.face.detector:impl_base;
 
 import :api;
@@ -13,32 +19,46 @@ import foundation.ai.inference_session_registry;
 
 export namespace domain::face::detector {
 
+/**
+ * @brief Base implementation class for Face Detectors
+ * @details Provides common functionality for ONNX-based face detection models.
+ *          Subclasses (YOLO, SCRFD, RetinaFace) implement the specific `detect()` method.
+ */
 class FaceDetectorImplBase : public IFaceDetector {
 public:
     virtual ~FaceDetectorImplBase() = default;
 
-    void load_model(const std::string& model_path, const InferenceOptions& options) override {
-        m_session =
-            foundation::ai::inference_session::InferenceSessionRegistry::get_instance().get_session(
-                model_path, options);
-    }
+    /**
+     * @brief Load the detection model
+     * @param model_path Path to the ONNX model file
+     * @param options Inference session options
+     */
+    void load_model(const std::string& model_path, const InferenceOptions& options) override;
 
-    [[nodiscard]] bool is_model_loaded() const { return m_session && m_session->is_model_loaded(); }
+    /**
+     * @brief Check if the model is loaded
+     * @return True if a model is loaded and ready
+     */
+    [[nodiscard]] bool is_model_loaded() const;
 
-    [[nodiscard]] std::vector<std::vector<int64_t>> get_input_node_dims() const {
-        if (!m_session) return {};
-        return m_session->get_input_node_dims();
-    }
+    /**
+     * @brief Get input tensor dimensions
+     * @return Vector of dimension vectors for each input
+     */
+    [[nodiscard]] std::vector<std::vector<int64_t>> get_input_node_dims() const;
 
-    [[nodiscard]] std::vector<std::vector<int64_t>> get_output_node_dims() const {
-        if (!m_session) return {};
-        return m_session->get_output_node_dims();
-    }
+    /**
+     * @brief Get output tensor dimensions
+     * @return Vector of dimension vectors for each output
+     */
+    [[nodiscard]] std::vector<std::vector<int64_t>> get_output_node_dims() const;
 
-    std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors) {
-        if (!m_session) return {};
-        return m_session->run(input_tensors);
-    }
+    /**
+     * @brief Run inference on input tensors
+     * @param input_tensors Vector of input ONNX tensors
+     * @return Vector of output ONNX tensors
+     */
+    std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors);
 
 protected:
     std::shared_ptr<foundation::ai::inference_session::InferenceSession> m_session;

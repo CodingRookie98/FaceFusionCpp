@@ -64,9 +64,11 @@ public:
      */
     void clear();
 
+    // Destructor must be public for std::unique_ptr
+    ~FaceModelRegistry() = default;
+
 private:
     FaceModelRegistry() = default;
-    ~FaceModelRegistry() = default;
 
     FaceModelRegistry(const FaceModelRegistry&) = delete;
     FaceModelRegistry& operator=(const FaceModelRegistry&) = delete;

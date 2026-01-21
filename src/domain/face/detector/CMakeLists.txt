@@ -13,6 +13,7 @@ target_sources(domain_face_detector
             impl/face_detector_impl_base.ixx
     PRIVATE
         face_detector_factory.cpp
+        impl/face_detector_impl_base.cpp
         impl/yolo.cpp
         impl/scrfd.cpp
         impl/retina.cpp
