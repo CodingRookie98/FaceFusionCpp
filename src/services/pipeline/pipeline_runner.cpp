@@ -191,9 +191,135 @@ private:
     config::Result<void, config::ConfigError> ProcessVideo(const std::string& target_path,
                                                            const config::TaskConfig& task_config,
                                                            ProgressCallback progress_callback) {
-        // TODO: Enable in Phase 3.2
-        return config::Result<void, config::ConfigError>::Err(
-            config::ConfigError("Video processing not yet implemented in this phase"));
+        using namespace foundation::media::ffmpeg;
+
+        // 1. Open Reader
+        VideoReader reader(target_path);
+        if (!reader.open()) {
+            return config::Result<void, config::ConfigError>::Err(
+                config::ConfigError("Failed to open video: " + target_path));
+        }
+
+        // 2. Prepare Output Path
+        std::string output_path = GenerateOutputPath(target_path, task_config);
+
+        // 3. Open Writer
+        VideoParams video_params;
+        video_params.width = reader.get_width();
+        video_params.height = reader.get_height();
+        video_params.frameRate = reader.get_fps();
+
+        VideoWriter writer(output_path, video_params);
+        if (!writer.open()) {
+            return config::Result<void, config::ConfigError>::Err(
+                config::ConfigError("Failed to open video writer: " + output_path));
+        }
+
+        // 4. Prepare Context
+        ProcessorContext context;
+        context.model_repo = m_model_repo;
+        context.inference_options = m_inference_options;
+
+        if (!task_config.io.source_paths.empty()) {
+            auto embed_result = LoadSourceEmbedding(task_config.io.source_paths[0]);
+            if (embed_result) {
+                context.source_embedding = std::move(embed_result).value();
+            } else {
+                return config::Result<void, config::ConfigError>::Err(embed_result.error());
+            }
+        }
+
+        // 5. Setup Pipeline
+        PipelineConfig pipeline_config;
+        pipeline_config.worker_thread_count =
+            task_config.resource.thread_count > 0 ? task_config.resource.thread_count : 2;
+        pipeline_config.max_queue_size = 8;
+
+        auto pipeline = std::make_shared<Pipeline>(pipeline_config);
+        AddProcessorsToPipeline(pipeline, task_config, context);
+        pipeline->start();
+
+        std::atomic<bool> writer_error = false;
+        std::string writer_error_msg;
+
+        // 6. Start Writer Thread (Sink)
+        std::thread writer_thread([&]() {
+            int frame_count = 0;
+            int total_frames = reader.get_frame_count();
+
+            while (true) {
+                auto result_opt = pipeline->pop_frame();
+                if (!result_opt) break; // Should not happen unless pipeline stopped abruptly
+
+                if (result_opt->is_end_of_stream) break;
+
+                if (!writer.write_frame(result_opt->image)) {
+                    writer_error = true;
+                    writer_error_msg = "Failed to write frame";
+                    break;
+                }
+
+                frame_count++;
+                if (progress_callback && frame_count % 10 == 0) {
+                    TaskProgress progress;
+                    progress.task_id = task_config.task_info.id;
+                    progress.current_frame = frame_count;
+                    progress.total_frames = total_frames;
+                    progress.current_step = "processing";
+                    progress_callback(progress);
+                }
+            }
+        });
+
+        // 7. Main Thread: Read & Push (Source)
+        long long seq_id = 0;
+        cv::Mat frame;
+        while (!m_cancelled && !writer_error) {
+            frame = reader.read_frame();
+            if (frame.empty()) break; // EOF
+
+            FrameData data;
+            data.sequence_id = seq_id++;
+            data.image = frame;
+            if (!context.source_embedding.empty()) {
+                data.metadata["source_embedding"] = context.source_embedding;
+            }
+
+            // push_frame blocks if full
+            pipeline->push_frame(std::move(data));
+        }
+
+        // Push EOS
+        FrameData eos;
+        eos.is_end_of_stream = true;
+        eos.sequence_id = seq_id;
+        pipeline->push_frame(std::move(eos));
+
+        // Wait for writer to finish
+        if (writer_thread.joinable()) { writer_thread.join(); }
+
+        pipeline->stop();
+        writer.close();
+        reader.close();
+
+        if (m_cancelled) {
+            std::filesystem::remove(output_path);
+            return config::Result<void, config::ConfigError>::Err(
+                config::ConfigError("Task cancelled"));
+        }
+
+        if (writer_error) {
+            return config::Result<void, config::ConfigError>::Err(
+                config::ConfigError(writer_error_msg));
+        }
+
+        // 8. Handle Audio
+        // 8. Handle Audio
+        if (task_config.io.output.audio_policy == config::AudioPolicy::Copy) {
+            writer.set_audio_source(target_path);
+        }
+
+        return config::Result<void, config::ConfigError>::Ok();
     }
 
     config::Result<std::vector<float>, config::ConfigError> LoadSourceEmbedding(
