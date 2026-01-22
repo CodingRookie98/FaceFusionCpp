@@ -1,25 +1,63 @@
 /**
  * @file pipeline_runner.cpp
- * @brief PipelineRunner 实现 (简化版)
+ * @brief PipelineRunner Implementation (Simplified Inline)
  */
 module;
 
 #include <memory>
 #include <atomic>
 #include <string>
+#include <thread>
+#include <chrono>
+#include <filesystem>
+#include <iostream>
+#include <variant>
+#include <algorithm>
+#include <opencv2/opencv.hpp>
 
 module services.pipeline.runner;
 
+import domain.pipeline;
+import domain.face.swapper;
+import domain.face.enhancer;
+import domain.face.expression;
+import domain.frame.enhancer;
+import domain.face.detector;
+import domain.face.landmarker;
+import domain.face.recognizer;
+import domain.face.masker;
+import domain.ai.model_repository;
+import foundation.ai.inference_session;
+import foundation.media.ffmpeg;
+
 namespace services::pipeline {
 
+using namespace domain::pipeline;
+using namespace foundation::ai::inference_session;
+
 // ============================================================================
-// PipelineRunnerImpl - 简化版本
+// ProcessorContext
+// ============================================================================
+
+struct ProcessorContext {
+    std::shared_ptr<domain::ai::model_repository::ModelRepository> model_repo;
+    std::vector<float> source_embedding;
+    std::shared_ptr<domain::face::masker::IFaceOccluder> occluder;
+    std::shared_ptr<domain::face::masker::IFaceRegionMasker> region_masker;
+    Options inference_options;
+};
+
+// ============================================================================
+// PipelineRunnerImpl
 // ============================================================================
 
 class PipelineRunnerImpl : public IPipelineRunner {
 public:
     explicit PipelineRunnerImpl(const config::AppConfig& app_config) :
-        m_app_config(app_config), m_running(false), m_cancelled(false) {}
+        m_app_config(app_config), m_running(false), m_cancelled(false) {
+        m_model_repo = domain::ai::model_repository::ModelRepository::get_instance();
+        m_inference_options = Options::with_best_providers();
+    }
 
     config::Result<void, config::ConfigError> Run(const config::TaskConfig& task_config,
                                                   ProgressCallback progress_callback) override {
@@ -29,43 +67,275 @@ public:
         }
         m_cancelled = false;
 
-        // 验证配置
         auto validate_result = config::ValidateTaskConfig(task_config);
         if (!validate_result) {
             m_running = false;
             return config::Result<void, config::ConfigError>::Err(validate_result.error());
         }
 
-        // TODO: 实际执行逻辑将在后续添加
-        // 目前只是验证配置后返回成功
-
-        if (progress_callback) {
-            TaskProgress progress;
-            progress.task_id = task_config.task_info.id;
-            progress.current_frame = 0;
-            progress.total_frames = 0;
-            progress.current_step = "ready";
-            progress.fps = 0.0;
-            progress_callback(progress);
-        }
+        auto result = ExecuteTask(task_config, progress_callback);
 
         m_running = false;
-        return config::Result<void, config::ConfigError>::Ok();
+        return result;
     }
 
     void Cancel() override { m_cancelled = true; }
-
     bool IsRunning() const override { return m_running; }
 
 private:
     config::AppConfig m_app_config;
     std::atomic<bool> m_running;
     std::atomic<bool> m_cancelled;
-};
+    std::shared_ptr<domain::ai::model_repository::ModelRepository> m_model_repo;
+    Options m_inference_options;
 
-// ============================================================================
-// Factory
-// ============================================================================
+    config::Result<void, config::ConfigError> ExecuteTask(const config::TaskConfig& task_config,
+                                                          ProgressCallback progress_callback) {
+        if (task_config.io.target_paths.empty()) {
+            return config::Result<void, config::ConfigError>::Err(
+                config::ConfigError("No target paths specified", "io.target_paths"));
+        }
+
+        for (const auto& target_path : task_config.io.target_paths) {
+            if (m_cancelled) break;
+
+            auto result = ProcessTarget(target_path, task_config, progress_callback);
+            if (!result) return result;
+        }
+
+        return config::Result<void, config::ConfigError>::Ok();
+    }
+
+    config::Result<void, config::ConfigError> ProcessTarget(const std::string& target_path,
+                                                            const config::TaskConfig& task_config,
+                                                            ProgressCallback progress_callback) {
+        namespace fs = std::filesystem;
+        if (!fs::exists(target_path)) {
+            return config::Result<void, config::ConfigError>::Err(
+                config::ConfigError("Target file not found: " + target_path));
+        }
+
+        auto ext = fs::path(target_path).extension().string();
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+        bool is_video =
+            (ext == ".mp4" || ext == ".avi" || ext == ".mkv" || ext == ".mov" || ext == ".webm");
+
+        return is_video ? ProcessVideo(target_path, task_config, progress_callback) :
+                          ProcessImage(target_path, task_config, progress_callback);
+    }
+
+    config::Result<void, config::ConfigError> ProcessImage(const std::string& target_path,
+                                                           const config::TaskConfig& task_config,
+                                                           ProgressCallback progress_callback) {
+        cv::Mat image = cv::imread(target_path);
+        if (image.empty()) {
+            return config::Result<void, config::ConfigError>::Err(
+                config::ConfigError("Failed to load image: " + target_path));
+        }
+
+        ProcessorContext context;
+        context.model_repo = m_model_repo;
+        context.inference_options = m_inference_options;
+
+        if (!task_config.io.source_paths.empty()) {
+            auto embed_result = LoadSourceEmbedding(task_config.io.source_paths[0]);
+            if (embed_result) {
+                context.source_embedding = std::move(embed_result).value();
+            } else {
+                return config::Result<void, config::ConfigError>::Err(embed_result.error());
+            }
+        }
+
+        PipelineConfig pipeline_config;
+        pipeline_config.worker_thread_count =
+            task_config.resource.thread_count > 0 ? task_config.resource.thread_count : 2;
+        pipeline_config.max_queue_size = 16;
+
+        auto pipeline = std::make_shared<Pipeline>(pipeline_config);
+        AddProcessorsToPipeline(pipeline, task_config, context);
+        pipeline->start();
+
+        FrameData frame_data;
+        frame_data.sequence_id = 0;
+        frame_data.image = image;
+        if (!context.source_embedding.empty()) {
+            frame_data.metadata["source_embedding"] = context.source_embedding;
+        }
+
+        pipeline->push_frame(std::move(frame_data));
+
+        FrameData eos;
+        eos.is_end_of_stream = true;
+        eos.sequence_id = 1;
+        pipeline->push_frame(std::move(eos));
+
+        auto result_opt = pipeline->pop_frame();
+        if (result_opt && !result_opt->is_end_of_stream) {
+            auto output_path = GenerateOutputPath(target_path, task_config);
+            cv::imwrite(output_path, result_opt->image);
+        }
+
+        if (progress_callback) {
+            TaskProgress progress;
+            progress.task_id = task_config.task_info.id;
+            progress.current_frame = 1;
+            progress.total_frames = 1;
+            progress.current_step = "completed";
+            progress_callback(progress);
+        }
+
+        return config::Result<void, config::ConfigError>::Ok();
+    }
+
+    config::Result<void, config::ConfigError> ProcessVideo(const std::string& target_path,
+                                                           const config::TaskConfig& task_config,
+                                                           ProgressCallback progress_callback) {
+        return config::Result<void, config::ConfigError>::Err(
+            config::ConfigError("Video processing not yet implemented in this phase"));
+    }
+
+    config::Result<std::vector<float>, config::ConfigError> LoadSourceEmbedding(
+        const std::string& source_path) {
+        cv::Mat source_img = cv::imread(source_path);
+        if (source_img.empty()) {
+            return config::Result<std::vector<float>, config::ConfigError>::Err(
+                config::ConfigError("Failed to load source image: " + source_path));
+        }
+
+        auto detector = domain::face::detector::FaceDetectorFactory::create(
+            domain::face::detector::DetectorType::Yolo);
+        std::string det_model = m_model_repo->ensure_model("face_detector_yoloface");
+        if (det_model.empty()) {
+            return config::Result<std::vector<float>, config::ConfigError>::Err(
+                config::ConfigError("Face detector model not found"));
+        }
+        detector->load_model(det_model, m_inference_options);
+        auto faces = detector->detect(source_img);
+
+        if (faces.empty()) {
+            return config::Result<std::vector<float>, config::ConfigError>::Err(
+                config::ConfigError("No face detected in source image"));
+        }
+
+        auto recognizer = domain::face::recognizer::create_face_recognizer(
+            domain::face::recognizer::FaceRecognizerType::ArcFace_w600k_r50);
+        std::string rec_model = m_model_repo->ensure_model("face_recognizer_arcface_w600k_r50");
+        if (rec_model.empty()) {
+            return config::Result<std::vector<float>, config::ConfigError>::Err(
+                config::ConfigError("Face recognizer model not found"));
+        }
+        recognizer->load_model(rec_model, m_inference_options);
+
+        auto [normed_emb, raw_emb] = recognizer->recognize(source_img, faces[0].landmarks);
+        return config::Result<std::vector<float>, config::ConfigError>::Ok(std::move(raw_emb));
+    }
+
+    void AddProcessorsToPipeline(std::shared_ptr<Pipeline> pipeline,
+                                 const config::TaskConfig& task_config, ProcessorContext& context) {
+        bool needs_face_detection = false;
+        for (const auto& step : task_config.pipeline) {
+            if (!step.enabled) continue;
+            if (step.step == "face_swapper" || step.step == "face_enhancer"
+                || step.step == "expression_restorer") {
+                needs_face_detection = true;
+                break;
+            }
+        }
+
+        if (needs_face_detection) {
+            auto detector_processor = CreateDetectorProcessor(context);
+            if (detector_processor) { pipeline->add_processor(detector_processor); }
+        }
+
+        for (const auto& step : task_config.pipeline) {
+            if (!step.enabled) continue;
+            auto processor = CreateProcessorFromStep(step, context);
+            if (processor) { pipeline->add_processor(processor); }
+        }
+    }
+
+    std::shared_ptr<IFrameProcessor> CreateDetectorProcessor(const ProcessorContext& context) {
+        class DetectorProcessor : public IFrameProcessor {
+        public:
+            DetectorProcessor(std::shared_ptr<domain::face::detector::IFaceDetector> det,
+                              std::vector<float> src_emb) :
+                detector(std::move(det)), source_embedding(std::move(src_emb)) {}
+            void process(FrameData& frame) override {
+                auto results = detector->detect(frame.image);
+                if (results.empty()) return;
+                domain::face::swapper::SwapInput swap_input;
+                swap_input.target_frame = frame.image;
+                for (const auto& face : results)
+                    swap_input.target_faces_landmarks.push_back(face.landmarks);
+                swap_input.source_embedding = source_embedding;
+                frame.metadata["swap_input"] = swap_input;
+                domain::face::enhancer::EnhanceInput enhance_input;
+                enhance_input.target_frame = frame.image;
+                for (const auto& face : results)
+                    enhance_input.target_faces_landmarks.push_back(face.landmarks);
+                enhance_input.face_blend = 80;
+                frame.metadata["enhance_input"] = enhance_input;
+            }
+
+        private:
+            std::shared_ptr<domain::face::detector::IFaceDetector> detector;
+            std::vector<float> source_embedding;
+        };
+
+        auto detector = domain::face::detector::FaceDetectorFactory::create(
+            domain::face::detector::DetectorType::Yolo);
+        std::string model = context.model_repo->ensure_model("face_detector_yoloface");
+        if (model.empty()) return nullptr;
+        detector->load_model(model, context.inference_options);
+        return std::make_shared<DetectorProcessor>(std::move(detector), context.source_embedding);
+    }
+
+    std::shared_ptr<IFrameProcessor> CreateProcessorFromStep(const config::PipelineStep& step,
+                                                             const ProcessorContext& context) {
+        if (step.step == "face_swapper") return CreateFaceSwapperProcessor(step, context);
+        if (step.step == "face_enhancer") return CreateFaceEnhancerProcessor(step, context);
+        if (step.step == "expression_restorer") return CreateExpressionProcessor(step, context);
+        if (step.step == "frame_enhancer") return CreateFrameEnhancerProcessor(step, context);
+        return nullptr;
+    }
+
+    std::shared_ptr<IFrameProcessor> CreateFaceSwapperProcessor(const config::PipelineStep& step,
+                                                                const ProcessorContext& context) {
+        return nullptr;
+    }
+
+    std::shared_ptr<IFrameProcessor> CreateFaceEnhancerProcessor(const config::PipelineStep& step,
+                                                                 const ProcessorContext& context) {
+        return nullptr;
+    }
+
+    std::shared_ptr<IFrameProcessor> CreateExpressionProcessor(const config::PipelineStep& step,
+                                                               const ProcessorContext& context) {
+        return nullptr;
+    }
+
+    std::shared_ptr<IFrameProcessor> CreateFrameEnhancerProcessor(const config::PipelineStep& step,
+                                                                  const ProcessorContext& context) {
+        return nullptr;
+    }
+
+    std::string GenerateOutputPath(const std::string& input_path,
+                                   const config::TaskConfig& task_config) {
+        namespace fs = std::filesystem;
+        fs::path input(input_path);
+        fs::path output_dir = task_config.io.output.path;
+        if (!fs::exists(output_dir)) fs::create_directories(output_dir);
+
+        std::string filename =
+            task_config.io.output.prefix + input.stem().string() + task_config.io.output.suffix;
+        std::string ext = input.extension().string();
+        if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp") {
+            ext = "." + task_config.io.output.image_format;
+        }
+        return (output_dir / (filename + ext)).string();
+    }
+};
 
 std::unique_ptr<IPipelineRunner> CreatePipelineRunner(const config::AppConfig& app_config) {
     return std::make_unique<PipelineRunnerImpl>(app_config);
