@@ -25,14 +25,11 @@ target_link_libraries(services_pipeline
     PRIVATE
         domain_face
         domain_face_detector
-        domain_face_landmarker
         domain_face_recognizer
         domain_face_masker
         domain_face_swapper
         domain_face_expression
-        domain_face_enhancer
         domain_frame
-        domain_frame_enhancer
         domain_ai
         foundation_ai
         foundation_media

@@ -2,12 +2,15 @@ add_facefusion_test(
     app_test_pipeline
     SOURCES
         app/pipeline_integration_test.cpp
+        app/pipeline_runner_video_test.cpp
     LINK_LIBRARIES
         domain_pipeline
+        services_pipeline
         domain_face
         domain_face_detector
-        domain_face_recognizer # Is this a lib?
+        domain_face_masker
         domain_face_swapper
+        domain_face_expression
         domain_ai
         foundation_ai
         foundation_infrastructure
