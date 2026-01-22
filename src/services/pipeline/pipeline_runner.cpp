@@ -319,20 +319,81 @@ private:
 
     std::shared_ptr<IFrameProcessor> CreateFaceEnhancerProcessor(const config::PipelineStep& step,
                                                                  const ProcessorContext& context) {
-        // TODO: Stubbed
-        return nullptr;
+        auto* params = std::get_if<config::FaceEnhancerParams>(&step.params);
+        if (!params) return nullptr;
+
+        domain::face::enhancer::FaceEnhancerFactory::Type type =
+            domain::face::enhancer::FaceEnhancerFactory::Type::GfpGan;
+        if (params->model.find("codeformer") != std::string::npos) {
+            type = domain::face::enhancer::FaceEnhancerFactory::Type::CodeFormer;
+        }
+
+        auto enhancer_ptr = domain::face::enhancer::FaceEnhancerFactory::create(type);
+        std::string model_name =
+            "face_enhancer_" + (params->model.empty() ? "gfpgan_1.4" : params->model);
+        std::string model = context.model_repo->ensure_model(model_name);
+        if (model.empty()) return nullptr;
+
+        enhancer_ptr->load_model(model, context.inference_options);
+
+        // Explicitly move into a shared_ptr of the interface type first to ensure correct type
+        // helper usage
+        std::shared_ptr<domain::face::enhancer::IFaceEnhancer> shared_enhancer =
+            std::move(enhancer_ptr);
+
+        return std::shared_ptr<IFrameProcessor>(new domain::pipeline::FaceEnhancerAdapter(
+            shared_enhancer, context.occluder, context.region_masker));
     }
 
     std::shared_ptr<IFrameProcessor> CreateExpressionProcessor(const config::PipelineStep& step,
                                                                const ProcessorContext& context) {
-        // TODO: Stubbed
-        return nullptr;
+        auto* params = std::get_if<config::ExpressionRestorerParams>(&step.params);
+        if (!params) return nullptr;
+
+        auto restorer_ptr = domain::face::expression::create_live_portrait_restorer();
+
+        // LivePortrait requires 3 discrete models
+        std::string feature_path =
+            context.model_repo->ensure_model("live_portrait_feature_extractor");
+        std::string motion_path =
+            context.model_repo->ensure_model("live_portrait_motion_extractor");
+        std::string generator_path = context.model_repo->ensure_model("live_portrait_generator");
+
+        if (feature_path.empty() || motion_path.empty() || generator_path.empty()) {
+            return nullptr;
+        }
+
+        restorer_ptr->load_model(feature_path, motion_path, generator_path,
+                                 context.inference_options);
+
+        std::shared_ptr<domain::face::expression::IFaceExpressionRestorer> shared_restorer =
+            std::move(restorer_ptr);
+
+        return std::shared_ptr<IFrameProcessor>(
+            new domain::pipeline::ExpressionAdapter(shared_restorer));
     }
 
     std::shared_ptr<IFrameProcessor> CreateFrameEnhancerProcessor(const config::PipelineStep& step,
                                                                   const ProcessorContext& context) {
-        // TODO: Stubbed
-        return nullptr;
+        auto* params = std::get_if<config::FrameEnhancerParams>(&step.params);
+        if (!params) return nullptr;
+
+        using Type = domain::frame::enhancer::FrameEnhancerType;
+        Type type = Type::RealEsrGan;
+        if (params->model.find("real_hat") != std::string::npos) { type = Type::RealHatGan; }
+
+        std::string model_name =
+            "frame_enhancer_" + (params->model.empty() ? "real_esrgan_x4plus" : params->model);
+        std::string model_path = context.model_repo->ensure_model(model_name);
+        if (model_path.empty()) return nullptr;
+
+        auto enhancer_ptr = domain::frame::enhancer::FrameEnhancerFactory::create(
+            type, model_path, context.inference_options);
+
+        if (!enhancer_ptr) return nullptr;
+
+        return std::shared_ptr<IFrameProcessor>(
+            new domain::pipeline::FrameEnhancerAdapter(std::move(enhancer_ptr)));
     }
 
     std::string GenerateOutputPath(const std::string& input_path,
