@@ -1,6 +1,6 @@
 /**
  * @file pipeline_runner.cpp
- * @brief PipelineRunner Implementation (Simplified Inline)
+ * @brief PipelineRunner Implementation (Phase 3.1 Stable - Swapper Active)
  */
 module;
 
@@ -191,6 +191,7 @@ private:
     config::Result<void, config::ConfigError> ProcessVideo(const std::string& target_path,
                                                            const config::TaskConfig& task_config,
                                                            ProgressCallback progress_callback) {
+        // TODO: Enable in Phase 3.2
         return config::Result<void, config::ConfigError>::Err(
             config::ConfigError("Video processing not yet implemented in this phase"));
     }
@@ -302,21 +303,35 @@ private:
 
     std::shared_ptr<IFrameProcessor> CreateFaceSwapperProcessor(const config::PipelineStep& step,
                                                                 const ProcessorContext& context) {
-        return nullptr;
+        auto* params = std::get_if<config::FaceSwapperParams>(&step.params);
+        if (!params) return nullptr;
+
+        auto swapper = domain::face::swapper::FaceSwapperFactory::create_inswapper();
+        std::string model = context.model_repo->ensure_model(
+            params->model.empty() ? "inswapper_128" : params->model);
+        if (model.empty()) return nullptr;
+
+        swapper->load_model(model, context.inference_options);
+
+        return std::shared_ptr<IFrameProcessor>(new domain::pipeline::SwapperAdapter(
+            std::move(swapper), context.occluder, context.region_masker));
     }
 
     std::shared_ptr<IFrameProcessor> CreateFaceEnhancerProcessor(const config::PipelineStep& step,
                                                                  const ProcessorContext& context) {
+        // TODO: Stubbed
         return nullptr;
     }
 
     std::shared_ptr<IFrameProcessor> CreateExpressionProcessor(const config::PipelineStep& step,
                                                                const ProcessorContext& context) {
+        // TODO: Stubbed
         return nullptr;
     }
 
     std::shared_ptr<IFrameProcessor> CreateFrameEnhancerProcessor(const config::PipelineStep& step,
                                                                   const ProcessorContext& context) {
+        // TODO: Stubbed
         return nullptr;
     }
 
