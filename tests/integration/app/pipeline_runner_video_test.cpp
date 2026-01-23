@@ -34,65 +34,6 @@ protected:
     std::filesystem::path output_path;
 };
 
-TEST_F(PipelineRunnerVideoTest, ProcessVideoEndToEnd) {
-    if (!std::filesystem::exists(video_path) || !std::filesystem::exists(source_path)) {
-        GTEST_SKIP() << "Test assets not found: " << video_path << " or " << source_path;
-    }
-
-    // 1. Create App Config
-    config::AppConfig app_config;
-
-    // 2. Create Runner
-    auto runner = CreatePipelineRunner(app_config);
-
-    // 3. Construct TaskConfig
-    config::TaskConfig task_config;
-    task_config.config_version = "1.0";
-    task_config.task_info.id = "test_video_task";
-
-    // IO
-    task_config.io.source_paths.push_back(source_path.string());
-    task_config.io.target_paths.push_back(video_path.string());
-
-    task_config.io.output.path = "tests_output";
-    task_config.io.output.prefix = "pipeline_runner_video_";
-    task_config.io.output.suffix = "output";
-    std::string expected_output = "tests_output/pipeline_runner_video_slideshow_scaledoutput.mp4";
-    if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
-
-    task_config.io.output.audio_policy = config::AudioPolicy::Copy;
-
-    // Resource
-    task_config.resource.thread_count = 2;
-
-    // Pipeline Step (Face Swapper)
-    config::PipelineStep step;
-    step.step = "face_swapper";
-    step.enabled = true;
-    config::FaceSwapperParams params;
-    params.model = "inswapper_128";
-    step.params = params;
-    task_config.pipeline.push_back(step);
-
-    // 4. Run
-    auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {
-        // std::cout << "Progress: " << p.current_frame << "/" << p.total_frames << std::endl;
-    });
-
-    if (result.is_err()) {
-        std::cerr << "PipelineRunner Error: " << result.error().message << std::endl;
-    }
-    ASSERT_TRUE(result.is_ok());
-
-    // 5. Verification
-    EXPECT_TRUE(std::filesystem::exists(expected_output))
-        << "Output video should exist at " << expected_output;
-    if (std::filesystem::exists(expected_output)) {
-        EXPECT_GT(std::filesystem::file_size(expected_output), 1024)
-            << "Output video should be non-empty";
-    }
-}
-
 TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemory) {
     if (!std::filesystem::exists(video_path) || !std::filesystem::exists(source_path)) {
         GTEST_SKIP() << "Test assets not found.";
@@ -144,7 +85,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemory) {
     EXPECT_FALSE(std::filesystem::exists("tests_output/temp_step_0.mp4"));
 }
 
-TEST_F(PipelineRunnerVideoTest, ProcessVideoAllProcessors) {
+TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialAllProcessors) {
     if (!std::filesystem::exists(video_path) || !std::filesystem::exists(source_path)) {
         GTEST_SKIP() << "Test assets not found.";
     }
@@ -154,13 +95,15 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoAllProcessors) {
 
     config::TaskConfig task_config;
     task_config.config_version = "1.0";
-    task_config.task_info.id = "test_video_all";
+    task_config.task_info.id = "test_video_seq_all";
     task_config.io.source_paths.push_back(source_path.string());
     task_config.io.target_paths.push_back(video_path.string());
 
     task_config.io.output.path = "tests_output";
-    task_config.io.output.prefix = "all_";
+    task_config.io.output.prefix = "seq_all_";
     task_config.io.output.suffix = "";
+
+    task_config.resource.execution_order = config::ExecutionOrder::Sequential;
 
     // 1. Swapper
     config::PipelineStep step1;
@@ -176,13 +119,11 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoAllProcessors) {
     step2.step = "face_enhancer";
     step2.enabled = true;
     config::FaceEnhancerParams params2;
-    params2.model = "gfpgan_1.4"; // Ensure this matches a known model
+    params2.model = "gfpgan_1.4";
     step2.params = params2;
     task_config.pipeline.push_back(step2);
 
-    // 3. Expression Restorer (might fail if models missing, but good to test instantiation)
-    // We will conditionally enable it if we think models are present, or just try it.
-    // For now, let's try it. If it fails, we know visibility is there but assets are missing.
+    // 3. Expression Restorer
     config::PipelineStep step3;
     step3.step = "expression_restorer";
     step3.enabled = true;
@@ -190,14 +131,76 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoAllProcessors) {
     step3.params = params3;
     task_config.pipeline.push_back(step3);
 
-    std::string expected_output = "tests_output/all_slideshow_scaled.mp4";
+    // 4. Frame Enhancer
+    config::PipelineStep step4;
+    step4.step = "frame_enhancer";
+    step4.enabled = true;
+    config::FrameEnhancerParams params4;
+    params4.model = "real_esrgan_x4plus";
+    step4.params = params4;
+    task_config.pipeline.push_back(step4);
+
+    std::string expected_output = "tests_output/seq_all_slideshow_scaled.mp4";
     if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
 
     auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
 
     if (result.is_err()) {
-        std::cerr << "AllProcessors Runner Error: " << result.error().message << std::endl;
+        std::cerr << "Sequential AllProcessors Runner Error: " << result.error().message
+                  << std::endl;
     }
     ASSERT_TRUE(result.is_ok());
     EXPECT_TRUE(std::filesystem::exists(expected_output));
+}
+
+TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMode) {
+    if (!std::filesystem::exists(video_path) || !std::filesystem::exists(source_path)) {
+        GTEST_SKIP() << "Test assets not found.";
+    }
+
+    config::AppConfig app_config;
+    auto runner = CreatePipelineRunner(app_config);
+
+    config::TaskConfig task_config;
+    task_config.config_version = "1.0";
+    task_config.task_info.id = "test_video_batch";
+    task_config.io.source_paths.push_back(source_path.string());
+
+    // Add two targets to verify batch iteration (even if implementation is currently sequential)
+    task_config.io.target_paths.push_back(video_path.string());
+    // Create copy for batch test
+    std::filesystem::path video_path_2 = "tests_output/slideshow_copy.mp4";
+    std::filesystem::copy_file(video_path, video_path_2,
+                               std::filesystem::copy_options::overwrite_existing);
+    task_config.io.target_paths.push_back(video_path_2.string());
+
+    task_config.io.output.path = "tests_output";
+    task_config.io.output.prefix = "batch_";
+    task_config.io.output.suffix = "";
+
+    task_config.resource.execution_order = config::ExecutionOrder::Batch;
+
+    // Simple pipeline
+    config::PipelineStep step1;
+    step1.step = "face_swapper";
+    step1.enabled = true;
+    config::FaceSwapperParams params1;
+    params1.model = "inswapper_128";
+    step1.params = params1;
+    task_config.pipeline.push_back(step1);
+
+    std::string expected_output_1 = "tests_output/batch_slideshow_scaled.mp4";
+    std::string expected_output_2 = "tests_output/batch_slideshow_copy.mp4";
+
+    if (std::filesystem::exists(expected_output_1)) std::filesystem::remove(expected_output_1);
+    if (std::filesystem::exists(expected_output_2)) std::filesystem::remove(expected_output_2);
+
+    auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
+
+    if (result.is_err()) {
+        std::cerr << "Batch Runner Error: " << result.error().message << std::endl;
+    }
+    ASSERT_TRUE(result.is_ok());
+    EXPECT_TRUE(std::filesystem::exists(expected_output_1));
+    EXPECT_TRUE(std::filesystem::exists(expected_output_2));
 }

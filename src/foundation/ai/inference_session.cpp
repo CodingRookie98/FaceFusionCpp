@@ -255,6 +255,14 @@ struct InferenceSession::Impl {
             m_ort_session = std::make_unique<Ort::Session>(get_static_env(), model_path.c_str(),
                                                            m_session_options);
 #endif
+            std::string providers_str;
+            if (providers_to_use.contains(ExecutionProvider::TensorRT))
+                providers_str += "TensorRT, ";
+            if (providers_to_use.contains(ExecutionProvider::CUDA)) providers_str += "CUDA, ";
+            providers_str += "CPU"; // Always available/fallback
+
+            m_logger->info(std::format("InferenceSession created for model: {} | Providers: {}",
+                                       model_path, providers_str));
         } catch (const std::exception& e) {
             m_logger->error(std::format("CreateSession: {}", e.what()));
             throw;
