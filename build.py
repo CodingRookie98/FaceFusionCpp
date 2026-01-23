@@ -30,6 +30,18 @@ def log(message, level="info"):
     print(f"{colors.get(level, colors['reset'])}{message}{colors['reset']}")
 
 
+def run_command(cmd, env=None, cwd=None, check=True, exit_on_error=True):
+    cmd_str = " ".join(cmd)
+    log(f"Executing: {cmd_str}", "info")
+    try:
+        return subprocess.run(cmd, env=env, cwd=cwd, check=check)
+    except subprocess.CalledProcessError as e:
+        if exit_on_error:
+            log(f"Command failed with exit code {e.returncode}", "error")
+            sys.exit(e.returncode)
+        raise e
+
+
 def get_cmake_preset(config, os_name):
     """
     Determine the CMake preset based on configuration and OS.
@@ -41,23 +53,84 @@ def get_cmake_preset(config, os_name):
     if os_name == "Windows":
         return f"msvc-x64-{config}"
     elif os_name == "Linux":
-        return f"linux-{config}"  # Assuming linux-release / linux-debug in presets
+        return f"linux-{config}"
     elif os_name == "Darwin":
-        return f"macos-{config}"  # Assuming macos presets exist
+        return f"macos-{config}"
     else:
         return f"default-{config}"
 
 
-def run_command(cmd, env=None, cwd=None, check=True, exit_on_error=True):
-    cmd_str = " ".join(cmd)
-    log(f"Executing: {cmd_str}", "info")
+def run_configure(cmake_exe, preset, env, project_root):
+    log("\n=== Action: configure ===", "info")
+    cmd = [cmake_exe, "--preset", preset]
+    run_command(cmd, env=env, cwd=project_root)
+
+
+def run_build(cmake_exe, preset, target, env, project_root):
+    log("\n=== Action: build ===", "info")
+    cmd = [cmake_exe, "--build", "--preset", preset]
+    if target != "all":
+        cmd.extend(["--target", target])
+
     try:
-        return subprocess.run(cmd, env=env, cwd=cwd, check=check)
+        run_command(cmd, env=env, cwd=project_root)
+    except subprocess.CalledProcessError:
+        log("\nBuild failed!", "error")
+        # Check if it might be due to missing configuration
+        build_dir_name = preset  # Simplified check, actual build dir depends on preset
+        log(
+            "Hint: If the build directory does not exist, run with '--action configure' first.",
+            "warning",
+        )
+        sys.exit(1)
+
+
+def run_test(ctest_exe, preset, regex, env, project_root):
+    log("\n=== Action: test ===", "info")
+    cmd = [ctest_exe, "--preset", preset, "--no-tests=error"]
+
+    # Determine test filter
+    test_filter = None
+    if regex:
+        test_filter = regex
+    # Note: we do NOT use --target as filter for ctest anymore if it was "all"
+    # But if target was specified and regex wasn't, usually we assume user might want to test that target
+    # However, --target is for BUILD. --test-regex is for TEST.
+    # The original script used target as fallback for regex. Let's keep that behavior for compatibility if needed,
+    # but strictly speaking it's better to separate them.
+    # Original logic: if args.test_regex: filter=... elif args.target != "all": filter=...
+
+    # We will pass this logic from main, so here we just use what is passed.
+    if regex:
+        cmd.extend(["-R", regex])
+
+    try:
+        run_command(cmd, env=env, cwd=project_root, exit_on_error=False)
     except subprocess.CalledProcessError as e:
-        if exit_on_error:
-            log(f"Command failed with exit code {e.returncode}", "error")
-            sys.exit(e.returncode)
-        raise e
+        filter_msg = f" '{regex}'" if regex else ""
+        if e.returncode == 8:
+            log(f"\nNo tests matched the pattern{filter_msg}.", "warning")
+            log("Check if the test target is correctly registered and named.", "info")
+        else:
+            log(f"Tests failed with exit code {e.returncode}", "error")
+        sys.exit(e.returncode)
+
+
+def run_install(cmake_exe, build_dir, env, project_root):
+    log("\n=== Action: install ===", "info")
+    cmd = [cmake_exe, "--install", str(build_dir)]
+    run_command(cmd, env=env, cwd=project_root)
+
+
+def run_package(cpack_exe, build_dir, env):
+    log("\n=== Action: package ===", "info")
+    cpack_config = build_dir / "CPackConfig.cmake"
+    if cpack_config.exists():
+        cmd = [cpack_exe, "--config", str(cpack_config), "-V"]
+        run_command(cmd, env=env, cwd=build_dir)
+    else:
+        log(f"CPackConfig.cmake not found in {build_dir}", "error")
+        sys.exit(1)
 
 
 def main():
@@ -73,9 +146,9 @@ def main():
     parser.add_argument("--target", default="all", help="Build target")
     parser.add_argument(
         "--action",
-        choices=["configure", "build", "test", "install", "package", "both"],
-        default="both",
-        help="Action to perform",
+        choices=["configure", "build", "test", "install", "package"],
+        default="build",
+        help="Action to perform (default: build)",
     )
     parser.add_argument("--preset", help="Override CMake preset")
     parser.add_argument(
@@ -108,84 +181,43 @@ def main():
     log(f"Preset: {preset}", "info")
 
     # 3. Clean if requested
+    # We need to guess the build dir path based on preset convention
+    # This might be fragile if preset defines a different binaryDir, but common convention holds.
     build_dir = project_root / "build" / preset
     if args.clean and build_dir.exists():
         log(f"Cleaning build directory: {build_dir}", "warning")
         shutil.rmtree(build_dir)
 
     # 4. Actions
-    cmake_exe = "cmake"  # Assumed to be in PATH
+    cmake_exe = "cmake"
+    ctest_exe = "ctest"
+    cpack_exe = "cpack"
 
-    actions = []
-    if args.action == "both":
-        actions = ["configure", "build"]
+    # Action Dispatcher
+    if args.action == "configure":
+        run_configure(cmake_exe, preset, env, project_root)
+
+    elif args.action == "build":
+        run_build(cmake_exe, preset, args.target, env, project_root)
+
     elif args.action == "test":
-        actions = ["build", "test"]
-    else:
-        actions = [args.action]
+        if not args.no_build:
+            run_build(cmake_exe, preset, args.target, env, project_root)
+        else:
+            log("Skipping build step as requested.", "info")
 
-    for action in actions:
-        log(f"\n=== Action: {action} ===", "info")
+        # Determine regex for test
+        regex = args.test_regex
+        if not regex and args.target != "all":
+            regex = args.target
 
-        if action == "configure":
-            cmd = [cmake_exe, "--preset", preset]
-            run_command(cmd, env=env, cwd=project_root)
+        run_test(ctest_exe, preset, regex, env, project_root)
 
-        elif action == "build":
-            if args.action == "test" and args.no_build:
-                log("Skipping build step as requested.", "info")
-                continue
+    elif args.action == "install":
+        run_install(cmake_exe, build_dir, env, project_root)
 
-            cmd = [cmake_exe, "--build", "--preset", preset]
-            if args.target != "all":
-                cmd.extend(["--target", args.target])
-            run_command(cmd, env=env, cwd=project_root)
-
-        elif action == "test":
-            # Run build first if not explicitly skipped? user usually manages this.
-            # But let's follow ctest preset
-            ctest_exe = "ctest"
-            cmd = [ctest_exe, "--preset", preset, "--no-tests=error"]
-
-            # Determine test filter
-            test_filter = None
-            if args.test_regex:
-                test_filter = args.test_regex
-            elif args.target != "all":
-                test_filter = args.target
-
-            if test_filter:
-                cmd.extend(["-R", test_filter])
-
-            try:
-                run_command(cmd, env=env, cwd=project_root, exit_on_error=False)
-            except subprocess.CalledProcessError as e:
-                filter_msg = f" '{test_filter}'" if test_filter else ""
-                if e.returncode == 8:
-                    log(f"\nNo tests matched the pattern{filter_msg}.", "warning")
-                    log(
-                        "Check if the test target is correctly registered and named.",
-                        "info",
-                    )
-                else:
-                    log(f"Tests failed with exit code {e.returncode}", "error")
-                sys.exit(e.returncode)
-
-        elif action == "install":
-            cmd = [cmake_exe, "--install", str(build_dir)]
-            run_command(cmd, env=env, cwd=project_root)
-
-        elif action == "package":
-            cpack_exe = "cpack"
-            # CPack usually needs to run from build dir or specified config
-            # --config build/preset/CPackConfig.cmake
-            cpack_config = build_dir / "CPackConfig.cmake"
-            if cpack_config.exists():
-                cmd = [cpack_exe, "--config", str(cpack_config), "-V"]
-                run_command(cmd, env=env, cwd=build_dir)  # Run in build dir usually
-            else:
-                log(f"CPackConfig.cmake not found in {build_dir}", "error")
-                sys.exit(1)
+    elif args.action == "package":
+        run_package(cpack_exe, build_dir, env)
 
     log("\nOperation completed successfully!", "success")
 

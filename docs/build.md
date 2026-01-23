@@ -7,7 +7,10 @@
 在终端中执行以下命令即可开始构建：
 
 ```bash
-# 默认行为：配置并构建 Debug 版本
+# 1. 首次构建前进行配置 (若未配置过)
+python build.py --action configure
+
+# 2. 构建 Debug 版本 (默认动作)
 python build.py
 ```
 
@@ -17,7 +20,7 @@ python build.py
 # 仅构建 Release 版本
 python build.py --config Release --action build
 
-# 运行测试
+# 运行测试 (会自动先执行构建，除非指定 --no-build)
 python build.py --config Debug --action test
 
 # 运行特定测试 (例如名称包含 "vision" 的测试)
@@ -38,8 +41,9 @@ python build.py --config Release --action package
 # 仅构建主程序
 python build.py --target FaceFusionCpp
 
-# 清理构建目录并重新构建
-python build.py --clean --action both
+# 清理构建目录并重新构建 (分步执行)
+python build.py --clean --action configure
+python build.py --action build
 ```
 
 ## 3. 参数说明
@@ -49,16 +53,14 @@ python build.py --clean --action both
 | 参数 | 说明 | 可选值 | 默认值 |
 | :--- | :--- | :--- | :--- |
 | `--config` | 构建配置类型 | `Debug`, `Release` | `Debug` |
-| `--action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (先执行构建，成功后运行测试)<br>`install` (安装)<br>`package` (打包)<br>`both` (配置+构建) | `both` |
+| `--action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (先构建后测试)<br>`install` (安装)<br>`package` (打包) | `build` |
 | `--target` | 构建或测试目标 | `all` 或具体名称 | `all` |
 | `--test-regex` | 测试筛选正则 (传递给 `ctest -R`) | 正则表达式 | `None` (默认使用 `--target` 当作筛选若非 `all`) |
 | `--no-build` | 跳过构建步骤(仅测试时有效) | `[flag]` | `False` |
 | `--preset` | 手动指定 CMake Preset | CMakePresets.json 中定义的名称 | 自动检测 |
 | `--clean` | 清理构建目录 | `[flag]` | `False` |
 
-> **提示**: 当执行 `--action test` 时，`--target` 参数具有双重作用：
-> 1. 首先仅构建指定的 Target（如果该 Target 是一个测试可执行文件）。
-> 2. 随后 `ctest` 会利用该参数作为正则表达式来筛选并运行匹配的测试。
+> **提示**: 当执行 `--action test` 时，脚本默认会先触发 `build` 动作以确保测试代码是最新的。若您确定无需重新构建，可使用 `--no-build` 参数跳过。
 
 > **注意**: 脚本会自动利用系统所有可用核心进行并行构建，无需手动指定 `-j` 参数。
 
@@ -66,20 +68,28 @@ python build.py --clean --action both
 
 ### 开发流程
 ```bash
-# 1. 首次构建 Debug 版本
+# 1. 首次配置
+python build.py --action configure
+
+# 2. 构建并开发
 python build.py
 
-# 2. 运行测试并查看结果
+# 3. 运行测试并查看结果 (会自动重构)
 python build.py --action test
 ```
 
 ### 发布流程
 ```bash
-# 1. 一键构建并测试 Release 版本
-python build.py --config Release --action both
+# 1. 配置 Release 环境
+python build.py --config Release --action configure
+
+# 2. 构建 Release 版本
+python build.py --config Release --action build
+
+# 3. 运行测试
 python build.py --config Release --action test
 
-# 2. 生成安装包
+# 4. 生成安装包
 python build.py --config Release --action package
 ```
 
