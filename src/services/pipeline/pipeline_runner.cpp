@@ -29,11 +29,13 @@ import domain.face.masker;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
 import foundation.media.ffmpeg;
+import foundation.infrastructure.logger;
 
 namespace services::pipeline {
 
 using namespace domain::pipeline;
 using namespace foundation::ai::inference_session;
+using namespace foundation::infrastructure::logger;
 
 // ============================================================================
 // ProcessorContext
@@ -197,10 +199,6 @@ private:
             return ProcessVideoStrict(target_path, task_config, progress_callback);
         }
 
-        if (task_config.resource.memory_strategy == config::MemoryStrategy::Strict) {
-            return ProcessVideoStrict(target_path, task_config, progress_callback);
-        }
-
         // 1. Open Reader
         VideoReader reader(target_path);
         if (!reader.open()) {
@@ -208,19 +206,23 @@ private:
                 config::ConfigError("Failed to open video: " + target_path));
         }
 
-        // 2. Prepare Output Path
+        // 3. Prepare Output Path (Temp for Muxing)
         std::string output_path = GenerateOutputPath(target_path, task_config);
+        std::string video_output_path = output_path;
+        bool needs_muxing = (task_config.io.output.audio_policy == config::AudioPolicy::Copy);
 
-        // 3. Open Writer
+        if (needs_muxing) { video_output_path = output_path + ".temp.mp4"; }
+
+        // 4. Open Writer
         VideoParams video_params;
         video_params.width = reader.get_width();
         video_params.height = reader.get_height();
         video_params.frameRate = reader.get_fps();
 
-        VideoWriter writer(output_path, video_params);
+        VideoWriter writer(video_output_path, video_params);
         if (!writer.open()) {
             return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError("Failed to open video writer: " + output_path));
+                config::ConfigError("Failed to open video writer: " + video_output_path));
         }
 
         // 4. Prepare Context
@@ -322,9 +324,16 @@ private:
         }
 
         // 8. Handle Audio
-        // 8. Handle Audio
-        if (task_config.io.output.audio_policy == config::AudioPolicy::Copy) {
-            writer.set_audio_source(target_path);
+        // 8. Handle Audio / Finalize
+        if (needs_muxing) {
+            if (Remuxer::merge_av(video_output_path, target_path, output_path)) {
+                std::filesystem::remove(video_output_path);
+            } else {
+                Logger::get_instance()->error("Failed to mux audio. Keeping silent video.");
+                // Fallback: rename temp to final
+                if (std::filesystem::exists(output_path)) std::filesystem::remove(output_path);
+                std::filesystem::rename(video_output_path, output_path);
+            }
         }
 
         return config::Result<void, config::ConfigError>::Ok();
@@ -368,7 +377,13 @@ private:
             bool is_last_step = (i == enabled_steps.size() - 1);
 
             if (is_last_step) {
-                temp_output_path = final_output_path;
+                // strict mode: if copy audio, last step -> temp, then mux.
+                // if skip audio, last step -> final.
+                if (task_config.io.output.audio_policy == config::AudioPolicy::Copy) {
+                    temp_output_path = final_output_path + ".temp.mp4";
+                } else {
+                    temp_output_path = final_output_path;
+                }
             } else {
                 temp_output_path = (fs::path(task_config.io.output.path)
                                     / ("temp_step_" + std::to_string(i) + ".mp4"))
@@ -393,7 +408,14 @@ private:
         }
 
         if (task_config.io.output.audio_policy == config::AudioPolicy::Copy) {
-            // Audio copy implementation omitted for Strict mode currently.
+            std::string silent_final = final_output_path + ".temp.mp4";
+            if (Remuxer::merge_av(silent_final, target_path, final_output_path)) {
+                std::filesystem::remove(silent_final);
+            } else {
+                // Fallback
+                if (fs::exists(final_output_path)) fs::remove(final_output_path);
+                fs::rename(silent_final, final_output_path);
+            }
         }
 
         return config::Result<void, config::ConfigError>::Ok();
@@ -562,6 +584,12 @@ private:
                     enhance_input.target_faces_landmarks.push_back(face.landmarks);
                 enhance_input.face_blend = 80;
                 frame.metadata["enhance_input"] = enhance_input;
+
+                domain::face::expression::RestoreExpressionInput expression_input;
+                expression_input.source_frame = frame.image.clone(); // Capture original frame
+                for (const auto& face : results)
+                    expression_input.source_landmarks.push_back(face.landmarks);
+                frame.metadata["expression_input"] = expression_input;
             }
 
         private:

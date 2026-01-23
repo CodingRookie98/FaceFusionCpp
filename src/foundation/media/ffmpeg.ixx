@@ -15,6 +15,7 @@ module;
 #include <opencv2/core/mat.hpp>
 
 export module foundation.media.ffmpeg;
+export import :remuxer;
 
 namespace foundation::media::ffmpeg {
 

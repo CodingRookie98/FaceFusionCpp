@@ -8,12 +8,14 @@ target_sources(foundation_media
         BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
         FILES
             vision.ixx
+            ffmpeg_remuxer.ixx
             ffmpeg.ixx
     PRIVATE
         vision.cpp
         ffmpeg.cpp
         ffmpeg_reader.cpp
         ffmpeg_writer.cpp
+        ffmpeg_remuxer.cpp
 )
 
 target_link_libraries(foundation_media
