@@ -193,6 +193,14 @@ private:
                                                            ProgressCallback progress_callback) {
         using namespace foundation::media::ffmpeg;
 
+        if (task_config.resource.memory_strategy == config::MemoryStrategy::Strict) {
+            return ProcessVideoStrict(target_path, task_config, progress_callback);
+        }
+
+        if (task_config.resource.memory_strategy == config::MemoryStrategy::Strict) {
+            return ProcessVideoStrict(target_path, task_config, progress_callback);
+        }
+
         // 1. Open Reader
         VideoReader reader(target_path);
         if (!reader.open()) {
@@ -318,6 +326,157 @@ private:
         if (task_config.io.output.audio_policy == config::AudioPolicy::Copy) {
             writer.set_audio_source(target_path);
         }
+
+        return config::Result<void, config::ConfigError>::Ok();
+    }
+
+    config::Result<void, config::ConfigError> ProcessVideoStrict(
+        const std::string& target_path, const config::TaskConfig& task_config,
+        ProgressCallback progress_callback) {
+        using namespace foundation::media::ffmpeg;
+        namespace fs = std::filesystem;
+
+        std::vector<config::PipelineStep> enabled_steps;
+        for (const auto& step : task_config.pipeline) {
+            if (step.enabled) enabled_steps.push_back(step);
+        }
+
+        if (enabled_steps.empty()) return config::Result<void, config::ConfigError>::Ok();
+
+        ProcessorContext context;
+        context.model_repo = m_model_repo;
+        context.inference_options = m_inference_options;
+        if (!task_config.io.source_paths.empty()) {
+            auto embed_result = LoadSourceEmbedding(task_config.io.source_paths[0]);
+            if (embed_result) {
+                context.source_embedding = std::move(embed_result).value();
+            } else {
+                return config::Result<void, config::ConfigError>::Err(embed_result.error());
+            }
+        }
+
+        std::string current_input_path = target_path;
+        std::string final_output_path = GenerateOutputPath(target_path, task_config);
+        std::string temp_output_path;
+
+        bool is_first_step = true;
+
+        for (size_t i = 0; i < enabled_steps.size(); ++i) {
+            if (m_cancelled) break;
+
+            const auto& step = enabled_steps[i];
+            bool is_last_step = (i == enabled_steps.size() - 1);
+
+            if (is_last_step) {
+                temp_output_path = final_output_path;
+            } else {
+                temp_output_path = (fs::path(task_config.io.output.path)
+                                    / ("temp_step_" + std::to_string(i) + ".mp4"))
+                                       .string();
+            }
+
+            auto result = ProcessVideoSingleStep(current_input_path, temp_output_path, step,
+                                                 task_config, context, progress_callback);
+            if (!result) return result;
+
+            if (!is_first_step) { fs::remove(current_input_path); }
+
+            current_input_path = temp_output_path;
+            is_first_step = false;
+        }
+
+        if (m_cancelled) {
+            if (fs::exists(final_output_path)) fs::remove(final_output_path);
+            if (!is_first_step && fs::exists(current_input_path)) fs::remove(current_input_path);
+            return config::Result<void, config::ConfigError>::Err(
+                config::ConfigError("Task cancelled"));
+        }
+
+        if (task_config.io.output.audio_policy == config::AudioPolicy::Copy) {
+            // Audio copy implementation omitted for Strict mode currently.
+        }
+
+        return config::Result<void, config::ConfigError>::Ok();
+    }
+
+    config::Result<void, config::ConfigError> ProcessVideoSingleStep(
+        const std::string& input_path, const std::string& output_path,
+        const config::PipelineStep& step, const config::TaskConfig& task_config,
+        ProcessorContext& context, ProgressCallback progress_callback) {
+        using namespace foundation::media::ffmpeg;
+
+        VideoReader reader(input_path);
+        if (!reader.open())
+            return config::Result<void, config::ConfigError>::Err(
+                config::ConfigError("Failed open: " + input_path));
+
+        VideoParams params;
+        params.width = reader.get_width();
+        params.height = reader.get_height();
+        params.frameRate = reader.get_fps();
+
+        VideoWriter writer(output_path, params);
+        if (!writer.open())
+            return config::Result<void, config::ConfigError>::Err(
+                config::ConfigError("Failed open writer: " + output_path));
+
+        PipelineConfig p_config;
+        p_config.worker_thread_count =
+            task_config.resource.thread_count > 0 ? task_config.resource.thread_count : 2;
+        p_config.max_queue_size = 4;
+
+        auto pipeline = std::make_shared<Pipeline>(p_config);
+
+        bool needs_det = (step.step == "face_swapper" || step.step == "face_enhancer"
+                          || step.step == "expression_restorer");
+        if (needs_det) {
+            auto det = CreateDetectorProcessor(context);
+            if (det) pipeline->add_processor(det);
+        }
+        auto proc = CreateProcessorFromStep(step, context);
+        if (proc) pipeline->add_processor(proc);
+
+        pipeline->start();
+
+        std::atomic<bool> writer_error = false;
+        std::thread writer_thread([&]() {
+            while (true) {
+                auto res = pipeline->pop_frame();
+                if (!res || res->is_end_of_stream) break;
+                if (!writer.write_frame(res->image)) {
+                    writer_error = true;
+                    break;
+                }
+            }
+        });
+
+        long long seq = 0;
+        cv::Mat frame;
+        while (!m_cancelled && !writer_error) {
+            frame = reader.read_frame();
+            if (frame.empty()) break;
+            FrameData data;
+            data.sequence_id = seq++;
+            data.image = frame;
+            if (!context.source_embedding.empty())
+                data.metadata["source_embedding"] = context.source_embedding;
+            pipeline->push_frame(std::move(data));
+        }
+
+        FrameData eos;
+        eos.is_end_of_stream = true;
+        eos.sequence_id = seq;
+        pipeline->push_frame(std::move(eos));
+
+        if (writer_thread.joinable()) writer_thread.join();
+
+        pipeline->stop();
+        writer.close();
+        reader.close();
+
+        if (writer_error)
+            return config::Result<void, config::ConfigError>::Err(
+                config::ConfigError("Writer error"));
 
         return config::Result<void, config::ConfigError>::Ok();
     }

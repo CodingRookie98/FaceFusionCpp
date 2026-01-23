@@ -61,7 +61,8 @@ struct IOConfig {
 struct TaskResourceConfig {
     int thread_count = 0; ///< 线程数，0 = 自动 (50% CPU)
     ExecutionOrder execution_order = ExecutionOrder::Sequential;
-    int segment_duration_seconds = 0; ///< 视频分段秒数，0 = 不分段
+    MemoryStrategy memory_strategy = MemoryStrategy::Tolerant; ///< 内存策略
+    int segment_duration_seconds = 0;                          ///< 视频分段秒数，0 = 不分段
 };
 
 // ============================================================================
