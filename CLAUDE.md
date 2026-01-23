@@ -56,7 +56,7 @@ trigger: always_on
 ## ⛔ 绝对禁令 (Violations trigger STOP)
 - **直接在主分支开发**：检测到 `git status` 为 `windows/dev` 或 `master` 时修改代码。
 - **无文档即代码**：在未创建/更新 `docs/` 下对应文档前编写业务代码。
-- **无测试即提交**：在未运行 `build.py test` 并截图/贴出日志前进行 git commit。
+- **无测试即提交**：在未运行 `build.py test` 并截图/贴出日志前进行 git commit（文档/注释等非代码类变更及 `docs/` 目录下内容除外）。
 - **幻觉引用**：引用不存在的文件路径（必须先 `ls` 或 `glob` 确认文件存在）。
 - **严禁递归删除** `build` 目录及其子文件。
 - **严禁提交** 未通过编译或基础测试的代码。
