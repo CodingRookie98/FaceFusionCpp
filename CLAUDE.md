@@ -24,7 +24,7 @@ trigger: always_on
   - **开发阶段必须使用 Debug 模式**：`python build.py --action both --config Debug`
   - Release 模式仅用于最终发布验证
   - 二进制输出路径 (Debug): `build/msvc-x64-debug/bin` (测试文件位于 `tests/unit/...`)
-  - 详细用法参见：`docs/build.md`
+  - 🚨 **详细用法 (必读)**：`docs/build.md` —— **请务必阅读以避免环境配置错误**
 - **质量控制**：
   - 格式化：`python scripts/format_code.py`
   - 静态分析：`python scripts/run_clang_tidy.py` (Windows + MSVC 环境下跳过)
@@ -49,7 +49,7 @@ trigger: always_on
   - 评估：`evaluation/C++_evaluation_{title}.md` (使用 `docs/dev_docs/C++_evaluation_template.md`)
   - 记录：`C++_troubleshooting.md` (记录疑难杂症, 使用 `docs/dev_docs/C++_troubleshooting.md`)
 - **提交要求**：
-  - 仅提交源码与必要资源，禁止提交文档、日志或构建文件。
+  - 仅提交源码与必要资源，禁止提交文档、日志或构建文件(除非用户明确要求)。
   - 文件重命名/移动必须使用 `git mv`。
   - 提交前必须通过 `build.py test`。
 
