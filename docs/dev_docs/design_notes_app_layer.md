@@ -1,6 +1,6 @@
 # 应用层配置设计备忘录 (Application Layer Configuration Design)
 
-> **文档版本**: V1.5
+> **文档版本**: V1.6 (2026-01-23)
 > **文档说明**: 基于模块化与 Pipeline 设计模式，定义配置结构、设计原则及工程化约束。
 > **架构参考**: 本设计 **必须遵循** [C++_20_模块-大型工程实践.md](../C++/C++_20_模块-大型工程实践.md) 中的 **5 层分层架构**:
 > ```
@@ -163,6 +163,11 @@ resource:
   # sequential: 顺序模式 (默认, 省空间). Asset 1 [S1->S2] -> Asset 2 [S1->S2]
   # batch: 批处理模式 (吞吐量优先). Step 1 [A1, A2] -> Step 2 [A1, A2]
   execution_order: "sequential"
+  # 注意:
+  # 1. 无论执行顺序如何，流水线均为链式处理 (S1结果 -> S2输入 -> S3)，而非原始帧独立处理模式。
+  # 2. exception: expression_restorer
+  #    其逻辑为：将接收到的帧（上一步结果）中的表情，恢复为原始 Target Frame（源视频初始状态）的表情。
+  #    即: Result = Restore(CurrentFrame, OriginalTargetFrame.Expression)
   # 视频分段处理 (Optional)
   # 0: 不分段，整个视频一次性处理
   # >0: 按指定秒数分段处理，最后合并输出为单个文件
