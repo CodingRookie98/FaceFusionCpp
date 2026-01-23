@@ -1,0 +1,45 @@
+# Schema Version
+config_version: "1.0"
+
+# 推理基础设施 (Inference Infrastructure)
+inference:
+  # 显卡/计算设备分配
+  # 扩展预留: 未来可支持 device_ids: [0, 1] 实现多卡并行推理
+  device_id: 0
+  # 引擎缓存策略
+  engine_cache:
+    enable: true
+    path: "./.cache/tensorrt" # 相对路径
+  # 默认推理后端优先级 (Multiselect & Priority)
+  default_providers:
+    - tensorrt
+    - cuda
+    - cpu
+
+# 资源与性能 (Resources & Performance)
+resource:
+  # 内存策略 (strict/tolerant)
+  # strict: 严格模式 (On-Demand). 处理器仅在执行时创建，用完即销毁。适合低显存环境。
+  # tolerant: 宽容模式 (Cached). 处理器在启动时预加载并常驻内存。适合高频任务或高显存环境。
+  memory_strategy: "strict"
+
+# 日志与调试 (System Logging)
+logging:
+  # 支持级别: trace, debug, info, warn, error
+  level: "info"
+  # 日志存储目录 (注意: 文件名固定为 app.log 或程序指定，不可配置，仅目录可配)
+  directory: "./logs"
+  rotation: "daily"
+
+# 模型管理 (Model Management)
+models:
+  # 模型基础目录
+  path: "./assets/models"
+  # 下载策略:
+  # force: 无论模型是否存在都强制下载
+  # skip: 模型不存在时跳过下载，从 model_repository 返回空路径，后续加载模型报错退出程序
+  # auto: 模型不存在时自动下载 (默认)
+  download_strategy: "auto"
+
+# 临时文件管理 (Temp File Management)
+temp_directory: "./temp"
