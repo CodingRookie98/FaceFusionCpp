@@ -34,6 +34,11 @@ protected:
             ]
         })";
         file.close();
+
+        // Reset singleton state
+        auto instance = ModelRepository::get_instance();
+        instance->set_base_path("");
+        instance->set_download_strategy(DownloadStrategy::Auto);
     }
 
     void TearDown() override {
@@ -87,6 +92,71 @@ TEST_F(ModelRepositoryTest, JSONSerialization) {
     EXPECT_EQ(deserialized.type, original.type);
     EXPECT_EQ(deserialized.path, original.path);
     EXPECT_EQ(deserialized.url, original.url);
+}
+
+TEST_F(ModelRepositoryTest, JSONSerializationFileName) {
+    nlohmann::json j = {
+        {"name", "test"}, {"type", "type"}, {"file_name", "test.onnx"}, {"url", "url"}};
+
+    ModelInfo deserialized;
+    from_json(j, deserialized);
+
+    EXPECT_EQ(deserialized.name, "test");
+    EXPECT_EQ(deserialized.path, "test.onnx");
+}
+
+TEST_F(ModelRepositoryTest, SetBasePath) {
+    auto instance = ModelRepository::get_instance();
+    instance->set_model_info_file_path(test_json_path);
+
+    // Default behavior
+    EXPECT_EQ(instance->get_model_path("test_model_1"), "./models/test_model_1.onnx");
+
+    // Set base path
+    std::string base = "custom/path";
+    instance->set_base_path(base);
+
+    // Expect joined path
+    std::filesystem::path expected = std::filesystem::path(base) / "test_model_1.onnx";
+    EXPECT_EQ(instance->get_model_path("test_model_1"), expected.string());
+}
+
+TEST_F(ModelRepositoryTest, DownloadStrategySkip) {
+    auto instance = ModelRepository::get_instance();
+    instance->set_model_info_file_path(test_json_path);
+    instance->set_download_strategy(DownloadStrategy::Skip);
+
+    // model doesn't exist locally
+    std::string path = instance->ensure_model("test_model_1");
+    EXPECT_TRUE(path.empty());
+}
+
+TEST_F(ModelRepositoryTest, FileNameSupport) {
+    std::string json_path = "test_filename.json";
+    std::ofstream file(json_path);
+    file << R"({
+        "models_info": [
+            {
+                "name": "new_model",
+                "type": "face_enhancer",
+                "url": "http://example.com/new.onnx",
+                "file_name": "new_model.onnx"
+            }
+        ]
+    })";
+    file.close();
+
+    auto instance = ModelRepository::get_instance();
+    instance->set_model_info_file_path(json_path);
+
+    // Set base path to verify joining
+    instance->set_base_path("./assets/models");
+
+    auto info = instance->get_model_info("new_model");
+    std::filesystem::path expected = std::filesystem::path("./assets/models") / "new_model.onnx";
+    EXPECT_EQ(info.path, expected.string());
+
+    if (fs::exists(json_path)) { fs::remove(json_path); }
 }
 
 TEST_F(ModelRepositoryTest, LoadRealAssetsModelInfo) {

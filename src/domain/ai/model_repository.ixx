@@ -26,6 +26,15 @@ export struct ModelInfo {
 };
 
 /**
+ * @brief Strategy for downloading models
+ */
+export enum class DownloadStrategy {
+    Auto,  ///< Download if not exists (default)
+    Force, ///< Always download (overwrite)
+    Skip   ///< Never download, only use local
+};
+
+/**
  * @brief Model repository class for handling AI model operations
  */
 export class ModelRepository final {
@@ -103,9 +112,23 @@ public:
 
     /**
      * @brief Set the path to the models information JSON file
-     * @param path Path to the models information JSON file
+     * @param path Path to
+     * the models information JSON file
      */
     void set_model_info_file_path(const std::string& path = "./assets/models_info.json");
+
+    /**
+     * @brief Set the base directory for storing models
+     * @param path Directory path
+
+     */
+    void set_base_path(const std::string& path);
+
+    /**
+     * @brief Set the download strategy
+     * @param strategy Download strategy enum
+ */
+    void set_download_strategy(DownloadStrategy strategy);
 
 private:
     /**
@@ -113,6 +136,8 @@ private:
      */
     ModelRepository();
     std::string m_json_file_path; ///< Path to models information JSON file
+    std::string m_base_path;      ///< Base directory for models
+    DownloadStrategy m_download_strategy{DownloadStrategy::Auto}; ///< Current download strategy
     std::unordered_map<std::string, ModelInfo>
         m_models_info_map; ///< Map of model names to ModelInfo structures
 };
