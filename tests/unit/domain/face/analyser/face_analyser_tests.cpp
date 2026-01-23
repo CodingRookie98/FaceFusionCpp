@@ -219,6 +219,61 @@ TEST_F(FaceAnalyserTest, GetAverageFace_AveragesEmbeddings) {
     EXPECT_FLOAT_EQ(avg.normed_embedding()[1], 0.6f);
 }
 
+TEST_F(FaceAnalyserTest, GetManyFaces_OnDemandAnalysis_MockedTest) {
+    cv::Mat frame1 = cv::Mat::zeros(100, 100, CV_8UC3);
+    cv::Mat frame2 = cv::Mat::zeros(100, 100, CV_8UC3);
+    frame2.at<cv::Vec3b>(0, 0) = cv::Vec3b(1, 1, 1); // Ensure different for cache
+    cv::Mat frame3 = cv::Mat::zeros(100, 100, CV_8UC3);
+    frame3.at<cv::Vec3b>(0, 0) = cv::Vec3b(2, 2, 2);
+
+    DetectionResult det_res;
+    det_res.box = cv::Rect2f(10, 10, 50, 50);
+    det_res.score = 0.9f;
+    // 5 landmarks
+    det_res.landmarks = {cv::Point2f(20, 20), cv::Point2f(40, 20), cv::Point2f(30, 30),
+                         cv::Point2f(25, 40), cv::Point2f(35, 40)};
+
+    // 1. Detection Only
+    EXPECT_CALL(*mock_detector, detect(_)).WillOnce(Return(std::vector<DetectionResult>{det_res}));
+    EXPECT_CALL(*mock_landmarker, detect(_, _)).Times(0);
+    EXPECT_CALL(*mock_recognizer, recognize(_, _)).Times(0);
+    EXPECT_CALL(*mock_classifier, classify(_, _)).Times(0);
+
+    FaceAnalyser analyser(options, mock_detector, mock_landmarker, mock_recognizer,
+                          mock_classifier);
+    auto faces_det = analyser.get_many_faces(frame1, FaceAnalysisType::Detection);
+
+    ASSERT_EQ(faces_det.size(), 1);
+    EXPECT_EQ(faces_det[0].detector_score(), 0.9f);
+    EXPECT_TRUE(faces_det[0].embedding().empty());
+
+    // 2. Detection + Embedding
+    EXPECT_CALL(*mock_detector, detect(_)).WillOnce(Return(std::vector<DetectionResult>{det_res}));
+    EXPECT_CALL(*mock_landmarker, detect(_, _)).Times(0); // Still 5 points enough? Yes usually.
+    EXPECT_CALL(*mock_recognizer, recognize(_, _))
+        .WillOnce(Return(std::make_pair(std::vector<float>{1.0f}, std::vector<float>{1.0f})));
+    EXPECT_CALL(*mock_classifier, classify(_, _)).Times(0);
+
+    auto faces_emb =
+        analyser.get_many_faces(frame2, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
+    ASSERT_EQ(faces_emb.size(), 1);
+    EXPECT_FALSE(faces_emb[0].embedding().empty());
+
+    // 3. Detection + GenderAge
+    EXPECT_CALL(*mock_detector, detect(_)).WillOnce(Return(std::vector<DetectionResult>{det_res}));
+    EXPECT_CALL(*mock_landmarker, detect(_, _)).Times(0);
+    EXPECT_CALL(*mock_recognizer, recognize(_, _)).Times(0);
+
+    ClassificationResult class_res;
+    class_res.gender = Gender::Male;
+    EXPECT_CALL(*mock_classifier, classify(_, _)).WillOnce(Return(class_res));
+
+    auto faces_cls =
+        analyser.get_many_faces(frame3, FaceAnalysisType::Detection | FaceAnalysisType::GenderAge);
+    ASSERT_EQ(faces_cls.size(), 1);
+    EXPECT_EQ(faces_cls[0].gender(), Gender::Male);
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::InitGoogleMock(&argc, argv);

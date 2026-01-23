@@ -75,9 +75,37 @@ struct Options {
 };
 
 /**
+ * @brief Face Analysis Types (Bitmask)
+ */
+export enum class FaceAnalysisType : unsigned int {
+    None = 0,
+    Detection = 1 << 0,
+    Landmark = 1 << 1,
+    Embedding = 1 << 2,
+    GenderAge = 1 << 3,
+    All = Detection | Landmark | Embedding | GenderAge
+};
+
+export constexpr FaceAnalysisType operator|(FaceAnalysisType lhs, FaceAnalysisType rhs) {
+    return static_cast<FaceAnalysisType>(static_cast<unsigned int>(lhs)
+                                         | static_cast<unsigned int>(rhs));
+}
+
+export constexpr FaceAnalysisType operator&(FaceAnalysisType lhs, FaceAnalysisType rhs) {
+    return static_cast<FaceAnalysisType>(static_cast<unsigned int>(lhs)
+                                         & static_cast<unsigned int>(rhs));
+}
+
+export constexpr bool has_flag(FaceAnalysisType value, FaceAnalysisType flag) {
+    return (value & flag) == flag;
+}
+
+/**
  * @brief FaceAnalyser orchestrates face detection, recognition, and analysis
- * @details This class manages the lifecycle of various face models and provides high-level APIs
- *          to extract face information from images.
+ * @details This
+ * class manages the lifecycle of various face models and provides high-level APIs
+ *          to
+ * extract face information from images.
  */
 class FaceAnalyser {
 public:
@@ -102,18 +130,27 @@ public:
 
     /**
      * @brief Detect and analyze multiple faces in a frame
-     * @param vision_frame Input image frame
+     * @param vision_frame Input
+     * image frame
+     * @param type Bitmask determining which analysis steps to perform
+     *
      * @return Vector of detected Face objects
      */
-    std::vector<Face> get_many_faces(const cv::Mat& vision_frame);
+    std::vector<Face> get_many_faces(const cv::Mat& vision_frame,
+                                     FaceAnalysisType type = FaceAnalysisType::All);
 
     /**
      * @brief Detect and get a single face (based on selection strategy)
-     * @param vision_frame Input image frame
+     * @param
+     * vision_frame Input image frame
      * @param position Face position index (if applicable)
-     * @return Detected Face object, or empty Face if none found
+
+     * * @param type Bitmask determining which analysis steps to perform
+     * @return Detected
+     * Face object, or empty Face if none found
      */
-    Face get_one_face(const cv::Mat& vision_frame, unsigned int position = 0);
+    Face get_one_face(const cv::Mat& vision_frame, unsigned int position = 0,
+                      FaceAnalysisType type = FaceAnalysisType::All);
 
     /**
      * @brief Calculate the average face embedding from multiple frames
@@ -159,7 +196,7 @@ public:
 private:
     std::vector<Face> create_faces(const cv::Mat& vision_frame,
                                    const std::vector<detector::DetectionResult>& detection_results,
-                                   double detected_angle);
+                                   double detected_angle, FaceAnalysisType type);
 
     std::pair<types::Embedding, types::Embedding> calculate_embedding(
         const cv::Mat& vision_frame, const types::Landmarks& face_landmark_5);

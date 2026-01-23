@@ -26,6 +26,7 @@ import domain.face.detector;
 import domain.face.landmarker;
 import domain.face.recognizer;
 import domain.face.masker;
+import domain.face.analyser;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
 import foundation.media.ffmpeg;
@@ -46,23 +47,23 @@ struct ProcessorContext {
     std::vector<float> source_embedding;
     std::shared_ptr<domain::face::masker::IFaceOccluder> occluder;
     std::shared_ptr<domain::face::masker::IFaceRegionMasker> region_masker;
+    std::shared_ptr<domain::face::analyser::FaceAnalyser> face_analyser;
     Options inference_options;
 };
 
 // ============================================================================
-// PipelineRunnerImpl
+// PipelineRunner::Impl
 // ============================================================================
 
-class PipelineRunnerImpl : public IPipelineRunner {
-public:
-    explicit PipelineRunnerImpl(const config::AppConfig& app_config) :
+struct PipelineRunner::Impl {
+    explicit Impl(const config::AppConfig& app_config) :
         m_app_config(app_config), m_running(false), m_cancelled(false) {
         m_model_repo = domain::ai::model_repository::ModelRepository::get_instance();
         m_inference_options = Options::with_best_providers();
     }
 
     config::Result<void, config::ConfigError> Run(const config::TaskConfig& task_config,
-                                                  ProgressCallback progress_callback) override {
+                                                  ProgressCallback progress_callback) {
         if (m_running.exchange(true)) {
             return config::Result<void, config::ConfigError>::Err(
                 config::ConfigError("Pipeline is already running"));
@@ -81,15 +82,38 @@ public:
         return result;
     }
 
-    void Cancel() override { m_cancelled = true; }
-    bool IsRunning() const override { return m_running; }
+    void Cancel() { m_cancelled = true; }
+    bool IsRunning() const { return m_running; }
 
 private:
     config::AppConfig m_app_config;
     std::atomic<bool> m_running;
     std::atomic<bool> m_cancelled;
     std::shared_ptr<domain::ai::model_repository::ModelRepository> m_model_repo;
+    std::shared_ptr<domain::face::analyser::FaceAnalyser> m_face_analyser;
     Options m_inference_options;
+
+    std::shared_ptr<domain::face::analyser::FaceAnalyser> GetFaceAnalyser() {
+        if (!m_face_analyser) {
+            domain::face::analyser::Options opts;
+            opts.inference_session_options = m_inference_options;
+
+            // Configure default models for pipeline usage
+            opts.model_paths.face_detector_yolo =
+                m_model_repo->ensure_model("face_detector_yoloface");
+            opts.model_paths.face_recognizer_arcface =
+                m_model_repo->ensure_model("face_recognizer_arcface_w600k_r50");
+            // No landmarker/classifier by default unless needed, but FaceAnalyser might check
+            // paths. But ensure_model ensures they exist.
+
+            opts.face_detector_options.type = domain::face::detector::DetectorType::Yolo;
+            opts.face_recognizer_type =
+                domain::face::recognizer::FaceRecognizerType::ArcFace_w600k_r50;
+
+            m_face_analyser = std::make_shared<domain::face::analyser::FaceAnalyser>(opts);
+        }
+        return m_face_analyser;
+    }
 
     config::Result<void, config::ConfigError> ExecuteTask(const config::TaskConfig& task_config,
                                                           ProgressCallback progress_callback) {
@@ -117,11 +141,7 @@ private:
                 config::ConfigError("Target file not found: " + target_path));
         }
 
-        auto ext = fs::path(target_path).extension().string();
-        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-
-        bool is_video =
-            (ext == ".mp4" || ext == ".avi" || ext == ".mkv" || ext == ".mov" || ext == ".webm");
+        bool is_video = foundation::media::ffmpeg::is_video(target_path);
 
         return is_video ? ProcessVideo(target_path, task_config, progress_callback) :
                           ProcessImage(target_path, task_config, progress_callback);
@@ -139,6 +159,7 @@ private:
         ProcessorContext context;
         context.model_repo = m_model_repo;
         context.inference_options = m_inference_options;
+        context.face_analyser = GetFaceAnalyser();
 
         if (!task_config.io.source_paths.empty()) {
             auto embed_result = LoadSourceEmbedding(task_config.io.source_paths[0]);
@@ -229,6 +250,7 @@ private:
         ProcessorContext context;
         context.model_repo = m_model_repo;
         context.inference_options = m_inference_options;
+        context.face_analyser = GetFaceAnalyser();
 
         if (!task_config.io.source_paths.empty()) {
             auto embed_result = LoadSourceEmbedding(task_config.io.source_paths[0]);
@@ -355,6 +377,7 @@ private:
         ProcessorContext context;
         context.model_repo = m_model_repo;
         context.inference_options = m_inference_options;
+        context.face_analyser = GetFaceAnalyser();
         if (!task_config.io.source_paths.empty()) {
             auto embed_result = LoadSourceEmbedding(task_config.io.source_paths[0]);
             if (embed_result) {
@@ -511,32 +534,24 @@ private:
                 config::ConfigError("Failed to load source image: " + source_path));
         }
 
-        auto detector = domain::face::detector::FaceDetectorFactory::create(
-            domain::face::detector::DetectorType::Yolo);
-        std::string det_model = m_model_repo->ensure_model("face_detector_yoloface");
-        if (det_model.empty()) {
+        auto analyser = GetFaceAnalyser();
+        if (!analyser) {
             return config::Result<std::vector<float>, config::ConfigError>::Err(
-                config::ConfigError("Face detector model not found"));
+                config::ConfigError("Failed to create FaceAnalyser"));
         }
-        detector->load_model(det_model, m_inference_options);
-        auto faces = detector->detect(source_img);
+
+        // Use on-demand analysis: Detection + Embedding
+        auto faces = analyser->get_many_faces(
+            source_img, domain::face::analyser::FaceAnalysisType::Detection
+                            | domain::face::analyser::FaceAnalysisType::Embedding);
 
         if (faces.empty()) {
             return config::Result<std::vector<float>, config::ConfigError>::Err(
                 config::ConfigError("No face detected in source image"));
         }
 
-        auto recognizer = domain::face::recognizer::create_face_recognizer(
-            domain::face::recognizer::FaceRecognizerType::ArcFace_w600k_r50);
-        std::string rec_model = m_model_repo->ensure_model("face_recognizer_arcface_w600k_r50");
-        if (rec_model.empty()) {
-            return config::Result<std::vector<float>, config::ConfigError>::Err(
-                config::ConfigError("Face recognizer model not found"));
-        }
-        recognizer->load_model(rec_model, m_inference_options);
-
-        auto [normed_emb, raw_emb] = recognizer->recognize(source_img, faces[0].landmarks);
-        return config::Result<std::vector<float>, config::ConfigError>::Ok(std::move(raw_emb));
+        // Return raw embedding of the first face
+        return config::Result<std::vector<float>, config::ConfigError>::Ok(faces[0].embedding());
     }
 
     void AddProcessorsToPipeline(std::shared_ptr<Pipeline> pipeline,
@@ -566,43 +581,44 @@ private:
     std::shared_ptr<IFrameProcessor> CreateDetectorProcessor(const ProcessorContext& context) {
         class DetectorProcessor : public IFrameProcessor {
         public:
-            DetectorProcessor(std::shared_ptr<domain::face::detector::IFaceDetector> det,
+            DetectorProcessor(std::shared_ptr<domain::face::analyser::FaceAnalyser> analyser,
                               std::vector<float> src_emb) :
-                detector(std::move(det)), source_embedding(std::move(src_emb)) {}
+                m_analyser(std::move(analyser)), source_embedding(std::move(src_emb)) {}
             void process(FrameData& frame) override {
-                auto results = detector->detect(frame.image);
-                if (results.empty()) return;
+                // Use Detection only (implicitly includes 5 landmarks)
+                auto faces = m_analyser->get_many_faces(
+                    frame.image, domain::face::analyser::FaceAnalysisType::Detection);
+
+                if (faces.empty()) return;
+
                 domain::face::swapper::SwapInput swap_input;
                 swap_input.target_frame = frame.image;
-                for (const auto& face : results)
-                    swap_input.target_faces_landmarks.push_back(face.landmarks);
+                for (const auto& face : faces)
+                    swap_input.target_faces_landmarks.push_back(face.get_landmark5());
                 swap_input.source_embedding = source_embedding;
                 frame.metadata["swap_input"] = swap_input;
+
                 domain::face::enhancer::EnhanceInput enhance_input;
                 enhance_input.target_frame = frame.image;
-                for (const auto& face : results)
-                    enhance_input.target_faces_landmarks.push_back(face.landmarks);
+                for (const auto& face : faces)
+                    enhance_input.target_faces_landmarks.push_back(face.get_landmark5());
                 enhance_input.face_blend = 80;
                 frame.metadata["enhance_input"] = enhance_input;
 
                 domain::face::expression::RestoreExpressionInput expression_input;
                 expression_input.source_frame = frame.image.clone(); // Capture original frame
-                for (const auto& face : results)
-                    expression_input.source_landmarks.push_back(face.landmarks);
+                for (const auto& face : faces)
+                    expression_input.source_landmarks.push_back(face.get_landmark5());
                 frame.metadata["expression_input"] = expression_input;
             }
 
         private:
-            std::shared_ptr<domain::face::detector::IFaceDetector> detector;
+            std::shared_ptr<domain::face::analyser::FaceAnalyser> m_analyser;
             std::vector<float> source_embedding;
         };
 
-        auto detector = domain::face::detector::FaceDetectorFactory::create(
-            domain::face::detector::DetectorType::Yolo);
-        std::string model = context.model_repo->ensure_model("face_detector_yoloface");
-        if (model.empty()) return nullptr;
-        detector->load_model(model, context.inference_options);
-        return std::make_shared<DetectorProcessor>(std::move(detector), context.source_embedding);
+        if (!context.face_analyser) return nullptr;
+        return std::make_shared<DetectorProcessor>(context.face_analyser, context.source_embedding);
     }
 
     std::shared_ptr<IFrameProcessor> CreateProcessorFromStep(const config::PipelineStep& step,
@@ -726,8 +742,29 @@ private:
     }
 };
 
-std::unique_ptr<IPipelineRunner> CreatePipelineRunner(const config::AppConfig& app_config) {
-    return std::make_unique<PipelineRunnerImpl>(app_config);
+PipelineRunner::PipelineRunner(const config::AppConfig& app_config) :
+    m_impl(std::make_unique<Impl>(app_config)) {}
+
+PipelineRunner::~PipelineRunner() = default;
+
+PipelineRunner::PipelineRunner(PipelineRunner&&) noexcept = default;
+PipelineRunner& PipelineRunner::operator=(PipelineRunner&&) noexcept = default;
+
+config::Result<void, config::ConfigError> PipelineRunner::Run(const config::TaskConfig& task_config,
+                                                              ProgressCallback progress_callback) {
+    return m_impl->Run(task_config, progress_callback);
+}
+
+void PipelineRunner::Cancel() {
+    m_impl->Cancel();
+}
+
+bool PipelineRunner::IsRunning() const {
+    return m_impl->IsRunning();
+}
+
+std::unique_ptr<PipelineRunner> CreatePipelineRunner(const config::AppConfig& app_config) {
+    return std::make_unique<PipelineRunner>(app_config);
 }
 
 } // namespace services::pipeline

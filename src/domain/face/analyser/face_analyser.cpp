@@ -117,14 +117,25 @@ void FaceAnalyser::apply_options(const Options& options) {
 
 // Helpers are moved to domain.face.helper
 
-std::vector<Face> FaceAnalyser::get_many_faces(const cv::Mat& vision_frame) {
+std::vector<Face> FaceAnalyser::get_many_faces(const cv::Mat& vision_frame, FaceAnalysisType type) {
     if (vision_frame.empty()) return {};
 
+    // If we only need detection and it's cached, we might return cached faces.
+    // However, cached faces might have MORE info than requested (e.g. embeddings).
+    // If we request LESS, cached is fine.
+    // If we request MORE than cached, we might need to re-run.
+    // For now, let's assume cache is "complete" or we just return what's in store.
+    // TODO: optimization - check if cached face has required attributes?
     if (m_face_store->is_contains(vision_frame)) { return m_face_store->get_faces(vision_frame); }
 
     std::vector<DetectionResult> detection_results;
     double detected_angle = 0;
     std::vector<int> angles = {0, 90, 180, 270};
+
+    // Detection is always performed if we are here (unless we want to skip detection?
+    // But get_many_faces implies finding faces).
+    // If type == None, maybe return empty? But usually we want at least detection.
+    // Let's assume Detection is implicit or required.
 
     for (int angle : angles) {
         cv::Mat frame_to_detect;
@@ -150,7 +161,7 @@ std::vector<Face> FaceAnalyser::get_many_faces(const cv::Mat& vision_frame) {
 
     if (detection_results.empty()) return {};
 
-    auto result_faces = create_faces(vision_frame, detection_results, detected_angle);
+    auto result_faces = create_faces(vision_frame, detection_results, detected_angle, type);
 
     m_face_store->insert_faces(vision_frame, result_faces);
 
@@ -161,7 +172,7 @@ std::vector<Face> FaceAnalyser::get_many_faces(const cv::Mat& vision_frame) {
 
 std::vector<Face> FaceAnalyser::create_faces(const cv::Mat& vision_frame,
                                              const std::vector<DetectionResult>& detection_results,
-                                             double detected_angle) {
+                                             double detected_angle, FaceAnalysisType type) {
     std::vector<Face> faces;
     if (detection_results.empty()) return faces;
 
@@ -180,10 +191,17 @@ std::vector<Face> FaceAnalyser::create_faces(const cv::Mat& vision_frame,
         boxes, scores, m_options.face_detector_options.iou_threshold);
 
     cv::Mat rotated_frame;
-    if (detected_angle != 0) {
+    // Rotation is needed if we do landmarking (68 points) or just need it for alignment?
+    // 5 points are already in detection results (relative to rotated frame).
+    // If we need to run landmarker (68 points), we need rotated frame.
+    // If we need recognition, we need vision_frame (and warp it).
+    // Existing code rotates frame if angle != 0.
+
+    // Optimization: Only rotate if we are going to use landmarker.
+    if (has_flag(type, FaceAnalysisType::Landmark) && detected_angle != 0) {
         domain::face::helper::rotate_image_90n(vision_frame, rotated_frame,
                                                static_cast<int>(detected_angle));
-    } else {
+    } else if (has_flag(type, FaceAnalysisType::Landmark)) {
         rotated_frame = vision_frame;
     }
 
@@ -211,9 +229,11 @@ std::vector<Face> FaceAnalyser::create_faces(const cv::Mat& vision_frame,
 
         face.set_box(domain::face::helper::rotate_box_back(
             res.box, static_cast<int>(detected_angle), original_size));
-        face.set_kps(kps5_back);
+        face.set_kps(kps5_back); // Set 5 landmarks by default
 
-        if (m_options.face_landmarker_options.min_score > 0 && m_landmarker) {
+        // Landmarking (68 points or refined)
+        if (has_flag(type, FaceAnalysisType::Landmark)
+            && m_options.face_landmarker_options.min_score > 0 && m_landmarker) {
             if (m_options.face_landmarker_options.type == landmarker::LandmarkerType::_68By5) {
                 auto kps68_back = m_landmarker->expand_68_from_5(kps5_back);
                 if (!kps68_back.empty()) {
@@ -221,6 +241,7 @@ std::vector<Face> FaceAnalyser::create_faces(const cv::Mat& vision_frame,
                     face.set_landmarker_score(1.0f); // Virtual score for expansion
                 }
             } else {
+                // Here we use rotated_frame
                 auto lm_res = m_landmarker->detect(rotated_frame, res.box);
                 face.set_landmarker_score(lm_res.score);
 
@@ -235,14 +256,18 @@ std::vector<Face> FaceAnalyser::create_faces(const cv::Mat& vision_frame,
             }
         }
 
-        auto kps5 = face.get_landmark5();
-        if (m_recognizer) {
+        auto kps5 = face.get_landmark5(); // This extracts 5 points from whatever kps is currently
+                                          // set (5 or 68)
+
+        // Recognition (Embedding)
+        if (has_flag(type, FaceAnalysisType::Embedding) && m_recognizer) {
             auto [emb, norm_emb] = m_recognizer->recognize(vision_frame, kps5);
             face.set_embedding(emb);
             face.set_normed_embedding(norm_emb);
         }
 
-        if (m_classifier) {
+        // Classification (Gender, Age, Race)
+        if (has_flag(type, FaceAnalysisType::GenderAge) && m_classifier) {
             auto class_res = m_classifier->classify(vision_frame, kps5);
             face.set_race(class_res.race);
             face.set_gender(class_res.gender);
@@ -255,8 +280,9 @@ std::vector<Face> FaceAnalyser::create_faces(const cv::Mat& vision_frame,
     return faces;
 }
 
-Face FaceAnalyser::get_one_face(const cv::Mat& vision_frame, unsigned int position) {
-    auto faces = get_many_faces(vision_frame);
+Face FaceAnalyser::get_one_face(const cv::Mat& vision_frame, unsigned int position,
+                                FaceAnalysisType type) {
+    auto faces = get_many_faces(vision_frame, type);
     if (faces.empty()) return {};
     if (position >= faces.size()) return faces.back();
     return faces[position];

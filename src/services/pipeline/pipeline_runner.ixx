@@ -38,13 +38,19 @@ struct TaskProgress {
 using ProgressCallback = std::function<void(const TaskProgress&)>;
 
 /**
- * @brief Pipeline 执行器接口
+ * @brief Pipeline 执行器
  *
  * 根据 TaskConfig 配置创建并执行处理流水线。
  */
-class IPipelineRunner {
+class PipelineRunner {
 public:
-    virtual ~IPipelineRunner() = default;
+    explicit PipelineRunner(const config::AppConfig& app_config);
+    ~PipelineRunner();
+
+    PipelineRunner(const PipelineRunner&) = delete;
+    PipelineRunner& operator=(const PipelineRunner&) = delete;
+    PipelineRunner(PipelineRunner&&) noexcept;
+    PipelineRunner& operator=(PipelineRunner&&) noexcept;
 
     /**
      * @brief 执行任务
@@ -53,27 +59,31 @@ public:
      * @param progress_callback 进度回调 (可选)
      * @return Result<void> 成功返回 Ok，失败返回错误
      */
-    [[nodiscard]] virtual config::Result<void, config::ConfigError> Run(
-        const config::TaskConfig& task_config, ProgressCallback progress_callback = nullptr) = 0;
+    [[nodiscard]] config::Result<void, config::ConfigError> Run(
+        const config::TaskConfig& task_config, ProgressCallback progress_callback = nullptr);
 
     /**
      * @brief 取消正在执行的任务
      */
-    virtual void Cancel() = 0;
+    void Cancel();
 
     /**
      * @brief 检查是否正在运行
      */
-    [[nodiscard]] virtual bool IsRunning() const = 0;
+    [[nodiscard]] bool IsRunning() const;
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> m_impl;
 };
 
 /**
  * @brief 创建 PipelineRunner 实例
  *
  * @param app_config 应用配置 (模型路径、推理设置等)
- * @return unique_ptr<IPipelineRunner> Runner 实例
+ * @return unique_ptr<PipelineRunner> Runner 实例
  */
-[[nodiscard]] std::unique_ptr<IPipelineRunner> CreatePipelineRunner(
+[[nodiscard]] std::unique_ptr<PipelineRunner> CreatePipelineRunner(
     const config::AppConfig& app_config);
 
 } // namespace services::pipeline

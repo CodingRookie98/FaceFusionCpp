@@ -24,6 +24,7 @@ target_link_libraries(services_pipeline
         domain_pipeline
     PRIVATE
         domain_face
+        domain_face_analyser
         domain_face_detector
         domain_face_recognizer
         domain_face_masker
