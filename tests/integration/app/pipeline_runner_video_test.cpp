@@ -143,3 +143,61 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemory) {
     // but we can check if they are gone now.
     EXPECT_FALSE(std::filesystem::exists("tests_output/temp_step_0.mp4"));
 }
+
+TEST_F(PipelineRunnerVideoTest, ProcessVideoAllProcessors) {
+    if (!std::filesystem::exists(video_path) || !std::filesystem::exists(source_path)) {
+        GTEST_SKIP() << "Test assets not found.";
+    }
+
+    config::AppConfig app_config;
+    auto runner = CreatePipelineRunner(app_config);
+
+    config::TaskConfig task_config;
+    task_config.config_version = "1.0";
+    task_config.task_info.id = "test_video_all";
+    task_config.io.source_paths.push_back(source_path.string());
+    task_config.io.target_paths.push_back(video_path.string());
+
+    task_config.io.output.path = "tests_output";
+    task_config.io.output.prefix = "all_";
+    task_config.io.output.suffix = "";
+
+    // 1. Swapper
+    config::PipelineStep step1;
+    step1.step = "face_swapper";
+    step1.enabled = true;
+    config::FaceSwapperParams params1;
+    params1.model = "inswapper_128";
+    step1.params = params1;
+    task_config.pipeline.push_back(step1);
+
+    // 2. Face Enhancer
+    config::PipelineStep step2;
+    step2.step = "face_enhancer";
+    step2.enabled = true;
+    config::FaceEnhancerParams params2;
+    params2.model = "gfpgan_1.4"; // Ensure this matches a known model
+    step2.params = params2;
+    task_config.pipeline.push_back(step2);
+
+    // 3. Expression Restorer (might fail if models missing, but good to test instantiation)
+    // We will conditionally enable it if we think models are present, or just try it.
+    // For now, let's try it. If it fails, we know visibility is there but assets are missing.
+    config::PipelineStep step3;
+    step3.step = "expression_restorer";
+    step3.enabled = true;
+    config::ExpressionRestorerParams params3;
+    step3.params = params3;
+    task_config.pipeline.push_back(step3);
+
+    std::string expected_output = "tests_output/all_slideshow_scaled.mp4";
+    if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
+
+    auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
+
+    if (result.is_err()) {
+        std::cerr << "AllProcessors Runner Error: " << result.error().message << std::endl;
+    }
+    ASSERT_TRUE(result.is_ok());
+    EXPECT_TRUE(std::filesystem::exists(expected_output));
+}
