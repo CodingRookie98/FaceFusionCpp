@@ -22,7 +22,7 @@ protected:
         }
 
         source_path = get_test_data_path("standard_face_test_images/lenna.bmp");
-        target_image_path = get_test_data_path("standard_face_test_images/barbara.bmp");
+        target_image_path = get_test_data_path("standard_face_test_images/woman.jpg");
 
         // Output will be generated in tests_output
         std::filesystem::create_directories("tests_output");
@@ -69,9 +69,9 @@ TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
     }
     ASSERT_TRUE(result.is_ok());
 
-    // Expected output: tests_output/pipeline_runner_image_single_barbara.jpg
+    // Expected output: tests_output/pipeline_runner_image_single_woman.jpg
     std::filesystem::path output_path =
-        std::filesystem::path("tests_output") / "pipeline_runner_image_single_barbara.jpg";
+        std::filesystem::path("tests_output") / "pipeline_runner_image_single_woman.jpg";
     EXPECT_TRUE(std::filesystem::exists(output_path));
 
     // Verify it is a valid image
@@ -101,7 +101,7 @@ TEST_F(PipelineRunnerImageTest, ProcessImageBatch) {
     task_config.io.target_paths.push_back(source_path.string());
 
     task_config.io.output.path = "tests_output";
-    task_config.io.output.prefix = "batch_";
+    task_config.io.output.prefix = "pipeline_runner_image_batch_";
     task_config.io.output.image_format = "jpg";
 
     task_config.resource.execution_order = config::ExecutionOrder::Batch;
@@ -119,8 +119,10 @@ TEST_F(PipelineRunnerImageTest, ProcessImageBatch) {
 
     ASSERT_TRUE(result.is_ok());
 
-    std::filesystem::path output_1 = std::filesystem::path("tests_output") / "batch_barbara.jpg";
-    std::filesystem::path output_2 = std::filesystem::path("tests_output") / "batch_lenna.jpg";
+    std::filesystem::path output_1 =
+        std::filesystem::path("tests_output") / "pipeline_runner_image_batch_woman.jpg";
+    std::filesystem::path output_2 =
+        std::filesystem::path("tests_output") / "pipeline_runner_image_batch_lenna.jpg";
 
     EXPECT_TRUE(std::filesystem::exists(output_1));
     EXPECT_TRUE(std::filesystem::exists(output_2));
@@ -142,7 +144,7 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
     task_config.io.target_paths.push_back(target_image_path.string());
 
     task_config.io.output.path = "tests_output";
-    task_config.io.output.prefix = "multi_";
+    task_config.io.output.prefix = "pipeline_runner_image_multi_";
     task_config.io.output.image_format = "jpg";
 
     // Swapper + Enhancer
@@ -166,6 +168,7 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
 
     ASSERT_TRUE(result.is_ok());
 
-    std::filesystem::path output_path = std::filesystem::path("tests_output") / "multi_barbara.jpg";
+    std::filesystem::path output_path =
+        std::filesystem::path("tests_output") / "pipeline_runner_image_multi_woman.jpg";
     EXPECT_TRUE(std::filesystem::exists(output_path));
 }
