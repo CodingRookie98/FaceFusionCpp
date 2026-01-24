@@ -3,6 +3,7 @@ module;
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <mutex>
 #include <opencv2/opencv.hpp>
 #include <onnx/onnx_pb.h>
 #include <onnxruntime_cxx_api.h>
@@ -96,7 +97,9 @@ std::vector<FaceProcessResult> InSwapper::swap_face(const SwapInput& input) {
     if (input.target_faces_landmarks.empty()) { return {}; } // No faces to swap
 
     if (!is_model_loaded()) { throw std::runtime_error("Model is not loaded!"); }
-    if (m_initializer_array.empty()) { init(); }
+    if (m_initializer_array.empty()) {
+        std::call_once(m_init_flag, [this]() { init(); });
+    }
 
     std::vector<FaceProcessResult> results;
     const auto& targetFrame = input.target_frame;

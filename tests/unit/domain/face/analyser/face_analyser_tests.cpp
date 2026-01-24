@@ -343,6 +343,41 @@ TEST_F(FaceAnalyserTest, CacheUpgradeTest) {
     EXPECT_EQ(faces2[0].detector_score(), 0.9f);
 }
 
+TEST_F(FaceAnalyserTest, CacheMergeTest) {
+    cv::Mat frame = cv::Mat::zeros(100, 100, CV_8UC3);
+    frame.at<cv::Vec3b>(0, 0) = cv::Vec3b(20, 20, 20); // Unique
+
+    DetectionResult det_res;
+    det_res.box = cv::Rect2f(10, 10, 50, 50);
+    det_res.score = 0.9f;
+    det_res.landmarks = {cv::Point2f(20, 20), cv::Point2f(40, 20), cv::Point2f(30, 30),
+                         cv::Point2f(25, 40), cv::Point2f(35, 40)};
+
+    EXPECT_CALL(*mock_detector, detect(_)).WillOnce(Return(std::vector<DetectionResult>{det_res}));
+
+    // 1. Get Embedding
+    EXPECT_CALL(*mock_recognizer, recognize(_, _))
+        .WillOnce(Return(std::make_pair(std::vector<float>{1.0f}, std::vector<float>{1.0f})));
+
+    FaceAnalyser analyser(options, mock_detector, mock_landmarker, mock_recognizer,
+                          mock_classifier);
+    analyser.get_many_faces(frame, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
+
+    // 2. Get Gender (Should merge with existing Embedding)
+    ClassificationResult class_res;
+    class_res.gender = Gender::Female;
+    EXPECT_CALL(*mock_classifier, classify(_, _)).WillOnce(Return(class_res));
+    // Recognizer NOT called
+    EXPECT_CALL(*mock_recognizer, recognize(_, _)).Times(0);
+
+    auto faces_merged =
+        analyser.get_many_faces(frame, FaceAnalysisType::Detection | FaceAnalysisType::GenderAge);
+
+    ASSERT_EQ(faces_merged.size(), 1);
+    EXPECT_EQ(faces_merged[0].gender(), Gender::Female); // New info
+    EXPECT_FALSE(faces_merged[0].embedding().empty());   // Preserved info
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::InitGoogleMock(&argc, argv);

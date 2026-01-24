@@ -9,6 +9,7 @@ target_sources(services_pipeline
     PUBLIC
         FILE_SET cxx_modules TYPE CXX_MODULES
         FILES
+            processors/face_analysis_processor.ixx
             pipeline_runner.ixx
 )
 

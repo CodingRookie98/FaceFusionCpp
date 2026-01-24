@@ -3,6 +3,7 @@ module;
 #include <string>
 #include <memory>
 #include <tuple>
+#include <mutex>
 #include <opencv2/core.hpp>
 #include <onnxruntime_cxx_api.h>
 
@@ -44,6 +45,7 @@ private:
     std::vector<float> m_initializer_array;
     domain::face::helper::WarpTemplateType m_warp_template_type =
         domain::face::helper::WarpTemplateType::Arcface_128_v2;
+    std::once_flag m_init_flag;
 };
 
 } // namespace domain::face::swapper

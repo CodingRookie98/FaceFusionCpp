@@ -32,6 +32,8 @@ import foundation.ai.inference_session;
 import foundation.media.ffmpeg;
 import foundation.infrastructure.logger;
 
+import services.pipeline.processors.face_analysis; // Import new module
+
 namespace services::pipeline {
 
 using namespace domain::pipeline;
@@ -367,17 +369,38 @@ private:
         using namespace foundation::media::ffmpeg;
         namespace fs = std::filesystem;
 
-        std::vector<config::PipelineStep> enabled_steps;
-        for (const auto& step : task_config.pipeline) {
-            if (step.enabled) enabled_steps.push_back(step);
+        // 1. Open Reader
+        VideoReader reader(target_path);
+        if (!reader.open()) {
+            return config::Result<void, config::ConfigError>::Err(
+                config::ConfigError("Failed to open video: " + target_path));
         }
 
-        if (enabled_steps.empty()) return config::Result<void, config::ConfigError>::Ok();
+        // 2. Prepare Output Path (Temp for Muxing)
+        std::string output_path = GenerateOutputPath(target_path, task_config);
+        std::string video_output_path = output_path;
+        bool needs_muxing = (task_config.io.output.audio_policy == config::AudioPolicy::Copy);
 
+        if (needs_muxing) { video_output_path = output_path + ".temp.mp4"; }
+
+        // 3. Open Writer
+        VideoParams video_params;
+        video_params.width = reader.get_width();
+        video_params.height = reader.get_height();
+        video_params.frameRate = reader.get_fps();
+
+        VideoWriter writer(video_output_path, video_params);
+        if (!writer.open()) {
+            return config::Result<void, config::ConfigError>::Err(
+                config::ConfigError("Failed to open video writer: " + video_output_path));
+        }
+
+        // 4. Prepare Context
         ProcessorContext context;
         context.model_repo = m_model_repo;
         context.inference_options = m_inference_options;
         context.face_analyser = GetFaceAnalyser();
+
         if (!task_config.io.source_paths.empty()) {
             auto embed_result = LoadSourceEmbedding(task_config.io.source_paths[0]);
             if (embed_result) {
@@ -387,144 +410,110 @@ private:
             }
         }
 
-        std::string current_input_path = target_path;
-        std::string final_output_path = GenerateOutputPath(target_path, task_config);
-        std::string temp_output_path;
-
-        bool is_first_step = true;
-
-        for (size_t i = 0; i < enabled_steps.size(); ++i) {
-            if (m_cancelled) break;
-
-            const auto& step = enabled_steps[i];
-            bool is_last_step = (i == enabled_steps.size() - 1);
-
-            if (is_last_step) {
-                // strict mode: if copy audio, last step -> temp, then mux.
-                // if skip audio, last step -> final.
-                if (task_config.io.output.audio_policy == config::AudioPolicy::Copy) {
-                    temp_output_path = final_output_path + ".temp.mp4";
-                } else {
-                    temp_output_path = final_output_path;
-                }
-            } else {
-                temp_output_path = (fs::path(task_config.io.output.path)
-                                    / ("temp_step_" + std::to_string(i) + ".mp4"))
-                                       .string();
-            }
-
-            auto result = ProcessVideoSingleStep(current_input_path, temp_output_path, step,
-                                                 task_config, context, progress_callback);
-            if (!result) return result;
-
-            if (!is_first_step) { fs::remove(current_input_path); }
-
-            current_input_path = temp_output_path;
-            is_first_step = false;
-        }
-
-        if (m_cancelled) {
-            if (fs::exists(final_output_path)) fs::remove(final_output_path);
-            if (!is_first_step && fs::exists(current_input_path)) fs::remove(current_input_path);
-            return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError("Task cancelled"));
-        }
-
-        if (task_config.io.output.audio_policy == config::AudioPolicy::Copy) {
-            std::string silent_final = final_output_path + ".temp.mp4";
-            if (Remuxer::merge_av(silent_final, target_path, final_output_path)) {
-                std::filesystem::remove(silent_final);
-            } else {
-                // Fallback
-                if (fs::exists(final_output_path)) fs::remove(final_output_path);
-                fs::rename(silent_final, final_output_path);
-            }
-        }
-
-        return config::Result<void, config::ConfigError>::Ok();
-    }
-
-    config::Result<void, config::ConfigError> ProcessVideoSingleStep(
-        const std::string& input_path, const std::string& output_path,
-        const config::PipelineStep& step, const config::TaskConfig& task_config,
-        ProcessorContext& context, ProgressCallback progress_callback) {
-        using namespace foundation::media::ffmpeg;
-
-        VideoReader reader(input_path);
-        if (!reader.open())
-            return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError("Failed open: " + input_path));
-
-        VideoParams params;
-        params.width = reader.get_width();
-        params.height = reader.get_height();
-        params.frameRate = reader.get_fps();
-
-        VideoWriter writer(output_path, params);
-        if (!writer.open())
-            return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError("Failed open writer: " + output_path));
-
-        PipelineConfig p_config;
-        p_config.worker_thread_count =
+        // 5. Setup Pipeline (Chain Mode)
+        PipelineConfig pipeline_config;
+        // Strict mode uses limited queue size to control memory usage
+        pipeline_config.max_queue_size = 2;
+        pipeline_config.worker_thread_count =
             task_config.resource.thread_count > 0 ? task_config.resource.thread_count : 2;
-        p_config.max_queue_size = 4;
 
-        auto pipeline = std::make_shared<Pipeline>(p_config);
+        auto pipeline = std::make_shared<Pipeline>(pipeline_config);
 
-        bool needs_det = (step.step == "face_swapper" || step.step == "face_enhancer"
-                          || step.step == "expression_restorer");
-        if (needs_det) {
-            auto det = CreateDetectorProcessor(context);
-            if (det) pipeline->add_processor(det);
-        }
-        auto proc = CreateProcessorFromStep(step, context);
-        if (proc) pipeline->add_processor(proc);
+        // Add all processors to the same pipeline (chaining)
+        AddProcessorsToPipeline(pipeline, task_config, context);
 
         pipeline->start();
 
         std::atomic<bool> writer_error = false;
+        std::string writer_error_msg;
+
+        // 6. Start Writer Thread (Sink)
         std::thread writer_thread([&]() {
+            int frame_count = 0;
+            int total_frames = reader.get_frame_count();
+
             while (true) {
-                auto res = pipeline->pop_frame();
-                if (!res || res->is_end_of_stream) break;
-                if (!writer.write_frame(res->image)) {
+                auto result_opt = pipeline->pop_frame();
+                if (!result_opt) break;
+
+                if (result_opt->is_end_of_stream) break;
+
+                if (!writer.write_frame(result_opt->image)) {
                     writer_error = true;
+                    writer_error_msg = "Failed to write frame";
                     break;
+                }
+
+                frame_count++;
+                if (progress_callback && frame_count % 10 == 0) {
+                    TaskProgress progress;
+                    progress.task_id = task_config.task_info.id;
+                    progress.current_frame = frame_count;
+                    progress.total_frames = total_frames;
+                    progress.current_step = "processing";
+                    progress_callback(progress);
                 }
             }
         });
 
-        long long seq = 0;
+        // 7. Main Thread: Read & Push (Source)
+        long long seq_id = 0;
         cv::Mat frame;
         while (!m_cancelled && !writer_error) {
             frame = reader.read_frame();
-            if (frame.empty()) break;
+            if (frame.empty()) break; // EOF
+
             FrameData data;
-            data.sequence_id = seq++;
+            data.sequence_id = seq_id++;
             data.image = frame;
-            if (!context.source_embedding.empty())
+            if (!context.source_embedding.empty()) {
                 data.metadata["source_embedding"] = context.source_embedding;
+            }
+
+            // push_frame blocks if full (Backpressure)
             pipeline->push_frame(std::move(data));
         }
 
+        // Push EOS
         FrameData eos;
         eos.is_end_of_stream = true;
-        eos.sequence_id = seq;
+        eos.sequence_id = seq_id;
         pipeline->push_frame(std::move(eos));
 
-        if (writer_thread.joinable()) writer_thread.join();
+        // Wait for writer
+        if (writer_thread.joinable()) { writer_thread.join(); }
 
         pipeline->stop();
         writer.close();
         reader.close();
 
-        if (writer_error)
+        if (m_cancelled) {
+            std::filesystem::remove(video_output_path);
+            if (needs_muxing && fs::exists(output_path)) std::filesystem::remove(output_path);
             return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError("Writer error"));
+                config::ConfigError("Task cancelled"));
+        }
+
+        if (writer_error) {
+            return config::Result<void, config::ConfigError>::Err(
+                config::ConfigError(writer_error_msg));
+        }
+
+        // 8. Handle Audio / Finalize
+        if (needs_muxing) {
+            if (Remuxer::merge_av(video_output_path, target_path, output_path)) {
+                std::filesystem::remove(video_output_path);
+            } else {
+                Logger::get_instance()->error("Failed to mux audio. Keeping silent video.");
+                if (std::filesystem::exists(output_path)) std::filesystem::remove(output_path);
+                std::filesystem::rename(video_output_path, output_path);
+            }
+        }
 
         return config::Result<void, config::ConfigError>::Ok();
     }
+
+    // config::Result<void, config::ConfigError> ProcessVideoSingleStep(...) - Removed
 
     config::Result<std::vector<float>, config::ConfigError> LoadSourceEmbedding(
         const std::string& source_path) {
@@ -556,18 +545,25 @@ private:
 
     void AddProcessorsToPipeline(std::shared_ptr<Pipeline> pipeline,
                                  const config::TaskConfig& task_config, ProcessorContext& context) {
+        services::pipeline::processors::FaceAnalysisRequirements reqs;
         bool needs_face_detection = false;
+
         for (const auto& step : task_config.pipeline) {
             if (!step.enabled) continue;
-            if (step.step == "face_swapper" || step.step == "face_enhancer"
-                || step.step == "expression_restorer") {
+            if (step.step == "face_swapper") {
                 needs_face_detection = true;
-                break;
+                reqs.need_swap_data = true;
+            } else if (step.step == "face_enhancer") {
+                needs_face_detection = true;
+                reqs.need_enhance_data = true;
+            } else if (step.step == "expression_restorer") {
+                needs_face_detection = true;
+                reqs.need_expression_data = true;
             }
         }
 
         if (needs_face_detection) {
-            auto detector_processor = CreateDetectorProcessor(context);
+            auto detector_processor = CreateFaceAnalysisProcessor(context, reqs);
             if (detector_processor) { pipeline->add_processor(detector_processor); }
         }
 
@@ -578,47 +574,13 @@ private:
         }
     }
 
-    std::shared_ptr<IFrameProcessor> CreateDetectorProcessor(const ProcessorContext& context) {
-        class DetectorProcessor : public IFrameProcessor {
-        public:
-            DetectorProcessor(std::shared_ptr<domain::face::analyser::FaceAnalyser> analyser,
-                              std::vector<float> src_emb) :
-                m_analyser(std::move(analyser)), source_embedding(std::move(src_emb)) {}
-            void process(FrameData& frame) override {
-                // Use Detection only (implicitly includes 5 landmarks)
-                auto faces = m_analyser->get_many_faces(
-                    frame.image, domain::face::analyser::FaceAnalysisType::Detection);
-
-                if (faces.empty()) return;
-
-                domain::face::swapper::SwapInput swap_input;
-                swap_input.target_frame = frame.image;
-                for (const auto& face : faces)
-                    swap_input.target_faces_landmarks.push_back(face.get_landmark5());
-                swap_input.source_embedding = source_embedding;
-                frame.metadata["swap_input"] = swap_input;
-
-                domain::face::enhancer::EnhanceInput enhance_input;
-                enhance_input.target_frame = frame.image;
-                for (const auto& face : faces)
-                    enhance_input.target_faces_landmarks.push_back(face.get_landmark5());
-                enhance_input.face_blend = 80;
-                frame.metadata["enhance_input"] = enhance_input;
-
-                domain::face::expression::RestoreExpressionInput expression_input;
-                expression_input.source_frame = frame.image.clone(); // Capture original frame
-                for (const auto& face : faces)
-                    expression_input.source_landmarks.push_back(face.get_landmark5());
-                frame.metadata["expression_input"] = expression_input;
-            }
-
-        private:
-            std::shared_ptr<domain::face::analyser::FaceAnalyser> m_analyser;
-            std::vector<float> source_embedding;
-        };
-
+    std::shared_ptr<IFrameProcessor> CreateFaceAnalysisProcessor(
+        const ProcessorContext& context,
+        services::pipeline::processors::FaceAnalysisRequirements reqs) {
         if (!context.face_analyser) return nullptr;
-        return std::make_shared<DetectorProcessor>(context.face_analyser, context.source_embedding);
+
+        return std::make_shared<services::pipeline::processors::FaceAnalysisProcessor>(
+            context.face_analyser, context.source_embedding, reqs);
     }
 
     std::shared_ptr<IFrameProcessor> CreateProcessorFromStep(const config::PipelineStep& step,
@@ -636,8 +598,12 @@ private:
         if (!params) return nullptr;
 
         auto swapper = domain::face::swapper::FaceSwapperFactory::create_inswapper();
-        std::string model = context.model_repo->ensure_model(
-            params->model.empty() ? "inswapper_128" : params->model);
+
+        // Prioritize params->model, fallback to Config (not implemented yet), then hardcoded
+        // default
+        std::string model_name = params->model.empty() ? "inswapper_128" : params->model;
+
+        std::string model = context.model_repo->ensure_model(model_name);
         if (model.empty()) return nullptr;
 
         swapper->load_model(model, context.inference_options);
@@ -653,20 +619,26 @@ private:
 
         domain::face::enhancer::FaceEnhancerFactory::Type type =
             domain::face::enhancer::FaceEnhancerFactory::Type::GfpGan;
+
+        // Naive detection logic, ideally should come from Type param or standardized model naming
         if (params->model.find("codeformer") != std::string::npos) {
             type = domain::face::enhancer::FaceEnhancerFactory::Type::CodeFormer;
         }
 
         auto enhancer_ptr = domain::face::enhancer::FaceEnhancerFactory::create(type);
-        std::string model_name =
-            "face_enhancer_" + (params->model.empty() ? "gfpgan_1.4" : params->model);
+
+        std::string model_base_name = params->model.empty() ? "gfpgan_1.4" : params->model;
+        // Check if user already provided full name with prefix
+        std::string model_name = model_base_name;
+        if (model_base_name.find("face_enhancer_") == std::string::npos) {
+            model_name = "face_enhancer_" + model_base_name;
+        }
+
         std::string model = context.model_repo->ensure_model(model_name);
         if (model.empty()) return nullptr;
 
         enhancer_ptr->load_model(model, context.inference_options);
 
-        // Explicitly move into a shared_ptr of the interface type first to ensure correct type
-        // helper usage
         std::shared_ptr<domain::face::enhancer::IFaceEnhancer> shared_enhancer =
             std::move(enhancer_ptr);
 
@@ -709,10 +681,18 @@ private:
 
         using Type = domain::frame::enhancer::FrameEnhancerType;
         Type type = Type::RealEsrGan;
+
+        // Naive detection logic
         if (params->model.find("real_hat") != std::string::npos) { type = Type::RealHatGan; }
 
-        std::string model_name =
-            "frame_enhancer_" + (params->model.empty() ? "real_esrgan_x4plus" : params->model);
+        std::string model_base_name = params->model.empty() ? "real_esrgan_x4plus" : params->model;
+
+        // Check if user already provided full name with prefix
+        std::string model_name = model_base_name;
+        if (model_base_name.find("frame_enhancer_") == std::string::npos) {
+            model_name = "frame_enhancer_" + model_base_name;
+        }
+
         std::string model_path = context.model_repo->ensure_model(model_name);
         if (model_path.empty()) return nullptr;
 
