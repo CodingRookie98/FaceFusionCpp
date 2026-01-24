@@ -22,7 +22,8 @@ protected:
         }
 
         source_path = get_test_data_path("standard_face_test_images/lenna.bmp");
-        target_image_path = get_test_data_path("standard_face_test_images/woman.jpg");
+        target_image_path_woman = get_test_data_path("standard_face_test_images/woman.jpg");
+        target_image_path_babara = get_test_data_path("standard_face_test_images/barbara.bmp");
 
         // Output will be generated in tests_output
         std::filesystem::create_directories("tests_output");
@@ -30,11 +31,13 @@ protected:
 
     std::shared_ptr<domain::ai::model_repository::ModelRepository> repo;
     std::filesystem::path source_path;
-    std::filesystem::path target_image_path;
+    std::filesystem::path target_image_path_woman;
+    std::filesystem::path target_image_path_babara;
 };
 
 TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
-    if (!std::filesystem::exists(source_path) || !std::filesystem::exists(target_image_path)) {
+    if (!std::filesystem::exists(source_path)
+        || !std::filesystem::exists(target_image_path_woman)) {
         GTEST_SKIP() << "Test assets not found.";
     }
 
@@ -47,10 +50,10 @@ TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
     task_config.io.source_paths.push_back(source_path.string());
 
     // The image to be processed (Target Media)
-    task_config.io.target_paths.push_back(target_image_path.string());
+    task_config.io.target_paths.push_back(target_image_path_woman.string());
 
     task_config.io.output.path = "tests_output";
-    task_config.io.output.prefix = "pipeline_runner_image_single_";
+    task_config.io.output.prefix = "pipeline_runner_image_single_output_";
     task_config.io.output.image_format = "jpg";
 
     // Enable Face Swapper
@@ -69,9 +72,9 @@ TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
     }
     ASSERT_TRUE(result.is_ok());
 
-    // Expected output: tests_output/pipeline_runner_image_single_woman.jpg
+    // Expected output: tests_output/pipeline_runner_image_single_output_woman.jpg
     std::filesystem::path output_path =
-        std::filesystem::path("tests_output") / "pipeline_runner_image_single_woman.jpg";
+        std::filesystem::path("tests_output") / "pipeline_runner_image_single_output_woman.jpg";
     EXPECT_TRUE(std::filesystem::exists(output_path));
 
     // Verify it is a valid image
@@ -82,7 +85,8 @@ TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
 }
 
 TEST_F(PipelineRunnerImageTest, ProcessImageBatch) {
-    if (!std::filesystem::exists(source_path) || !std::filesystem::exists(target_image_path)) {
+    if (!std::filesystem::exists(source_path) || !std::filesystem::exists(target_image_path_woman)
+        || !std::filesystem::exists(target_image_path_babara)) {
         GTEST_SKIP() << "Test assets not found.";
     }
 
@@ -96,22 +100,22 @@ TEST_F(PipelineRunnerImageTest, ProcessImageBatch) {
     task_config.io.source_paths.push_back(source_path.string());
 
     // Add same target multiple times to simulate batch
-    task_config.io.target_paths.push_back(target_image_path.string());
+    task_config.io.target_paths.push_back(target_image_path_woman.string());
     // Use source as target too just for variety (Lenna swapping onto Lenna)
-    task_config.io.target_paths.push_back(source_path.string());
+    task_config.io.target_paths.push_back(target_image_path_babara.string());
 
     task_config.io.output.path = "tests_output";
-    task_config.io.output.prefix = "pipeline_runner_image_batch_";
+    task_config.io.output.prefix = "pipeline_runner_image_batch_output_";
     task_config.io.output.image_format = "jpg";
 
     task_config.resource.execution_order = config::ExecutionOrder::Batch;
 
-    // Enable Face Enhancer
+    // Enable Face Swapper
     config::PipelineStep step1;
-    step1.step = "face_enhancer";
+    step1.step = "face_swapper";
     step1.enabled = true;
-    config::FaceEnhancerParams params1;
-    params1.model = "gfpgan_1.4";
+    config::FaceSwapperParams params1;
+    params1.model = "inswapper_128_fp16";
     step1.params = params1;
     task_config.pipeline.push_back(step1);
 
@@ -120,16 +124,17 @@ TEST_F(PipelineRunnerImageTest, ProcessImageBatch) {
     ASSERT_TRUE(result.is_ok());
 
     std::filesystem::path output_1 =
-        std::filesystem::path("tests_output") / "pipeline_runner_image_batch_woman.jpg";
+        std::filesystem::path("tests_output") / "pipeline_runner_image_batch_output_woman.jpg";
     std::filesystem::path output_2 =
-        std::filesystem::path("tests_output") / "pipeline_runner_image_batch_lenna.jpg";
+        std::filesystem::path("tests_output") / "pipeline_runner_image_batch_output_barbara.jpg";
 
     EXPECT_TRUE(std::filesystem::exists(output_1));
     EXPECT_TRUE(std::filesystem::exists(output_2));
 }
 
 TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
-    if (!std::filesystem::exists(source_path) || !std::filesystem::exists(target_image_path)) {
+    if (!std::filesystem::exists(source_path) || !std::filesystem::exists(target_image_path_woman)
+        || !std::filesystem::exists(target_image_path_babara)) {
         GTEST_SKIP() << "Test assets not found.";
     }
 
@@ -141,10 +146,10 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
     task_config.task_info.id = "test_image_multi";
     task_config.io.source_paths.push_back(source_path.string());
 
-    task_config.io.target_paths.push_back(target_image_path.string());
+    task_config.io.target_paths.push_back(target_image_path_woman.string());
 
     task_config.io.output.path = "tests_output";
-    task_config.io.output.prefix = "pipeline_runner_image_multi_";
+    task_config.io.output.prefix = "pipeline_runner_image_multi_output_";
     task_config.io.output.image_format = "jpg";
 
     // Swapper + Enhancer
@@ -169,6 +174,6 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
     ASSERT_TRUE(result.is_ok());
 
     std::filesystem::path output_path =
-        std::filesystem::path("tests_output") / "pipeline_runner_image_multi_woman.jpg";
+        std::filesystem::path("tests_output") / "pipeline_runner_image_multi_output_woman.jpg";
     EXPECT_TRUE(std::filesystem::exists(output_path));
 }
