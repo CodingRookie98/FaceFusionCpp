@@ -60,7 +60,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemory) {
     step1.step = "face_swapper";
     step1.enabled = true;
     config::FaceSwapperParams params1;
-    params1.model = "inswapper_128";
+    params1.model = "inswapper_128_fp16";
     step1.params = params1;
     task_config.pipeline.push_back(step1);
 
@@ -110,7 +110,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialAllProcessors) {
     step1.step = "face_swapper";
     step1.enabled = true;
     config::FaceSwapperParams params1;
-    params1.model = "inswapper_128";
+    params1.model = "inswapper_128_fp16";
     step1.params = params1;
     task_config.pipeline.push_back(step1);
 
@@ -185,7 +185,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMode) {
     step1.step = "face_swapper";
     step1.enabled = true;
     config::FaceSwapperParams params1;
-    params1.model = "inswapper_128";
+    params1.model = "inswapper_128_fp16";
     step1.params = params1;
     task_config.pipeline.push_back(step1);
 
