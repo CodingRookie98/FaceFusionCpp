@@ -10,7 +10,7 @@ import domain.face.detector;
 import domain.face.landmarker;
 import domain.face.recognizer;
 import domain.face.classifier;
-import domain.face;
+import domain.face.store;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
 
@@ -20,6 +20,7 @@ using namespace domain::face::detector;
 using namespace domain::face::landmarker;
 using namespace domain::face::recognizer;
 using namespace domain::face::classifier;
+using namespace domain::face::store;
 using namespace domain::ai::model_repository;
 using ::testing::_;
 using ::testing::NiceMock;
@@ -40,8 +41,8 @@ public:
                 (const std::string&, const foundation::ai::inference_session::Options&),
                 (override));
     MOCK_METHOD(LandmarkerResult, detect, (const cv::Mat&, const cv::Rect2f&), (override));
-    MOCK_METHOD(domain::face::types::Landmarks, expand_68_from_5,
-                (const domain::face::types::Landmarks&), (override));
+    MOCK_METHOD(domain::face::detector::Landmarks, expand_68_from_5,
+                (const domain::face::detector::Landmarks&), (override));
 };
 
 class MockFaceRecognizer : public FaceRecognizer {
@@ -49,8 +50,8 @@ public:
     MOCK_METHOD(void, load_model,
                 (const std::string&, const foundation::ai::inference_session::Options&),
                 (override));
-    MOCK_METHOD((std::pair<types::Embedding, types::Embedding>), recognize,
-                (const cv::Mat&, const types::Landmarks&), (override));
+    MOCK_METHOD((std::pair<std::vector<float>, std::vector<float>>), recognize,
+                (const cv::Mat&, const domain::face::detector::Landmarks&), (override));
 };
 
 class MockFaceClassifier : public IFaceClassifier {
@@ -59,7 +60,7 @@ public:
                 (const std::string&, const foundation::ai::inference_session::Options&),
                 (override));
     MOCK_METHOD(ClassificationResult, classify,
-                (const cv::Mat&, const domain::face::types::Landmarks&), (override));
+                (const cv::Mat&, const domain::face::detector::Landmarks&), (override));
 };
 
 class FaceAnalyserTest : public ::testing::Test {
@@ -272,6 +273,38 @@ TEST_F(FaceAnalyserTest, GetManyFaces_OnDemandAnalysis_MockedTest) {
         analyser.get_many_faces(frame3, FaceAnalysisType::Detection | FaceAnalysisType::GenderAge);
     ASSERT_EQ(faces_cls.size(), 1);
     EXPECT_EQ(faces_cls[0].gender(), Gender::Male);
+}
+
+TEST_F(FaceAnalyserTest, FaceStoreSharingTest) {
+    // Manually create a shared store
+    auto shared_store = std::make_shared<FaceStore>();
+
+    cv::Mat frame = cv::Mat::zeros(100, 100, CV_8UC3);
+    frame.at<cv::Vec3b>(0, 0) = cv::Vec3b(5, 5, 5); // Unique frame
+
+    DetectionResult det_res;
+    det_res.box = cv::Rect2f(10, 10, 50, 50);
+    det_res.score = 0.9f;
+    det_res.landmarks = {cv::Point2f(20, 20), cv::Point2f(40, 20), cv::Point2f(30, 30),
+                         cv::Point2f(25, 40), cv::Point2f(35, 40)};
+
+    // Expect detection ONCE across two analysers if they share the store
+    EXPECT_CALL(*mock_detector, detect(_)).WillOnce(Return(std::vector<DetectionResult>{det_res}));
+
+    // Analyser 1 with shared store
+    FaceAnalyser analyser1(options, mock_detector, mock_landmarker, mock_recognizer,
+                           mock_classifier, shared_store);
+
+    auto faces1 = analyser1.get_many_faces(frame, FaceAnalysisType::Detection);
+    ASSERT_EQ(faces1.size(), 1);
+
+    // Analyser 2 with SAME shared store
+    FaceAnalyser analyser2(options, mock_detector, mock_landmarker, mock_recognizer,
+                           mock_classifier, shared_store);
+
+    // Should NOT trigger detection again (served from store)
+    auto faces2 = analyser2.get_many_faces(frame, FaceAnalysisType::Detection);
+    ASSERT_EQ(faces2.size(), 1);
 }
 
 int main(int argc, char** argv) {
