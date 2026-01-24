@@ -27,7 +27,7 @@ Logger::Logger() {
         console_sink->set_level(spdlog::level::trace);
 
         if (!std::filesystem::exists("logs")) { std::filesystem::create_directory("logs"); }
-        auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/app.log", true);
+        auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/app.log", false);
         file_sink->set_level(spdlog::level::trace);
 
         m_logger = std::make_shared<spdlog::logger>(
