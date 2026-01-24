@@ -2,14 +2,36 @@
 #include <filesystem>
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <vector>
 
 import services.pipeline.runner;
 import config.task;
 import domain.ai.model_repository;
 import foundation.infrastructure.test_support;
+import domain.face.analyser;
+import domain.face;
 
 using namespace services::pipeline;
 using namespace foundation::infrastructure::test;
+using namespace domain::face::analyser;
+
+// Helper to create analyser (duplicated from test_support.cpp if exists, or local here)
+std::shared_ptr<FaceAnalyser> CreateFaceAnalyser(
+    std::shared_ptr<domain::ai::model_repository::ModelRepository> repo) {
+    Options opts;
+    opts.inference_session_options =
+        foundation::ai::inference_session::Options::with_best_providers();
+
+    // Configure default paths from repo
+    opts.model_paths.face_detector_yolo = repo->ensure_model("yoloface");
+    opts.model_paths.face_recognizer_arcface = repo->ensure_model("arcface_w600k_r50");
+    // We only need detection and embedding for similarity check
+
+    opts.face_detector_options.type = domain::face::detector::DetectorType::Yolo;
+    opts.face_recognizer_type = domain::face::recognizer::FaceRecognizerType::ArcFace_w600k_r50;
+
+    return std::make_shared<FaceAnalyser>(opts);
+}
 
 class PipelineRunnerImageTest : public ::testing::Test {
 protected:
@@ -82,6 +104,29 @@ TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
     EXPECT_FALSE(img.empty());
     EXPECT_GT(img.cols, 0);
     EXPECT_GT(img.rows, 0);
+
+    // Resolution check
+    cv::Mat source_img = cv::imread(source_path.string());
+    cv::Mat target_img = cv::imread(target_image_path_woman.string());
+    EXPECT_EQ(img.cols, target_img.cols);
+    EXPECT_EQ(img.rows, target_img.rows);
+
+    // Similarity check
+    auto analyser = CreateFaceAnalyser(repo);
+    auto source_faces = analyser->get_many_faces(
+        source_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
+    auto output_faces =
+        analyser->get_many_faces(img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
+
+    if (!source_faces.empty() && !output_faces.empty()) {
+        float distance = FaceAnalyser::calculate_face_distance(source_faces[0], output_faces[0]);
+        // Expect similarity (distance < 0.6 is a common threshold for ArcFace)
+        // Since we swapped Lenna onto Woman, the result face should look like Lenna.
+        EXPECT_LT(distance, 0.65f) << "Swapped face should resemble source face";
+    } else {
+        std::cout << "Warning: Face detection failed for similarity check in SingleImage test"
+                  << std::endl;
+    }
 }
 
 TEST_F(PipelineRunnerImageTest, ProcessImageBatch) {
@@ -130,6 +175,31 @@ TEST_F(PipelineRunnerImageTest, ProcessImageBatch) {
 
     EXPECT_TRUE(std::filesystem::exists(output_1));
     EXPECT_TRUE(std::filesystem::exists(output_2));
+
+    // Similarity check for output_1 (Lenna -> Woman)
+    auto analyser = CreateFaceAnalyser(repo);
+    cv::Mat source_img = cv::imread(source_path.string());
+    auto source_faces = analyser->get_many_faces(
+        source_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
+
+    if (!source_faces.empty()) {
+        cv::Mat out1_img = cv::imread(output_1.string());
+        auto out1_faces = analyser->get_many_faces(
+            out1_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
+        if (!out1_faces.empty()) {
+            float distance1 = FaceAnalyser::calculate_face_distance(source_faces[0], out1_faces[0]);
+            EXPECT_LT(distance1, 0.65f) << "Batch Output 1 should resemble source face";
+        }
+
+        // Similarity check for output_2 (Lenna -> Barbara)
+        cv::Mat out2_img = cv::imread(output_2.string());
+        auto out2_faces = analyser->get_many_faces(
+            out2_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
+        if (!out2_faces.empty()) {
+            float distance2 = FaceAnalyser::calculate_face_distance(source_faces[0], out2_faces[0]);
+            EXPECT_LT(distance2, 0.65f) << "Batch Output 2 should resemble source face";
+        }
+    }
 }
 
 TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
@@ -152,7 +222,7 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
     task_config.io.output.prefix = "pipeline_runner_image_multi_output_";
     task_config.io.output.image_format = "jpg";
 
-    // Swapper + Enhancer
+    // Swapper -> ExpressionRestorer -> Enhancer -> FrameUpscaler
     config::PipelineStep step1;
     step1.step = "face_swapper";
     step1.enabled = true;
@@ -162,12 +232,28 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
     task_config.pipeline.push_back(step1);
 
     config::PipelineStep step2;
-    step2.step = "face_enhancer";
+    step2.step = "expression_restorer";
     step2.enabled = true;
-    config::FaceEnhancerParams params2;
-    params2.model = "gfpgan_1.4";
+    config::ExpressionRestorerParams params2;
+    params2.model = "live_portrait";
     step2.params = params2;
     task_config.pipeline.push_back(step2);
+
+    config::PipelineStep step3;
+    step3.step = "face_enhancer";
+    step3.enabled = true;
+    config::FaceEnhancerParams params3;
+    params3.model = "gfpgan_1.4";
+    step3.params = params3;
+    task_config.pipeline.push_back(step3);
+
+    config::PipelineStep step4;
+    step4.step = "frame_enhancer";
+    step4.enabled = true;
+    config::FrameEnhancerParams params4;
+    params4.model = "real_esrgan_x2_fp16";
+    step4.params = params4;
+    task_config.pipeline.push_back(step4);
 
     auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
 
@@ -176,4 +262,26 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
     std::filesystem::path output_path =
         std::filesystem::path("tests_output") / "pipeline_runner_image_multi_output_woman.jpg";
     EXPECT_TRUE(std::filesystem::exists(output_path));
+
+    // Resolution check (Upscaled 2x)
+    cv::Mat target_img = cv::imread(target_image_path_woman.string());
+    cv::Mat out_img = cv::imread(output_path.string());
+    EXPECT_EQ(out_img.cols, target_img.cols * 2);
+    EXPECT_EQ(out_img.rows, target_img.rows * 2);
+
+    // Similarity check
+    auto analyser = CreateFaceAnalyser(repo);
+    cv::Mat source_img = cv::imread(source_path.string());
+    auto source_faces = analyser->get_many_faces(
+        source_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
+
+    if (!source_faces.empty()) {
+        // We need to find face in upscaled image
+        auto out_faces = analyser->get_many_faces(
+            out_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
+        if (!out_faces.empty()) {
+            float distance = FaceAnalyser::calculate_face_distance(source_faces[0], out_faces[0]);
+            EXPECT_LT(distance, 0.65f) << "Multi-step output should resemble source face";
+        }
+    }
 }
