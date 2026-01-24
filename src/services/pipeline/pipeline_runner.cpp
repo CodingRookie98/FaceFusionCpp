@@ -730,7 +730,7 @@ private:
         if (model_path.empty()) return nullptr;
 
         auto enhancer_ptr = domain::frame::enhancer::FrameEnhancerFactory::create(
-            type, model_path, context.inference_options);
+            type, model_name, context.inference_options);
 
         if (!enhancer_ptr) return nullptr;
 
