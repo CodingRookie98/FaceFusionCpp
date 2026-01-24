@@ -307,6 +307,42 @@ TEST_F(FaceAnalyserTest, FaceStoreSharingTest) {
     ASSERT_EQ(faces2.size(), 1);
 }
 
+TEST_F(FaceAnalyserTest, CacheUpgradeTest) {
+    cv::Mat frame = cv::Mat::zeros(100, 100, CV_8UC3);
+    frame.at<cv::Vec3b>(0, 0) = cv::Vec3b(10, 10, 10); // Unique frame
+
+    DetectionResult det_res;
+    det_res.box = cv::Rect2f(10, 10, 50, 50);
+    det_res.score = 0.9f;
+    det_res.landmarks = {cv::Point2f(20, 20), cv::Point2f(40, 20), cv::Point2f(30, 30),
+                         cv::Point2f(25, 40), cv::Point2f(35, 40)};
+
+    // 1. First call: Detection Only
+    // Expect detector called ONCE
+    EXPECT_CALL(*mock_detector, detect(_)).WillOnce(Return(std::vector<DetectionResult>{det_res}));
+
+    FaceAnalyser analyser(options, mock_detector, mock_landmarker, mock_recognizer,
+                          mock_classifier);
+
+    auto faces1 = analyser.get_many_faces(frame, FaceAnalysisType::Detection);
+    ASSERT_EQ(faces1.size(), 1);
+    EXPECT_TRUE(faces1[0].embedding().empty());
+
+    // 2. Second call: Detection + Embedding
+    // Detector should NOT be called again (cache hit for detection)
+    // Recognizer SHOULD be called
+    EXPECT_CALL(*mock_recognizer, recognize(_, _))
+        .WillOnce(Return(std::make_pair(std::vector<float>{1.0f}, std::vector<float>{1.0f})));
+
+    auto faces2 =
+        analyser.get_many_faces(frame, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
+
+    ASSERT_EQ(faces2.size(), 1);
+    EXPECT_FALSE(faces2[0].embedding().empty());
+    // Verify properties preserved from detection
+    EXPECT_EQ(faces2[0].detector_score(), 0.9f);
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::InitGoogleMock(&argc, argv);

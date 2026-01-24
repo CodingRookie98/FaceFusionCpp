@@ -120,46 +120,78 @@ void FaceAnalyser::apply_options(const Options& options) {
 std::vector<Face> FaceAnalyser::get_many_faces(const cv::Mat& vision_frame, FaceAnalysisType type) {
     if (vision_frame.empty()) return {};
 
-    // If we only need detection and it's cached, we might return cached faces.
-    // However, cached faces might have MORE info than requested (e.g. embeddings).
-    // If we request LESS, cached is fine.
-    // If we request MORE than cached, we might need to re-run.
-    // For now, let's assume cache is "complete" or we just return what's in store.
-    // TODO: optimization - check if cached face has required attributes?
-    if (m_face_store->is_contains(vision_frame)) { return m_face_store->get_faces(vision_frame); }
-
     std::vector<DetectionResult> detection_results;
     double detected_angle = 0;
-    std::vector<int> angles = {0, 90, 180, 270};
 
-    // Detection is always performed if we are here (unless we want to skip detection?
-    // But get_many_faces implies finding faces).
-    // If type == None, maybe return empty? But usually we want at least detection.
-    // Let's assume Detection is implicit or required.
+    // 1. Check Cache
+    if (m_face_store->is_contains(vision_frame)) {
+        auto cached_faces = m_face_store->get_faces(vision_frame);
 
-    for (int angle : angles) {
-        cv::Mat frame_to_detect;
-        if (angle == 0) {
-            frame_to_detect = vision_frame;
-        } else {
-            domain::face::helper::rotate_image_90n(vision_frame, frame_to_detect, angle);
+        // Check if cached faces satisfy the requested analysis type
+        bool cache_satisfies = true;
+        if (!cached_faces.empty()) {
+            const auto& face = cached_faces[0];
+            // If Embedding needed but missing
+            if (has_flag(type, FaceAnalysisType::Embedding) && face.embedding().empty()) {
+                cache_satisfies = false;
+            }
+            // If Landmark needed but missing (basic check)
+            else if (has_flag(type, FaceAnalysisType::Landmark) && face.kps().empty()) {
+                cache_satisfies = false;
+            }
+            // If GenderAge needed. Checking vs default values is tricky, but usually
+            // if we have embedding, we might assume full analysis or check specific logic if
+            // needed. For now, let's assume Embedding check covers most "upgrade" cases (Det ->
+            // Emb).
         }
 
-        auto results = m_detector->detect(frame_to_detect);
+        if (cache_satisfies) { return cached_faces; }
 
-        int valid_count = 0;
-        for (const auto& r : results) {
-            if (r.score >= m_options.face_detector_options.min_score) valid_count++;
+        // Cache hit but insufficient data -> Reconstruct detection results from cache to skip
+        // detector This assumes cached faces have valid bounding boxes and 5-point landmarks (which
+        // they should)
+        detection_results.reserve(cached_faces.size());
+        for (const auto& f : cached_faces) {
+            DetectionResult res;
+            res.box = f.box();
+            res.score = f.detector_score();
+            res.landmarks = f.get_landmark5();
+            detection_results.push_back(res);
         }
+        // detected_angle remains 0 as cached faces are already aligned to original frame
+    }
 
-        if (valid_count > 0) {
-            detected_angle = angle;
-            detection_results = std::move(results);
-            break;
+    // 2. Run Detector if not recovered from cache
+    if (detection_results.empty()) {
+        std::vector<int> angles = {0, 90, 180, 270};
+        for (int angle : angles) {
+            cv::Mat frame_to_detect;
+            if (angle == 0) {
+                frame_to_detect = vision_frame;
+            } else {
+                domain::face::helper::rotate_image_90n(vision_frame, frame_to_detect, angle);
+            }
+
+            auto results = m_detector->detect(frame_to_detect);
+
+            int valid_count = 0;
+            for (const auto& r : results) {
+                if (r.score >= m_options.face_detector_options.min_score) valid_count++;
+            }
+
+            if (valid_count > 0) {
+                detected_angle = angle;
+                detection_results = std::move(results);
+                break;
+            }
         }
     }
 
-    if (detection_results.empty()) return {};
+    if (detection_results.empty()) {
+        // Cache empty result so next time we don't run detector again for this frame
+        m_face_store->insert_faces(vision_frame, {});
+        return {};
+    }
 
     auto result_faces = create_faces(vision_frame, detection_results, detected_angle, type);
 
