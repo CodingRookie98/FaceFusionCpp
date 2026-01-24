@@ -20,8 +20,8 @@ trigger: always_on
 ## C++ 20 开发规范
 - **标准与模块**：强制 C++20。使用模块化（`.ixx`/`.cppm` 接口，`.cpp` 实现）替代传统头文件。
 - **构建工具** (`python build.py`)：
-  - 核心指令：`--action {configure,build,test,install,package,both}`
-  - **开发阶段必须使用 Debug 模式**：`python build.py --action both --config Debug`
+  - 核心指令：`--action {configure,build,test,install,package}`
+  - **开发阶段必须使用 Debug 模式**：`python build.py` (默认配置为 Debug)
   - Release 模式仅用于最终发布验证
   - 二进制输出路径 (Debug): `build/msvc-x64-debug/bin` (测试文件位于 `tests/unit/...`)
   - **运行要求**：禁止在项目根目录直接运行程序。**必须**先 `cd` 切换至可执行文件输出目录后再运行，以确保相对路径资源加载正确。
