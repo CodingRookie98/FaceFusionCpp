@@ -49,8 +49,8 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemory) {
     task_config.io.target_paths.push_back(video_path.string());
 
     task_config.io.output.path = "tests_output";
-    task_config.io.output.prefix = "strict_";
-    task_config.io.output.suffix = ""; // strict_slideshow_scaled.mp4
+    task_config.io.output.prefix = "pipeline_video_strict_memory_";
+    task_config.io.output.suffix = ""; // pipeline_video_strict_memory_slideshow_scaled.mp4
 
     // Enable Strict Memory
     task_config.resource.memory_strategy = config::MemoryStrategy::Strict;
@@ -68,7 +68,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemory) {
     // Or just 1 step is enough to verify strict path executes.
     // Let's do 1 step to be safe on time.
 
-    std::string expected_output = "tests_output/strict_slideshow_scaled.mp4";
+    std::string expected_output = "tests_output/pipeline_video_strict_memory_slideshow_scaled.mp4";
     if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
 
     auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
@@ -100,7 +100,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialAllProcessors) {
     task_config.io.target_paths.push_back(video_path.string());
 
     task_config.io.output.path = "tests_output";
-    task_config.io.output.prefix = "seq_all_";
+    task_config.io.output.prefix = "pipeline_video_sequential_all_";
     task_config.io.output.suffix = "";
 
     task_config.resource.execution_order = config::ExecutionOrder::Sequential;
@@ -140,7 +140,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialAllProcessors) {
     step4.params = params4;
     task_config.pipeline.push_back(step4);
 
-    std::string expected_output = "tests_output/seq_all_slideshow_scaled.mp4";
+    std::string expected_output = "tests_output/pipeline_video_sequential_all_slideshow_scaled.mp4";
     if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
 
     auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
@@ -175,7 +175,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMode) {
     task_config.io.target_paths.push_back(video_path_2.string());
 
     task_config.io.output.path = "tests_output";
-    task_config.io.output.prefix = "batch_";
+    task_config.io.output.prefix = "pipeline_video_batch_";
     task_config.io.output.suffix = "";
 
     task_config.resource.execution_order = config::ExecutionOrder::Batch;
@@ -189,8 +189,8 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMode) {
     step1.params = params1;
     task_config.pipeline.push_back(step1);
 
-    std::string expected_output_1 = "tests_output/batch_slideshow_scaled.mp4";
-    std::string expected_output_2 = "tests_output/batch_slideshow_copy.mp4";
+    std::string expected_output_1 = "tests_output/pipeline_video_batch_slideshow_scaled.mp4";
+    std::string expected_output_2 = "tests_output/pipeline_video_batch_slideshow_copy.mp4";
 
     if (std::filesystem::exists(expected_output_1)) std::filesystem::remove(expected_output_1);
     if (std::filesystem::exists(expected_output_2)) std::filesystem::remove(expected_output_2);
