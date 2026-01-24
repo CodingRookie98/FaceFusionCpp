@@ -115,7 +115,7 @@ public:
                  std::shared_ptr<landmarker::IFaceLandmarker> landmarker,
                  std::shared_ptr<recognizer::FaceRecognizer> recognizer,
                  std::shared_ptr<classifier::IFaceClassifier> classifier,
-                 std::unique_ptr<store::FaceStore> store = nullptr);
+                 std::shared_ptr<store::FaceStore> store = nullptr);
 
     ~FaceAnalyser();
 
@@ -212,7 +212,7 @@ private:
     std::shared_ptr<landmarker::IFaceLandmarker> m_landmarker;
     std::shared_ptr<recognizer::FaceRecognizer> m_recognizer;
     std::shared_ptr<classifier::IFaceClassifier> m_classifier;
-    std::unique_ptr<store::FaceStore> m_face_store;
+    std::shared_ptr<store::FaceStore> m_face_store;
 };
 
 } // namespace domain::face::analyser

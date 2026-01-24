@@ -30,18 +30,18 @@ using namespace domain::face::store;
 
 FaceAnalyser::FaceAnalyser(const Options& options) {
     apply_options(options);
-    m_face_store = std::make_unique<FaceStore>();
+    m_face_store = FaceStore::get_instance();
 }
 
 FaceAnalyser::FaceAnalyser(const Options& options, std::shared_ptr<IFaceDetector> detector,
                            std::shared_ptr<IFaceLandmarker> landmarker,
                            std::shared_ptr<FaceRecognizer> recognizer,
                            std::shared_ptr<IFaceClassifier> classifier,
-                           std::unique_ptr<FaceStore> store) :
+                           std::shared_ptr<FaceStore> store) :
     m_options(options), m_detector(std::move(detector)), m_landmarker(std::move(landmarker)),
     m_recognizer(std::move(recognizer)), m_classifier(std::move(classifier)) {
     if (store) m_face_store = std::move(store);
-    else m_face_store = std::make_unique<FaceStore>();
+    else m_face_store = FaceStore::get_instance();
 }
 
 FaceAnalyser::~FaceAnalyser() = default;

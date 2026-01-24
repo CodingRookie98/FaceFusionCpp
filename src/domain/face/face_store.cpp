@@ -33,6 +33,11 @@ static uint64_t fnv1a_hash(const uchar* data, size_t len) {
     return hash;
 }
 
+std::shared_ptr<FaceStore> FaceStore::get_instance() {
+    static std::shared_ptr<FaceStore> instance = std::make_shared<FaceStore>();
+    return instance;
+}
+
 FaceStore::FaceStore(FaceStoreOptions options) : m_options(options) {}
 
 FaceStore::~FaceStore() {

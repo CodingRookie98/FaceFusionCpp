@@ -33,6 +33,8 @@ struct FaceStoreOptions {
 
 class FaceStore {
 public:
+    static std::shared_ptr<FaceStore> get_instance();
+
     explicit FaceStore(FaceStoreOptions options = {});
     ~FaceStore();
 
