@@ -101,10 +101,9 @@ private:
             opts.inference_session_options = m_inference_options;
 
             // Configure default models for pipeline usage
-            opts.model_paths.face_detector_yolo =
-                m_model_repo->ensure_model("face_detector_yoloface");
+            opts.model_paths.face_detector_yolo = m_model_repo->ensure_model("yoloface");
             opts.model_paths.face_recognizer_arcface =
-                m_model_repo->ensure_model("face_recognizer_arcface_w600k_r50");
+                m_model_repo->ensure_model("arcface_w600k_r50");
             // No landmarker/classifier by default unless needed, but FaceAnalyser might check
             // paths. But ensure_model ensures they exist.
 
@@ -670,9 +669,6 @@ private:
         std::string model_base_name = params->model.empty() ? "gfpgan_1.4" : params->model;
         // Check if user already provided full name with prefix
         std::string model_name = model_base_name;
-        if (model_base_name.find("face_enhancer_") == std::string::npos) {
-            model_name = "face_enhancer_" + model_base_name;
-        }
 
         std::string model = context.model_repo->ensure_model(model_name);
         if (model.empty()) return nullptr;
@@ -729,9 +725,6 @@ private:
 
         // Check if user already provided full name with prefix
         std::string model_name = model_base_name;
-        if (model_base_name.find("frame_enhancer_") == std::string::npos) {
-            model_name = "frame_enhancer_" + model_base_name;
-        }
 
         std::string model_path = context.model_repo->ensure_model(model_name);
         if (model_path.empty()) return nullptr;

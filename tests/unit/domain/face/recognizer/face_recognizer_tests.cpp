@@ -49,7 +49,7 @@ TEST_F(FaceRecognizerTest, ArcFaceInference) {
     auto recognizer = domain::face::recognizer::create_face_recognizer(
         domain::face::recognizer::FaceRecognizerType::ArcFace_w600k_r50);
 
-    auto model_path = model_repo->ensure_model("face_recognizer_arcface_w600k_r50");
+    auto model_path = model_repo->ensure_model("arcface_w600k_r50");
     ASSERT_FALSE(model_path.empty()) << "Model not found";
 
     recognizer->load_model(model_path,

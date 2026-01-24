@@ -60,7 +60,7 @@ TEST(FaceClassifierIntegrationTest, ClassifyDetectedFace_Tiffany) {
         // Use best available execution providers (TensorRT > CUDA > CPU)
         auto detector_options = Options::with_best_providers();
 
-        std::string detector_model_key = "face_detector_yoloface";
+        std::string detector_model_key = "yoloface";
         std::string detector_model_path = model_repository->ensure_model(detector_model_key);
         if (detector_model_path.empty()) {
             GTEST_SKIP() << "Model " << detector_model_key << " not available.";

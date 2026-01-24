@@ -169,8 +169,8 @@ TEST_F(ModelRepositoryTest, LoadRealAssetsModelInfo) {
             EXPECT_NO_THROW(instance->set_model_info_file_path(real_path));
             EXPECT_EQ(instance->get_model_json_file_path(), real_path);
 
-            if (instance->has_model("face_detector_yoloface")) {
-                auto info = instance->get_model_info("face_detector_yoloface");
+            if (instance->has_model("yoloface")) {
+                auto info = instance->get_model_info("yoloface");
                 EXPECT_FALSE(info.path.empty());
             }
         }

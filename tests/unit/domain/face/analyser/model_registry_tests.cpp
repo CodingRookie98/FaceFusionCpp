@@ -32,7 +32,7 @@ TEST_F(FaceModelRegistryTest, GetDetectorReuse) {
     auto& registry = FaceModelRegistry::get_instance();
     registry.clear();
 
-    std::string path = model_repo->ensure_model("face_detector_scrfd");
+    std::string path = model_repo->ensure_model("scrfd");
     ASSERT_FALSE(path.empty());
 
     Options opts;

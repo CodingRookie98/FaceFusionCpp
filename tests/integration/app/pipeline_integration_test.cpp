@@ -50,7 +50,7 @@ protected:
         // Detect
         auto detector = domain::face::detector::FaceDetectorFactory::create(
             domain::face::detector::DetectorType::Yolo);
-        std::string det_model = repo->ensure_model("face_detector_yoloface");
+        std::string det_model = repo->ensure_model("yoloface");
         detector->load_model(det_model,
                              foundation::ai::inference_session::Options::with_best_providers());
         auto results = detector->detect(source_img);
@@ -59,7 +59,7 @@ protected:
         // Recognize
         auto recognizer = domain::face::recognizer::create_face_recognizer(
             domain::face::recognizer::FaceRecognizerType::ArcFace_w600k_r50);
-        std::string rec_model = repo->ensure_model("face_recognizer_arcface_w600k_r50");
+        std::string rec_model = repo->ensure_model("arcface_w600k_r50");
         recognizer->load_model(rec_model,
                                foundation::ai::inference_session::Options::with_best_providers());
 
@@ -122,7 +122,7 @@ TEST_F(PipelineIntegrationTest, VideoProcessingThroughput) {
 
     auto detector = domain::face::detector::FaceDetectorFactory::create(
         domain::face::detector::DetectorType::Yolo);
-    std::string det_model = repo->ensure_model("face_detector_yoloface");
+    std::string det_model = repo->ensure_model("yoloface");
     detector->load_model(det_model,
                          foundation::ai::inference_session::Options::with_best_providers());
 

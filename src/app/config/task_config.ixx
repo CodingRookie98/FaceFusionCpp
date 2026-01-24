@@ -140,7 +140,7 @@ struct FaceDetectorConfig {
  * @brief 人脸关键点检测器配置
  */
 struct FaceLandmarkerConfig {
-    std::string model = "2dfan4"; ///< [2dfan4, peppa_wutz, face_landmarker_68_5]
+    std::string model = "2dfan4"; ///< [2dfan4, peppa_wutz, 68_by_5]
 };
 
 /**

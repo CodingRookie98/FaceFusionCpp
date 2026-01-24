@@ -3,168 +3,196 @@
     {
       "name": "codeformer",
       "type": "face_enhancer",
+      "description": "Powerful face restoration algorithm for old photos and AI-generated faces",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/codeformer.onnx",
       "file_name": "codeformer.onnx"
     },
     {
       "name": "gfpgan_1.2",
       "type": "face_enhancer",
+      "description": "GFPGAN v1.2 - Practical face restoration algorithm",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/gfpgan_1.2.onnx",
       "file_name": "gfpgan_1.2.onnx"
     },
     {
       "name": "gfpgan_1.3",
       "type": "face_enhancer",
+      "description": "GFPGAN v1.3 - Improved face restoration quality",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/gfpgan_1.3.onnx",
       "file_name": "gfpgan_1.3.onnx"
     },
     {
       "name": "gfpgan_1.4",
       "type": "face_enhancer",
+      "description": "GFPGAN v1.4 - Latest version with balanced quality and fidelity",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/gfpgan_1.4.onnx",
       "file_name": "gfpgan_1.4.onnx"
     },
     {
       "name": "inswapper_128",
       "type": "face_swapper",
+      "description": "Standard face swapping model (128x128 resolution)",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/inswapper_128.onnx",
       "file_name": "inswapper_128.onnx"
     },
     {
       "name": "inswapper_128_fp16",
       "type": "face_swapper",
+      "description": "FP16 optimized face swapping model for faster inference",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/inswapper_128_fp16.onnx",
       "file_name": "inswapper_128_fp16.onnx"
     },
     {
       "name": "xseg_1",
       "type": "face_occluder",
+      "description": "XSeg occlusion model v1 for handling obstructions",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/v0.32.0/xseg_1.onnx",
       "file_name": "xseg_1.onnx"
     },
     {
       "name": "xseg_2",
       "type": "face_occluder",
+      "description": "XSeg occlusion model v2 with improved accuracy",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/v0.32.0/xseg_2.onnx",
       "file_name": "xseg_2.onnx"
     },
     {
       "name": "bisenet_resnet_18",
       "type": "face_parser",
+      "description": "BiSeNet (ResNet18) face parsing model for segmentation",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/v0.32.0/bisenet_resnet_18.onnx",
       "file_name": "bisenet_resnet_18.onnx"
     },
     {
       "name": "bisenet_resnet_34",
       "type": "face_parser",
+      "description": "BiSeNet (ResNet34) face parsing model for higher quality segmentation",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/v0.32.0/bisenet_resnet_34.onnx",
       "file_name": "bisenet_resnet_34.onnx"
     },
     {
-      "name": "face_detector_retinaface",
+      "name": "retinaface",
       "type": "face_detector",
+      "description": "RetinaFace detector (ResNet50) - High accuracy face detection",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/retinaface_10g.onnx",
       "file_name": "retinaface_10g.onnx"
     },
     {
-      "name": "face_detector_scrfd",
+      "name": "scrfd",
       "type": "face_detector",
+      "description": "SCRFD detector (2.5G) - Efficient and lightweight face detection",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/scrfd_2.5g.onnx",
       "file_name": "scrfd_2.5g.onnx"
     },
     {
-      "name": "face_detector_yoloface",
+      "name": "yoloface",
       "type": "face_detector",
+      "description": "YOLOv8n-Face - Fast and balanced face detection",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/yoloface_8n.onnx",
       "file_name": "yoloface_8n.onnx"
     },
     {
-      "name": "face_recognizer_arcface_w600k_r50",
+      "name": "arcface_w600k_r50",
       "type": "face_recognizer",
+      "description": "ArcFace (ResNet50) - State-of-the-art face recognition model",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/arcface_w600k_r50.onnx",
       "file_name": "arcface_w600k_r50.onnx"
     },
     {
-      "name": "face_landmarker_68",
+      "name": "2dfan4",
       "type": "face_landmarker",
+      "description": "2DFAN4 - 68-point face landmark detection",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/2dfan4.onnx",
       "file_name": "2dfan4.onnx"
     },
     {
-      "name": "face_landmarker_peppawutz",
+      "name": "peppawutz",
       "type": "face_landmarker",
+      "description": "Peppa Wutz - Highly accurate landmark detector",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/peppa_wutz.onnx",
       "file_name": "peppa_wutz.onnx"
     },
     {
-      "name": "face_landmarker_68_5",
+      "name": "68_by_5",
       "type": "face_landmarker",
+      "description": "Estimates 68 landmarks from 5 detected points",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/face_landmarker_68_5.onnx",
       "file_name": "face_landmarker_68_5.onnx"
     },
     {
       "name": "fairface",
       "type": "face_classifier",
+      "description": "FairFace - Age, gender, and race classification",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/fairface.onnx",
       "file_name": "fairface.onnx"
     },
     {
       "name": "live_portrait_feature_extractor",
       "type": "expression_restorer",
+      "description": "LivePortrait feature extractor for expression transfer",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/live_portrait_feature_extractor.onnx",
       "file_name": "live_portrait_feature_extractor.onnx"
     },
     {
       "name": "live_portrait_motion_extractor",
       "type": "expression_restorer",
+      "description": "LivePortrait motion extractor for expression transfer",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/live_portrait_motion_extractor.onnx",
       "file_name": "live_portrait_motion_extractor.onnx"
     },
     {
       "name": "live_portrait_generator",
       "type": "expression_restorer",
+      "description": "LivePortrait generator for expression transfer",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/live_portrait_generator.onnx",
       "file_name": "live_portrait_generator.onnx"
     },
     {
       "name": "real_esrgan_x2",
       "type": "frame_enhancer",
+      "description": "Real-ESRGAN x2 - 2x upscaling for general images",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/real_esrgan_x2.onnx",
       "file_name": "real_esrgan_x2.onnx"
     },
     {
       "name": "real_esrgan_x2_fp16",
       "type": "frame_enhancer",
+      "description": "Real-ESRGAN x2 (FP16) - Faster 2x upscaling",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/real_esrgan_x2_fp16.onnx",
       "file_name": "real_esrgan_x2_fp16.onnx"
     },
     {
       "name": "real_esrgan_x4",
       "type": "frame_enhancer",
+      "description": "Real-ESRGAN x4 - 4x upscaling for general images",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/real_esrgan_x4.onnx",
       "file_name": "real_esrgan_x4.onnx"
     },
     {
       "name": "real_esrgan_x4_fp16",
       "type": "frame_enhancer",
+      "description": "Real-ESRGAN x4 (FP16) - Faster 4x upscaling",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/real_esrgan_x4_fp16.onnx",
       "file_name": "real_esrgan_x4_fp16.onnx"
     },
     {
       "name": "real_esrgan_x8",
       "type": "frame_enhancer",
+      "description": "Real-ESRGAN x8 - 8x upscaling for general images",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/real_esrgan_x8.onnx",
       "file_name": "real_esrgan_x8.onnx"
     },
     {
       "name": "real_esrgan_x8_fp16",
       "type": "frame_enhancer",
+      "description": "Real-ESRGAN x8 (FP16) - Faster 8x upscaling",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/real_esrgan_x8_fp16.onnx",
       "file_name": "real_esrgan_x8_fp16.onnx"
     },
     {
       "name": "real_hatgan_x4",
       "type": "frame_enhancer",
+      "description": "Real-HATGAN x4 - High fidelity 4x upscaling using transformers",
       "url": "https://github.com/CodingRookie98/FaceFusionCpp-assets/releases/download/models-0.3.0/real_hatgan_x4.onnx",
       "file_name": "real_hatgan_x4.onnx"
     }

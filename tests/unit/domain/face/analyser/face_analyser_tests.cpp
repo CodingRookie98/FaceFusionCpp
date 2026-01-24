@@ -66,6 +66,7 @@ public:
 class FaceAnalyserTest : public ::testing::Test {
 protected:
     void SetUp() override {
+        FaceStore::get_instance()->clear_faces();
         model_repo = ModelRepository::get_instance();
         model_repo->set_model_info_file_path("./assets/models_info.json");
 
@@ -136,11 +137,10 @@ TEST_F(FaceAnalyserTest, RealImageE2ETest) {
     if (test_image.empty()) GTEST_SKIP() << "Test image not found";
 
     Options real_options;
-    real_options.model_paths.face_detector_scrfd = model_repo->ensure_model("face_detector_scrfd");
-    real_options.model_paths.face_landmarker_68by5 =
-        model_repo->ensure_model("face_landmarker_68_5");
+    real_options.model_paths.face_detector_scrfd = model_repo->ensure_model("scrfd");
+    real_options.model_paths.face_landmarker_68by5 = model_repo->ensure_model("68_by_5");
     real_options.model_paths.face_recognizer_arcface =
-        model_repo->ensure_model("face_recognizer_arcface_w600k_r50");
+        model_repo->ensure_model("arcface_w600k_r50");
     real_options.model_paths.face_classifier_fairface = model_repo->ensure_model("fairface");
 
     real_options.face_detector_options.type = DetectorType::SCRFD;
@@ -163,7 +163,7 @@ TEST_F(FaceAnalyserTest, ModelReuseTest) {
     if (test_image.empty()) GTEST_SKIP() << "Test image not found";
 
     Options opts;
-    opts.model_paths.face_detector_scrfd = model_repo->ensure_model("face_detector_scrfd");
+    opts.model_paths.face_detector_scrfd = model_repo->ensure_model("scrfd");
     opts.face_detector_options.type = DetectorType::SCRFD;
 
     FaceAnalyser analyser1(opts);

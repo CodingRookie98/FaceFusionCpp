@@ -38,7 +38,7 @@ TEST_F(FaceDetectorTest, DetectFaces_Tiffany) {
         auto detector = FaceDetectorFactory::create(DetectorType::Yolo);
         ASSERT_NE(detector, nullptr);
 
-        std::string model_key = "face_detector_yoloface";
+        std::string model_key = "yoloface";
         std::string model_path = model_repository->ensure_model(model_key);
         if (model_path.empty()) {
             GTEST_SKIP() << "Model " << model_key << " not available. Skipping test.";

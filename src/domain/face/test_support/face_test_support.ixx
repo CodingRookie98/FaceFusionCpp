@@ -94,7 +94,7 @@ inline types::Landmarks detect_face_landmarks(
 
     auto detector = detector::FaceDetectorFactory::create(detector::DetectorType::Yolo);
 
-    std::string model_path = repo->ensure_model("face_detector_yoloface");
+    std::string model_path = repo->ensure_model("yoloface");
     if (model_path.empty()) return {};
 
     detector->load_model(model_path,
@@ -118,7 +118,7 @@ inline cv::Rect2f detect_face_bbox(
 
     auto detector = detector::FaceDetectorFactory::create(detector::DetectorType::SCRFD);
 
-    std::string model_path = repo->ensure_model("face_detector_scrfd");
+    std::string model_path = repo->ensure_model("scrfd");
     if (model_path.empty()) return {};
 
     detector->load_model(model_path,
@@ -145,7 +145,7 @@ inline types::Embedding get_face_embedding(
     auto recognizer_ptr =
         recognizer::create_face_recognizer(recognizer::FaceRecognizerType::ArcFace_w600k_r50);
 
-    std::string model_path = repo->ensure_model("face_recognizer_arcface_w600k_r50");
+    std::string model_path = repo->ensure_model("arcface_w600k_r50");
     if (model_path.empty()) return {};
 
     recognizer_ptr->load_model(model_path,

@@ -50,7 +50,7 @@ TEST_F(FaceLandmarkerTest, _2DFAN_Inference) {
     if (bbox.width <= 0) { GTEST_SKIP() << "No face detected for testing"; }
 
     auto landmarker = create_landmarker(LandmarkerType::_2DFAN);
-    auto model_path = model_repo->ensure_model("face_landmarker_68");
+    auto model_path = model_repo->ensure_model("2dfan4");
     landmarker->load_model(model_path,
                            foundation::ai::inference_session::Options::with_best_providers());
 
@@ -70,7 +70,7 @@ TEST_F(FaceLandmarkerTest, Peppawutz_Inference) {
     if (bbox.width <= 0) { GTEST_SKIP() << "No face detected for testing"; }
 
     auto landmarker = create_landmarker(LandmarkerType::Peppawutz);
-    auto model_path = model_repo->ensure_model("face_landmarker_peppawutz");
+    auto model_path = model_repo->ensure_model("peppawutz");
     landmarker->load_model(model_path,
                            foundation::ai::inference_session::Options::with_best_providers());
 
@@ -82,7 +82,7 @@ TEST_F(FaceLandmarkerTest, Peppawutz_Inference) {
 
 TEST_F(FaceLandmarkerTest, _68By5_Inference) {
     auto landmarker = create_landmarker(LandmarkerType::_68By5);
-    auto model_path = model_repo->ensure_model("face_landmarker_68_5");
+    auto model_path = model_repo->ensure_model("68_by_5");
     landmarker->load_model(model_path,
                            foundation::ai::inference_session::Options::with_best_providers());
 
