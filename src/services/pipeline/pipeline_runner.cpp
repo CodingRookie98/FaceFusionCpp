@@ -287,6 +287,30 @@ private:
 
                 if (result_opt->is_end_of_stream) break;
 
+                // Lazy Init: Open writer on first frame to adapt to actual resolution
+                if (!writer.is_opened()) {
+                    VideoParams actual_params = video_params; // Copy initial params
+                    actual_params.width = result_opt->image.cols;
+                    actual_params.height = result_opt->image.rows;
+
+                    // Re-create writer with correct params (since params are const in ctor)
+                    // Note: VideoWriter is movable but we need to re-construct it to update params
+                    // effectively or we rely on the fact that we can't change params of existing
+                    // object easily if they are used in open(). Actually VideoWriter takes params
+                    // in ctor. So we should reconstruct it using placement new or assignment if
+                    // possible. VideoWriter supports move assignment.
+
+                    writer = VideoWriter(video_output_path, actual_params);
+
+                    if (!writer.open()) {
+                        writer_error = true;
+                        writer_error_msg = "Failed to open video writer with resolution: "
+                                         + std::to_string(actual_params.width) + "x"
+                                         + std::to_string(actual_params.height);
+                        break;
+                    }
+                }
+
                 if (!writer.write_frame(result_opt->image)) {
                     writer_error = true;
                     writer_error_msg = "Failed to write frame";
@@ -389,11 +413,10 @@ private:
         video_params.height = reader.get_height();
         video_params.frameRate = reader.get_fps();
 
+        // DEFERRED OPEN: We don't open the writer here because the output resolution
+        // might change (e.g., FrameEnhancer upscaling).
+        // Writer will be opened in the writer_thread upon receiving the first frame.
         VideoWriter writer(video_output_path, video_params);
-        if (!writer.open()) {
-            return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError("Failed to open video writer: " + video_output_path));
-        }
 
         // 4. Prepare Context
         ProcessorContext context;
@@ -437,6 +460,23 @@ private:
                 if (!result_opt) break;
 
                 if (result_opt->is_end_of_stream) break;
+
+                // Lazy Init: Open writer on first frame to adapt to actual resolution
+                if (!writer.is_opened()) {
+                    VideoParams actual_params = video_params;
+                    actual_params.width = result_opt->image.cols;
+                    actual_params.height = result_opt->image.rows;
+
+                    writer = VideoWriter(video_output_path, actual_params);
+
+                    if (!writer.open()) {
+                        writer_error = true;
+                        writer_error_msg = "Failed to open video writer with resolution: "
+                                         + std::to_string(actual_params.width) + "x"
+                                         + std::to_string(actual_params.height);
+                        break;
+                    }
+                }
 
                 if (!writer.write_frame(result_opt->image)) {
                     writer_error = true;
