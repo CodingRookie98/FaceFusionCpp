@@ -136,13 +136,16 @@ std::vector<Face> FaceAnalyser::get_many_faces(const cv::Mat& vision_frame, Face
                 cache_satisfies = false;
             }
             // If Landmark needed but missing (basic check)
-            else if (has_flag(type, FaceAnalysisType::Landmark) && face.kps().empty()) {
+            if (has_flag(type, FaceAnalysisType::Landmark) && face.kps().empty()) {
                 cache_satisfies = false;
             }
-            // If GenderAge needed. Checking vs default values is tricky, but usually
-            // if we have embedding, we might assume full analysis or check specific logic if
-            // needed. For now, let's assume Embedding check covers most "upgrade" cases (Det ->
-            // Emb).
+            // If GenderAge needed. Check if age range is set (assuming 0-100 is default/unset)
+            if (has_flag(type, FaceAnalysisType::GenderAge)) {
+                // Heuristic: If age is 0-100 (default), assume unset.
+                if (face.age_range().min == 0 && face.age_range().max == 100) {
+                    cache_satisfies = false;
+                }
+            }
         }
 
         if (cache_satisfies) { return cached_faces; }
@@ -194,6 +197,44 @@ std::vector<Face> FaceAnalyser::get_many_faces(const cv::Mat& vision_frame, Face
     }
 
     auto result_faces = create_faces(vision_frame, detection_results, detected_angle, type);
+
+    // Merge with cached faces to preserve attributes that were not requested this time but exist in
+    // cache (e.g. Cache has Embedding, current request is Gender -> Result should have both)
+    if (!detection_results.empty() && m_face_store->is_contains(vision_frame)) {
+        auto cached_faces = m_face_store->get_faces(vision_frame);
+        if (cached_faces.size() == result_faces.size()) {
+            for (size_t i = 0; i < result_faces.size(); ++i) {
+                auto& new_face = result_faces[i];
+                const auto& old_face = cached_faces[i];
+
+                // Preserve Embedding
+                if (new_face.embedding().empty() && !old_face.embedding().empty()) {
+                    new_face.set_embedding(old_face.embedding());
+                    new_face.set_normed_embedding(old_face.normed_embedding());
+                }
+
+                // Preserve Landmarks (68 points)
+                // If new has only 5 (from detection) but old had 68, keep 68
+                if (new_face.kps().size() == 5 && old_face.kps().size() > 5) {
+                    new_face.set_kps(old_face.kps());
+                    new_face.set_landmarker_score(old_face.landmarker_score());
+                }
+
+                // Preserve Gender/Age/Race
+                if (new_face.gender() == domain::common::types::Gender::Male && // Default
+                    old_face.gender() != domain::common::types::Gender::Male
+                    && // Assuming we can detect 'Set' state or use another way.
+                    // Actually Face struct defaults Gender::Male.
+                    // Better check: If we didn't run classifier, we shouldn't overwrite.
+                    // We know if we ran classifier by 'type' flag.
+                    !has_flag(type, FaceAnalysisType::GenderAge)) {
+                    new_face.set_gender(old_face.gender());
+                    new_face.set_age_range(old_face.age_range());
+                    new_face.set_race(old_face.race());
+                }
+            }
+        }
+    }
 
     m_face_store->insert_faces(vision_frame, result_faces);
 
