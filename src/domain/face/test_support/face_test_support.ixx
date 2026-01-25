@@ -15,6 +15,7 @@ module;
  */
 export module domain.face.test_support;
 
+import domain.face.analyser;
 export import domain.face;
 import domain.face.detector;
 import domain.face.recognizer;
@@ -153,6 +154,30 @@ inline types::Embedding get_face_embedding(
 
     auto result = recognizer_ptr->recognize(image, landmarks);
     return result.second; // Normalized embedding
+}
+
+/**
+ * @brief Create a configured FaceAnalyser for testing (Shared by Image/Video Integration
+ * Tests)
+ * @param repo Model repository instance
+ * @return Shared pointer to FaceAnalyser
+ */
+inline std::shared_ptr<domain::face::analyser::FaceAnalyser> create_face_analyser(
+    std::shared_ptr<domain::ai::model_repository::ModelRepository> repo) {
+    using namespace domain::face::analyser;
+    Options opts;
+    opts.inference_session_options =
+        foundation::ai::inference_session::Options::with_best_providers();
+
+    // Configure default paths from repo
+    opts.model_paths.face_detector_yolo = repo->ensure_model("yoloface");
+    opts.model_paths.face_recognizer_arcface = repo->ensure_model("arcface_w600k_r50");
+    // We only need detection and embedding for similarity check
+
+    opts.face_detector_options.type = domain::face::detector::DetectorType::Yolo;
+    opts.face_recognizer_type = domain::face::recognizer::FaceRecognizerType::ArcFace_w600k_r50;
+
+    return std::make_shared<FaceAnalyser>(opts);
 }
 
 } // namespace domain::face::test_support

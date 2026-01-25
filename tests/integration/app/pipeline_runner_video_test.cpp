@@ -136,7 +136,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialAllProcessors) {
     step4.step = "frame_enhancer";
     step4.enabled = true;
     config::FrameEnhancerParams params4;
-    params4.model = "real_esrgan_x4plus";
+    params4.model = "real_esrgan_x2_fp16";
     step4.params = params4;
     task_config.pipeline.push_back(step4);
 
@@ -151,6 +151,9 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialAllProcessors) {
     }
     ASSERT_TRUE(result.is_ok());
     EXPECT_TRUE(std::filesystem::exists(expected_output));
+
+    // Verify Content (Expected 2x upscale)
+    VerifyVideoContent(expected_output, source_path, 2.0f);
 }
 
 TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMode) {

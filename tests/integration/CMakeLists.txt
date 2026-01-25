@@ -12,6 +12,8 @@ add_facefusion_test(
         domain_face_masker
         domain_face_swapper
         domain_face_expression
+        domain_face_test_support
+        domain_face_analyser
         domain_ai
         foundation_ai
         foundation_infrastructure
@@ -19,5 +21,7 @@ add_facefusion_test(
         ${OpenCV_LIBS}
 )
 
+
 # Ensure ONNX Runtime DLLs are copied to the test executable directory
 copy_onnxruntime_libs(app_test_pipeline)
+

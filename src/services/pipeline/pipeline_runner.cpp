@@ -242,12 +242,12 @@ private:
         video_params.frameRate = reader.get_fps();
 
         VideoWriter writer(video_output_path, video_params);
-        if (!writer.open()) {
-            return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError("Failed to open video writer: " + video_output_path));
-        }
+        // DEFERRED OPEN: We don't open the writer here because the output resolution
+        // might change (e.g., FrameEnhancer upscaling).
+        // Writer will be opened in the writer_thread upon receiving the first frame.
 
         // 4. Prepare Context
+
         ProcessorContext context;
         context.model_repo = m_model_repo;
         context.inference_options = m_inference_options;

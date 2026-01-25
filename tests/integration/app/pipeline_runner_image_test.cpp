@@ -10,28 +10,11 @@ import domain.ai.model_repository;
 import foundation.infrastructure.test_support;
 import domain.face.analyser;
 import domain.face;
+import domain.face.test_support;
 
 using namespace services::pipeline;
 using namespace foundation::infrastructure::test;
 using namespace domain::face::analyser;
-
-// Helper to create analyser (duplicated from test_support.cpp if exists, or local here)
-std::shared_ptr<FaceAnalyser> CreateFaceAnalyser(
-    std::shared_ptr<domain::ai::model_repository::ModelRepository> repo) {
-    Options opts;
-    opts.inference_session_options =
-        foundation::ai::inference_session::Options::with_best_providers();
-
-    // Configure default paths from repo
-    opts.model_paths.face_detector_yolo = repo->ensure_model("yoloface");
-    opts.model_paths.face_recognizer_arcface = repo->ensure_model("arcface_w600k_r50");
-    // We only need detection and embedding for similarity check
-
-    opts.face_detector_options.type = domain::face::detector::DetectorType::Yolo;
-    opts.face_recognizer_type = domain::face::recognizer::FaceRecognizerType::ArcFace_w600k_r50;
-
-    return std::make_shared<FaceAnalyser>(opts);
-}
 
 class PipelineRunnerImageTest : public ::testing::Test {
 protected:
@@ -112,9 +95,10 @@ TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
     EXPECT_EQ(img.rows, target_img.rows);
 
     // Similarity check
-    auto analyser = CreateFaceAnalyser(repo);
+    auto analyser = domain::face::test_support::create_face_analyser(repo);
     auto source_faces = analyser->get_many_faces(
         source_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
+
     auto output_faces =
         analyser->get_many_faces(img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
 
@@ -177,7 +161,7 @@ TEST_F(PipelineRunnerImageTest, ProcessImageBatch) {
     EXPECT_TRUE(std::filesystem::exists(output_2));
 
     // Similarity check for output_1 (Lenna -> Woman)
-    auto analyser = CreateFaceAnalyser(repo);
+    auto analyser = domain::face::test_support::create_face_analyser(repo);
     cv::Mat source_img = cv::imread(source_path.string());
     auto source_faces = analyser->get_many_faces(
         source_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
@@ -270,7 +254,7 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
     EXPECT_EQ(out_img.rows, target_img.rows * 2);
 
     // Similarity check
-    auto analyser = CreateFaceAnalyser(repo);
+    auto analyser = domain::face::test_support::create_face_analyser(repo);
     cv::Mat source_img = cv::imread(source_path.string());
     auto source_faces = analyser->get_many_faces(
         source_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);

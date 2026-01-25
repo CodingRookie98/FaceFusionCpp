@@ -12,6 +12,8 @@ target_link_libraries(domain_face_test_support
         domain_face
         domain_face_detector
         domain_face_recognizer
+        domain_face_analyser
         domain_ai
         foundation_ai
 )
+
