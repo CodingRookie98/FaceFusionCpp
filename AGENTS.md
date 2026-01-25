@@ -46,9 +46,9 @@ trigger: always_on
   - **流程**：基于主分支新建 -> 实现与测试 -> 验收通过 -> 合并主分支并删除。
   - **命名**：`feature/plan-{name}` 或 `fix/task-{name}`。
 - **文档管理** (`/docs/dev_docs/`)：
-  - 计划：`plan/{name}/C++_plan_{title}.md` (使用 `docs/dev_docs/C++_plan_template.md`)
-  - 任务：`plan/{name}/task/C++_task_{title}.md` (使用 `docs/dev_docs/C++_task_template.md`)
-  - 评估：`evaluation/C++_evaluation_{title}.md` (使用 `docs/dev_docs/C++_evaluation_template.md`)
+  - 计划：`plan/{name}/C++_plan_{title}.md` (使用 `@docs/dev_docs/C++_plan_template.md`)
+  - 任务：`plan/{name}/task/C++_task_{title}.md` (使用 `@docs/dev_docs/C++_task_template.md`)
+  - 评估：`evaluation/C++_evaluation_{title}.md` (使用 `@docs/dev_docs/C++_evaluation_template.md`)
   - 记录：`@docs/dev_docs/C++_troubleshooting.md` (记录疑难杂症, 使用 `@docs/dev_docs/C++_troubleshooting.md`)
 - **提交要求**：
   - 仅提交源码与必要资源，禁止提交文档、日志或构建文件(除非用户明确要求)。
