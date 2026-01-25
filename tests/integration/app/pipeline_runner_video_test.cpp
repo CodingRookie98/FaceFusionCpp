@@ -277,7 +277,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMode) {
 
     task_config.resource.execution_order = config::ExecutionOrder::Batch;
 
-    // Simple pipeline
+    // 1. Swapper
     config::PipelineStep step1;
     step1.step = "face_swapper";
     step1.enabled = true;
@@ -285,6 +285,32 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMode) {
     params1.model = "inswapper_128_fp16";
     step1.params = params1;
     task_config.pipeline.push_back(step1);
+
+    // 2. Face Enhancer
+    config::PipelineStep step2;
+    step2.step = "face_enhancer";
+    step2.enabled = true;
+    config::FaceEnhancerParams params2;
+    params2.model = "gfpgan_1.4";
+    step2.params = params2;
+    task_config.pipeline.push_back(step2);
+
+    // 3. Expression Restorer
+    config::PipelineStep step3;
+    step3.step = "expression_restorer";
+    step3.enabled = true;
+    config::ExpressionRestorerParams params3;
+    step3.params = params3;
+    task_config.pipeline.push_back(step3);
+
+    // 4. Frame Enhancer
+    config::PipelineStep step4;
+    step4.step = "frame_enhancer";
+    step4.enabled = true;
+    config::FrameEnhancerParams params4;
+    params4.model = "real_esrgan_x2_fp16";
+    step4.params = params4;
+    task_config.pipeline.push_back(step4);
 
     std::string expected_output_1 = "tests_output/pipeline_video_batch_slideshow_scaled.mp4";
     std::string expected_output_2 = "tests_output/pipeline_video_batch_slideshow_copy.mp4";
@@ -300,4 +326,8 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMode) {
     ASSERT_TRUE(result.is_ok());
     EXPECT_TRUE(std::filesystem::exists(expected_output_1));
     EXPECT_TRUE(std::filesystem::exists(expected_output_2));
+
+    // Verify Content (Expected 2x upscale)
+    VerifyVideoContent(expected_output_1, source_path, 2.0f);
+    // Optionally verify second output too, but one is usually enough for pipeline logic check
 }
