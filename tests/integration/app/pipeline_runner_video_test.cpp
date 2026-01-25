@@ -1,14 +1,21 @@
 #include <gtest/gtest.h>
 #include <filesystem>
 #include <iostream>
+#include <vector>
+#include <algorithm>
+#include <opencv2/opencv.hpp>
 
 import services.pipeline.runner;
 import config.task;
 import domain.ai.model_repository;
 import foundation.infrastructure.test_support;
+import domain.face;
+import domain.face.analyser;
+import domain.face.test_support;
 
 using namespace services::pipeline;
 using namespace foundation::infrastructure::test;
+using namespace domain::face::analyser;
 
 class PipelineRunnerVideoTest : public ::testing::Test {
 protected:
@@ -32,6 +39,93 @@ protected:
     std::filesystem::path source_path;
     std::filesystem::path video_path;
     std::filesystem::path output_path;
+
+    void VerifyVideoContent(const std::filesystem::path& video_file,
+                            const std::filesystem::path& source_face_img, float expected_scale) {
+        if (!std::filesystem::exists(video_file)) {
+            FAIL() << "Output video file does not exist: " << video_file;
+        }
+
+        cv::VideoCapture cap(video_file.string());
+        ASSERT_TRUE(cap.isOpened()) << "Failed to open output video";
+
+        double fps = cap.get(cv::CAP_PROP_FPS);
+        int total_frames = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
+        int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
+        int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
+
+        std::cout << "Verifying video: " << video_file << " [Frames: " << total_frames
+                  << ", Size: " << width << "x" << height << ", FPS: " << fps << "]" << std::endl;
+
+        // 1. Resolution Check
+        cv::VideoCapture cap_orig(video_path.string());
+        ASSERT_TRUE(cap_orig.isOpened());
+        int orig_width = static_cast<int>(cap_orig.get(cv::CAP_PROP_FRAME_WIDTH));
+        int orig_height = static_cast<int>(cap_orig.get(cv::CAP_PROP_FRAME_HEIGHT));
+
+        EXPECT_NEAR(width, orig_width * expected_scale, 2.0); // Allow slight rounding diff
+        EXPECT_NEAR(height, orig_height * expected_scale, 2.0);
+
+        // 2. Similarity Check (Uniform Sampling)
+        auto analyser = domain::face::test_support::create_face_analyser(repo);
+        cv::Mat src_img = cv::imread(source_face_img.string());
+        if (src_img.empty()) {
+            std::cout << "Warning: Failed to load source image: " << source_face_img << std::endl;
+            return;
+        }
+
+        auto source_faces = analyser->get_many_faces(
+            src_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
+
+        if (source_faces.empty()) {
+            std::cout
+                << "Warning: Could not detect face in source image. Skipping similarity check."
+                << std::endl;
+            return;
+        }
+
+        int valid_frames = 0;
+        int passed_frames = 0;
+        int frames_to_check = 10;
+        int step = std::max(1, total_frames / frames_to_check);
+
+        for (int i = 0; i < total_frames; i += step) {
+            cap.set(cv::CAP_PROP_POS_FRAMES, i);
+            cv::Mat frame;
+            cap >> frame;
+            if (frame.empty()) break;
+
+            auto frame_faces = analyser->get_many_faces(
+                frame, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
+
+            if (!frame_faces.empty()) {
+                valid_frames++;
+                // Check closest face to source
+                float min_dist = 100.0f;
+                for (const auto& face : frame_faces) {
+                    float dist = FaceAnalyser::calculate_face_distance(source_faces[0], face);
+                    if (dist < min_dist) min_dist = dist;
+                }
+
+                if (min_dist < 0.65f) {
+                    passed_frames++;
+                } else {
+                    std::cout << "Frame " << i << " failed similarity check. Dist: " << min_dist
+                              << std::endl;
+                }
+            }
+        }
+
+        std::cout << "Similarity Check: " << passed_frames << "/" << valid_frames
+                  << " frames passed." << std::endl;
+
+        if (valid_frames > 0) {
+            double pass_rate = static_cast<double>(passed_frames) / valid_frames;
+            EXPECT_GE(pass_rate, 0.9) << "Less than 90% of valid frames passed similarity check";
+        } else {
+            std::cout << "Warning: No faces detected in any sampled frame." << std::endl;
+        }
+    }
 };
 
 TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemory) {
