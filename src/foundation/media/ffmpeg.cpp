@@ -15,8 +15,6 @@ module;
 
 #include <opencv2/opencv.hpp>
 
-module foundation.media.ffmpeg;
-
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -24,6 +22,8 @@ extern "C" {
 #include <libavutil/opt.h>
 #include <libavutil/imgutils.h>
 }
+
+module foundation.media.ffmpeg;
 
 import foundation.infrastructure.logger;
 import foundation.infrastructure.file_system;

@@ -14,15 +14,16 @@ module;
 
 #include <opencv2/opencv.hpp>
 
-module foundation.media.ffmpeg;
-
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/opt.h>
+#include <libavutil/pixdesc.h>
 }
+
+module foundation.media.ffmpeg;
 
 import foundation.infrastructure.logger;
 
@@ -138,17 +139,53 @@ struct VideoWriter::Impl {
         codec_ctx->height = static_cast<int>(params.height);
         codec_ctx->framerate = AVRational{static_cast<int>(params.frameRate * 1000), 1000};
         codec_ctx->time_base = av_inv_q(codec_ctx->framerate);
-        codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
-        codec_ctx->gop_size = 12;
-        codec_ctx->max_b_frames = 2;
 
-        // Set quality (CRF for x264)
-        if (codec_name == "libx264" || codec_name == "libx265") {
-            int crf = static_cast<int>(51 - params.quality * 0.51);
-            av_opt_set(codec_ctx->priv_data, "crf", std::to_string(crf).c_str(), 0);
-            if (!params.preset.empty()) {
-                av_opt_set(codec_ctx->priv_data, "preset", params.preset.c_str(), 0);
+        // Pixel Format
+        AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
+        if (!params.pixelFormat.empty()) { pix_fmt = av_get_pix_fmt(params.pixelFormat.c_str()); }
+        if (pix_fmt == AV_PIX_FMT_NONE) {
+            Logger::get_instance()->warn(std::format(
+                "VideoWriter: Invalid pixel format '{}', fallback to yuv420p", params.pixelFormat));
+            pix_fmt = AV_PIX_FMT_YUV420P;
+        }
+        codec_ctx->pix_fmt = pix_fmt;
+
+        codec_ctx->gop_size = params.gopSize;
+        codec_ctx->max_b_frames = params.maxBFrames;
+
+        if (params.threadCount > 0) { codec_ctx->thread_count = params.threadCount; }
+
+        // Bitrate Control vs CRF
+        bool use_bitrate = params.bitRate > 0;
+        if (use_bitrate) {
+            codec_ctx->bit_rate = params.bitRate;
+            if (params.maxBitRate > 0) { codec_ctx->rc_max_rate = params.maxBitRate; }
+            if (params.bufSize > 0) { codec_ctx->rc_buffer_size = params.bufSize; }
+        } else {
+            // Set quality (CRF for x264/x265) if bitrate is not set
+            if (codec_name == "libx264" || codec_name == "libx265") {
+                int crf = static_cast<int>(51 - params.quality * 0.51);
+                av_opt_set(codec_ctx->priv_data, "crf", std::to_string(crf).c_str(), 0);
             }
+        }
+
+        // Common options
+        if (!params.preset.empty()) {
+            av_opt_set(codec_ctx->priv_data, "preset", params.preset.c_str(), 0);
+        }
+        if (!params.tune.empty()) {
+            av_opt_set(codec_ctx->priv_data, "tune", params.tune.c_str(), 0);
+        }
+        if (!params.profile.empty()) {
+            av_opt_set(codec_ctx->priv_data, "profile", params.profile.c_str(), 0);
+        }
+        if (!params.level.empty()) {
+            av_opt_set(codec_ctx->priv_data, "level", params.level.c_str(), 0);
+        }
+
+        // Extra Options
+        for (const auto& [key, value] : params.extraOptions) {
+            av_opt_set(codec_ctx->priv_data, key.c_str(), value.c_str(), 0);
         }
 
         if (format_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
@@ -198,7 +235,7 @@ struct VideoWriter::Impl {
         av_frame_get_buffer(frame, 32);
 
         sws_ctx = sws_getContext(codec_ctx->width, codec_ctx->height, AV_PIX_FMT_BGR24,
-                                 codec_ctx->width, codec_ctx->height, AV_PIX_FMT_YUV420P,
+                                 codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
                                  SWS_BILINEAR, nullptr, nullptr, nullptr);
 
         if (!sws_ctx) {

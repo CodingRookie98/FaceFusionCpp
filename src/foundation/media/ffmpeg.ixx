@@ -30,6 +30,25 @@ public:
     unsigned int quality = 80;
     std::string preset = "medium";
     std::string videoCodec = "libx264";
+
+    // Rate Control
+    int64_t bitRate = 0;    // 0 = auto/CRF
+    int64_t maxBitRate = 0; // VBV max rate
+    int bufSize = 0;        // VBV buffer size
+
+    // Format & Structure
+    std::string pixelFormat = "yuv420p";
+    int gopSize = 12;
+    int maxBFrames = 2;
+
+    // Advanced Config
+    std::string tune;
+    std::string profile;
+    std::string level;
+    std::string hwAccel;
+    int threadCount = 0; // 0 = auto
+
+    std::unordered_map<std::string, std::string> extraOptions;
 };
 
 export bool is_video(const std::string& videoPath);
