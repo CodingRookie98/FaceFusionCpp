@@ -84,6 +84,9 @@ public:
     // 跳转到指定帧索引 (0-based)
     bool seek(int64_t frame_index);
 
+    // 跳转到指定时间点 (毫秒)
+    bool seek_by_time(double timestamp_ms);
+
     // 视频元数据
     [[nodiscard]] int get_frame_count() const;
     [[nodiscard]] double get_fps() const;

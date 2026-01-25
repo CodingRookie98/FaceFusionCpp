@@ -53,9 +53,14 @@ struct VideoReader::Impl {
     int height = 0;
     int64_t duration_ms = 0;
 
+    cv::Mat cached_mat;
+    bool has_cached_mat = false;
+
     ~Impl() { cleanup(); }
 
     void cleanup() {
+        has_cached_mat = false;
+        cached_mat.release();
         if (sws_ctx) {
             sws_freeContext(sws_ctx);
             sws_ctx = nullptr;
@@ -203,6 +208,11 @@ struct VideoReader::Impl {
     cv::Mat read_frame() {
         if (!is_open) { return {}; }
 
+        if (has_cached_mat) {
+            has_cached_mat = false;
+            return cached_mat;
+        }
+
         while (av_read_frame(format_ctx, packet) >= 0) {
             if (packet->stream_index == video_stream_index) {
                 int ret = avcodec_send_packet(codec_ctx, packet);
@@ -240,15 +250,57 @@ struct VideoReader::Impl {
         if (!is_open || frame_index < 0) { return false; }
 
         AVStream* video_stream = format_ctx->streams[video_stream_index];
-        int64_t timestamp = static_cast<int64_t>(frame_index / fps / time_base);
+        int64_t target_ts = static_cast<int64_t>(frame_index / fps / time_base);
 
-        if (av_seek_frame(format_ctx, video_stream_index, timestamp, AVSEEK_FLAG_BACKWARD) < 0) {
+        // Seek to the nearest keyframe before target
+        if (av_seek_frame(format_ctx, video_stream_index, target_ts, AVSEEK_FLAG_BACKWARD) < 0) {
             Logger::get_instance()->error("VideoReader: Seek failed");
             return false;
         }
 
         avcodec_flush_buffers(codec_ctx);
-        return true;
+        has_cached_mat = false;
+
+        // Decode frames until we reach the exact target frame
+        while (true) {
+            int ret = av_read_frame(format_ctx, packet);
+            if (ret < 0) return false; // EOF or error before reaching target
+
+            if (packet->stream_index == video_stream_index) {
+                if (avcodec_send_packet(codec_ctx, packet) == 0) {
+                    while (avcodec_receive_frame(codec_ctx, frame) == 0) {
+                        int64_t current_ts = frame->best_effort_timestamp;
+                        int64_t current_frame =
+                            static_cast<int64_t>(current_ts * time_base * fps + 0.5);
+
+                        if (current_frame >= frame_index) {
+                            // Found target (or closest after). Cache it.
+                            current_pts = current_ts;
+
+                            sws_scale(sws_ctx, frame->data, frame->linesize, 0, height,
+                                      frame_bgr->data, frame_bgr->linesize);
+
+                            cached_mat.create(height, width, CV_8UC3);
+                            for (int y = 0; y < height; y++) {
+                                memcpy(cached_mat.ptr(y),
+                                       frame_bgr->data[0] + y * frame_bgr->linesize[0], width * 3);
+                            }
+                            has_cached_mat = true;
+
+                            av_packet_unref(packet);
+                            return true;
+                        }
+                    }
+                }
+            }
+            av_packet_unref(packet);
+        }
+    }
+
+    bool seek_by_time(double timestamp_ms) {
+        if (fps <= 0.000001) return false;
+        int64_t frame_idx = static_cast<int64_t>(timestamp_ms / 1000.0 * fps);
+        return seek(frame_idx);
     }
 
     double get_current_timestamp_ms() const {
@@ -281,6 +333,10 @@ cv::Mat VideoReader::read_frame() {
 bool VideoReader::seek(int64_t frame_index) {
     return impl_->seek(frame_index);
 }
+bool VideoReader::seek_by_time(double timestamp_ms) {
+    return impl_->seek_by_time(timestamp_ms);
+}
+
 int VideoReader::get_frame_count() const {
     return impl_->frame_count;
 }
