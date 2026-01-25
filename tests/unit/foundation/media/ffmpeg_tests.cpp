@@ -5,6 +5,8 @@
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core.hpp>
 
+#include <opencv2/imgproc.hpp>
+
 import foundation.media.ffmpeg;
 import foundation.infrastructure.file_system;
 import foundation.infrastructure.test_support;
@@ -138,6 +140,60 @@ TEST_F(FfmpegTest, VideoReader_PreciseSeek) {
         EXPECT_FALSE(frame_3.empty());
         EXPECT_NEAR(reader.get_current_timestamp_ms(), target_ms, 100.0); // 100ms tolerance
     }
+}
+
+TEST_F(FfmpegTest, VideoWriter_BasicWrite) {
+    auto temp_dir = fs::temp_directory_path() / "facefusion_ffmpeg_test_basic_write";
+    if (fs::exists(temp_dir)) fs::remove_all(temp_dir);
+    fs::create_directories(temp_dir);
+
+    fs::path output_path = temp_dir / "output_basic.mp4";
+
+    VideoParams params("");
+    params.width = 640;
+    params.height = 480;
+    params.frameRate = 30;
+    params.quality = 18;
+    params.videoCodec = "mpeg4";
+
+    VideoWriter writer(output_path.string(), params);
+    ASSERT_TRUE(writer.open());
+    EXPECT_TRUE(writer.is_opened());
+
+    // Generate some frames
+    cv::Mat frame(480, 640, CV_8UC3);
+    for (int i = 0; i < 30; ++i) {
+        frame.setTo(cv::Scalar(i * 5, 0, 0)); // Blue gradient
+        cv::putText(frame, std::to_string(i), cv::Point(50, 50), cv::FONT_HERSHEY_SIMPLEX, 1.0,
+                    cv::Scalar(255, 255, 255), 2);
+        EXPECT_TRUE(writer.write_frame(frame));
+    }
+
+    EXPECT_EQ(writer.get_written_frame_count(), 30);
+    writer.close();
+    EXPECT_FALSE(writer.is_opened());
+
+    EXPECT_TRUE(fs::exists(output_path));
+    EXPECT_GT(fs::file_size(output_path), 1024);
+
+    // Verify output with VideoReader
+    {
+        VideoReader reader(output_path.string());
+        ASSERT_TRUE(reader.open());
+        EXPECT_EQ(reader.get_width(), 640);
+        EXPECT_EQ(reader.get_height(), 480);
+        // Allow small fp error
+        EXPECT_NEAR(reader.get_fps(), 30.0, 2.0);
+
+        // Check we can read frames back
+        int read_count = 0;
+        while (!reader.read_frame().empty()) { read_count++; }
+        // MPEG4 encoding might drop the last frame or merge it, allow 1 frame loss
+        EXPECT_GE(read_count, 29);
+        EXPECT_LE(read_count, 30);
+    }
+
+    fs::remove_all(temp_dir);
 }
 
 TEST_F(FfmpegTest, VideoWriter_AdvancedParams) {
