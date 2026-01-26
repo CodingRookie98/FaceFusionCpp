@@ -23,10 +23,18 @@ public:
 
     /**
      * @brief Process a frame
-     * @details Can modify frame image (Swapper/Enhancer) or metadata (Detector)
+     * @details Can modify frame image (Swapper/Enhancer) or
+     * metadata (Detector)
      * @param frame Frame data to process
      */
     virtual void process(FrameData& frame) = 0;
+
+    /**
+     * @brief Ensure the processor's resources (e.g., models) are loaded
+     * @details
+     * Default implementation does nothing. Override for lazy loading.
+     */
+    virtual void ensure_loaded() {}
 };
 
 /**

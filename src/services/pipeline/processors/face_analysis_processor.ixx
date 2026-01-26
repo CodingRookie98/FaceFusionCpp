@@ -77,9 +77,21 @@ public:
         // 3. Prepare Expression Data
         if (m_reqs.need_expression_data) {
             domain::face::expression::RestoreExpressionInput expression_input;
-            // CLONE is necessary here because ExpressionRestorer might need the *original* pixels
-            // if downstream modifies frame.image.
-            expression_input.source_frame = frame.image.clone();
+
+            // Optimization: Only clone if other processors will modify the frame.
+            // If Swapper or Enhancer are active, they might modify the frame in-place or return a
+            // new one, losing the original appearance which Expression Restorer needs as reference.
+            bool others_modify = m_reqs.need_swap_data || m_reqs.need_enhance_data;
+
+            if (others_modify) {
+                expression_input.source_frame = frame.image.clone();
+            } else {
+                // If only expression restoration is active, we can safely share the reference.
+                // Note: ExpressionAdapter uses target_frame = frame.image, and restore_expression
+                // returns a new image.
+                expression_input.source_frame = frame.image;
+            }
+
             for (const auto& face : faces) {
                 expression_input.source_landmarks.push_back(face.get_landmark5());
             }

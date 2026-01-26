@@ -641,17 +641,16 @@ private:
 
         auto swapper = domain::face::swapper::FaceSwapperFactory::create_inswapper();
 
-        // Prioritize params->model, fallback to Config (not implemented yet), then hardcoded
-        // default
         std::string model_name = params->model.empty() ? "inswapper_128" : params->model;
-
         std::string model = context.model_repo->ensure_model(model_name);
         if (model.empty()) return nullptr;
 
-        swapper->load_model(model, context.inference_options);
+        // DEFERRED LOAD: Pass uninitialized swapper + model path + options to Adapter
+        // swapper->load_model() will be called inside SwapperAdapter::ensure_loaded()
 
         return std::shared_ptr<IFrameProcessor>(new domain::pipeline::SwapperAdapter(
-            std::move(swapper), context.occluder, context.region_masker));
+            std::move(swapper), model, context.inference_options, context.occluder,
+            context.region_masker));
     }
 
     std::shared_ptr<IFrameProcessor> CreateFaceEnhancerProcessor(const config::PipelineStep& step,
@@ -662,7 +661,6 @@ private:
         domain::face::enhancer::FaceEnhancerFactory::Type type =
             domain::face::enhancer::FaceEnhancerFactory::Type::GfpGan;
 
-        // Naive detection logic, ideally should come from Type param or standardized model naming
         if (params->model.find("codeformer") != std::string::npos) {
             type = domain::face::enhancer::FaceEnhancerFactory::Type::CodeFormer;
         }
@@ -670,19 +668,18 @@ private:
         auto enhancer_ptr = domain::face::enhancer::FaceEnhancerFactory::create(type);
 
         std::string model_base_name = params->model.empty() ? "gfpgan_1.4" : params->model;
-        // Check if user already provided full name with prefix
         std::string model_name = model_base_name;
 
         std::string model = context.model_repo->ensure_model(model_name);
         if (model.empty()) return nullptr;
 
-        enhancer_ptr->load_model(model, context.inference_options);
-
+        // DEFERRED LOAD
         std::shared_ptr<domain::face::enhancer::IFaceEnhancer> shared_enhancer =
             std::move(enhancer_ptr);
 
         return std::shared_ptr<IFrameProcessor>(new domain::pipeline::FaceEnhancerAdapter(
-            shared_enhancer, context.occluder, context.region_masker));
+            shared_enhancer, model, context.inference_options, context.occluder,
+            context.region_masker));
     }
 
     std::shared_ptr<IFrameProcessor> CreateExpressionProcessor(const config::PipelineStep& step,
@@ -692,7 +689,6 @@ private:
 
         auto restorer_ptr = domain::face::expression::create_live_portrait_restorer();
 
-        // LivePortrait requires 3 discrete models
         std::string feature_path =
             context.model_repo->ensure_model("live_portrait_feature_extractor");
         std::string motion_path =
@@ -703,14 +699,12 @@ private:
             return nullptr;
         }
 
-        restorer_ptr->load_model(feature_path, motion_path, generator_path,
-                                 context.inference_options);
-
+        // DEFERRED LOAD
         std::shared_ptr<domain::face::expression::IFaceExpressionRestorer> shared_restorer =
             std::move(restorer_ptr);
 
-        return std::shared_ptr<IFrameProcessor>(
-            new domain::pipeline::ExpressionAdapter(shared_restorer));
+        return std::shared_ptr<IFrameProcessor>(new domain::pipeline::ExpressionAdapter(
+            shared_restorer, feature_path, motion_path, generator_path, context.inference_options));
     }
 
     std::shared_ptr<IFrameProcessor> CreateFrameEnhancerProcessor(const config::PipelineStep& step,
@@ -721,24 +715,22 @@ private:
         using Type = domain::frame::enhancer::FrameEnhancerType;
         Type type = Type::RealEsrGan;
 
-        // Naive detection logic
         if (params->model.find("real_hat") != std::string::npos) { type = Type::RealHatGan; }
 
         std::string model_base_name = params->model.empty() ? "real_esrgan_x4plus" : params->model;
-
-        // Check if user already provided full name with prefix
         std::string model_name = model_base_name;
 
         std::string model_path = context.model_repo->ensure_model(model_name);
         if (model_path.empty()) return nullptr;
 
-        auto enhancer_ptr = domain::frame::enhancer::FrameEnhancerFactory::create(
-            type, model_name, context.inference_options);
-
-        if (!enhancer_ptr) return nullptr;
+        // DEFERRED LOAD: Use lambda factory
+        // Capture needed variables by value
+        auto factory = [type, model_name, options = context.inference_options]() {
+            return domain::frame::enhancer::FrameEnhancerFactory::create(type, model_name, options);
+        };
 
         return std::shared_ptr<IFrameProcessor>(
-            new domain::pipeline::FrameEnhancerAdapter(std::move(enhancer_ptr)));
+            new domain::pipeline::FrameEnhancerAdapter(std::move(factory)));
     }
 
     std::string GenerateOutputPath(const std::string& input_path,

@@ -131,7 +131,8 @@ TEST_F(PipelineIntegrationTest, VideoProcessingThroughput) {
 
     // Add Detector then Swapper
     pipeline->add_processor(std::make_shared<TestDetectorProcessor>(shared_detector));
-    pipeline->add_processor(std::make_shared<SwapperAdapter>(swapper));
+    pipeline->add_processor(std::make_shared<SwapperAdapter>(
+        swapper, swap_model, foundation::ai::inference_session::Options::with_best_providers()));
 
     pipeline->start();
 

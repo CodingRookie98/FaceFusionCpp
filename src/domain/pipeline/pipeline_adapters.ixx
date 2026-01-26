@@ -6,6 +6,7 @@ module;
 #include <opencv2/imgproc.hpp>
 #include <vector>
 #include <iostream>
+#include <mutex>
 
 /**
  * @file pipeline_adapters.ixx
@@ -25,6 +26,7 @@ import domain.frame.enhancer;
 
 import domain.face.helper;
 import domain.face.masker;
+import foundation.ai.inference_session;
 
 namespace domain::pipeline {
 
@@ -35,13 +37,25 @@ namespace domain::pipeline {
 export class SwapperAdapter : public IFrameProcessor {
 public:
     explicit SwapperAdapter(
-        std::shared_ptr<face::swapper::IFaceSwapper> swapper,
+        std::shared_ptr<face::swapper::IFaceSwapper> swapper, std::string model_path,
+        foundation::ai::inference_session::Options options,
         std::shared_ptr<face::masker::IFaceOccluder> occluder = nullptr,
         std::shared_ptr<face::masker::IFaceRegionMasker> region_masker = nullptr) :
-        m_swapper(std::move(swapper)), m_occluder(std::move(occluder)),
+        m_swapper(std::move(swapper)), m_model_path(std::move(model_path)),
+        m_options(std::move(options)), m_occluder(std::move(occluder)),
         m_region_masker(std::move(region_masker)) {}
 
+    void ensure_loaded() override {
+        if (m_loaded) return;
+        std::lock_guard<std::mutex> lock(m_load_mutex);
+        if (m_loaded) return;
+
+        if (m_swapper && !m_model_path.empty()) { m_swapper->load_model(m_model_path, m_options); }
+        m_loaded = true;
+    }
+
     void process(FrameData& frame) override {
+        ensure_loaded();
         if (!m_swapper) return;
 
         if (frame.metadata.contains("swap_input")) {
@@ -77,6 +91,11 @@ public:
 
 private:
     std::shared_ptr<face::swapper::IFaceSwapper> m_swapper;
+    std::string m_model_path;
+    foundation::ai::inference_session::Options m_options;
+    bool m_loaded = false;
+    std::mutex m_load_mutex;
+
     std::shared_ptr<face::masker::IFaceOccluder> m_occluder;
     std::shared_ptr<face::masker::IFaceRegionMasker> m_region_masker;
 };
@@ -88,13 +107,27 @@ private:
 export class FaceEnhancerAdapter : public IFrameProcessor {
 public:
     explicit FaceEnhancerAdapter(
-        std::shared_ptr<face::enhancer::IFaceEnhancer> enhancer,
+        std::shared_ptr<face::enhancer::IFaceEnhancer> enhancer, std::string model_path,
+        foundation::ai::inference_session::Options options,
         std::shared_ptr<face::masker::IFaceOccluder> occluder = nullptr,
         std::shared_ptr<face::masker::IFaceRegionMasker> region_masker = nullptr) :
-        m_enhancer(std::move(enhancer)), m_occluder(std::move(occluder)),
+        m_enhancer(std::move(enhancer)), m_model_path(std::move(model_path)),
+        m_options(std::move(options)), m_occluder(std::move(occluder)),
         m_region_masker(std::move(region_masker)) {}
 
+    void ensure_loaded() override {
+        if (m_loaded) return;
+        std::lock_guard<std::mutex> lock(m_load_mutex);
+        if (m_loaded) return;
+
+        if (m_enhancer && !m_model_path.empty()) {
+            m_enhancer->load_model(m_model_path, m_options);
+        }
+        m_loaded = true;
+    }
+
     void process(FrameData& frame) override {
+        ensure_loaded();
         if (!m_enhancer) return;
 
         if (frame.metadata.contains("enhance_input")) {
@@ -142,6 +175,11 @@ public:
 
 private:
     std::shared_ptr<face::enhancer::IFaceEnhancer> m_enhancer;
+    std::string m_model_path;
+    foundation::ai::inference_session::Options m_options;
+    bool m_loaded = false;
+    std::mutex m_load_mutex;
+
     std::shared_ptr<face::masker::IFaceOccluder> m_occluder;
     std::shared_ptr<face::masker::IFaceRegionMasker> m_region_masker;
 };
@@ -152,11 +190,27 @@ private:
  */
 export class ExpressionAdapter : public IFrameProcessor {
 public:
-    explicit ExpressionAdapter(
-        std::shared_ptr<face::expression::IFaceExpressionRestorer> restorer) :
-        m_restorer(std::move(restorer)) {}
+    explicit ExpressionAdapter(std::shared_ptr<face::expression::IFaceExpressionRestorer> restorer,
+                               std::string feature_path, std::string motion_path,
+                               std::string generator_path,
+                               foundation::ai::inference_session::Options options) :
+        m_restorer(std::move(restorer)), m_feature_path(std::move(feature_path)),
+        m_motion_path(std::move(motion_path)), m_generator_path(std::move(generator_path)),
+        m_options(std::move(options)) {}
+
+    void ensure_loaded() override {
+        if (m_loaded) return;
+        std::lock_guard<std::mutex> lock(m_load_mutex);
+        if (m_loaded) return;
+
+        if (m_restorer && !m_feature_path.empty()) {
+            m_restorer->load_model(m_feature_path, m_motion_path, m_generator_path, m_options);
+        }
+        m_loaded = true;
+    }
 
     void process(FrameData& frame) override {
+        ensure_loaded();
         if (!m_restorer) return;
 
         if (frame.metadata.contains("expression_input")) {
@@ -173,6 +227,12 @@ public:
 
 private:
     std::shared_ptr<face::expression::IFaceExpressionRestorer> m_restorer;
+    std::string m_feature_path;
+    std::string m_motion_path;
+    std::string m_generator_path;
+    foundation::ai::inference_session::Options m_options;
+    bool m_loaded = false;
+    std::mutex m_load_mutex;
 };
 
 /**
@@ -181,10 +241,21 @@ private:
  */
 export class FrameEnhancerAdapter : public IFrameProcessor {
 public:
-    explicit FrameEnhancerAdapter(std::shared_ptr<frame::enhancer::IFrameEnhancer> enhancer) :
-        m_enhancer(std::move(enhancer)) {}
+    explicit FrameEnhancerAdapter(
+        std::function<std::shared_ptr<frame::enhancer::IFrameEnhancer>()> factory_func) :
+        m_factory_func(std::move(factory_func)) {}
+
+    void ensure_loaded() override {
+        if (m_loaded) return;
+        std::lock_guard<std::mutex> lock(m_load_mutex);
+        if (m_loaded) return;
+
+        if (m_factory_func) { m_enhancer = m_factory_func(); }
+        m_loaded = true;
+    }
 
     void process(FrameData& frame) override {
+        ensure_loaded();
         if (!m_enhancer) return;
 
         frame::enhancer::FrameEnhancerInput input;
@@ -202,6 +273,9 @@ public:
 
 private:
     std::shared_ptr<frame::enhancer::IFrameEnhancer> m_enhancer;
+    std::function<std::shared_ptr<frame::enhancer::IFrameEnhancer>()> m_factory_func;
+    bool m_loaded = false;
+    std::mutex m_load_mutex;
 };
 
 } // namespace domain::pipeline
