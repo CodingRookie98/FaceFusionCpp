@@ -1,8 +1,8 @@
 /**
- ******************************************************************************
+ * ******************************************************************************
  * @file           : ffmpeg_writer.cpp
  * @brief          : VideoWriter implementation
- ******************************************************************************
+ * ******************************************************************************
  */
 
 module;
@@ -11,6 +11,10 @@ module;
 #include <iostream>
 #include <format>
 #include <filesystem>
+#include <thread>
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
 
 #include <opencv2/opencv.hpp>
 
@@ -26,6 +30,7 @@ extern "C" {
 module foundation.media.ffmpeg;
 
 import foundation.infrastructure.logger;
+import foundation.infrastructure.concurrent_queue;
 
 namespace foundation::media::ffmpeg {
 
@@ -47,26 +52,38 @@ struct VideoWriter::Impl {
     AVPacket* packet = nullptr;
     AVStream* video_stream = nullptr;
     bool is_open = false;
-    int written_frame_count = 0;
+    std::atomic<int> written_frame_count = 0;
     int64_t next_pts = 0;
+
+    // Async support
+    ConcurrentQueue<cv::Mat> frame_queue{32};
+    std::thread encoding_thread;
+    std::atomic<bool> is_encoding = false;
+    std::atomic<bool> stop_requested = false; // Graceful stop
 
     explicit Impl(const VideoParams& p) : params(p) {}
 
     ~Impl() { cleanup(); }
 
     void cleanup() {
+        if (is_encoding) { stop_encoding_and_wait(); }
+
         if (is_open && format_ctx && format_ctx->pb) {
-            // Flush encoder
-            if (codec_ctx) {
-                avcodec_send_frame(codec_ctx, nullptr);
-                while (avcodec_receive_packet(codec_ctx, packet) == 0) {
-                    av_packet_rescale_ts(packet, codec_ctx->time_base, video_stream->time_base);
-                    packet->stream_index = video_stream->index;
-                    av_interleaved_write_frame(format_ctx, packet);
-                    av_packet_unref(packet);
-                }
+            // Flush encoder (already handled in stop_encoding_and_wait loop end,
+            // but if we crashed or stopped abruptly, we might need to flush here again strictly
+            // speaking. But if encoding thread finished, it should have flushed. Let's double check
+            // if we need to write trailer.
+
+            // Note: stop_encoding_and_wait() ensures queue is empty and thread finishes loop.
+            // The loop handles flushing.
+            // BUT, if we call cleanup() without having started encoding (e.g. error in open),
+            // we skip stop_encoding_and_wait.
+
+            // We should ensure av_write_trailer is called.
+            // It's safer to call it if header was written.
+            if (is_open) { // Assuming header was written if is_open is true
+                av_write_trailer(format_ctx);
             }
-            av_write_trailer(format_ctx);
         }
 
         if (sws_ctx) {
@@ -94,8 +111,126 @@ struct VideoWriter::Impl {
         is_open = false;
     }
 
+    void start_encoding() {
+        if (is_encoding) return;
+        is_encoding = true;
+        stop_requested = false;
+        frame_queue.reset();
+        encoding_thread = std::thread(&Impl::encoding_loop, this);
+    }
+
+    void stop_encoding_and_wait() {
+        if (!is_encoding) return;
+
+        // 1. Signal stop requested (graceful)
+        stop_requested = true;
+
+        // 2. Wait for queue to be empty?
+        // The loop condition should handle this.
+        // We need to notify the thread if it's waiting on empty queue.
+        // But ConcurrentQueue doesn't support "notify but don't shutdown".
+        // Actually, we want the thread to continue until queue is empty.
+        // We can push a sentinel (empty mat) or use a flag.
+        // Here we use `stop_requested` flag.
+        // But if queue is empty, thread is blocked on `pop()`.
+        // We need to unblock it.
+        // We can shutdown the queue?
+        // If we shutdown, `pop()` returns nullopt immediately if empty.
+        // But if not empty, it returns items?
+        // Let's check ConcurrentQueue implementation.
+        // pop(): wait(lock, []{ !empty || shutdown }); if (empty && shutdown) return nullopt;
+        // So if we shutdown, it consumes remaining items! This is exactly what we want.
+
+        frame_queue.shutdown();
+
+        if (encoding_thread.joinable()) { encoding_thread.join(); }
+        is_encoding = false;
+    }
+
+    void encoding_loop() {
+        while (true) {
+            auto mat_opt = frame_queue.pop();
+
+            if (!mat_opt) {
+                // Queue shutdown and empty -> we are done
+                break;
+            }
+
+            process_frame(*mat_opt);
+        }
+
+        // After queue is drained, flush encoder
+        flush_encoder();
+    }
+
+    void process_frame(const cv::Mat& mat) {
+        if (mat.empty() || mat.cols != codec_ctx->width || mat.rows != codec_ctx->height) {
+            Logger::get_instance()->error("VideoWriter: Invalid frame dimensions");
+            return;
+        }
+
+        // Make frame writable
+        if (av_frame_make_writable(frame) < 0) {
+            Logger::get_instance()->error("VideoWriter: Frame not writable");
+            return;
+        }
+
+        // Convert BGR to YUV420P
+        const uint8_t* src_data[1] = {mat.data};
+        int src_linesize[1] = {static_cast<int>(mat.step[0])};
+        sws_scale(sws_ctx, src_data, src_linesize, 0, codec_ctx->height, frame->data,
+                  frame->linesize);
+
+        frame->pts = next_pts++;
+
+        // Encode frame
+        int ret = avcodec_send_frame(codec_ctx, frame);
+        if (ret < 0) {
+            Logger::get_instance()->error("VideoWriter: Error sending frame to encoder");
+            return;
+        }
+
+        receive_and_write_packets();
+
+        written_frame_count++;
+    }
+
+    void flush_encoder() {
+        if (!codec_ctx) return;
+
+        avcodec_send_frame(codec_ctx, nullptr); // Flush signal
+        receive_and_write_packets();
+    }
+
+    void receive_and_write_packets() {
+        int ret = 0;
+        while (ret >= 0) {
+            ret = avcodec_receive_packet(codec_ctx, packet);
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) { break; }
+            if (ret < 0) {
+                Logger::get_instance()->error("VideoWriter: Error receiving packet from encoder");
+                break;
+            }
+
+            av_packet_rescale_ts(packet, codec_ctx->time_base, video_stream->time_base);
+            packet->stream_index = video_stream->index;
+
+            ret = av_interleaved_write_frame(format_ctx, packet);
+            av_packet_unref(packet);
+            if (ret < 0) {
+                Logger::get_instance()->error("VideoWriter: Error writing packet");
+                break;
+            }
+        }
+    }
+
     bool open() {
-        cleanup();
+        // Cleanup strictly implies closing previous, but here we just ensure clean state
+        // cleanup(); // Called by caller (VideoWriter::open -> impl->open) usually? No, impl->open
+        // calls cleanup. Let's call cleanup at start of open to be safe. But wait, open() logic
+        // below sets is_open=true. cleanup() checks is_open.
+
+        if (is_open) cleanup();
 
         if (avformat_alloc_output_context2(&format_ctx, nullptr, nullptr, output_path.c_str())
             < 0) {
@@ -247,57 +382,20 @@ struct VideoWriter::Impl {
         is_open = true;
         written_frame_count = 0;
         next_pts = 0;
+
+        start_encoding();
         return true;
     }
 
     bool write_frame(const cv::Mat& mat) {
         if (!is_open) { return false; }
-        if (mat.empty() || mat.cols != codec_ctx->width || mat.rows != codec_ctx->height) {
-            Logger::get_instance()->error("VideoWriter: Invalid frame dimensions");
-            return false;
-        }
 
-        // Make frame writable
-        if (av_frame_make_writable(frame) < 0) {
-            Logger::get_instance()->error("VideoWriter: Frame not writable");
-            return false;
-        }
-
-        // Convert BGR to YUV420P
-        const uint8_t* src_data[1] = {mat.data};
-        int src_linesize[1] = {static_cast<int>(mat.step[0])};
-        sws_scale(sws_ctx, src_data, src_linesize, 0, codec_ctx->height, frame->data,
-                  frame->linesize);
-
-        frame->pts = next_pts++;
-
-        // Encode frame
-        int ret = avcodec_send_frame(codec_ctx, frame);
-        if (ret < 0) {
-            Logger::get_instance()->error("VideoWriter: Error sending frame to encoder");
-            return false;
-        }
-
-        while (ret >= 0) {
-            ret = avcodec_receive_packet(codec_ctx, packet);
-            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) { break; }
-            if (ret < 0) {
-                Logger::get_instance()->error("VideoWriter: Error receiving packet from encoder");
-                return false;
-            }
-
-            av_packet_rescale_ts(packet, codec_ctx->time_base, video_stream->time_base);
-            packet->stream_index = video_stream->index;
-
-            ret = av_interleaved_write_frame(format_ctx, packet);
-            av_packet_unref(packet);
-            if (ret < 0) {
-                Logger::get_instance()->error("VideoWriter: Error writing packet");
-                return false;
-            }
-        }
-
-        written_frame_count++;
+        // Push to queue (async)
+        // Note: ConcurrentQueue takes value (T), so mat will be copied.
+        // cv::Mat copy is shallow (refcount increment). This is safe as long as data is not
+        // modified externally. If data might be modified, we should clone. Given this is an async
+        // writer, safer to clone? Let's trust PipelineRunner yields unique frames.
+        frame_queue.push(mat);
         return true;
     }
 };

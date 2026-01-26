@@ -22,6 +22,7 @@ target_sources(foundation_infrastructure
             concurrent_file_system.ixx
             crypto.ixx
             concurrent_crypto.ixx
+            concurrent_queue.ixx
             logger.ixx
             progress.ixx
         process.ixx

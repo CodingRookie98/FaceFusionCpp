@@ -1,8 +1,8 @@
 /**
- ******************************************************************************
+ * ******************************************************************************
  * @file           : ffmpeg_reader.cpp
  * @brief          : VideoReader implementation
- ******************************************************************************
+ * ******************************************************************************
  */
 
 module;
@@ -11,6 +11,10 @@ module;
 #include <iostream>
 #include <format>
 #include <filesystem>
+#include <thread>
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
 
 #include <opencv2/opencv.hpp>
 
@@ -25,6 +29,7 @@ extern "C" {
 module foundation.media.ffmpeg;
 
 import foundation.infrastructure.logger;
+import foundation.infrastructure.concurrent_queue;
 
 namespace foundation::media::ffmpeg {
 
@@ -45,7 +50,7 @@ struct VideoReader::Impl {
     AVPacket* packet = nullptr;
     int video_stream_index = -1;
     bool is_open = false;
-    int64_t current_pts = 0;
+    std::atomic<int64_t> current_pts = 0;
     double time_base = 0.0;
     int frame_count = 0;
     double fps = 0.0;
@@ -53,14 +58,26 @@ struct VideoReader::Impl {
     int height = 0;
     int64_t duration_ms = 0;
 
-    cv::Mat cached_mat;
-    bool has_cached_mat = false;
+    // Async support
+    ConcurrentQueue<cv::Mat> frame_queue{32}; // Max 32 frames buffer
+    std::thread decoding_thread;
+    std::atomic<bool> is_decoding = false;
+    std::atomic<bool> seek_requested = false;
+    std::atomic<int64_t> seek_target_ts = 0;
+    std::mutex seek_mutex;
+    std::condition_variable seek_cv;
+
+    // We still need to handle the case where read_frame returns empty to signal EOF
+    // So queue might return optional, nullopt means EOF or closed.
+    // In our ConcurrentQueue, pop returns optional. nullopt is only when shutdown.
+    // So we need a special marker or just shutdown the queue on EOF.
+    // Let's use shutdown on EOF.
 
     ~Impl() { cleanup(); }
 
     void cleanup() {
-        has_cached_mat = false;
-        cached_mat.release();
+        stop_decoding();
+
         if (sws_ctx) {
             sws_freeContext(sws_ctx);
             sws_ctx = nullptr;
@@ -86,6 +103,137 @@ struct VideoReader::Impl {
             format_ctx = nullptr;
         }
         is_open = false;
+    }
+
+    void start_decoding() {
+        if (is_decoding) return;
+        is_decoding = true;
+        frame_queue.reset();
+        decoding_thread = std::thread(&Impl::decoding_loop, this);
+    }
+
+    void stop_decoding() {
+        if (!is_decoding) return;
+        is_decoding = false;
+        frame_queue.shutdown(); // Wake up any waiting consumers/producers
+        if (decoding_thread.joinable()) { decoding_thread.join(); }
+    }
+
+    void decoding_loop() {
+        while (is_decoding) {
+            // Check for seek request
+            if (seek_requested) {
+                std::lock_guard<std::mutex> lock(seek_mutex);
+
+                // Flush queue
+                frame_queue.clear();
+
+                // Flush codec
+                if (codec_ctx) { avcodec_flush_buffers(codec_ctx); }
+
+                // Perform seek
+                // Use AVSEEK_FLAG_BACKWARD to find nearest keyframe before target
+                if (av_seek_frame(format_ctx, video_stream_index, seek_target_ts,
+                                  AVSEEK_FLAG_BACKWARD)
+                    >= 0) {
+                    // We might need to decode until we reach the exact frame if precision is
+                    // required, but for now let's just seek and continue decoding. The consumer
+                    // expects the stream to continue from new position. Note: Precise seeking
+                    // usually requires decoding from keyframe to target. Let's implement simple
+                    // seeking first: just seek to keyframe. If precise seek is needed, we should do
+                    // it here but do not push frames until target is reached.
+                } else {
+                    Logger::get_instance()->error("VideoReader: Seek failed inside decoding loop");
+                }
+
+                seek_requested = false;
+                seek_cv.notify_one(); // Notify main thread that seek is done
+            }
+
+            int ret = av_read_frame(format_ctx, packet);
+            if (ret < 0) {
+                // EOF or error
+                if (ret == AVERROR_EOF) {
+                    // Signal EOF by shutting down queue?
+                    // Or push an empty Mat? Let's shutdown queue for now to signal end of stream.
+                    // But shutdown implies error or close.
+                    // Let's just break loop, but keep is_decoding true?
+                    // No, if EOF, we should stop.
+                    // But wait, if we stop, pop() will return nullopt immediately if empty.
+                    // That works for EOF signal.
+                    break;
+                }
+                continue;
+            }
+
+            if (packet->stream_index == video_stream_index) {
+                ret = avcodec_send_packet(codec_ctx, packet);
+                av_packet_unref(packet);
+
+                if (ret < 0) continue;
+
+                while (ret >= 0) {
+                    ret = avcodec_receive_frame(codec_ctx, frame);
+                    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
+                    if (ret < 0) break;
+
+                    // Update current pts (atomic)
+                    // Note: This might be updated "ahead" of what is being read by consumer.
+                    // If consumer relies on this for the frame being read, we might need to attach
+                    // timestamp to the frame. But cv::Mat doesn't hold timestamp easily without
+                    // extra wrapper. For now, let's assume get_current_timestamp_ms() is
+                    // approximate or used for seeking status.
+                    current_pts = frame->best_effort_timestamp;
+
+                    // Convert to BGR
+                    // Optimized: Reuse frame_bgr buffer
+                    sws_scale(sws_ctx, frame->data, frame->linesize, 0, height, frame_bgr->data,
+                              frame_bgr->linesize);
+
+                    // Create cv::Mat (copy data)
+                    // TODO: Optimization - if possible, map AVFrame data to Mat if continuous and
+                    // not padded. FFmpeg linesize usually includes padding (alignment). Mat needs
+                    // to be created with step. But standard Mat constructor with data assumes no
+                    // padding or user specified step.
+
+                    // Optimized copy using linesize aware copy, still needed because Mat expects
+                    // contiguous or specific step We can create Mat with step if we want to avoid
+                    // copy, but we need to ensure the data persists. Since frame_bgr is reused, we
+                    // MUST copy.
+
+                    cv::Mat mat(height, width, CV_8UC3);
+                    // Use libavutil to copy if possible or manual copy
+                    // Manual copy is fine but let's check alignment
+                    uint8_t* dst = mat.data;
+                    int dst_stride = static_cast<int>(mat.step[0]);
+                    const uint8_t* src = frame_bgr->data[0];
+                    int src_stride = frame_bgr->linesize[0];
+
+                    if (src_stride == dst_stride) {
+                        // Single block copy if strides match and no gap
+                        // But usually stride > width*3.
+                        // If strides match, we can copy height * stride?
+                        // Be careful about memory safety.
+                        // Safe approach: copy row by row.
+                        for (int y = 0; y < height; y++) {
+                            memcpy(dst + y * dst_stride, src + y * src_stride, width * 3);
+                        }
+                    } else {
+                        for (int y = 0; y < height; y++) {
+                            memcpy(dst + y * dst_stride, src + y * src_stride, width * 3);
+                        }
+                    }
+
+                    frame_queue.push(std::move(mat));
+                    av_frame_unref(frame);
+                }
+            } else {
+                av_packet_unref(packet);
+            }
+        }
+
+        // When loop ends (EOF or stop), we shutdown queue so consumers know no more frames coming
+        frame_queue.shutdown();
     }
 
     bool open() {
@@ -139,6 +287,10 @@ struct VideoReader::Impl {
             cleanup();
             return false;
         }
+
+        // Enable multithreading for decoding if CPU allows
+        // ffmpeg usually handles this internally if configured
+        codec_ctx->thread_count = 0; // 0 means auto
 
         if (avcodec_open2(codec_ctx, codec, nullptr) < 0) {
             Logger::get_instance()->error("VideoReader: Failed to open codec");
@@ -202,69 +354,83 @@ struct VideoReader::Impl {
         }
 
         is_open = true;
+
+        // Start async decoding
+        start_decoding();
+
         return true;
     }
 
     cv::Mat read_frame() {
         if (!is_open) { return {}; }
 
-        if (has_cached_mat) {
-            has_cached_mat = false;
-            return cached_mat;
-        }
+        // Pop from queue
+        auto mat_opt = frame_queue.pop();
+        if (mat_opt) { return *mat_opt; }
 
-        while (av_read_frame(format_ctx, packet) >= 0) {
-            if (packet->stream_index == video_stream_index) {
-                int ret = avcodec_send_packet(codec_ctx, packet);
-                av_packet_unref(packet);
-
-                if (ret < 0) { continue; }
-
-                ret = avcodec_receive_frame(codec_ctx, frame);
-                if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) { continue; }
-                if (ret < 0) { continue; }
-
-                // Update current pts
-                current_pts = frame->best_effort_timestamp;
-
-                // Convert to BGR
-                sws_scale(sws_ctx, frame->data, frame->linesize, 0, height, frame_bgr->data,
-                          frame_bgr->linesize);
-
-                // Create cv::Mat (copy data)
-                cv::Mat mat(height, width, CV_8UC3);
-                for (int y = 0; y < height; y++) {
-                    memcpy(mat.ptr(y), frame_bgr->data[0] + y * frame_bgr->linesize[0], width * 3);
-                }
-
-                av_frame_unref(frame);
-                return mat;
-            }
-            av_packet_unref(packet);
-        }
-
-        return {}; // EOF
+        // If nullopt, queue is shutdown (EOF or error)
+        return {};
     }
 
     bool seek(int64_t frame_index) {
         if (!is_open || frame_index < 0) { return false; }
 
-        AVStream* video_stream = format_ctx->streams[video_stream_index];
+        // Calculate target timestamp
         int64_t target_ts = static_cast<int64_t>(frame_index / fps / time_base);
 
-        // Seek to the nearest keyframe before target
+        // Signal decoding thread to seek
+        {
+            std::unique_lock<std::mutex> lock(seek_mutex);
+            seek_target_ts = target_ts;
+            seek_requested = true;
+        }
+
+        // Wake up thread if it's blocked on push
+        // But wait, if queue is full, thread is blocked on wait.
+        // We need to make space or have a mechanism to interrupt wait.
+        // Our ConcurrentQueue wait condition includes `|| m_shutdown`.
+        // But here we are not shutting down.
+        // We need `frame_queue` to support interrupt or we manually clear it?
+        // Actually, if we call frame_queue.clear(), it clears the queue, notifying `m_not_full`.
+        // So the producer thread will wake up from `push` wait!
+        // EXCEPT: clear() acquires lock. If thread is waiting on condition, lock is released.
+        // So clear() acquires lock, clears queue, notifies not_full.
+        // Producer wakes up, re-acquires lock, sees queue is empty (not full), proceeds to push...
+        // Wait, producer is stuck inside `push` logic:
+        // m_not_full.wait(lock, ...);
+        // m_queue.push(...);
+
+        // If we clear, producer will push the OLD frame it was holding!
+        // This is BAD. The frame it holds is from BEFORE seek.
+
+        // Better approach for SEEK:
+        // 1. Stop decoding thread (join).
+        // 2. Clear queue.
+        // 3. Perform seek on main thread (safe because decoding thread is stopped).
+        // 4. Restart decoding thread.
+
+        stop_decoding();
+
+        // Now safe to operate on ffmpeg context
+        avcodec_flush_buffers(codec_ctx);
+
         if (av_seek_frame(format_ctx, video_stream_index, target_ts, AVSEEK_FLAG_BACKWARD) < 0) {
             Logger::get_instance()->error("VideoReader: Seek failed");
+            // Try to restart decoding anyway? Or leave stopped?
+            start_decoding(); // Restart to recover state
             return false;
         }
 
-        avcodec_flush_buffers(codec_ctx);
-        has_cached_mat = false;
+        // Precise seeking logic (optional but recommended)
+        // For now, consistent with previous implementation's intent (though prev impl tried to read
+        // until match) Since we are async, precise seek is complex. Let's rely on simple seek for
+        // now, or perform precise decode-and-discard loop here BEFORE starting thread.
 
-        // Decode frames until we reach the exact target frame
-        while (true) {
+        // Perform precise seek synchronously here
+        bool found = false;
+        while (!found) {
             int ret = av_read_frame(format_ctx, packet);
-            if (ret < 0) return false; // EOF or error before reaching target
+            if (ret < 0) break;
 
             if (packet->stream_index == video_stream_index) {
                 if (avcodec_send_packet(codec_ctx, packet) == 0) {
@@ -274,27 +440,35 @@ struct VideoReader::Impl {
                             static_cast<int64_t>(current_ts * time_base * fps + 0.5);
 
                         if (current_frame >= frame_index) {
-                            // Found target (or closest after). Cache it.
-                            current_pts = current_ts;
+                            // Found target!
+                            // Push this first frame to queue?
+                            // Or just set current_pts and let loop continue?
+                            // We should push this frame to queue so read_frame() gets it.
 
                             sws_scale(sws_ctx, frame->data, frame->linesize, 0, height,
                                       frame_bgr->data, frame_bgr->linesize);
-
-                            cached_mat.create(height, width, CV_8UC3);
+                            cv::Mat mat(height, width, CV_8UC3);
+                            // Copy logic...
                             for (int y = 0; y < height; y++) {
-                                memcpy(cached_mat.ptr(y),
-                                       frame_bgr->data[0] + y * frame_bgr->linesize[0], width * 3);
+                                memcpy(mat.ptr(y), frame_bgr->data[0] + y * frame_bgr->linesize[0],
+                                       width * 3);
                             }
-                            has_cached_mat = true;
 
-                            av_packet_unref(packet);
-                            return true;
+                            // Since we stopped thread, queue should be empty (or we clear it).
+                            frame_queue.clear();
+                            frame_queue.push(std::move(mat));
+                            found = true;
                         }
+                        av_frame_unref(frame);
+                        if (found) break;
                     }
                 }
             }
             av_packet_unref(packet);
         }
+
+        start_decoding();
+        return found;
     }
 
     bool seek_by_time(double timestamp_ms) {

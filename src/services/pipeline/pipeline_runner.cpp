@@ -218,6 +218,7 @@ private:
         using namespace foundation::media::ffmpeg;
 
         if (task_config.resource.memory_strategy == config::MemoryStrategy::Strict) {
+            Logger::get_instance()->info("Running in Strict Mode with enhanced I/O optimization");
             return ProcessVideoStrict(target_path, task_config, progress_callback);
         }
 
@@ -412,9 +413,9 @@ private:
         video_params.height = reader.get_height();
         video_params.frameRate = reader.get_fps();
 
-        // DEFERRED OPEN: We don't open the writer here because the output resolution
-        // might change (e.g., FrameEnhancer upscaling).
-        // Writer will be opened in the writer_thread upon receiving the first frame.
+        // Use Strict mode memory strategy for writer if applicable, or default
+        // For now, writer optimization is internal (async queue).
+
         VideoWriter writer(video_output_path, video_params);
 
         // 4. Prepare Context
@@ -432,16 +433,17 @@ private:
             }
         }
 
-        // 5. Setup Pipeline (Chain Mode)
+        // 5. Setup Pipeline (Single Chain)
         PipelineConfig pipeline_config;
         // Strict mode uses limited queue size to control memory usage
-        pipeline_config.max_queue_size = 2;
+        pipeline_config.max_queue_size = 4; // Slightly increased from 2 to allow async buffers
         pipeline_config.worker_thread_count =
             task_config.resource.thread_count > 0 ? task_config.resource.thread_count : 2;
 
         auto pipeline = std::make_shared<Pipeline>(pipeline_config);
 
         // Add all processors to the same pipeline (chaining)
+        // This eliminates intermediate disk I/O
         AddProcessorsToPipeline(pipeline, task_config, context);
 
         pipeline->start();
@@ -466,6 +468,7 @@ private:
                     actual_params.width = result_opt->image.cols;
                     actual_params.height = result_opt->image.rows;
 
+                    // Update writer with actual params
                     writer = VideoWriter(video_output_path, actual_params);
 
                     if (!writer.open()) {
