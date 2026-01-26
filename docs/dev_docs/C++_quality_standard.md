@@ -2,11 +2,11 @@
 
 本文档定义了 FaceFusionCpp 项目的 C++ 代码质量标准、评估工具使用指南以及详细的评分规则。
 
-## 3. Doxygen 注释标准 (New)
+## 1. Doxygen 注释标准
 
-> @brief 所有 Public Module Interface (.ixx) 必须遵循以下 Doxygen 注释规范。
+> **说明**：所有 Public Module Interface (.ixx) 必须遵循以下 Doxygen 注释规范。
 
-### 3.1 文件头模板
+### 1.1 文件头模板
 每个 `.ixx` 文件开头必须包含：
 ```cpp
 /**
@@ -18,7 +18,7 @@
  */
 ```
 
-### 3.2 类与接口模板
+### 1.2 类与接口模板
 所有导出的类和公共方法必须包含：
 ```cpp
 /**
@@ -29,7 +29,7 @@
  */
 ```
 
-### 3.3 示例 (InferenceSession)
+### 1.3 示例 (InferenceSession)
 ```cpp
 /**
  * @file inference_session.ixx
@@ -58,12 +58,12 @@ namespace foundation::ai::inference_session {
 }
 ```
 
-## 1. 评估工具使用指南
+## 2. 评估工具使用指南
 
-### 1.1 静态分析工具
-> @brief 介绍用于代码质量评估的静态分析工具
+### 2.1 静态分析工具
+> **说明**：介绍用于代码质量评估的静态分析工具
 
-#### 1.1.1 编译器诊断工具
+#### 2.1.1 编译器诊断工具
 
 **MSVC 编译器诊断**:
 ```bash
@@ -89,7 +89,7 @@ g++ -Wall -Wextra -Wpedantic -std=c++20 -Wconversion -Wshadow
 g++ -Wall -Wextra -Wpedantic -std=c++20 -fdiagnostics-color=always
 ```
 
-#### 1.1.2 静态分析工具
+#### 2.1.2 静态分析工具
 
 **Clang-Tidy**:
 ```bash
@@ -124,7 +124,7 @@ include-what-you-use src/**/*.cpp -std=c++20 -I./include
 include-what-you-use -Xiwyu --verbose=1 src/**/*.cpp -std=c++20 -I./include
 ```
 
-#### 1.1.3 模块特定工具
+#### 2.1.3 模块特定工具
 
 **模块依赖分析**:
 ```bash
@@ -142,10 +142,10 @@ Get-ChildItem -Path build -Filter *.ifc -Recurse | Select-Object Name, @{Name="M
 dumpbin /headers build/path/to/module.ifc
 ```
 
-### 1.2 动态分析工具
-> @brief 介绍用于运行时分析的动态分析工具
+### 2.2 动态分析工具
+> **说明**：介绍用于运行时分析的动态分析工具
 
-#### 1.2.1 内存分析工具
+#### 2.2.1 内存分析工具
 
 **AddressSanitizer (ASan)**:
 ```bash
@@ -165,7 +165,7 @@ valgrind --leak-check=full --show-leak-kinds=all ./your_program
 valgrind --leak-check=full --show-leak-kinds=all --verbose ./your_program
 ```
 
-#### 1.2.2 线程分析工具
+#### 2.2.2 线程分析工具
 
 **ThreadSanitizer (TSan)**:
 ```bash
@@ -185,7 +185,7 @@ valgrind --tool=helgrind ./your_program
 valgrind --tool=helgrind --verbose ./your_program
 ```
 
-#### 1.2.3 性能分析工具
+#### 2.2.3 性能分析工具
 
 **perf**:
 ```bash
@@ -208,10 +208,10 @@ perf script | stackcollapse-perf.pl | flamegraph.pl > flamegraph.svg
 // 4. 运行分析
 ```
 
-### 1.3 测试工具
-> @brief 介绍用于测试评估的工具
+### 2.3 测试工具
+> **说明**：介绍用于测试评估的工具
 
-#### 1.3.1 单元测试框架
+#### 2.3.1 单元测试框架
 
 **Google Test**:
 ```cpp
@@ -240,7 +240,7 @@ TEST_CASE("Test case name") {
 }
 ```
 
-#### 1.3.2 代码覆盖率工具
+#### 2.3.2 代码覆盖率工具
 
 **gcov/lcov**:
 ```bash
@@ -265,10 +265,10 @@ OpenCppCoverage.exe --sources src -- -- your_program.exe
 OpenCppCoverage.exe --export_type=html:coverage_report --sources src -- -- your_program.exe
 ```
 
-## 2. 评分标准
-> @brief 定义各项评估指标的评分标准
+## 3. 评分标准
+> **说明**：定义各项评估指标的评分标准
 
-### 2.1 评分等级定义
+### 3.1 评分等级定义
 
 | 评分等级 | 分数范围 | 描述 | 行动建议 |
 |---------|---------|------|---------|
@@ -278,7 +278,7 @@ OpenCppCoverage.exe --export_type=html:coverage_report --sources src -- -- your_
 | 待改进 | 60-69 | 部分不符合要求，需要改进 | 必须改进 |
 | 不合格 | 0-59 | 严重不符合要求，需要重构 | 立即重构 |
 
-### 2.2 模块化评估评分标准
+### 3.2 模块化评估评分标准
 
 **模块架构分析** (权重: 20%):
 - 模块分层架构符合性 (5层模型): 40分
@@ -301,7 +301,7 @@ OpenCppCoverage.exe --export_type=html:coverage_report --sources src -- -- your_
                   (模块实现评估得分 × 0.10)
 ```
 
-### 2.3 依赖分析评分标准
+### 3.3 依赖分析评分标准
 
 **模块依赖关系** (权重: 15%):
 - 依赖关系清晰度: 40分
@@ -318,7 +318,7 @@ OpenCppCoverage.exe --export_type=html:coverage_report --sources src -- -- your_
                (依赖规则检查得分 × 0.15)
 ```
 
-### 2.4 BMI 优化评估评分标准
+### 3.4 BMI 优化评估评分标准
 
 **BMI 文件分析** (权重: 10%):
 - 接口定义精简度 (只包含声明): 40分
@@ -330,7 +330,7 @@ OpenCppCoverage.exe --export_type=html:coverage_report --sources src -- -- your_
 BMI 优化评估总分 = BMI 文件分析得分 × 0.10
 ```
 
-### 2.5 测试隔离评估评分标准
+### 3.5 测试隔离评估评分标准
 
 **测试模块分析** (权重: 10%):
 - 测试模块结构合理性: 40分
@@ -348,7 +348,7 @@ BMI 优化评估总分 = BMI 文件分析得分 × 0.10
                    (测试覆盖评估得分 × 0.05)
 ```
 
-### 2.6 性能评估评分标准
+### 3.6 性能评估评分标准
 
 **编译性能评估** (权重: 5%):
 - 编译时间效率: 40分
@@ -366,7 +366,7 @@ BMI 优化评估总分 = BMI 文件分析得分 × 0.10
                (运行时性能评估得分 × 0.05)
 ```
 
-### 2.7 代码质量评估评分标准
+### 3.7 代码质量评估评分标准
 
 **内存管理与资源安全** (权重: 10%):
 - 智能指针使用: 30分
@@ -403,43 +403,23 @@ BMI 优化评估总分 = BMI 文件分析得分 × 0.10
                    (代码规范与可维护性评估得分 × 0.05)
 ```
 
-### 2.8 风险评估评分标准
-
-**技术风险** (权重: 5%):
-- 风险识别完整性: 40分
-- 风险评估准确性: 30分
-- 缓解措施有效性: 30分
-
-**项目风险** (权重: 5%):
-- 风险识别完整性: 40分
-- 风险评估准确性: 30分
-- 缓解措施有效性: 30分
-
-**评分计算**:
-```
-风险评估总分 = (技术风险得分 × 0.05) +
-               (项目风险得分 × 0.05)
-```
-
-### 2.9 总分计算
+### 3.8 总分计算
 
 ```
-总分 = 模块化评估总分 +
-       依赖分析总分 +
-       BMI 优化评估总分 +
-       测试隔离评估总分 +
-       性能评估总分 +
-       代码质量评估总分 +
-       风险评估总分
+总分 = (模块化评估总分 × 0.40) +
+       (依赖分析总分 × 0.20) +
+       (BMI 优化评估总分 × 0.10) +
+       (测试隔离评估总分 × 0.10) +
+       (性能评估总分 × 0.10) +
+       (代码质量评估总分 × 0.10)
 ```
 
 **总分权重分布**:
-- 模块化评估: 60%
-- 依赖分析: 30%
+- 模块化评估: 40%
+- 依赖分析: 20%
 - BMI 优化评估: 10%
-- 测试隔离评估: 15%
+- 测试隔离评估: 10%
 - 性能评估: 10%
-- 代码质量评估: 30%
-- 风险评估: 10%
+- 代码质量评估: 10%
 
-**注意**: 各项评分总和为 100%
+**注意**: 各项评分总和为 100%，取消了风险评估作为独立项（将风险识别融入各评估环节）
