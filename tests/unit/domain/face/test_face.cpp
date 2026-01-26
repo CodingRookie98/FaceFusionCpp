@@ -1,3 +1,10 @@
+/**
+ * @file test_face.cpp
+ * @brief Unit tests for Face class
+ * @author CodingRookie
+ * @date
+ * 2026-01-26
+ */
 #include <gtest/gtest.h>
 #include <vector>
 #include <opencv2/opencv.hpp>
@@ -24,8 +31,6 @@ TEST(FaceTest, SetAndGetBox) {
     EXPECT_EQ(face.box().width, 100.0f);
     EXPECT_EQ(face.box().height, 120.0f);
 
-    // is_empty 是 m_box.area() <= 0.0f || m_kps.empty()
-    // 这里 kps 为空，所以 is_empty 应为 true
     EXPECT_TRUE(face.is_empty());
 }
 
@@ -59,8 +64,6 @@ TEST(FaceTest, GetLandmark5) {
 }
 
 TEST(AgeRangeTest, Logic) {
-    // AgeRange 是 domain::common::types::AgeRange
-    // Face 模块导出了 domain.common，并使用了 using
     domain::face::AgeRange range;
     EXPECT_EQ(range.min, 0);
     EXPECT_EQ(range.max, 100);
@@ -69,7 +72,6 @@ TEST(AgeRangeTest, Logic) {
     EXPECT_TRUE(range.contains(25));
     EXPECT_FALSE(range.contains(10));
 
-    // 测试自动 swap
     range.set(50, 40);
     EXPECT_EQ(range.min, 40);
     EXPECT_EQ(range.max, 50);

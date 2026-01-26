@@ -14,7 +14,6 @@ export import :types;
 export import domain.common;
 
 export namespace domain::face {
-// 引入通用类型别名，方便使用
 using domain::common::types::AgeRange;
 using domain::common::types::Gender;
 using domain::common::types::Race;
@@ -163,7 +162,7 @@ public:
 
 private:
     cv::Rect2f m_box{};
-    types::Landmarks m_kps{}; // 统一存储关键点
+    types::Landmarks m_kps{};
     types::Embedding m_embedding{};
     types::Embedding m_normed_embedding{};
     types::Score m_detector_score{0.0f};

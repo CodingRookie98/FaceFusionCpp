@@ -14,12 +14,16 @@ module;
 #include <vector>
 #include <mutex>
 #include <unordered_map>
+#include <cstdint>
 #include <onnxruntime_cxx_api.h>
 
 export module foundation.ai.inference_session;
 
 namespace foundation::ai::inference_session {
 
+/**
+ * @brief Available execution providers for inference
+ */
 export enum class ExecutionProvider {
     CPU,     ///< CPU execution provider
     CUDA,    ///< CUDA GPU execution provider
@@ -32,6 +36,9 @@ export enum class ExecutionProvider {
  */
 export std::unordered_set<ExecutionProvider> get_best_available_providers();
 
+/**
+ * @brief Configuration options for an InferenceSession
+ */
 export struct Options {
     std::unordered_set<ExecutionProvider> execution_providers{}; ///< Empty = auto-detect best
     int execution_device_id = 0;                                 ///< Device ID for GPU execution
@@ -49,6 +56,7 @@ export struct Options {
 
     /**
      * @brief Create options with best available providers (TensorRT > CUDA > CPU)
+     * @return Options object with optimal provider settings
      */
     static Options with_best_providers() {
         Options opts;
@@ -74,22 +82,16 @@ public:
 
     /**
      * @brief Load an ONNX model with specified options
-     * @param model_path Path to the
-     * ONNX model file
-     * @param options Session options including execution providers and
-     * device configuration
-     * @note This method will reset the current session state before
-     * loading the new model.
-     *       If the same model is already loaded with the same
-     * options, it will not be reloaded.
+     * @param model_path Path to the ONNX model file
+     * @param options Session options including execution providers and device configuration
+     * @note This method will reset the current session state before loading the new model.
+     *       If the same model is already loaded with the same options, it will not be reloaded.
      */
     virtual void load_model(const std::string& model_path, const Options& options);
 
     /**
      * @brief Check if a model is currently loaded
-
-     * @return true if a model is
-     * loaded, false otherwise
+     * @return true if a model is loaded, false otherwise
      */
     [[nodiscard]] bool is_model_loaded() const;
 
@@ -102,16 +104,32 @@ public:
     /**
      * @brief Run inference
      * @param input_tensors Vector of input tensors
-     *
      * @return Vector of output tensors
      */
     virtual std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors);
 
-    [[nodiscard]] std::vector<std::vector<int64_t>> get_input_node_dims() const;
+    /**
+     * @brief Get dimensions of input nodes
+     * @return Vector of dimension vectors for each input node
+     */
+    [[nodiscard]] std::vector<std::vector<std::int64_t>> get_input_node_dims() const;
 
-    [[nodiscard]] std::vector<std::vector<int64_t>> get_output_node_dims() const;
+    /**
+     * @brief Get dimensions of output nodes
+     * @return Vector of dimension vectors for each output node
+     */
+    [[nodiscard]] std::vector<std::vector<std::int64_t>> get_output_node_dims() const;
 
+    /**
+     * @brief Get names of input nodes
+     * @return Vector of input node names
+     */
     [[nodiscard]] std::vector<std::string> get_input_names() const;
+
+    /**
+     * @brief Get names of output nodes
+     * @return Vector of output node names
+     */
     [[nodiscard]] std::vector<std::string> get_output_names() const;
 
 private:
