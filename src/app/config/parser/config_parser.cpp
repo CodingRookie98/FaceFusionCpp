@@ -292,6 +292,25 @@ Result<AppConfig> ParseAppConfigFromJson(const json& j) {
     if (!download_strategy_r) { return Result<AppConfig>::Err(download_strategy_r.error()); }
     config.models.download_strategy = download_strategy_r.value();
 
+    // default_models
+    auto defaults_j = detail::GetObject(j, "default_models");
+    config.default_models.face_detector =
+        detail::GetString(defaults_j, "face_detector", "yoloface");
+    config.default_models.face_recognizer =
+        detail::GetString(defaults_j, "face_recognizer", "arcface_w600k_r50");
+    config.default_models.face_swapper =
+        detail::GetString(defaults_j, "face_swapper", "inswapper_128");
+    config.default_models.face_enhancer =
+        detail::GetString(defaults_j, "face_enhancer", "gfpgan_1.4");
+    config.default_models.frame_enhancer =
+        detail::GetString(defaults_j, "frame_enhancer", "real_esrgan_x4plus");
+    config.default_models.expression_restorer_feature = detail::GetString(
+        defaults_j, "expression_restorer_feature", "live_portrait_feature_extractor");
+    config.default_models.expression_restorer_motion = detail::GetString(
+        defaults_j, "expression_restorer_motion", "live_portrait_motion_extractor");
+    config.default_models.expression_restorer_generator =
+        detail::GetString(defaults_j, "expression_restorer_generator", "live_portrait_generator");
+
     // temp_directory
     config.temp_directory = detail::GetString(j, "temp_directory", "./temp");
 

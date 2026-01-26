@@ -10,25 +10,27 @@ module domain.face.expression;
 
 import :live_portrait;
 import foundation.infrastructure.thread_pool;
+import foundation.ai.inference_session_registry;
 
 namespace domain::face::expression {
 
 using namespace foundation::ai;
 using namespace foundation::infrastructure::thread_pool;
+using namespace foundation::ai::inference_session;
 
 // FeatureExtractor Implementation
 void LivePortrait::FeatureExtractor::load_model(const std::string& path,
                                                 const inference_session::Options& options) {
-    m_session.load_model(path, options);
+    m_session = InferenceSessionRegistry::get_instance().get_session(path, options);
 }
 
 bool LivePortrait::FeatureExtractor::is_model_loaded() const {
-    return m_session.is_model_loaded();
+    return m_session && m_session->is_model_loaded();
 }
 
 std::tuple<std::vector<float>, std::vector<int64_t>> LivePortrait::FeatureExtractor::prepare_input(
     const cv::Mat& frame) const {
-    auto input_node_dims = m_session.get_input_node_dims();
+    auto input_node_dims = m_session->get_input_node_dims();
     const int width = static_cast<int>(input_node_dims[0][2]);
     const int height = static_cast<int>(input_node_dims[0][3]);
 
@@ -62,7 +64,7 @@ std::vector<float> LivePortrait::FeatureExtractor::extract_feature(const cv::Mat
         memory_info, input_image_data.data(), input_image_data.size(), input_shape.data(),
         input_shape.size()));
 
-    auto output_tensor = m_session.run(input_tensors);
+    auto output_tensor = m_session->run(input_tensors);
 
     return process_output(output_tensor);
 }
@@ -70,16 +72,16 @@ std::vector<float> LivePortrait::FeatureExtractor::extract_feature(const cv::Mat
 // MotionExtractor Implementation
 void LivePortrait::MotionExtractor::load_model(const std::string& path,
                                                const inference_session::Options& options) {
-    m_session.load_model(path, options);
+    m_session = InferenceSessionRegistry::get_instance().get_session(path, options);
 }
 
 bool LivePortrait::MotionExtractor::is_model_loaded() const {
-    return m_session.is_model_loaded();
+    return m_session && m_session->is_model_loaded();
 }
 
 std::tuple<std::vector<float>, std::vector<int64_t>> LivePortrait::MotionExtractor::prepare_input(
     const cv::Mat& frame) const {
-    auto input_node_dims = m_session.get_input_node_dims();
+    auto input_node_dims = m_session->get_input_node_dims();
     const int width = static_cast<int>(input_node_dims[0][2]);
     const int height = static_cast<int>(input_node_dims[0][3]);
 
@@ -93,8 +95,8 @@ std::tuple<std::vector<float>, std::vector<int64_t>> LivePortrait::MotionExtract
 std::vector<std::vector<float>> LivePortrait::MotionExtractor::process_output(
     const std::vector<Ort::Value>& output_tensors) const {
     if (output_tensors.empty()) return {};
-    auto output_names = m_session.get_output_names(); // Still need names to know structure, or
-                                                      // index? Original logic used index i.
+    auto output_names = m_session->get_output_names(); // Still need names to know structure, or
+                                                       // index? Original logic used index i.
 
     std::vector<std::vector<float>> output_data_vec;
     for (size_t i = 0; i < output_names.size();
@@ -126,7 +128,7 @@ std::vector<std::vector<float>> LivePortrait::MotionExtractor::extract_motion(
         memory_info, input_image_data.data(), input_image_data.size(), input_shape.data(),
         input_shape.size()));
 
-    auto output_tensor = m_session.run(input_tensors);
+    auto output_tensor = m_session->run(input_tensors);
 
     return process_output(output_tensor);
 }
@@ -134,16 +136,16 @@ std::vector<std::vector<float>> LivePortrait::MotionExtractor::extract_motion(
 // Generator Implementation
 void LivePortrait::Generator::load_model(const std::string& path,
                                          const inference_session::Options& options) {
-    m_session.load_model(path, options);
+    m_session = InferenceSessionRegistry::get_instance().get_session(path, options);
 }
 
 bool LivePortrait::Generator::is_model_loaded() const {
-    return m_session.is_model_loaded();
+    return m_session && m_session->is_model_loaded();
 }
 
 cv::Size LivePortrait::Generator::get_output_size() const {
     if (!is_model_loaded()) return {512, 512};
-    auto output_node_dims = m_session.get_output_node_dims();
+    auto output_node_dims = m_session->get_output_node_dims();
     int output_height = static_cast<int>(output_node_dims[0][2]);
     int output_width = static_cast<int>(output_node_dims[0][3]);
     return {output_width, output_height};
@@ -209,7 +211,7 @@ cv::Mat LivePortrait::Generator::generate_frame(std::vector<float>& feature_volu
 
     std::vector<Ort::Value> input_tensors;
     auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-    auto input_names = m_session.get_input_names();
+    auto input_names = m_session->get_input_names();
 
     // Map inputs by name. We have 3 known inputs.
     // Order in prepare_input tuple: feature, source, target.
@@ -236,7 +238,7 @@ cv::Mat LivePortrait::Generator::generate_frame(std::vector<float>& feature_volu
         }
     }
 
-    auto output_tensor = m_session.run(input_tensors);
+    auto output_tensor = m_session->run(input_tensors);
 
     return process_output(output_tensor);
 }

@@ -12,6 +12,7 @@ import :types;
 import domain.face.helper;
 import domain.face.masker;
 import foundation.ai.inference_session;
+import foundation.ai.inference_session_registry;
 
 export namespace domain::face::expression {
 
@@ -40,7 +41,7 @@ private:
             const std::vector<Ort::Value>& output_tensors) const;
 
     private:
-        mutable foundation::ai::inference_session::InferenceSession m_session;
+        std::shared_ptr<foundation::ai::inference_session::InferenceSession> m_session;
     };
 
     class MotionExtractor {
@@ -56,7 +57,7 @@ private:
             const std::vector<Ort::Value>& output_tensors) const;
 
     private:
-        mutable foundation::ai::inference_session::InferenceSession m_session;
+        std::shared_ptr<foundation::ai::inference_session::InferenceSession> m_session;
     };
 
     class Generator {
@@ -76,7 +77,7 @@ private:
         [[nodiscard]] cv::Mat process_output(const std::vector<Ort::Value>& output_tensors) const;
 
     private:
-        mutable foundation::ai::inference_session::InferenceSession m_session;
+        std::shared_ptr<foundation::ai::inference_session::InferenceSession> m_session;
     };
 
 private:

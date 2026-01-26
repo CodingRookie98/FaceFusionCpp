@@ -62,9 +62,24 @@ struct ModelsConfig {
 };
 
 /**
+ * @brief 默认模型配置
+ */
+struct DefaultModels {
+    std::string face_detector = "yoloface";
+    std::string face_recognizer = "arcface_w600k_r50";
+    std::string face_swapper = "inswapper_128";
+    std::string face_enhancer = "gfpgan_1.4";
+    std::string frame_enhancer = "real_esrgan_x4plus";
+    std::string expression_restorer_feature = "live_portrait_feature_extractor";
+    std::string expression_restorer_motion = "live_portrait_motion_extractor";
+    std::string expression_restorer_generator = "live_portrait_generator";
+};
+
+/**
  * @brief 应用配置 (对应 app_config.yaml)
  *
  * 静态配置，程序启动时加载，全局生效。
+
  */
 struct AppConfig {
     std::string config_version; ///< 配置版本，必须为 "1.0"
@@ -72,6 +87,7 @@ struct AppConfig {
     ResourceConfig resource;
     LoggingConfig logging;
     ModelsConfig models;
+    DefaultModels default_models;
     std::string temp_directory = "./temp"; ///< 临时文件目录
 };
 
