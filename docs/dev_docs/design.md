@@ -500,55 +500,22 @@ graph LR
 
 ## 6. 实施路线图 (Implementation Roadmap)
 
-本路线图严格遵循 C++20 模块化开发原则，按照 **从底向上 (Bottom-Up)** 的依赖顺序执行。
+本路线图采用 **自底向上 (Bottom-Up)** 策略，分四个阶段推进：
 
-### Phase 1: C++20 模块化基座 (Module Foundation)
-*   **Module Interfaces (`.ixx`)**: 定义核心子系统的物理边界与接口契约。
-    *   `Core.Config`: 配置结构定义。
-    *   `Core.Logging`: 日志接口。
-    *   `App.Pipeline`: 流水线与 Processor 接口 (通过 `concept` 约束)。
-*   **Concepts Definition**: 实现 `ProcessorConcept`, `FramePacketConcept` 等编译期约束。
+### Phase 1: 基座与设施 (Foundation & Infrastructure)
+*   **C++20 模块化**: 定义 `Core`, `App`, `Pipeline` 等核心 `.ixx` 接口与 Concept 约束。
+*   **基础设施**: 集成 `yaml-cpp` 配置系统、`spdlog` 日志后端及基于信号量的流控配额管理。
 
-### Phase 2: 基础设施 (Infrastructure Layer)
-*   **Configuration System**:
-    *   集成 `yaml-cpp`。
-    *   实现 **配置级联 (Cascading)** 逻辑 (System -> User -> Task)。
-*   **Flow Control**:
-    *   封装跨平台内存查询 API。
-    *   实现基于 `std::counting_semaphore` 的 **Quota 流控管理器**。
-*   **Logging Backend**: 对接 `spdlog` 或自研轻量级后端。
+### Phase 2: 核心引擎 (Core Engine)
+*   **数据流**: 定义 `FramePacket.fbs` (FlatBuffers) 及其零拷贝视图 (`std::span`)。
+*   **调度器**: 实现支持 Shutdown 语义的线程安全队列与串行流水线调度逻辑。
 
-### Phase 3: 数据流与调度核心 (Data Flow & Scheduler)
-*   **Data Serialization**:
-    *   定义 FlatBuffers Schema (`FramePacket.fbs`)。
-    *   实现基于 `std::span` 的零拷贝数据访问层。
-*   **Pipeline Engine**:
-    *   实现 **线程安全有界队列** (支持 Shutdown 语义)。
-    *   实现 **流水线调度器**: 负责 Processor 的串联、初始化与生命周期管理。
+### Phase 3: 业务实现 (Business Implementation)
+*   **模型管理**: 实现线程安全的 `ResourceManager`，对接 TensorRT/ONNX Runtime。
+*   **处理器**: 开发 `FaceSwapper` (Inswapper), `FaceEnhancer` (CodeFormer) 及透传逻辑。
 
-### Phase 4: 业务处理器实现 (Processor Implementation)
-*   **Model Management**:
-    *   实现 `ResourceManager` (Thread-Safe)。
-    *   集成 TensorRT / ONNX Runtime。
-*   **Core Processors**:
-    *   开发 `FaceSwapper` (Inswapper)。
-    *   开发 `FaceEnhancer` (CodeFormer/GFPGAN)。
-    *   开发 `FaceDetector` (YOLO/RetinaFace)。
-*   **Pass-through Logic**: 确保所有 Processor 在检测失败或异常时正确实现透传逻辑。
-
-### Phase 5: 韧性与优化 (Resilience & Optimization)
-*   **Resource Optimization**:
-    *   实现 `Strict` 模式下的 **Session LRU Cache**。
-    *   集成 `Batch` 模式下的 **分块 (Chunking)** 逻辑与磁盘缓存。
-*   **Fault Tolerance**:
-    *   实现断点续传 (Checkpointing)。
-    *   完善错误恢复机制 (跳过/警告)。
-
-### Phase 6: CLI 接入与验证 (Integration & Verification)
-*   **CLI Entrypoint**: 解析命令行参数，组装 Pipeline。
-*   **Progress Callback**: 连接 CLI 进度条 (tqdmo-style)。
-*   **E2E Testing**:
-    *   Sequential 模式全流程测试。
-    *   Batch 分段模式压力测试。
+### Phase 4: 交付与增强 (Delivery & Enhancement)
+*   **优化**: 实现 Strict 模式显存 LRU 缓存与 Batch 模式分块处理。
+*   **集成**: 完成 CLI 参数解析、进度条回调对接，并执行全流程 E2E 测试。
 
 ---
