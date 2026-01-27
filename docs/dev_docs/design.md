@@ -320,6 +320,65 @@ pipeline:
 
 ```
 
+
+---
+
+### 3.3 命令行接口 (Command Line Interface)
+
+本设计旨在平衡生产环境的复杂配置需求（通过 YAML）与开发调试的便捷性需求（通过命令行参数）。
+
+#### 3.3.1 设计原则
+*   **配置优先 (Configuration First)**: 核心运行模式依赖 `-c/--config` 加载完整的 YAML 任务文件，确保生产环境的可复现性。
+*   **参数覆盖 (CLI Override)**: 命令行参数优先级高于配置文件。例如指定了 `--config` 但同时指定了 `--output`，则以命令行指定的输出路径为准。
+*   **快捷方式 (Quick Run)**: 允许不提供 YAML 文件，仅通过 CLI 参数 `-s`, `-t`, `-o` 快速启动默认流水线，系统在内存中自动生成默认 Task Config。
+*   **POSIX 兼容**: 遵循标准加长参数风格 (e.g., `-s`, `--source`)。
+
+#### 3.3.2 命令结构
+`FaceFusionCpp.exe [GLOBAL_OPTIONS] [TASK_OPTIONS] [PROCESSOR_FLAGS]`
+
+#### 3.3.3 详细参数定义
+
+**基础与全局选项 (Global Options)**
+
+| 短参 | 长参             | 参数类型 | 描述                                       |
+| :--- | :--------------- | :------- | :----------------------------------------- |
+| `-h` | `--help`         | N/A      | 显示帮助信息并退出                         |
+| `-v` | `--version`      | N/A      | 显示版本信息与构建时间                     |
+| `-c` | `--config`       | Path     | **(核心)** 指定任务配置文件路径 (`.yaml`)  |
+|      | `--log-level`    | String   | 日志级别覆盖 (trace/debug/info/warn/error) |
+|      | `--list-models`  | N/A      | 列出所有可用模型及状态 (已下载/缺失)       |
+|      | `--system-check` | N/A      | 运行环境自检 (CUDA版本, 显存, 驱动支持等)  |
+
+**输入输出选项 (I/O Options)**
+*用于快捷模式或覆盖 Config 中的 `io` 字段*
+
+| 短参 | 长参              | 参数类型 | 描述                            |
+| :--- | :---------------- | :------- | :------------------------------ |
+| `-s` | `--source`        | Path(s)  | 源人脸路径 (支持多个，空格分隔) |
+| `-t` | `--target`        | Path(s)  | 目标视频/图片路径               |
+| `-o` | `--output`        | Path     | 输出目录路径                    |
+|      | `--output-format` | String   | 输出编码格式 (mp4/mov/jpg/png)  |
+
+**处理器快捷开关 (Processor Flags)**
+*用于快捷构建 Pipeline，默认加载 `default_task_settings` 中定义的模型。若指定了 `--config`，这些开关可用于临时启用/禁用特定步骤。*
+
+| 长参                   | 描述                               |
+| :--------------------- | :--------------------------------- |
+| `--face-swap`          | (默认开启) 启用换脸 (Face Swapper) |
+| `--no-face-swap`       | 禁用换脸                           |
+| `--face-enhance`       | 启用人脸增强 (Face Enhancer)       |
+| `--frame-enhance`      | 启用全帧增强 (Frame Enhancer)      |
+| `--expression-restore` | 启用表情还原 (Expression Restorer) |
+
+**性能与执行参数 (Execution Options)**
+
+| 长参                    | 参数类型 | 描述                                                 |
+| :---------------------- | :------- | :--------------------------------------------------- |
+| `--execution-providers` | List     | 指定推理后端优先级，逗号分隔 (e.g., "tensorrt,cuda") |
+| `--max-memory`          | Size     | 显存/内存使用上限 (e.g., "4GB", "80%")               |
+| `--threads`             | Int      | 并发线程数 (对应 `resource.thread_count`)            |
+| `--batch-mode`          | Flag     | 强制启用 Batch 处理模式 (需注意显存消耗)             |
+
 ---
 
 ## 4. 核心业务处理逻辑 (Core Business Logic)
