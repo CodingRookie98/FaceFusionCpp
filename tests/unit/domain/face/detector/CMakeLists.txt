@@ -6,4 +6,5 @@ add_facefusion_test(
         domain_face_detector
         domain_ai
         foundation_infrastructure
+        foundation_infrastructure_test_support
 )

@@ -9,6 +9,7 @@ add_facefusion_test(
         domain_ai
         foundation_ai
         foundation_infrastructure
+        foundation_infrastructure_test_support
         GTest::gtest
         ${OpenCV_LIBS}
 )

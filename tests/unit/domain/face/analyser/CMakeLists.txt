@@ -10,6 +10,7 @@ add_facefusion_test(
         domain_face
         domain_ai
         foundation_ai
+        foundation_infrastructure_test_support
         GTest::gmock
 )
 
@@ -25,5 +26,6 @@ add_facefusion_test(
         domain_face
         domain_ai
         foundation_ai
+        foundation_infrastructure_test_support
         GTest::gmock
 )

@@ -46,5 +46,6 @@ function(add_facefusion_test TEST_NAME)
 
 endfunction()
 
+add_subdirectory(test_support)
 add_subdirectory(unit)
 add_subdirectory(integration)

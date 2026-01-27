@@ -8,5 +8,6 @@ add_facefusion_test(
         domain_face_test_support
         domain_ai
         foundation_ai
+        foundation_infrastructure_test_support
         GTest::gmock
 )

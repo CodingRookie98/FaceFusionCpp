@@ -27,7 +27,6 @@ target_sources(foundation_infrastructure
             progress.ixx
         process.ixx
             thread_pool.ixx
-            test_support.ixx
     PRIVATE
         core_utils.cpp
         network.cpp
@@ -39,7 +38,6 @@ target_sources(foundation_infrastructure
         progress.cpp
         process.cpp
         thread_pool.cpp
-        test_support.cpp
 )
 
 target_link_libraries(foundation_infrastructure

@@ -12,6 +12,7 @@ add_facefusion_test(
     file_system_tests.cpp
     LINK_LIBRARIES
     foundation_infrastructure
+    foundation_infrastructure_test_support
 )
 
 add_facefusion_test(

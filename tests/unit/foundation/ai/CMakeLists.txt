@@ -5,6 +5,7 @@ add_facefusion_test(
     LINK_LIBRARIES
     foundation_ai
     foundation_infrastructure
+    foundation_infrastructure_test_support
 )
 
 add_facefusion_test(
@@ -14,4 +15,5 @@ add_facefusion_test(
     LINK_LIBRARIES
     foundation_ai
     foundation_infrastructure
+    foundation_infrastructure_test_support
 )
