@@ -1,17 +1,28 @@
 # 应用层架构设计说明书 (Application Layer Architecture Design Specification)
 
-> **文档状态**: 正式 (Official)
-> **版本**: V2.3
+> **文档标识**: FACE-FUSION-APP-ARCH
+> **密级**: 内部公开 (Internal Public)
+> **状态**: 正式 (Official)
 > **最后更新**: 2026-01-27
-> **适用范围**: FaceFusionCpp 应用层开发与维护
+
+## 版本历史 (Version History)
+
+| 版本 | 日期       | 修改人   | 说明                                      |
+| :--- | :--------- | :------- | :---------------------------------------- |
+| V1.0 | 2025-10-01 | ArchTeam | 初始版本                                  |
+| V2.0 | 2026-01-15 | ArchTeam | 重构为 C++20 模块化架构                   |
+| V2.3 | 2026-01-27 | ArchTeam | 新增命令行接口 (CLI) 设计; 优化工程化规范 |
+
+---
 
 ## 1. 引言 (Introduction)
 
 ### 1.1 目的 (Purpose)
-本文档旨在规范 FaceFusionCpp 项目应用层 (Application Layer) 的架构设计、配置管理规范及核心业务流程。本文档作为应用层开发的最高指导原则，明确了静态环境与动态作业的边界，规定了工程化实现的约束条件，以确保系统的高可用性、可维护性及扩展性。
+本文档旨在规范 **FaceFusionCpp** 项目应用层 (Application Layer) 的架构设计、配置管理规范及核心业务流程。作为应用层开发的最高指导原则，本文档明确了静态环境与动态作业的边界，规定了工程化实现的约束条件，以确保系统的高可用性、可维护性及扩展性。
 
 ### 1.2 架构原则 (Architecture Principles)
-本设计严格遵循项目定义的 **5层分层架构 (5-Layered Architecture)** 原则：
+本设计严格遵循项目定义的 **5层分层架构 (5-Layered Architecture)**：
+
 ```mermaid
 graph TD
     App[Application Layer] --> Svc[Services Layer]
@@ -19,46 +30,46 @@ graph TD
     Dom --> Plat[Platform Layer]
     Plat --> Fdn[Foundation Layer]
 ```
-*   **依赖单向性**: 上层仅依赖下层，严禁反向依赖。
-*   **模块化**: 基于 **C++20 Modules** (`.ixx` / `.cppm`) 构建，强制物理隔离接口与实现，子系统间通过定义的接口交互。
+
+*   **依赖单向性 (Unidirectional Dependency)**: 上层仅依赖下层，严禁反向依赖或跨层跳跃调用。
+*   **模块化 (Modularity)**: 基于 **C++20 Modules** (`.ixx` / `.cppm`) 构建，强制物理隔离接口与实现，子系统间仅通过明确定义的接口交互。
 
 ---
 
 ## 2. 核心架构设计 (Core Architecture Design)
 
 ### 2.1 关注点分离 (Separation of Concerns)
-为实现系统配置的解耦，将配置域严格划分为 **静态环境基础设施** 与 **动态业务流水线**。
+为实现系统配置的高内聚低耦合，将配置域严格划分为 **静态环境基础设施** 与 **动态业务流水线**。
 
-| 维度         | App Config (应用配置)                            | Task Config (任务配置)                               |
+| 维度         | **App Config (应用配置)**                        | **Task Config (任务配置)**                           |
 | :----------- | :----------------------------------------------- | :--------------------------------------------------- |
 | **定位**     | 运行时环境与基础设施定义                         | 具体业务处理逻辑定义                                 |
-| **文件**     | [App Config](#31-应用配置-app-configuration) | [Task Config](#32-任务配置-task-configuration) |
+| **引用**     | [3.1 应用配置](#31-应用配置-app-configuration)   | [3.2 任务配置](#32-任务配置-task-configuration)      |
 | **生命周期** | 进程级 (Global Static)                           | 任务级 (Task-Scoped Dynamic)                         |
-| **可变性**   | 启动时加载，运行时不可变                         | 每次任务执行时加载，高度灵活                         |
-| **包含内容** | 日志、模型路径、资源限制                         | Pipeline 步骤、输入输出、参数                        |
+| **可变性**   | 启动时加载，运行时不可变                         | 每次任务执行时动态加载                               |
+| **典型内容** | 日志级别、模型仓库路径、硬件资源限额             | Pipeline 步骤拓扑、输入输出路径、算法参数            |
 
 ### 2.2 运行模式 (Execution Modes)
-系统设计支持多种运行模式，底层核心逻辑（`RunPipeline`接口）保持一致，仅在接入层有所区分。
+系统设计支持多种运行模式，底层核心逻辑（`RunPipeline` 接口）保持一致，仅在接入层（Access Layer）有所区分。
 
-*   **命令行接口 (CLI Mode)** [Current Focus]
+*   **命令行接口 (CLI Mode)** (Current Focus)
     *   通过命令行参数 (`--config`) 注入任务配置。
-    *   适用于批处理、脚本自动化场景。
-*   **服务化接口 (Server Mode)** [Future Roadmap]
+    *   适用于离线批处理、CICD 脚本自动化场景。
+*   **服务化接口 (Server Mode)** (Future Roadmap)
     *   通过 HTTP/RPC 接收动态配置负载。
-    *   适用于即时服务、Web 后端集成场景。
-    *   设计要求：CLI 与 Server 模式除 "配置加载器" 与 "进度回调" 外，必须完全复用底层逻辑。
+    *   适用于即时推理服务、Web 后端集成场景。
+    *   **设计约束**: CLI 与 Server 模式除 "配置加载器" 与 "进度回调" 外，必须完全复用底层业务逻辑。
 
 ---
 
 ## 3. 详细设计规范 (Detailed Design Specifications)
 
 ### 3.1 应用配置 (App Configuration)
-
 采用分层架构设计，确保配置的可读性与逻辑性。
-*   **配置级联 (Configuration Cascading)**: 遵循优先级 `Task Config > User Config > System Default`。
-*   **设计约束**: 必须显式定义所有关键路径与资源限额，禁止在代码中硬编码环境相关路径。
-*   **参考实现**:
+*   **配置级联**: 遵循优先级 `Task Config > User Config > System Default`。
+*   **硬编码禁令**: 必须显式定义所有关键路径与资源限额，禁止在代码中硬编码环境相关路径。
 
+**Schema 参考**:
 ```yaml
 # Schema Version
 config_version: "1.0"
@@ -66,13 +77,13 @@ config_version: "1.0"
 # 推理基础设施 (Inference Infrastructure)
 inference:
   # 显卡/计算设备分配
-  # 扩展预留: 未来可支持 device_ids: [0, 1] 实现多卡并行推理
+  # 扩展预留: 未来可支持 device_ids: [0, 1]
   device_id: 0
   # 引擎缓存策略
   engine_cache:
     enable: true
-    path: "./.cache/tensorrt" # 相对路径
-  # 默认推理后端优先级 (Multiselect & Priority)
+    path: "./.cache/tensorrt" # 相对程序根目录
+  # 默认推理后端优先级
   default_providers:
     - tensorrt
     - cuda
@@ -141,6 +152,7 @@ temp_directory: "./temp"
 *   **链式处理 (Chain Processing)**: 无论执行顺序 (Sequential/Batch)，流水线均为链式处理 (S1结果 -> S2输入 -> S3)，而非原始帧独立处理。
 *   **参考实现**:
 
+**Schema 参考**:
 ```yaml
 # Schema Version
 config_version: "1.0"
@@ -164,13 +176,13 @@ io:
   # 注意: 源目前仅支持图片文件 [png, jpg, bmp]
   # 可输入文件路径或目录路径；若为目录，自动扫描并添加目录下所有支持的图片文件
   source_paths:
-    - "D:/projects/faceFusionCpp/data/source_face.jpg" # 强制绝对路径
+    - "D:/projects/faceFusionCpp/data/source_face.jpg"
 
   # 目标列表
   # 支持图片、视频、目录混合输入
   # 可输入文件路径或目录路径；若为目录，自动扫描并添加目录下所有支持的媒体文件
   target_paths:
-    - "D:/projects/faceFusionCpp/data/target_video.mp4" # 强制绝对路径
+    - "D:/projects/faceFusionCpp/data/target_video.mp4"
 
   # 输出配置
   output:
@@ -288,15 +300,15 @@ face_analysis:
 
 pipeline:
   - step: "face_swapper"
-    name: "swap_main_face" # Step 别名
+    name: "main_swap"
     enabled: true
     params:
       model: "inswapper_128_fp16"
       face_selector_mode: "reference"
-      reference_face_path: "D:/ref_face.jpg" # 绝对路径
+      reference_face_path: "D:/ref_face.jpg"
 
   - step: "face_enhancer"
-    name: "enhance_face"
+    name: "post_enhancement"
     enabled: true
     params:
       model: "codeformer"
@@ -324,60 +336,34 @@ pipeline:
 ---
 
 ### 3.3 命令行接口 (Command Line Interface)
-
-本设计旨在平衡生产环境的复杂配置需求（通过 YAML）与开发调试的便捷性需求（通过命令行参数）。
+本设计旨在平衡生产环境的配置管理需求与开发调试的便捷性。
 
 #### 3.3.1 设计原则
-*   **配置优先 (Configuration First)**: 核心运行模式依赖 `-c/--config` 加载完整的 YAML 任务文件，确保生产环境的可复现性。
-*   **参数覆盖 (CLI Override)**: 命令行参数优先级高于配置文件。例如指定了 `--config` 但同时指定了 `--output`，则以命令行指定的输出路径为准。
-*   **快捷方式 (Quick Run)**: 允许不提供 YAML 文件，仅通过 CLI 参数 `-s`, `-t`, `-o` 快速启动默认流水线，系统在内存中自动生成默认 Task Config。
-*   **POSIX 兼容**: 遵循标准加长参数风格 (e.g., `-s`, `--source`)。
+*   **配置优先 (Configuration First)**: 生产环境应始终通过 `-c/--config` 加载完整 YAML，确保可复现性。
+*   **参数覆盖 (CLI Override)**: 命令行显式参数优先级高于配置文件（例如在 Config 中定义了输出路径，但 CLI 又指定了 `-o`，则以 CLI 为准）。
+*   **快捷模式 (Quick Run)**: 支持仅通过 CLI 参数 (`-s`, `-t`) 启动默认流水线，无需预先编写 YAML。
 
 #### 3.3.2 命令结构
 `FaceFusionCpp.exe [GLOBAL_OPTIONS] [TASK_OPTIONS] [PROCESSOR_FLAGS]`
 
-#### 3.3.3 详细参数定义
+#### 3.3.3 参数规格
 
-**基础与全局选项 (Global Options)**
-
-| 短参 | 长参             | 参数类型 | 描述                                       |
-| :--- | :--------------- | :------- | :----------------------------------------- |
-| `-h` | `--help`         | N/A      | 显示帮助信息并退出                         |
-| `-v` | `--version`      | N/A      | 显示版本信息与构建时间                     |
-| `-c` | `--config`       | Path     | **(核心)** 指定任务配置文件路径 (`.yaml`)  |
-|      | `--log-level`    | String   | 日志级别覆盖 (trace/debug/info/warn/error) |
-|      | `--list-models`  | N/A      | 列出所有可用模型及状态 (已下载/缺失)       |
-|      | `--system-check` | N/A      | 运行环境自检 (CUDA版本, 显存, 驱动支持等)  |
-
-**输入输出选项 (I/O Options)**
-*用于快捷模式或覆盖 Config 中的 `io` 字段*
-
-| 短参 | 长参              | 参数类型 | 描述                            |
-| :--- | :---------------- | :------- | :------------------------------ |
-| `-s` | `--source`        | Path(s)  | 源人脸路径 (支持多个，空格分隔) |
-| `-t` | `--target`        | Path(s)  | 目标视频/图片路径               |
-| `-o` | `--output`        | Path     | 输出目录路径                    |
-|      | `--output-format` | String   | 输出编码格式 (mp4/mov/jpg/png)  |
-
-**处理器快捷开关 (Processor Flags)**
-*用于快捷构建 Pipeline，默认加载 `default_task_settings` 中定义的模型。若指定了 `--config`，这些开关可用于临时启用/禁用特定步骤。*
-
-| 长参                   | 描述                               |
-| :--------------------- | :--------------------------------- |
-| `--face-swap`          | (默认开启) 启用换脸 (Face Swapper) |
-| `--no-face-swap`       | 禁用换脸                           |
-| `--face-enhance`       | 启用人脸增强 (Face Enhancer)       |
-| `--frame-enhance`      | 启用全帧增强 (Frame Enhancer)      |
-| `--expression-restore` | 启用表情还原 (Expression Restorer) |
-
-**性能与执行参数 (Execution Options)**
-
-| 长参                    | 参数类型 | 描述                                                 |
-| :---------------------- | :------- | :--------------------------------------------------- |
-| `--execution-providers` | List     | 指定推理后端优先级，逗号分隔 (e.g., "tensorrt,cuda") |
-| `--max-memory`          | Size     | 显存/内存使用上限 (e.g., "4GB", "80%")               |
-| `--threads`             | Int      | 并发线程数 (对应 `resource.thread_count`)            |
-| `--batch-mode`          | Flag     | 强制启用 Batch 处理模式 (需注意显存消耗)             |
+| 类别     | 参数 (Short/Long)       | 类型    | 描述                           |
+| :------- | :---------------------- | :------ | :----------------------------- |
+| **全局** | `-h`, `--help`          | Flag    | 显示帮助与用法                 |
+|          | `-v`, `--version`       | Flag    | 显示构建版本信息               |
+|          | `-c`, `--config`        | Path    | **(核心)** 载入任务配置文件    |
+|          | `--log-level`           | String  | 覆盖日志级别                   |
+|          | `--system-check`        | Flag    | 执行环境完整性自检             |
+| **I/O**  | `-s`, `--source`        | Path(s) | 源路径（支持多个）             |
+|          | `-t`, `--target`        | Path(s) | 目标路径                       |
+|          | `-o`, `--output`        | Path    | 输出目录                       |
+| **开关** | `--face-swap`           | Flag    | (默认开启) 启用换脸步骤        |
+|          | `--no-face-swap`        | Flag    | 禁用换脸步骤                   |
+|          | `--face-enhance`        | Flag    | 启用人脸增强                   |
+|          | `--frame-enhance`       | Flag    | 启用全帧增强                   |
+| **性能** | `--execution-providers` | List    | 推理后端列表 (e.g. `cuda,cpu`) |
+|          | `--max-memory`          | Size    | 显存/内存配额 (e.g. `4GB`)     |
 
 ---
 
@@ -421,11 +407,12 @@ pipeline:
 *   **逻辑示意**:
 ```mermaid
 graph LR
+    Input[Input Source] --> Q1
     Q1[Queue 1] --> P1(Processor 1)
     P1 --> Q2[Queue 2]
     Q2 --> P2(Processor 2)
     P2 --> Q3[Queue 3]
-    Q3 --> Pn(...)
+    Q3 --> Output[Output Sink]
 ```
 
 #### 4.2.1 流水线策略 (Pipeline Strategy)
@@ -565,14 +552,3 @@ graph LR
     *   Batch 分段模式压力测试。
 
 ---
-
-## 7. 附录 (Appendix)
-
-### 7.1 术语表 (Glossary)
-*   **Embedding**: 人脸特征向量 (512-d).
-*   **Inswapper**: 换脸模型核心网络.
-*   **GFPGAN/CodeFormer**: 常用人脸增强网络.
-
-### 7.2 未来规划 (Future Work)
-*   **水印隐写**: 支持在输出视频中嵌入不可见版权水印。
-*   **Live Mode**: 支持摄像头实时流处理 (RTSP/Webcam)。
