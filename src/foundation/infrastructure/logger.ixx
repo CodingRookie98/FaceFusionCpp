@@ -6,13 +6,17 @@ module;
 /**
  * @file logger.ixx
  * @brief Thread-safe logging module based on spdlog
- * @author CodingRookie
- * @date 2026-01-18
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
  */
 export module foundation.infrastructure.logger;
 
 export namespace foundation::infrastructure::logger {
 
+/**
+ * @brief Log levels supported by the logger
+ */
 enum class LogLevel { Trace, Debug, Info, Warn, Error, Critical, Off };
 
 /**
