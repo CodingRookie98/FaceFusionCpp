@@ -5,8 +5,9 @@ module;
 /**
  * @file test_support.ixx
  * @brief Test support utilities for Foundation layer
- * @author CodingRookie
- * @date 2026-01-18
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
  */
 export module foundation.infrastructure.test_support;
 
