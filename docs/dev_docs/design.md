@@ -1,8 +1,8 @@
 # 应用层架构设计说明书 (Application Layer Architecture Design Specification)
 
 > **文档状态**: 正式 (Official)
-> **版本**: V2.1
-> **最后更新**: 2026-01-23
+> **版本**: V2.2
+> **最后更新**: 2026-01-27
 > **适用范围**: FaceFusionCpp 应用层开发与维护
 
 ## 1. 引言 (Introduction)
@@ -32,7 +32,7 @@ graph TD
 | 维度         | App Config (应用配置)    | Task Config (任务配置)        |
 | :----------- | :----------------------- | :---------------------------- |
 | **定位**     | 运行时环境与基础设施定义 | 具体业务处理逻辑定义          |
-| **文件**     | `design_app_config.yaml` | `design_task_config.yaml`     |
+| **文件**     | [App Config](#31-基础设施配置-app-configuration) | [Task Config](#32-业务流水线配置-task-configuration) |
 | **生命周期** | 进程级 (Global Static)   | 任务级 (Task-Scoped Dynamic)  |
 | **可变性**   | 启动时加载，运行时不可变 | 每次任务执行时加载，高度灵活  |
 | **包含内容** | 日志、模型路径、资源限制 | Pipeline 步骤、输入输出、参数 |
@@ -55,13 +55,227 @@ graph TD
 ### 3.1 基础设施配置 (App Configuration)
 采用分层架构设计，确保配置的可读性与逻辑性。
 *   **设计约束**: 必须显式定义所有关键路径与资源限额，禁止在代码中硬编码环境相关路径。
-*   **参考实现**: [design_app_config.yaml](./design_app_config.yaml)
+*   **参考实现**:
+
+```yaml
+# Schema Version
+config_version: "1.0"
+
+# 推理基础设施 (Inference Infrastructure)
+inference:
+  # 显卡/计算设备分配
+  # 扩展预留: 未来可支持 device_ids: [0, 1] 实现多卡并行推理
+  device_id: 0
+  # 引擎缓存策略
+  engine_cache:
+    enable: true
+    path: "./.cache/tensorrt" # 相对路径
+  # 默认推理后端优先级 (Multiselect & Priority)
+  default_providers:
+    - tensorrt
+    - cuda
+    - cpu
+
+# 资源与性能 (Resources & Performance)
+resource:
+  # 内存策略 (strict/tolerant)
+  # strict: 严格模式 (On-Demand). 处理器仅在执行时创建，用完即销毁。适合低显存环境。
+  # tolerant: 宽容模式 (Cached). 处理器在启动时预加载并常驻内存。适合高频任务或高显存环境。
+  memory_strategy: "strict"
+
+# 日志与调试 (System Logging)
+logging:
+  # 支持级别: trace, debug, info, warn, error
+  level: "info"
+  # 日志存储目录 (注意: 文件名固定为 app.log 或程序指定，不可配置，仅目录可配)
+  directory: "./logs"
+  rotation: "daily"
+
+# 模型管理 (Model Management)
+models:
+  # 模型基础目录
+  path: "./assets/models"
+  # 下载策略:
+  # force: 无论模型是否存在都强制下载
+  # skip: 模型不存在时跳过下载，从 model_repository 返回空路径，后续加载模型报错退出程序
+  # auto: 模型不存在时自动下载 (默认)
+  download_strategy: "auto"
+
+# 临时文件管理 (Temp File Management)
+temp_directory: "./temp"
+
+```
 
 ### 3.2 业务流水线配置 (Task Configuration)
+
 基于 **Pipeline Pattern** 设计，由有序的 **Steps** 组成。
 *   **Step 自包含性**: 每个 Step 包含完整的输入参数 (`params`)，不依赖全局隐式状态。
 *   **链式处理 (Chain Processing)**: 无论执行顺序 (Sequential/Batch)，流水线均为链式处理 (S1结果 -> S2输入 -> S3)，而非原始帧独立处理。
-*   **参考实现**: [design_task_config.yaml](./design_task_config.yaml)
+*   **参考实现**: 见下文 [3.2 业务流水线配置 (Task Configuration)](#32-业务流水线配置-task-configuration)
+
+```yaml
+# Schema Version
+config_version: "1.0"
+
+# 任务元数据 (Task Metadata)
+task_info:
+  # 唯一任务标识 (Runtime Unique ID)
+  # 格式: [a-zA-Z0-9_]
+  # 策略: 若为空由程序生成；若指定且冲突则拒绝任务。
+  id: "task_default_001"
+  description: "Face swap and enhancement pipeline"
+  # 是否启用独立任务日志 (Optional)
+  # 若启用，将在日志目录生成 {task_id}.log
+  enable_logging: true
+  # 是否启用断点续处理 (Optional)
+  enable_resume: false
+
+# 输入输出 (I/O)
+io:
+  # 输入源列表 (支持多源)
+  # 注意: 源目前仅支持图片文件 [png, jpg, bmp]
+  # 可输入文件路径或目录路径；若为目录，自动扫描并添加目录下所有支持的图片文件
+  source_paths:
+    - "D:/projects/faceFusionCpp/data/source_face.jpg" # 强制绝对路径
+
+  # 目标列表
+  # 支持图片、视频、目录混合输入
+  # 可输入文件路径或目录路径；若为目录，自动扫描并添加目录下所有支持的媒体文件
+  target_paths:
+    - "D:/projects/faceFusionCpp/data/target_video.mp4" # 强制绝对路径
+
+  # 输出配置
+  output:
+    path: "D:/projects/faceFusionCpp/data/output/" # 强制绝对路径
+    prefix: "result_"
+    subfix: "_v1"
+
+    # 格式配置
+    image_format: "png"      # [png, jpg, bmp]
+    video_encoder: "libx264" # [libx264, libx265, h264_nvenc, ...]
+    video_quality: 80        # [0-100]
+    # 输出文件冲突策略: overwrite, rename, error
+    conflict_policy: "error"
+    # 音频处理策略: copy, skip
+    # copy: 保留原视频音轨并合并到输出 (默认)
+    # skip: 跳过音频，输出静音视频
+    audio_policy: "copy"
+
+# 资源控制 (Resource Control)
+resource:
+  # 任务并发线程数 (Thread count for this specific task)
+  # 0: Auto (默认为机器最大线程数的一半 / 50% of CPU Cores)
+  thread_count: 0
+  # 处理顺序策略:
+  # sequential: 顺序模式 (默认, 省空间). Asset 1 [S1->S2] -> Asset 2 [S1->S2]
+  # batch: 批处理模式 (吞吐量优先). Step 1 [A1, A2] -> Step 2 [A1, A2]
+  execution_order: "sequential"
+  # 注意:
+  # 无论执行顺序如何，流水线均为链式处理 (S1结果 -> S2输入 -> S3)，而非原始帧独立处理模式。
+  # 视频分段处理 (Optional)
+  # 0: 不分段，整个视频一次性处理
+  # >0: 按指定秒数分段处理，最后合并输出为单个文件
+  segment_duration_seconds: 0
+
+# 人脸分析配置 (Shared Analysis Config)
+# 若多个步骤共享检测结果，可在此统一定义
+face_analysis:
+  face_detector:
+    # Models: [retinaface, scrfd, yoloface]
+    models: ["yoloface", "retinaface", "scrfd"] # 融合策略
+    score_threshold: 0.5
+  face_landmarker:
+    # Models: [2dfan4, peppa_wutz, face_landmarker_68_5]
+    model: "2dfan4"
+  face_recognizer:
+    # 人脸识别/相似度匹配 (用于 reference 模式)
+    # Models: [arcface_w600k_r50]
+    model: "arcface_w600k_r50"
+    # 相似度阈值: 低于此值认为不是同一人，跳过处理
+    # Range: [0.0, 1.0] (越高越严格)
+    similarity_threshold: 0.6
+  face_masker:
+    # 多遮罩融合策略 (Mask Fusion)
+    # Face Occluder Models: [xseg_1, xseg_2]
+    # Face Parser Models: [bisenet_resnet_18, bisenet_resnet_34]
+    types: ["box", "occlusion", "region"]
+    # Supported Regions: [skin, left-eyebrow, right-eyebrow, left-eye, right-eye,
+    #                     eye-glasses, left-ear, right-ear, earring, nose, mouth,
+    #                     upper-lip, lower-lip, neck, necklace, cloth, hair, hat]
+    # Default: "all" (if not specified or empty)
+    region: ["face", "eyes"] # 遮罩区域
+    # 融合逻辑: 将由代码内部实现最佳遮罩计算
+
+# 处理流水线 (Processing Pipeline)
+# 有序定义处理步骤
+#
+# Supported Processors & Parameters:
+#
+# 1. face_swapper
+#    - Models: [inswapper_128, inswapper_128_fp16]
+#    - Params:
+#        face_selector_mode: [reference, one, many] (default: many)
+#        reference_face_path: "path/to/face.jpg" (required if mode=reference)
+#          - 只有当图/帧中检测到与此参考图片中人脸相似的人脸时，才对该相似人脸进行处理
+#          - 若参考图片中无人脸，则此图/帧跳过当前 Step
+#
+# 2. face_enhancer
+#    - Models: [codeformer, gfpgan_1.2, gfpgan_1.3, gfpgan_1.4]
+#    - Params:
+#        blend_factor: 0.0 - 1.0 (default: 0.8)
+#        face_selector_mode: [reference, one, many] (default: many)
+#        reference_face_path: "path/to/face.jpg" (required if mode=reference)
+#          - 同上：仅处理与参考人脸相似的人脸
+#
+# 3. expression_restorer
+#    - Models: [live_portrait] (internally uses: feature_extractor, motion_extractor, generator)
+#    - Params:
+#        restore_factor: 0.0 - 1.0 (default: 0.8)
+#        face_selector_mode: [reference, one, many] (default: many)
+#        reference_face_path: "path/to/face.jpg" (required if mode=reference)
+#          - 同上：仅处理与参考人脸相似的人脸
+#
+# 4. frame_enhancer
+#    - Models: [real_esrgan_x2, real_esrgan_x2_fp16, real_esrgan_x4, real_esrgan_x4_fp16,
+#               real_esrgan_x8, real_esrgan_x8_fp16, real_hatgan_x4]
+#    - Params:
+#        enhance_factor: 0.0 - 1.0 (default: 0.8)
+#
+# 注意: 支持多个同类型 Step (如两个 face_enhancer)，每个 Step 的 name 和 params 可不同
+
+pipeline:
+  - step: "face_swapper"
+    name: "swap_main_face" # Step 别名
+    enabled: true
+    params:
+      model: "inswapper_128_fp16"
+      face_selector_mode: "reference"
+      reference_face_path: "D:/ref_face.jpg" # 绝对路径
+
+  - step: "face_enhancer"
+    name: "enhance_face"
+    enabled: true
+    params:
+      model: "codeformer"
+      blend_factor: 0.8
+      face_selector_mode: "many"
+      reference_face_path: "D:/ref_face.jpg" # 绝对路径
+
+  - step: "expression_restorer"
+    enabled: false
+    params:
+      model: "live_portrait"
+      restore_factor: 0.8
+      face_selector_mode: "many"
+      reference_face_path: "D:/ref_face.jpg" # 绝对路径
+
+  - step: "frame_enhancer"
+    enabled: false
+    params:
+      model: "real_esrgan_x4"
+      enhance_factor: 1.0
+
+```
 
 ---
 
