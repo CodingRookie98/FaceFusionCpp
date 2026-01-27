@@ -1,13 +1,15 @@
+/**
+ * @file concurrent_queue.ixx
+ * @brief Thread-safe queue implementation
+ * @author CodingRookie
+ * @date 2026-01-27
+ */
 module;
 #include <queue>
 #include <mutex>
 #include <condition_variable>
 #include <optional>
 
-/**
- * @file concurrent_queue.ixx
- * @brief Thread-safe queue implementation for general use
- */
 export module foundation.infrastructure.concurrent_queue;
 
 namespace foundation::infrastructure {
@@ -24,7 +26,6 @@ public:
      */
     explicit ConcurrentQueue(size_t max_size) : m_max_size(max_size) {}
 
-    // 禁止拷贝
     ConcurrentQueue(const ConcurrentQueue&) = delete;
     ConcurrentQueue& operator=(const ConcurrentQueue&) = delete;
 
@@ -35,10 +36,9 @@ public:
      */
     void push(T value) {
         std::unique_lock<std::mutex> lock(m_mutex);
-        // 等待直到队列不满 或 被关闭
         m_not_full.wait(lock, [this] { return m_queue.size() < m_max_size || m_shutdown; });
 
-        if (m_shutdown) return; // 如果已关闭，放弃 push
+        if (m_shutdown) return;
 
         m_queue.push(std::move(value));
         m_not_empty.notify_one();
@@ -51,12 +51,11 @@ public:
      */
     std::optional<T> pop() {
         std::unique_lock<std::mutex> lock(m_mutex);
-        // 等待直到队列不空 或 被关闭
         m_not_empty.wait(lock, [this] { return !m_queue.empty() || m_shutdown; });
 
         if (m_queue.empty() && m_shutdown) { return std::nullopt; }
 
-        if (m_queue.empty()) return std::nullopt; // double check
+        if (m_queue.empty()) return std::nullopt;
 
         T val = std::move(m_queue.front());
         m_queue.pop();
@@ -87,7 +86,6 @@ public:
             std::lock_guard<std::mutex> lock(m_mutex);
             m_shutdown = true;
         }
-        // 唤醒所有
         m_not_empty.notify_all();
         m_not_full.notify_all();
     }
@@ -121,7 +119,7 @@ public:
     }
 
     /**
-     * @brief Reset the queue to initial state (not shutdown)
+     * @brief Reset the queue to initial state
      */
     void reset() {
         std::lock_guard<std::mutex> lock(m_mutex);

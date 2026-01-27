@@ -5,8 +5,9 @@ module;
 /**
  * @file concurrent_file_system.ixx
  * @brief Concurrent file system operations
- * @author CodingRookie
- * @date 2026-01-18
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
  */
 export module foundation.infrastructure.concurrent_file_system;
 

@@ -13,7 +13,8 @@ module;
  * @file thread_pool.ixx
  * @brief Simple thread pool implementation
  * @author CodingRookie
- * @date 2026-01-18
+ *
+ * @date 2026-01-27
  */
 export module foundation.infrastructure.thread_pool;
 
