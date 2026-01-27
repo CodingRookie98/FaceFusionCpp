@@ -29,13 +29,13 @@ graph TD
 ### 2.1 关注点分离 (Separation of Concerns)
 为实现系统配置的解耦，将配置域严格划分为 **静态环境基础设施** 与 **动态业务流水线**。
 
-| 维度         | App Config (应用配置)    | Task Config (任务配置)        |
-| :----------- | :----------------------- | :---------------------------- |
-| **定位**     | 运行时环境与基础设施定义 | 具体业务处理逻辑定义          |
+| 维度         | App Config (应用配置)                            | Task Config (任务配置)                               |
+| :----------- | :----------------------------------------------- | :--------------------------------------------------- |
+| **定位**     | 运行时环境与基础设施定义                         | 具体业务处理逻辑定义                                 |
 | **文件**     | [App Config](#31-基础设施配置-app-configuration) | [Task Config](#32-业务流水线配置-task-configuration) |
-| **生命周期** | 进程级 (Global Static)   | 任务级 (Task-Scoped Dynamic)  |
-| **可变性**   | 启动时加载，运行时不可变 | 每次任务执行时加载，高度灵活  |
-| **包含内容** | 日志、模型路径、资源限制 | Pipeline 步骤、输入输出、参数 |
+| **生命周期** | 进程级 (Global Static)                           | 任务级 (Task-Scoped Dynamic)                         |
+| **可变性**   | 启动时加载，运行时不可变                         | 每次任务执行时加载，高度灵活                         |
+| **包含内容** | 日志、模型路径、资源限制                         | Pipeline 步骤、输入输出、参数                        |
 
 ### 2.2 运行模式 (Execution Modes)
 系统设计支持多种运行模式，底层核心逻辑（`RunPipeline`接口）保持一致，仅在接入层有所区分。
@@ -80,8 +80,13 @@ inference:
 # 资源与性能 (Resources & Performance)
 resource:
   # 内存策略 (strict/tolerant)
-  # strict: 严格模式 (On-Demand). 处理器仅在执行时创建，用完即销毁。适合低显存环境。
-  # tolerant: 宽容模式 (Cached). 处理器在启动时预加载并常驻内存。适合高频任务或高显存环境。
+  # strict: 严格模式 (On-Demand).
+  #         行为: 处理器仅在执行期间(run)持有模型资源。一旦完成当前分配的任务（Sequential模式下为任务结束，Batch模式下为批次处理完成），
+  #               **必须立即**释放底层推理引擎（Session/Context）与显存资源。
+  #         场景: 配合 execution_order: batch 使用效果最佳，可极大降低峰值显存。
+  # tolerant: 宽容模式 (Cached).
+  #         行为: 所有模型在系统启动时预加载，并常驻内存/显存，直到程序退出。
+  #         场景: 适合高频实时任务或显存充足环境，避免模型重复加载开销。
   memory_strategy: "strict"
 
 # 日志与调试 (System Logging)
@@ -167,6 +172,11 @@ resource:
   # 任务并发线程数 (Thread count for this specific task)
   # 0: Auto (默认为机器最大线程数的一半 / 50% of CPU Cores)
   thread_count: 0
+  # 队列最大容量 (Max Buffer Size per Pipeline Step)
+  # 控制每个步骤的输入/输出队列上限，防止内存溢出 (OOM)。
+  # 策略: 实际容量 = min(max_queue_size, AvailableRAM / FrameSize)
+  # 默认: 20 (1080p RGBA ~160MB/Queue; 4 queues ~640MB Total)
+  max_queue_size: 20
   # 处理顺序策略:
   # sequential: 顺序模式 (默认). 每一帧/图一次性经过流水线中所有处理器。
   #             优势: 低延迟，内存占用小 (仅需存当前帧).
@@ -351,6 +361,16 @@ graph LR
 
 为确保代码达到工业级交付标准，必须严格遵守以下工程规范。
 
+### 5.8 数据序列化 (Data Serialization)
+*   **技术选型**: **FlatBuffers** (Google)。
+*   **决策依据**:
+    *   **Zero-Copy**: 支持直接对内存映射文件 (mmap) 进行读取而无需反序列化解析步，对于高频 IO 的 Batch 模式至关重要。
+    *   **二进制效率**: 相比 JSON (需 Base64 编码，体积膨胀 ~33%)，FlatBuffers 紧凑且无编解码 CPU 开销。
+    *   **强类型模式**: 通过 `.fbs` Schema 保证 C++ 结构的内存布局稳定性。
+*   **实现策略**:
+    *   定义 `FramePacket` Schema，包含 `Metadata` (Dims, Timestamp) 与 `Payload` (Raw Pixel Bytes / Tensor Data)。
+    *   结合 `batch_buffer_mode: disk` 使用内存映射 (Memory Mapped File) 读写，减少系统调用开销。
+
 ### 5.1 路径解析规范 (Path Resolution Criteria)
 *   **App Config**: 所有路径视为 **相对路径**，基准目录为 **程序安装根目录 (App Root)**。
 *   **Task Config**: 所有 I/O 路径 (Source/Target/Output) 必须强制转换为 **绝对路径 (Absolute Path)**。
@@ -387,9 +407,15 @@ graph LR
 ### 5.7 资源并发与流控 (Concurrency & Flow Control)
 *   **线程安全**: `ResourceManager` 必须实现线程安全，支持多线程并发访问模型实例。
 *   **自适应背压 (Adaptive Backpressure)**:
-    *   实现 **动态有界队列**，容量 `= min(HardLimit, (AvailableRAM - SafetyMargin) / FrameSize)`。
+    *   实现 **动态有界队列**，容量由配置 `resource.max_queue_size` 决定上限。
+    *   动态公式: `Capacity = min(Config.max_queue_size, (AvailableRAM - SafetyMargin) / FrameSize)`。
     *   防止生产者 (CPU Decode) 速度远大于消费者 (GPU Inference) 导致的 OOM。
     *   需封装跨平台内存查询 API (Windows/Linux)。
+*   **队列生命周期管理 (Queue Lifecycle Management)**:
+    *   必须实现 **显式关闭 (Explicit Shutdown)** 机制，防止消费者线程空转或死锁。
+    *   **Shutdown 语义**: 标记队列"不再接受新输入" (`push` 返回失败)，但允许继续消费剩余数据。
+    *   **退出条件**: 当 `State == Shutdown` 且 `Count == 0` 时，消费者收到结束信号（如 `pop` 返回 false）。
+    *   **信号传递 (Propagation)**: 前级处理器的结束信号应自动触发下一级输入队列的 Shutdown，实现流水线的多米诺式自然闭合。
 
 ### 5.8 断点续传 (Checkpointing)
 *   **机制**: 长任务定期写入 `checkpoints/{task_id}.ckpt`。
