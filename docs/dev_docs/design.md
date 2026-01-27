@@ -32,7 +32,7 @@ graph TD
 | 维度         | App Config (应用配置)                            | Task Config (任务配置)                               |
 | :----------- | :----------------------------------------------- | :--------------------------------------------------- |
 | **定位**     | 运行时环境与基础设施定义                         | 具体业务处理逻辑定义                                 |
-| **文件**     | [App Config](#31-基础设施配置-app-configuration) | [Task Config](#32-业务流水线配置-task-configuration) |
+| **文件**     | [App Config](#31-应用配置-app-configuration) | [Task Config](#32-任务配置-task-configuration) |
 | **生命周期** | 进程级 (Global Static)                           | 任务级 (Task-Scoped Dynamic)                         |
 | **可变性**   | 启动时加载，运行时不可变                         | 每次任务执行时加载，高度灵活                         |
 | **包含内容** | 日志、模型路径、资源限制                         | Pipeline 步骤、输入输出、参数                        |
@@ -95,7 +95,19 @@ logging:
   level: "info"
   # 日志存储目录 (注意: 文件名固定为 app.log 或程序指定，不可配置，仅目录可配)
   directory: "./logs"
+  # 日志存储目录 (注意: 文件名固定为 app.log 或程序指定，不可配置，仅目录可配)
+  directory: "./logs"
   rotation: "daily"
+
+# 可观测性 (Observability)
+metrics:
+  enable: true
+  # 追踪每个 Step 的耗时分布 (Avg, P99)
+  step_latency: true
+  # 记录 GPU 显存变化曲线
+  gpu_memory: true
+  # 输出报告文件 (json)
+  report_path: "./logs/metrics_{timestamp}.json"
 
 # 模型管理 (Model Management)
 models:
@@ -417,11 +429,11 @@ graph LR
     *   **退出条件**: 当 `State == Shutdown` 且 `Count == 0` 时，消费者收到结束信号（如 `pop` 返回 false）。
     *   **信号传递 (Propagation)**: 前级处理器的结束信号应自动触发下一级输入队列的 Shutdown，实现流水线的多米诺式自然闭合。
 
-### 5.8 断点续传 (Checkpointing)
+### 5.9 断点续传 (Checkpointing)
 *   **机制**: 长任务定期写入 `checkpoints/{task_id}.ckpt`。
 *   **恢复**: 重启时检测 checkpoint，跳过已完成的 Frames/Segments。
 
-### 5.9 视频分段处理 (Segmentation Strategy)
+### 5.10 视频分段处理 (Segmentation Strategy)
 *   **大文件处理**: 支持按 `duration` 切分长视频。
 *   **关键帧对齐**: 切分点对齐 Keyframe 以避免编码瑕疵。
 *   **合并**: 所有 Segment 处理完成后，自动合并并清理临时分段文件。
