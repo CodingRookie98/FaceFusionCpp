@@ -1,7 +1,7 @@
 # 应用层架构设计说明书 (Application Layer Architecture Design Specification)
 
 > **文档状态**: 正式 (Official)
-> **版本**: V2.2
+> **版本**: V2.3
 > **最后更新**: 2026-01-27
 > **适用范围**: FaceFusionCpp 应用层开发与维护
 
@@ -20,7 +20,7 @@ graph TD
     Plat --> Fdn[Foundation Layer]
 ```
 *   **依赖单向性**: 上层仅依赖下层，严禁反向依赖。
-*   **模块化**: 子系统间通过定义的接口交互，实现高内聚低耦合。
+*   **模块化**: 基于 **C++20 Modules** (`.ixx` / `.cppm`) 构建，强制物理隔离接口与实现，子系统间通过定义的接口交互。
 
 ---
 
@@ -55,6 +55,7 @@ graph TD
 ### 3.1 应用配置 (App Configuration)
 
 采用分层架构设计，确保配置的可读性与逻辑性。
+*   **配置级联 (Configuration Cascading)**: 遵循优先级 `Task Config > User Config > System Default`。
 *   **设计约束**: 必须显式定义所有关键路径与资源限额，禁止在代码中硬编码环境相关路径。
 *   **参考实现**:
 
@@ -80,14 +81,23 @@ inference:
 # 资源与性能 (Resources & Performance)
 resource:
   # 内存策略 (strict/tolerant)
-  # strict: 严格模式 (On-Demand).
-  #         行为: 处理器仅在执行期间(run)持有模型资源。一旦完成当前分配的任务（Sequential模式下为任务结束，Batch模式下为批次处理完成），
-  #               **必须立即**释放底层推理引擎（Session/Context）与显存资源。
+  # strict: 严格模式 (On-Demand with LRU).
+  #         行为: 处理器仅在执行期间(run)持有模型资源。一旦完成当前分配的任务，尝试释放底层推理引擎资源。
+  #               *优化*: 引入 Session Cache / LRU 机制，保留最近使用的 Engine Context，避免频繁加载/卸载造成的性能抖动，仅在显存压力大或超时未复用时真正释放。
   #         场景: 配合 execution_order: batch 使用效果最佳，可极大降低峰值显存。
   # tolerant: 宽容模式 (Cached).
   #         行为: 所有模型在系统启动时预加载，并常驻内存/显存，直到程序退出。
   #         场景: 适合高频实时任务或显存充足环境，避免模型重复加载开销。
   memory_strategy: "strict"
+
+# 默认任务配置 (Default Task Settings)
+# 若 Task Config 中未指定，则回退使用此处的默认值
+default_task_settings:
+  video_encoder: "libx264"
+  video_quality: 80
+  output_prefix: "result_"
+  conflict_policy: "error"
+  audio_policy: "copy"
 
 # 日志与调试 (System Logging)
 logging:
@@ -193,9 +203,10 @@ resource:
   # sequential: 顺序模式 (默认). 每一帧/图一次性经过流水线中所有处理器。
   #             优势: 低延迟，内存占用小 (仅需存当前帧).
   #             劣势: 频繁切换模型可能导致 VRAM 碎片或上下文切换开销 (若 strict 模式).
-  # batch: 批处理模式. 全量帧通过 Processor A 后再进入 Processor B.
+  # batch: 批处理模式. 全量帧 (或分块) 通过 Processor A 后再进入 Processor B.
   #        优势: 极大降低显存峰值 (可配合 strict 模式卸载模型)，最大化 GPU 吞吐量.
   #        劣势: 需要巨大的中间存储空间 (RAM/Disk)，首帧延迟高.
+  #        *警告*: 处理长视频时极易导致 OOM 或磁盘爆炸。强烈建议配合 `segment_duration_seconds` 使用，或由系统自动分块 (Chunked Batch)。
   execution_order: "sequential"
 
   # 批处理中间存储策略 (仅 execution_order=batch 时有效)
@@ -249,7 +260,7 @@ face_analysis:
 #        face_selector_mode: [reference, one, many] (default: many)
 #        reference_face_path: "path/to/face.jpg" (required if mode=reference)
 #          - 只有当图/帧中检测到与此参考图片中人脸相似的人脸时，才对该相似人脸进行处理
-#          - 若参考图片中无人脸，则此图/帧跳过当前 Step
+#          - 若参考图片中无人脸，则此图/帧透传 (Pass-through)，即直接输出原始帧，不进行处理
 #
 # 2. face_enhancer
 #    - Models: [codeformer, gfpgan_1.2, gfpgan_1.3, gfpgan_1.4]
@@ -316,6 +327,7 @@ pipeline:
 ### 4.1 处理器 (Processor)
 
 系统通过标准化的 **Processor** 接口实现具体的图像/视频处理能力。
+*   **C++20 Concepts**: 使用 `concept Processor` 在编译期约束插件接口（如 `process()`, `InputType`, `OutputType`），替代纯虚函数运行时多态，提升类型安全与内联优化机会。
 
 #### 4.1.1 换脸处理器 (Face Swapper)
 *   **功能**: 将源人脸 (Source) 特征映射至目标图像 (Target) 的人脸区域。
@@ -386,7 +398,7 @@ graph LR
 
 ### 5.3 错误处理与恢复 (Error Handling & Recovery)
 *   **非致命错误策略**:
-    *   **检测失败 (No Face Detected)**: 记录 WARN 日志，**跳过** 当前帧/Step，严禁抛出异常导致进程崩溃。
+    *   **检测失败 (No Face Detected)**: 记录 WARN 日志，**透传 (Pass-through)** 当前帧，即保留原始图像直接送入输出队列，保持音画同步，严禁抛出异常或直接丢帧。
     *   **Batch 容错**: 单帧失败不影响 Batch 中其他帧的处理。
 *   **致命错误**: 资源耗尽、模型文件缺失、I/O 权限拒绝等，应立即中断并上报。
 
@@ -395,7 +407,7 @@ graph LR
 *   **加载校验**: 启动时校验主版本号，不兼容版本必须明确报错拒绝加载。
 
 ### 5.5 元数据管理 (Metadata Management)
-*   **编译期注入**: App Name, Version, Build Time 等信息通过 CMake 生成 `version.h`。
+*   **编译期注入**: App Name, Version, Build Time 等信息通过 CMake 生成 `version.ixx`。
 *   **单一事实来源 (SSOT)**: 严禁在配置文件中手动维护版本号，`main` 函数启动 banner 必须读取编译宏。
 
 ### 5.6 优雅停机 (Graceful Shutdown)
@@ -409,10 +421,9 @@ graph LR
 ### 5.7 资源并发与流控 (Concurrency & Flow Control)
 *   **线程安全**: `ResourceManager` 必须实现线程安全，支持多线程并发访问模型实例。
 *   **自适应背压 (Adaptive Backpressure)**:
-    *   实现 **动态有界队列**，容量由配置 `resource.max_queue_size` 决定上限。
-    *   动态公式: `Capacity = min(Config.max_queue_size, (AvailableRAM - SafetyMargin) / FrameSize)`。
-    *   防止生产者 (CPU Decode) 速度远大于消费者 (GPU Inference) 导致的 OOM。
-    *   需封装跨平台内存查询 API (Windows/Linux)。
+    *   **基于配额 (Quota-based)**: 用户配置明确的 `resource.max_memory_usage` (e.g. 4GB)。
+    *   **流控机制**: 使用信号量 (`std::counting_semaphore`) 维护全局内存配额。
+    *   防止生产者 (CPU Decode) 速度远大于消费者 (GPU Inference) 导致的 OOM，避免依赖 OS 动态内存查询带来的不稳定性。
 *   **队列生命周期管理 (Queue Lifecycle Management)**:
     *   必须实现 **显式关闭 (Explicit Shutdown)** 机制，防止消费者线程空转或死锁。
     *   **Shutdown 语义**: 标记队列"不再接受新输入" (`push` 返回失败)，但允许继续消费剩余数据。
@@ -426,6 +437,7 @@ graph LR
     *   **二进制效率**: 相比 JSON (需 Base64 编码，体积膨胀 ~33%)，FlatBuffers 紧凑且无编解码 CPU 开销。
     *   **强类型模式**: 通过 `.fbs` Schema 保证 C++ 结构的内存布局稳定性。
 *   **实现策略**:
+    *   使用 **C++20 `std::span`** 管理二进制视图，避免不必要的内存拷贝。
     *   定义 `FramePacket` Schema，包含 `Metadata` (Dims, Timestamp) 与 `Payload` (Raw Pixel Bytes / Tensor Data)。
     *   结合 `batch_buffer_mode: disk` 使用内存映射 (Memory Mapped File) 读写，减少系统调用开销。
 
@@ -442,11 +454,56 @@ graph LR
 
 ## 6. 实施路线图 (Implementation Roadmap)
 
-1.  **Schema Definition**: 定义 C++ Structs 与 YAML 的严格映射关系。
-2.  **Infrastructure**: 集成 `yaml-cpp`，实现配置加载器与校验器。
-3.  **Core Pipeline**: 实现基于工厂模式的 Processor 创建与 Pipeline 调度器。
-4.  **Resilience**: 实现断点续传与自适应内存流控。
-5.  **Optimization**: 引入多线程预取与 CUDA Stream 优化。
+本路线图严格遵循 C++20 模块化开发原则，按照 **从底向上 (Bottom-Up)** 的依赖顺序执行。
+
+### Phase 1: C++20 模块化基座 (Module Foundation)
+*   **Module Interfaces (`.ixx`)**: 定义核心子系统的物理边界与接口契约。
+    *   `Core.Config`: 配置结构定义。
+    *   `Core.Logging`: 日志接口。
+    *   `App.Pipeline`: 流水线与 Processor 接口 (通过 `concept` 约束)。
+*   **Concepts Definition**: 实现 `ProcessorConcept`, `FramePacketConcept` 等编译期约束。
+
+### Phase 2: 基础设施 (Infrastructure Layer)
+*   **Configuration System**:
+    *   集成 `yaml-cpp`。
+    *   实现 **配置级联 (Cascading)** 逻辑 (System -> User -> Task)。
+*   **Flow Control**:
+    *   封装跨平台内存查询 API。
+    *   实现基于 `std::counting_semaphore` 的 **Quota 流控管理器**。
+*   **Logging Backend**: 对接 `spdlog` 或自研轻量级后端。
+
+### Phase 3: 数据流与调度核心 (Data Flow & Scheduler)
+*   **Data Serialization**:
+    *   定义 FlatBuffers Schema (`FramePacket.fbs`)。
+    *   实现基于 `std::span` 的零拷贝数据访问层。
+*   **Pipeline Engine**:
+    *   实现 **线程安全有界队列** (支持 Shutdown 语义)。
+    *   实现 **流水线调度器**: 负责 Processor 的串联、初始化与生命周期管理。
+
+### Phase 4: 业务处理器实现 (Processor Implementation)
+*   **Model Management**:
+    *   实现 `ResourceManager` (Thread-Safe)。
+    *   集成 TensorRT / ONNX Runtime。
+*   **Core Processors**:
+    *   开发 `FaceSwapper` (Inswapper)。
+    *   开发 `FaceEnhancer` (CodeFormer/GFPGAN)。
+    *   开发 `FaceDetector` (YOLO/RetinaFace)。
+*   **Pass-through Logic**: 确保所有 Processor 在检测失败或异常时正确实现透传逻辑。
+
+### Phase 5: 韧性与优化 (Resilience & Optimization)
+*   **Resource Optimization**:
+    *   实现 `Strict` 模式下的 **Session LRU Cache**。
+    *   集成 `Batch` 模式下的 **分块 (Chunking)** 逻辑与磁盘缓存。
+*   **Fault Tolerance**:
+    *   实现断点续传 (Checkpointing)。
+    *   完善错误恢复机制 (跳过/警告)。
+
+### Phase 6: CLI 接入与验证 (Integration & Verification)
+*   **CLI Entrypoint**: 解析命令行参数，组装 Pipeline。
+*   **Progress Callback**: 连接 CLI 进度条 (tqdmo-style)。
+*   **E2E Testing**:
+    *   Sequential 模式全流程测试。
+    *   Batch 分段模式压力测试。
 
 ---
 
