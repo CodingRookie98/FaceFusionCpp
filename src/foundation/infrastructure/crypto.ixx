@@ -6,7 +6,8 @@ module;
  * @file crypto.ixx
  * @brief Cryptographic utilities
  * @author CodingRookie
- * @date 2026-01-18
+ * @date
+ * 2026-01-27
  */
 export module foundation.infrastructure.crypto;
 

@@ -6,8 +6,9 @@ module;
 /**
  * @file concurrent_crypto.ixx
  * @brief Concurrent cryptographic operations
- * @author CodingRookie
- * @date 2026-01-18
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
  */
 export module foundation.infrastructure.concurrent_crypto;
 
