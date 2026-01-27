@@ -168,9 +168,18 @@ resource:
   # 0: Auto (默认为机器最大线程数的一半 / 50% of CPU Cores)
   thread_count: 0
   # 处理顺序策略:
-  # sequential: 顺序模式 (默认, 省空间). Asset 1 [S1->S2] -> Asset 2 [S1->S2]
-  # batch: 批处理模式 (吞吐量优先). Step 1 [A1, A2] -> Step 2 [A1, A2]
+  # sequential: 顺序模式 (默认). 每一帧/图一次性经过流水线中所有处理器。
+  #             优势: 低延迟，内存占用小 (仅需存当前帧).
+  #             劣势: 频繁切换模型可能导致 VRAM 碎片或上下文切换开销 (若 strict 模式).
+  # batch: 批处理模式. 全量帧通过 Processor A 后再进入 Processor B.
+  #        优势: 极大降低显存峰值 (可配合 strict 模式卸载模型)，最大化 GPU 吞吐量.
+  #        劣势: 需要巨大的中间存储空间 (RAM/Disk)，首帧延迟高.
   execution_order: "sequential"
+
+  # 批处理中间存储策略 (仅 execution_order=batch 时有效)
+  # memory: 存入 RAM. 速度快，但长视频易 OOM.
+  # disk: 存入临时磁盘文件. 速度较慢 (IO瓶颈)，但支持无限长视频.
+  batch_buffer_mode: "memory"
   # 注意:
   # 无论执行顺序如何，流水线均为链式处理 (S1结果 -> S2输入 -> S3)，而非原始帧独立处理模式。
   # 视频分段处理 (Optional)
@@ -326,6 +335,16 @@ graph LR
     Q3 --> Pn(...)
 ```
 
+#### 4.2.1 流水线策略 (Pipeline Strategy)
+*   **顺序模式 (Sequential)** (Default/Latency Oriented):
+    *   **逻辑**: `Frame_1 -> [P1->P2->P3] -> Output`
+    *   **适用**: 实时流处理，能够容纳同时加载多个模型到显存的高配机器。
+    *   **优点**: 极低的首帧延迟，内存开销最小 (In-flight frames 极少)。
+*   **批处理模式 (Batch)** (Throughput/VRAM Oriented):
+    *   **逻辑**: `All_Frames -> P1 -> Buffer(Disk/RAM) -> P2 -> Output`
+    *   **适用**: 显存受限设备 (低显存跑大模型)，或离线大批量处理。
+    *   **优点**: 结合 `memory_strategy: strict` 可实现"单模型显存占用"，极大降低硬件门槛。
+    *   **代价**: 需要较大的内存或磁盘空间存储中间结果 (`Frames * Resolution * Bytes`)。
 ---
 
 ## 5. 工程化约束与最佳实践 (Engineering Constraints)
