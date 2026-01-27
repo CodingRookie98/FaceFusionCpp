@@ -8,8 +8,9 @@ module;
 /**
  * @file process.ixx
  * @brief Process management module based on TinyProcessLib
- * @author CodingRookie
- * @date 2026-01-18
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
  */
 export module foundation.infrastructure.process;
 
@@ -24,20 +25,24 @@ struct Config {
     std::function<void()> on_stdout_close = nullptr;
     std::function<void()> on_stderr_close = nullptr;
 
+    /**
+     * @brief Window display mode
+     */
     enum class ShowWindow {
-        hide = 0,
-        show_normal = 1,
-        show_minimized = 2,
-        maximize = 3,
-        show_maximized = 3,
-        show_no_activate = 4,
-        show = 5,
-        minimize = 6,
-        show_min_no_active = 7,
-        show_na = 8,
-        restore = 9,
-        show_default = 10,
-        force_minimize = 11
+        hide = 0,               ///< Hide the window
+        show_normal = 1,        ///< Activate and display in a normal size
+        show_minimized = 2,     ///< Activate and display minimized
+        maximize = 3,           ///< Activate and display maximized
+        show_maximized = 3,     ///< Alias for maximize
+        show_no_activate = 4,   ///< Display in its most recent size and position, do not activate
+        show = 5,               ///< Activate and show
+        minimize = 6,           ///< Minimize
+        show_min_no_active = 7, ///< Display minimized, do not activate
+        show_na = 8,            ///< Display in current state, do not activate
+        restore = 9,            ///< Activate and display (restore if minimized/maximized)
+        show_default = 10,      ///< Sets the show state based on the STARTUPINFO
+        force_minimize =
+            11 ///< Minimizes a window, even if the thread that owns the window is not responding
     };
     ShowWindow show_window{ShowWindow::show_default};
 };

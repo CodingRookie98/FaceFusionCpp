@@ -5,8 +5,9 @@ module;
 /**
  * @file progress.ixx
  * @brief Progress tracking module (based on indicators)
- * @author CodingRookie
- * @date 2026-01-18
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
  */
 export module foundation.infrastructure.progress;
 

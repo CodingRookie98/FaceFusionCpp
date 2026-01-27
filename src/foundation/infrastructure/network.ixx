@@ -5,8 +5,9 @@ module;
 /**
  * @file network.ixx
  * @brief Network utility module for downloading files
- * @author CodingRookie
- * @date 2026-01-18
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
  */
 export module foundation.infrastructure.network;
 
