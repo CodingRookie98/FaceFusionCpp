@@ -4,12 +4,11 @@ module;
 /**
  * @file core_utils_random.ixx
  * @brief Core utility module partition for random utilities
+ *
  * @author CodingRookie
- * @date 2026-01-18
+ * @date 2026-01-27
  */
 export module foundation.infrastructure.core_utils:random;
-
-// import <string>;
 
 namespace foundation::infrastructure::core_utils::random {
 

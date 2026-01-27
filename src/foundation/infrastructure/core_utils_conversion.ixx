@@ -4,9 +4,10 @@ module;
 
 /**
  * @file core_utils_conversion.ixx
- * @brief Core utility module partition for conversion utilities
+ * @brief Core utility module partition for conversion
+ * utilities
  * @author CodingRookie
- * @date 2026-01-18
+ * @date 2026-01-27
  */
 export module foundation.infrastructure.core_utils:conversion;
 
