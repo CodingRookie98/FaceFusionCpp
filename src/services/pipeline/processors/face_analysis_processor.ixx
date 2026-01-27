@@ -1,3 +1,9 @@
+/**
+ * @file face_analysis_processor.ixx
+ * @brief Processor for high-level face analysis in the pipeline
+ * @author CodingRookie
+ * @date 2026-01-27
+ */
 module;
 #include <vector>
 #include <memory>
@@ -18,30 +24,37 @@ namespace services::pipeline::processors {
 using namespace domain::pipeline;
 
 /**
- * @brief Analysis Requirements
- *
- * Flags to indicate which downstream data should be prepared.
+ * @brief Configuration for required analysis data
+ * @details Used to inform the processor which specific domain data (e.g. Swapper input)
+ *          should be extracted and attached to frame metadata.
  */
 export struct FaceAnalysisRequirements {
-    bool need_swap_data = false;
-    bool need_enhance_data = false;
-    bool need_expression_data = false;
+    bool need_swap_data = false;       ///< Prepare data for IFaceSwapper
+    bool need_enhance_data = false;    ///< Prepare data for IFaceEnhancer
+    bool need_expression_data = false; ///< Prepare data for IFaceExpressionRestorer
 };
 
 /**
- * @brief Face Analysis Processor
- *
- * Performs face detection and prepares context data for downstream processors
- * (Swapper, Enhancer, Expression Restorer).
+ * @brief High-level pipeline processor for face detection and metadata preparation
+ * @details Orchestrates FaceAnalyser to detect faces and populates FrameData metadata
+ *          with inputs required by downstream processors.
  */
 export class FaceAnalysisProcessor : public IFrameProcessor {
 public:
+    /**
+     * @brief Construct a Face Analysis Processor
+     * @param analyser Initialized FaceAnalyser instance
+     * @param src_emb Source face embedding for reference (optional)
+     * @param reqs Flags for required downstream data
+     */
     FaceAnalysisProcessor(std::shared_ptr<domain::face::analyser::FaceAnalyser> analyser,
                           std::vector<float> src_emb, FaceAnalysisRequirements reqs) :
         m_analyser(std::move(analyser)), source_embedding(std::move(src_emb)), m_reqs(reqs) {}
 
+    /**
+     * @brief Detect faces and attach processing metadata to the frame
+     */
     void process(FrameData& frame) override {
-        // Use Detection only (implicitly includes 5 landmarks)
         auto faces = m_analyser->get_many_faces(
             frame.image, domain::face::analyser::FaceAnalysisType::Detection);
 
@@ -65,12 +78,7 @@ public:
             for (const auto& face : faces) {
                 enhance_input.target_faces_landmarks.push_back(face.get_landmark5());
             }
-            // Note: face_blend is enhancer-specific param, should not be hardcoded here strictly,
-            // but currently the enhancer adapter expects it in input struct.
-            // Ideally, this should be part of Enhancer's own config, not metadata.
-            // For now, we keep compatibility but might consider moving 'face_blend' handling to
-            // EnhancerAdapter.
-            enhance_input.face_blend = 80; // Legacy default
+            enhance_input.face_blend = 80; // Default blend factor
             frame.metadata["enhance_input"] = std::move(enhance_input);
         }
 
@@ -78,17 +86,11 @@ public:
         if (m_reqs.need_expression_data) {
             domain::face::expression::RestoreExpressionInput expression_input;
 
-            // Optimization: Only clone if other processors will modify the frame.
-            // If Swapper or Enhancer are active, they might modify the frame in-place or return a
-            // new one, losing the original appearance which Expression Restorer needs as reference.
             bool others_modify = m_reqs.need_swap_data || m_reqs.need_enhance_data;
 
             if (others_modify) {
                 expression_input.source_frame = frame.image.clone();
             } else {
-                // If only expression restoration is active, we can safely share the reference.
-                // Note: ExpressionAdapter uses target_frame = frame.image, and restore_expression
-                // returns a new image.
                 expression_input.source_frame = frame.image;
             }
 

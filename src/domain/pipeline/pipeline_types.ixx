@@ -1,3 +1,9 @@
+/**
+ * @file pipeline_types.ixx
+ * @brief Common types for the processing pipeline
+ * @author CodingRookie
+ * @date 2026-01-27
+ */
 module;
 #include <opencv2/core.hpp>
 #include <map>
@@ -9,23 +15,31 @@ export module domain.pipeline:types;
 
 export namespace domain::pipeline {
 
+/**
+ * @brief Container for a single frame and its associated metadata
+ * @details This structure is passed through the pipeline processors.
+ */
 struct FrameData {
-    long long sequence_id = 0; // 帧序号
-    double timestamp_ms = 0.0; // 时间戳
-    cv::Mat image;             // 当前帧图像
+    long long sequence_id = 0; ///< Sequential frame number (0-based)
+    double timestamp_ms = 0.0; ///< Presentation timestamp in milliseconds
+    cv::Mat image;             ///< Current frame image data (BGR)
 
-    // 扩展字段：用于在不同处理器间传递中间结果
-    // 例如：Detector 产生的 FaceLandmarks 可以存入此处供 Swapper 使用
+    /**
+     * @brief Intermediate results shared between processors
+     * @details Example: Key "landmarks" might contain face keypoints from a detector.
+     */
     std::map<std::string, std::any> metadata;
 
-    // 状态标识
-    bool is_end_of_stream = false;
+    bool is_end_of_stream = false; ///< Signal to indicate end of media stream
 };
 
+/**
+ * @brief Global configuration for the pipeline execution engine
+ */
 struct PipelineConfig {
-    int worker_thread_count = 4;
-    size_t max_queue_size = 32;
-    // 显存并发限制 (例如同时只能有 2 个 GPU 任务)
-    int max_concurrent_gpu_tasks = 2;
+    int worker_thread_count = 4;      ///< Number of CPU threads for processing
+    size_t max_queue_size = 32;       ///< Max frames buffered in the pipeline
+    int max_concurrent_gpu_tasks = 2; ///< Max simultaneous GPU inference tasks
 };
+
 } // namespace domain::pipeline

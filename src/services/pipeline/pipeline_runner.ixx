@@ -1,9 +1,8 @@
 /**
  * @file pipeline_runner.ixx
- * @brief 配置驱动的 Pipeline 执行器接口
- *
- * 将 TaskConfig 配置与 Domain Pipeline 系统集成，
- * 提供基于配置的任务执行能力。
+ * @brief High-level runner for configuration-driven processing
+ * @author CodingRookie
+ * @date 2026-01-27
  */
 module;
 
@@ -17,18 +16,22 @@ export module services.pipeline.runner;
 export import config.types;
 export import config.app;
 export import config.task;
-import config.parser; // For ValidateTaskConfig
+import config.parser;
 export import :types;
 
 export namespace services::pipeline {
 
 /**
- * @brief Pipeline 执行器
- *
- * 根据 TaskConfig 配置创建并执行处理流水线。
+ * @brief Orchestrates the end-to-end media processing pipeline
+ * @details Reads TaskConfig, initializes necessary domain services (detectors, swappers, etc.),
+ *          and manages the video/image processing lifecycle.
  */
 class PipelineRunner {
 public:
+    /**
+     * @brief Construct a new Pipeline Runner
+     * @param app_config Global application configuration
+     */
     explicit PipelineRunner(const config::AppConfig& app_config);
     ~PipelineRunner();
 
@@ -38,22 +41,21 @@ public:
     PipelineRunner& operator=(PipelineRunner&&) noexcept;
 
     /**
-     * @brief 执行任务
-     *
-     * @param task_config 任务配置
-     * @param progress_callback 进度回调 (可选)
-     * @return Result<void> 成功返回 Ok，失败返回错误
+     * @brief Execute a processing task based on configuration
+     * @param task_config Task-specific settings
+     * @param progress_callback Function to receive completion status updates
+     * @return Success or a ConfigError
      */
     [[nodiscard]] config::Result<void, config::ConfigError> Run(
         const config::TaskConfig& task_config, ProgressCallback progress_callback = nullptr);
 
     /**
-     * @brief 取消正在执行的任务
+     * @brief Abort the currently running task
      */
     void Cancel();
 
     /**
-     * @brief 检查是否正在运行
+     * @brief Check if a task is actively processing
      */
     [[nodiscard]] bool IsRunning() const;
 
@@ -63,10 +65,9 @@ private:
 };
 
 /**
- * @brief 创建 PipelineRunner 实例
- *
- * @param app_config 应用配置 (模型路径、推理设置等)
- * @return unique_ptr<PipelineRunner> Runner 实例
+ * @brief Factory function to create a configured PipelineRunner
+ * @param app_config Application configuration (model paths, inference settings, etc.)
+ * @return std::unique_ptr<PipelineRunner> The created runner instance
  */
 [[nodiscard]] std::unique_ptr<PipelineRunner> CreatePipelineRunner(
     const config::AppConfig& app_config);

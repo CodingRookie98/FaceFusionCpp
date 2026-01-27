@@ -1,3 +1,9 @@
+/**
+ * @file pipeline_impl.ixx
+ * @brief Implementation of the multi-threaded processing pipeline
+ * @author CodingRookie
+ * @date 2026-01-27
+ */
 module;
 #include <thread>
 #include <vector>
@@ -15,31 +21,48 @@ import :queue;
 
 export namespace domain::pipeline {
 
+/**
+ * @brief Concrete implementation of IPipeline
+ * @details Uses a pool of worker threads to process frames from an input queue
+ *          and provides processed frames in strict sequential order via an output queue.
+ */
 class Pipeline : public IPipeline {
 public:
+    /**
+     * @brief Construct a new Pipeline with specific configuration
+     */
     explicit Pipeline(PipelineConfig config) :
         m_config(config), m_input_queue(config.max_queue_size),
         m_output_queue(config.max_queue_size) {}
 
     ~Pipeline() override { stop(); }
 
+    /**
+     * @brief Add a processor to the pipeline (must be called before start())
+     */
     void add_processor(std::shared_ptr<IFrameProcessor> processor) override {
         if (processor) { m_processors.push_back(processor); }
     }
 
+    /**
+     * @brief Spawn worker threads and start processing
+     */
     void start() override {
-        if (m_active.exchange(true)) return; // Already running
+        if (m_active.exchange(true)) return;
 
         for (int i = 0; i < m_config.worker_thread_count; ++i) {
             m_workers.emplace_back([this] { worker_loop(); });
         }
     }
 
+    /**
+     * @brief Signal workers to stop and join all threads
+     */
     void stop() override {
-        if (!m_active.exchange(false)) return; // Already stopped
+        if (!m_active.exchange(false)) return;
 
         m_input_queue.shutdown();
-        m_output_queue.shutdown(); // Optional: allow draining output? usually safer to shutdown
+        m_output_queue.shutdown();
 
         for (auto& worker : m_workers) {
             if (worker.joinable()) { worker.join(); }
@@ -47,22 +70,28 @@ public:
         m_workers.clear();
     }
 
+    /**
+     * @brief Push a frame into the input queue
+     */
     void push_frame(FrameData frame) override {
         if (m_active) { m_input_queue.push(std::move(frame)); }
     }
 
+    /**
+     * @brief Pop a processed frame from the output queue
+     */
     std::optional<FrameData> pop_frame() override { return m_output_queue.pop(); }
 
+    /**
+     * @brief Check if the pipeline is active
+     */
     bool is_active() const override { return m_active; }
 
 private:
     void worker_loop() {
         while (m_active) {
             auto frame_opt = m_input_queue.pop();
-            if (!frame_opt) {
-                // Queue shutdown or empty & shutdown
-                break;
-            }
+            if (!frame_opt) break;
 
             FrameData frame = std::move(*frame_opt);
 
@@ -76,16 +105,13 @@ private:
         }
     }
 
-    // Ensures frames are pushed to output queue in strictly increasing sequence_id order
     void push_to_output_ordered(FrameData frame) {
         std::lock_guard<std::mutex> lock(m_reorder_mutex);
 
-        // If frame is what we expect next, push it and check pending buffer
         if (frame.sequence_id == m_next_sequence_id) {
             m_output_queue.push(std::move(frame));
             m_next_sequence_id++;
 
-            // Drain pending buffer
             while (!m_reorder_buffer.empty()) {
                 auto it = m_reorder_buffer.begin();
                 if (it->first == m_next_sequence_id) {
@@ -97,10 +123,6 @@ private:
                 }
             }
         } else {
-            // Not next, buffer it
-            // Note: If multiple workers process, frame.sequence_id > m_next_sequence_id is normal.
-            // If frame.sequence_id < m_next_sequence_id, it's a duplicate or error, but we
-            // buffer/ignore it. Assuming unique sequence_ids.
             m_reorder_buffer.emplace(frame.sequence_id, std::move(frame));
         }
     }
@@ -114,9 +136,9 @@ private:
 
     std::atomic<bool> m_active{false};
 
-    // Reordering logic
     std::mutex m_reorder_mutex;
     long long m_next_sequence_id = 0;
     std::map<long long, FrameData> m_reorder_buffer;
 };
+
 } // namespace domain::pipeline

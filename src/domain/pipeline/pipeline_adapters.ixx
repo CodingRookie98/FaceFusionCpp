@@ -12,7 +12,7 @@ module;
  * @file pipeline_adapters.ixx
  * @brief Adapter classes to bridge Domain services to Pipeline FrameProcessors
  * @author CodingRookie
- * @date 2026-01-18
+ * @date 2026-01-27
  */
 export module domain.pipeline:adapters;
 
@@ -32,10 +32,19 @@ namespace domain::pipeline {
 
 /**
  * @brief Adapter for Face Swapper
- * @details Wraps IFaceSwapper to implement IFrameProcessor
+ * @details Wraps IFaceSwapper to implement IFrameProcessor interface for the pipeline.
+ *          Handles model loading, masking (occlusion and region), and pasting the result back.
  */
 export class SwapperAdapter : public IFrameProcessor {
 public:
+    /**
+     * @brief Construct a new Swapper Adapter
+     * @param swapper Shared pointer to the face swapper service
+     * @param model_path Path to the swapper model
+     * @param options Inference session options
+     * @param occluder Optional pointer to the occlusion detection service
+     * @param region_masker Optional pointer to the face parsing service
+     */
     explicit SwapperAdapter(
         std::shared_ptr<face::swapper::IFaceSwapper> swapper, std::string model_path,
         foundation::ai::inference_session::Options options,
@@ -45,6 +54,9 @@ public:
         m_options(std::move(options)), m_occluder(std::move(occluder)),
         m_region_masker(std::move(region_masker)) {}
 
+    /**
+     * @brief Ensures the swapper model is loaded into memory
+     */
     void ensure_loaded() override {
         if (m_loaded) return;
         std::lock_guard<std::mutex> lock(m_load_mutex);
@@ -54,6 +66,10 @@ public:
         m_loaded = true;
     }
 
+    /**
+     * @brief Process a single frame using the face swapper
+     * @param frame The frame data to be processed and updated
+     */
     void process(FrameData& frame) override {
         ensure_loaded();
         if (!m_swapper) return;
@@ -102,10 +118,19 @@ private:
 
 /**
  * @brief Adapter for Face Enhancer
- * @details Wraps IFaceEnhancer to implement IFrameProcessor
+ * @details Wraps IFaceEnhancer to implement IFrameProcessor interface for the pipeline.
+ *          Handles face enhancement, global face blending, and pasting back.
  */
 export class FaceEnhancerAdapter : public IFrameProcessor {
 public:
+    /**
+     * @brief Construct a new Face Enhancer Adapter
+     * @param enhancer Shared pointer to the face enhancer service
+     * @param model_path Path to the enhancer model
+     * @param options Inference session options
+     * @param occluder Optional pointer to the occlusion detection service
+     * @param region_masker Optional pointer to the face parsing service
+     */
     explicit FaceEnhancerAdapter(
         std::shared_ptr<face::enhancer::IFaceEnhancer> enhancer, std::string model_path,
         foundation::ai::inference_session::Options options,
@@ -115,6 +140,9 @@ public:
         m_options(std::move(options)), m_occluder(std::move(occluder)),
         m_region_masker(std::move(region_masker)) {}
 
+    /**
+     * @brief Ensures the enhancer model is loaded into memory
+     */
     void ensure_loaded() override {
         if (m_loaded) return;
         std::lock_guard<std::mutex> lock(m_load_mutex);
@@ -126,6 +154,10 @@ public:
         m_loaded = true;
     }
 
+    /**
+     * @brief Process a single frame using the face enhancer
+     * @param frame The frame data to be processed and updated
+     */
     void process(FrameData& frame) override {
         ensure_loaded();
         if (!m_enhancer) return;
@@ -186,10 +218,18 @@ private:
 
 /**
  * @brief Adapter for Face Expression Restorer
- * @details Wraps IFaceExpressionRestorer to implement IFrameProcessor
+ * @details Wraps IFaceExpressionRestorer to implement IFrameProcessor interface for the pipeline.
  */
 export class ExpressionAdapter : public IFrameProcessor {
 public:
+    /**
+     * @brief Construct a new Expression Adapter
+     * @param restorer Shared pointer to the expression restorer service
+     * @param feature_path Path to the feature model
+     * @param motion_path Path to the motion model
+     * @param generator_path Path to the generator model
+     * @param options Inference session options
+     */
     explicit ExpressionAdapter(std::shared_ptr<face::expression::IFaceExpressionRestorer> restorer,
                                std::string feature_path, std::string motion_path,
                                std::string generator_path,
@@ -198,6 +238,9 @@ public:
         m_motion_path(std::move(motion_path)), m_generator_path(std::move(generator_path)),
         m_options(std::move(options)) {}
 
+    /**
+     * @brief Ensures the expression restorer models are loaded into memory
+     */
     void ensure_loaded() override {
         if (m_loaded) return;
         std::lock_guard<std::mutex> lock(m_load_mutex);
@@ -209,6 +252,10 @@ public:
         m_loaded = true;
     }
 
+    /**
+     * @brief Process a single frame using the expression restorer
+     * @param frame The frame data to be processed and updated
+     */
     void process(FrameData& frame) override {
         ensure_loaded();
         if (!m_restorer) return;
@@ -237,14 +284,21 @@ private:
 
 /**
  * @brief Adapter for Frame Enhancer
- * @details Wraps IFrameEnhancer to implement IFrameProcessor
+ * @details Wraps IFrameEnhancer to implement IFrameProcessor interface for the pipeline.
  */
 export class FrameEnhancerAdapter : public IFrameProcessor {
 public:
+    /**
+     * @brief Construct a new Frame Enhancer Adapter
+     * @param factory_func Factory function to create the frame enhancer instance
+     */
     explicit FrameEnhancerAdapter(
         std::function<std::shared_ptr<frame::enhancer::IFrameEnhancer>()> factory_func) :
         m_factory_func(std::move(factory_func)) {}
 
+    /**
+     * @brief Ensures the frame enhancer is created and loaded
+     */
     void ensure_loaded() override {
         if (m_loaded) return;
         std::lock_guard<std::mutex> lock(m_load_mutex);
@@ -254,6 +308,10 @@ public:
         m_loaded = true;
     }
 
+    /**
+     * @brief Process a single frame using the frame enhancer
+     * @param frame The frame data to be processed and updated
+     */
     void process(FrameData& frame) override {
         ensure_loaded();
         if (!m_enhancer) return;

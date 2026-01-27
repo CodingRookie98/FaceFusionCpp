@@ -1,8 +1,9 @@
 /**
- * @file           : model_repository.ixx
- * @brief          : Model repository module for handling AI model information and operations
+ * @file model_repository.ixx
+ * @brief Repository for managing AI model information and lifecycle
+ * @author CodingRookie
+ * @date 2026-01-27
  */
-
 module;
 #include <string>
 #include <unordered_map>
@@ -16,143 +17,114 @@ namespace domain::ai::model_repository {
 using json = nlohmann::json;
 
 /**
- * @brief Structure containing model information
+ * @brief Metadata for a single AI model
  */
 export struct ModelInfo {
-    std::string name; ///< Model name
-    std::string type; ///< Model type (e.g., face_swapper, face_enhancer)
-    std::string path; ///< Model file path
-    std::string url;  ///< Model download URL
+    std::string name; ///< Unique identifier for the model
+    std::string type; ///< Model category (e.g. face_detector)
+    std::string path; ///< Local filesystem path to the model file
+    std::string url;  ///< Remote download URL
 };
 
 /**
- * @brief Strategy for downloading models
+ * @brief Strategy for handling missing model files
  */
 export enum class DownloadStrategy {
-    Auto,  ///< Download if not exists (default)
-    Force, ///< Always download (overwrite)
-    Skip   ///< Never download, only use local
+    Auto,  ///< Download automatically if not found locally
+    Force, ///< Always re-download from remote
+    Skip   ///< Never download (fail if missing)
 };
 
 /**
- * @brief Model repository class for handling AI model operations
+ * @brief Central repository for all AI models used by the application
+ * @details Handles model configuration loading, existence verification, and
+ *          automated downloading using standard network utilities.
  */
 export class ModelRepository final {
 public:
     virtual ~ModelRepository() = default;
 
-    // Delete copy and move constructors and assignment operators
     ModelRepository(const ModelRepository&) = delete;
     ModelRepository& operator=(const ModelRepository&) = delete;
     ModelRepository(ModelRepository&&) = delete;
     ModelRepository& operator=(ModelRepository&&) = delete;
 
     /**
-     * @brief Get the singleton instance of ModelRepository
-     * @return std::shared_ptr<ModelRepository> Shared pointer to the singleton instance
+     * @brief Get the singleton instance of the repository
      */
     static std::shared_ptr<ModelRepository> get_instance();
 
     /**
-     * @brief Get complete model information
-     * @param model_name Model name string
-     * @return ModelInfo Complete model information structure
-     * @note If model not found, returns empty/default ModelInfo
+     * @brief Retrieve metadata for a named model
      */
     [[nodiscard]] ModelInfo get_model_info(const std::string& model_name) const;
 
     /**
-     * @brief Get model file path from configuration (does not verify file exists)
-     * @param model_name Model name string
-     * @return std::string Model file path from config, empty if model not in config
+     * @brief Get the configured path for a model (may not exist)
      */
     [[nodiscard]] std::string get_model_path(const std::string& model_name) const;
 
     /**
-     * @brief Ensure model is available (download if not exists)
-     * @param model_name Model name string
-     * @return std::string Model file path if available, empty if failed
-     * @note This will download the model if it doesn't exist locally
+     * @brief Ensure a model is available locally (downloads if necessary)
+     * @return Path to the verified model file, or empty string on failure
      */
     [[nodiscard]] std::string ensure_model(const std::string& model_name) const;
 
     /**
-     * @brief Get model download URL
-     * @param model_name Model name string
-     * @return std::string Model download URL
+     * @brief Get the download URL for a model
      */
     [[nodiscard]] std::string get_model_url(const std::string& model_name) const;
 
     /**
-     * @brief Download a specific model
-     * @param model_name Model name string
-     * @return bool True if download succeeded, false otherwise
+     * @brief Manually trigger a model download
      */
     [[nodiscard]] bool download_model(const std::string& model_name) const;
 
     /**
-     * @brief Check if a model is already downloaded
-     * @param model_name Model name string
-     * @return bool True if model is downloaded, false otherwise
+     * @brief Check if a model file exists on disk
      */
     [[nodiscard]] bool is_downloaded(const std::string& model_name) const;
 
     /**
-     * @brief Get path to models information JSON file
-     * @return std::string Path to models information JSON file
+     * @brief Get the path to the models registry JSON file
      */
     [[nodiscard]] std::string get_model_json_file_path() const { return m_json_file_path; }
 
     /**
-     * @brief Check if a model exists in the configuration
-     * @param model_name Model name string
-     * @return bool True if exists
+     * @brief Check if a model is defined in the repository
      */
     [[nodiscard]] bool has_model(const std::string& model_name) const;
 
     /**
-     * @brief Set the path to the models information JSON file
-     * @param path Path to
-     * the models information JSON file
+     * @brief Set the path to the model info registry file
      */
     void set_model_info_file_path(const std::string& path = "./assets/models_info.json");
 
     /**
-     * @brief Set the base directory for storing models
-     * @param path Directory path
-
+     * @brief Set the root directory for model storage
      */
     void set_base_path(const std::string& path);
 
     /**
-     * @brief Set the download strategy
-     * @param strategy Download strategy enum
- */
+     * @brief Set the current download strategy
+     */
     void set_download_strategy(DownloadStrategy strategy);
 
 private:
-    /**
-     * @brief Construct a new ModelRepository object
-     */
     ModelRepository();
-    std::string m_json_file_path; ///< Path to models information JSON file
-    std::string m_base_path;      ///< Base directory for models
-    DownloadStrategy m_download_strategy{DownloadStrategy::Auto}; ///< Current download strategy
-    std::unordered_map<std::string, ModelInfo>
-        m_models_info_map; ///< Map of model names to ModelInfo structures
+    std::string m_json_file_path;
+    std::string m_base_path;
+    DownloadStrategy m_download_strategy{DownloadStrategy::Auto};
+    std::unordered_map<std::string, ModelInfo> m_models_info_map;
 };
 
 /**
  * @brief Serialize ModelInfo to JSON
- * @param j JSON object to write to
- * @param model_info ModelInfo object to serialize
  */
 export void to_json(json& j, const ModelInfo& model_info);
 
 /**
  * @brief Deserialize ModelInfo from JSON
- * @param j JSON object to read from
- * @param model_info ModelInfo object to deserialize
  */
 export void from_json(const json& j, ModelInfo& model_info);
 

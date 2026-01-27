@@ -6,7 +6,7 @@ module;
  * @file face.ixx
  * @brief Core Face entity definition
  * @author CodingRookie
- * @date 2026-01-18
+ * @date 2026-01-27
  */
 export module domain.face;
 
@@ -39,7 +39,7 @@ public:
      * @brief Get the face landmarks (keypoints)
      * @return Const reference to the landmarks
      */
-    [[nodiscard]] const types::Landmarks& kps() const noexcept; // 统一的关键点访问
+    [[nodiscard]] const types::Landmarks& kps() const noexcept;
 
     /**
      * @brief Get the face embedding (feature vector)

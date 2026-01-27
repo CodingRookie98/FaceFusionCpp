@@ -1,8 +1,8 @@
 /**
  * @file pipeline.ixx
- * @brief Pipeline module aggregation
+ * @brief Aggregate module for the processing pipeline
  * @author CodingRookie
- * @date 2026-01-18
+ * @date 2026-01-27
  */
 export module domain.pipeline;
 

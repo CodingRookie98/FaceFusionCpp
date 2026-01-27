@@ -1,3 +1,9 @@
+/**
+ * @file face_types.ixx
+ * @brief Common types for face domain
+ * @author CodingRookie
+ * @date 2026-01-27
+ */
 module;
 #include <vector>
 #include <array>
@@ -6,24 +12,50 @@ module;
 export module domain.face:types;
 
 export namespace domain::face::types {
+
+/**
+ * @brief Face embedding vector
+ */
 using Embedding = std::vector<float>;
+
+/**
+ * @brief Facial landmarks (2D points)
+ */
 using Landmarks = std::vector<cv::Point2f>;
+
+/**
+ * @brief Confidence score
+ */
 using Score = float;
 
-enum class MaskType { Box, Occlusion, Region };
-
-struct MaskOptions {
-    std::vector<MaskType> mask_types = {MaskType::Box};
-    float box_mask_blur = 0.3f;
-    std::array<int, 4> box_mask_padding = {0, 0, 0, 0};
+/**
+ * @brief Types of masks for face processing
+ */
+enum class MaskType {
+    Box,       ///< Bounding box based mask
+    Occlusion, ///< Detected occlusion based mask
+    Region     ///< Semantic region based mask (Face Parsing)
 };
 
+/**
+ * @brief Configuration for face masking
+ */
+struct MaskOptions {
+    std::vector<MaskType> mask_types = {MaskType::Box}; ///< Active mask types
+    float box_mask_blur = 0.3f;                         ///< Blur intensity for box mask
+    std::array<int, 4> box_mask_padding = {0, 0, 0,
+                                           0}; ///< Padding for box mask (top, right, bottom, left)
+};
+
+/**
+ * @brief Result of a face processing step (e.g., swapping or enhancement)
+ */
 struct FaceProcessResult {
-    cv::Mat crop_frame;        // The swapped face
-    cv::Mat target_crop_frame; // The original target face crop (for masking)
-    cv::Mat affine_matrix;
-    Landmarks target_landmarks;
-    MaskOptions mask_options;
+    cv::Mat crop_frame;         ///< Processed face crop
+    cv::Mat target_crop_frame;  ///< Original face crop from target image
+    cv::Mat affine_matrix;      ///< Transformation matrix used for alignment
+    Landmarks target_landmarks; ///< Landmarks of the target face
+    MaskOptions mask_options;   ///< Mask configuration for pasting back
 };
 
 } // namespace domain::face::types
