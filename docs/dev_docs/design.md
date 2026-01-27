@@ -101,15 +101,6 @@ resource:
   #         场景: 适合高频实时任务或显存充足环境，避免模型重复加载开销。
   memory_strategy: "strict"
 
-# 默认任务配置 (Default Task Settings)
-# 若 Task Config 中未指定，则回退使用此处的默认值
-default_task_settings:
-  video_encoder: "libx264"
-  video_quality: 80
-  output_prefix: "result_"
-  conflict_policy: "error"
-  audio_policy: "copy"
-
 # 日志与调试 (System Logging)
 logging:
   # 支持级别: trace, debug, info, warn, error
@@ -143,6 +134,17 @@ models:
 # 临时文件管理 (Temp File Management)
 temp_directory: "./temp"
 
+# 默认任务配置 (Default Task Settings)
+# 若 Task Config 中未指定，则回退使用此处的默认值
+# 需要按照task_config.yaml的格式
+default_task_settings:
+  io:
+    output:
+      video_encoder: "libx264"
+      video_quality: 80
+      output_prefix: "result_"
+      conflict_policy: "error"
+      audio_policy: "copy"
 ```
 
 ### 3.2 任务配置 (Task Configuration)
@@ -237,13 +239,13 @@ resource:
 face_analysis:
   face_detector:
     # Models: [retinaface, scrfd, yoloface]
-    models: ["yoloface", "retinaface", "scrfd"] # 融合策略
+    models: ["yoloface", "retinaface", "scrfd"] # 融合策略: 置信度越高越优先（采用 NMS 策略进行融合）
     score_threshold: 0.5
   face_landmarker:
     # Models: [2dfan4, peppa_wutz, face_landmarker_68_5]
     model: "2dfan4"
   face_recognizer:
-    # 人脸识别/相似度匹配 (用于 reference 模式)
+    # 人脸识别/相似度匹配
     # Models: [arcface_w600k_r50]
     model: "arcface_w600k_r50"
     # 相似度阈值: 低于此值认为不是同一人，跳过处理
@@ -297,6 +299,12 @@ face_analysis:
 #        enhance_factor: 0.0 - 1.0 (default: 0.8)
 #
 # 注意: 支持多个同类型 Step (如两个 face_enhancer)，每个 Step 的 name 和 params 可不同
+# 注意：name 是可选的，如果name 不存在，则默认为 step 的类型+下划线+索引
+# 注意：params 是可选的，如果params 不存在则使用全局参数或默认参数，如果全局参数也不存在，则使用默认参数
+
+global_pipeline_step_params: # 全局 Step 参数, 仅当 Step 没有显式定义时才生效
+  face_selector_mode: "many"
+  reference_face_path: "D:/ref_face.jpg"
 
 pipeline:
   - step: "face_swapper"
@@ -317,6 +325,7 @@ pipeline:
       reference_face_path: "D:/ref_face.jpg" # 绝对路径
 
   - step: "expression_restorer"
+    name: "main_expression_restorer"
     enabled: false
     params:
       model: "live_portrait"
@@ -325,6 +334,7 @@ pipeline:
       reference_face_path: "D:/ref_face.jpg" # 绝对路径
 
   - step: "frame_enhancer"
+    name: "main_frame_enhancer"
     enabled: false
     params:
       model: "real_esrgan_x4"
@@ -355,15 +365,6 @@ pipeline:
 |          | `-c`, `--config`        | Path    | **(核心)** 载入任务配置文件    |
 |          | `--log-level`           | String  | 覆盖日志级别                   |
 |          | `--system-check`        | Flag    | 执行环境完整性自检             |
-| **I/O**  | `-s`, `--source`        | Path(s) | 源路径（支持多个）             |
-|          | `-t`, `--target`        | Path(s) | 目标路径                       |
-|          | `-o`, `--output`        | Path    | 输出目录                       |
-| **开关** | `--face-swap`           | Flag    | (默认开启) 启用换脸步骤        |
-|          | `--no-face-swap`        | Flag    | 禁用换脸步骤                   |
-|          | `--face-enhance`        | Flag    | 启用人脸增强                   |
-|          | `--frame-enhance`       | Flag    | 启用全帧增强                   |
-| **性能** | `--execution-providers` | List    | 推理后端列表 (e.g. `cuda,cpu`) |
-|          | `--max-memory`          | Size    | 显存/内存配额 (e.g. `4GB`)     |
 
 ---
 
