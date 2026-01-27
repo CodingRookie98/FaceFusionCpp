@@ -1,3 +1,9 @@
+<!-- AI_CONTEXT
+你是一名高级 C++ 架构师。
+你的目标是设计一个可扩展且严格遵循项目工程指南的 C++20 模块系统。
+在填写此模板时，你必须根据项目的“元规则”验证每一个决定。
+-->
+
 # {计划名称} 实施计划
 
 > **标准参考 & 跨文档链接**:
@@ -5,6 +11,17 @@
 > *   质量与评估标准: [C++代码质量与评估标准指南](../C++_quality_standard.md)
 > *   相关任务单: 见各阶段的 "对应 Task" 链接
 > *   评估报告: [链接至对应评估](../evaluation/C++_evaluation_{title}.md) (计划完成后创建)
+
+## 0. 计划前验证 (AI Agent 自检)
+> **指令**: 在编写本计划其余部分之前，列出你已阅读和分析的具体文件，以确保本计划基于事实。
+
+*   [ ] 我已阅读 `docs/C++/C++_20_modules_practice_guide.md`。
+*   [ ] 我已阅读相关现有模块的 `CMakeLists.txt` (如有)。
+*   [ ] 我已确认建议的模块名称不与现有的冲突。
+
+**已检查的上下文:**
+*   文件 1: `...`
+*   文件 2: `...`
 
 ## 1. 计划概述
 
@@ -19,8 +36,11 @@
 
 *   [ ] **标准**: C++20 (MSVC/Clang/GCC 兼容)
 *   [ ] **构建**: CMake + Ninja (支持并行构建)
-*   [ ] **模块化**: 严格遵循 "逻辑模块(Module) != 物理库(Library)" 原则
-*   [ ] **依赖**: 禁止反向依赖 (App -> Service -> Domain -> Platform -> Foundation)
+*   [ ] **模块化**: 严格遵循 "逻辑模块(Module) != 物理库(Library)" 原则。
+*   [ ] **依赖**: 禁止反向依赖 (App -> Service -> Domain -> Platform -> Foundation)。
+*   [ ] **验证**: 我已阅读 `docs/C++/C++_20_modules_practice_guide.md` 并将在设计中应用。
+
+> **验证指令**: 如果无法勾选某项，请**停止**并优化计划。
 
 ---
 
@@ -29,10 +49,10 @@
 ### 2.1 模块与库映射表 (Physical Layout)
 > **强制要求**: 避免"一模块一Target"。请规划如何将多个逻辑模块(`.ixx`)聚合到少数几个物理库(`add_library`)中。
 
-| 物理库 (CMake Target) | 包含的逻辑模块 (Logical Modules) | 依赖的物理库 | 说明 |
+| 物理库 (CMake Target) | 包含的逻辑模块 (Logical Modules) | 依赖的物理库 | 理由 (Reasoning) |
 | :--- | :--- | :--- | :--- |
-| `domain_order` | `domain.order`, `domain.order.types`, `domain.order.pricing` | `foundation_core` | 订单核心业务库 |
-| `service_trade` | `service.trade.api`, `service.trade.workflow` | `domain_order` | 交易服务库 |
+| `domain_order` | `domain.order`<br>`domain.order.types` | `foundation_core` | **聚合理由?** 紧密的订单业务域。<br>**依赖关系:** 使用核心工具库。 |
+| `service_trade` | `service.trade.api`<br>`service.trade.workflow` | `domain_order` | **聚合理由?** 交易工作流编排。<br>**依赖关系:** 消费领域模型。 |
 
 ### 2.2 接口设计策略 (Module Interface)
 > **BMI 优化**: 确保接口文件(`.ixx`)轻量化，实现细节放入(`.cpp`)。
@@ -46,12 +66,14 @@
 
 ### 2.3 依赖关系图 (逻辑视图)
 > 使用 Mermaid 描述**逻辑模块**间的依赖关系。
+> **约束**: 使用标准节点名称 (如 `ModuleA` 而非 `Module A`)。ID 中不要使用特殊字符。
 
 ```mermaid
 graph TD
-    App --> Service
-    Service --> Domain
-    Domain --> Foundation
+    App[App / Executables] --> Services[Services Layer]
+    Services --> Domain[Domain / Business Layer]
+    Domain --> Platform[Platform Abstraction]
+    Platform --> Foundation[Foundation / Core Utils]
 
     %% 在此补充具体的模块依赖
     %% moduleA --> moduleB
