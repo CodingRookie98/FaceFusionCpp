@@ -1,3 +1,9 @@
+/**
+ * @file pipeline_runner_video_test.cpp
+ * @brief Integration tests for video processing with PipelineRunner
+ * @author CodingRookie
+ * @date 2026-01-27
+ */
 #include <gtest/gtest.h>
 #include <filesystem>
 #include <iostream>

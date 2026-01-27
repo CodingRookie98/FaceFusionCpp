@@ -1,8 +1,9 @@
 /**
- ******************************************************************************
- * @file           : process_tests.cpp
- * @brief          : Unit tests for process module
- ******************************************************************************
+ * @file process_tests.cpp
+ * @brief Unit tests for process module.
+ * @author CodingRookie
+ *
+ * @date 2026-01-27
  */
 
 #include <gtest/gtest.h>

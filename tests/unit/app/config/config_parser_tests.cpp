@@ -1,8 +1,3 @@
-/**
- * @file config_parser_tests.cpp
- * @brief 配置解析器单元测试
- */
-
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <string>

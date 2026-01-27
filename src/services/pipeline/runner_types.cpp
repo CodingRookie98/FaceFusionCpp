@@ -1,3 +1,9 @@
+/**
+ * @file runner_types.cpp
+ * @brief Common types for the pipeline runner service
+ * @author CodingRookie
+ * @date 2026-01-27
+ */
 module;
 #include <memory>
 #include <vector>
@@ -16,28 +22,36 @@ import foundation.ai.inference_session;
 export namespace services::pipeline {
 
 /**
- * @brief 任务进度信息 (帧级别)
+ * @brief Task progress information (frame level)
  */
 struct TaskProgress {
-    std::string task_id;      ///< 任务ID
-    size_t current_frame;     ///< 当前处理的帧序号
-    size_t total_frames;      ///< 总帧数 (0 表示未知)
-    std::string current_step; ///< 当前执行的 step 名称
-    double fps;               ///< 当前处理速度 (帧/秒)
+    std::string task_id;      ///< Task identifier
+    size_t current_frame;     ///< Current frame number being processed
+    size_t total_frames;      ///< Total number of frames (0 if unknown)
+    std::string current_step; ///< Name of the currently executing step
+    double fps;               ///< Current processing speed (frames/sec)
 };
 
 /**
- * @brief 进度回调函数类型
+ * @brief Callback function type for reporting progress
  */
 using ProgressCallback = std::function<void(const TaskProgress&)>;
 
+/**
+ * @brief Context object shared between pipeline processors
+ */
 struct ProcessorContext {
-    std::shared_ptr<domain::ai::model_repository::ModelRepository> model_repo;
-    std::vector<float> source_embedding;
-    std::shared_ptr<domain::face::masker::IFaceOccluder> occluder;
-    std::shared_ptr<domain::face::masker::IFaceRegionMasker> region_masker;
-    std::shared_ptr<domain::face::analyser::FaceAnalyser> face_analyser;
-    foundation::ai::inference_session::Options inference_options;
+    std::shared_ptr<domain::ai::model_repository::ModelRepository>
+        model_repo;                      ///< Repository for AI models
+    std::vector<float> source_embedding; ///< Face embedding of the source face
+    std::shared_ptr<domain::face::masker::IFaceOccluder>
+        occluder; ///< Service for occlusion detection
+    std::shared_ptr<domain::face::masker::IFaceRegionMasker>
+        region_masker; ///< Service for face parsing
+    std::shared_ptr<domain::face::analyser::FaceAnalyser>
+        face_analyser; ///< Service for face analysis
+    foundation::ai::inference_session::Options
+        inference_options; ///< Configuration for ONNX inference
 };
 
 } // namespace services::pipeline

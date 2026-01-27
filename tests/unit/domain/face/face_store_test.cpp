@@ -1,3 +1,11 @@
+/**
+ * @file face_store_test.cpp
+ * @brief Unit tests for FaceStore.
+ * @author CodingRookie
+ *
+ * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <vector>
 #include <string>
@@ -168,9 +176,7 @@ TEST_F(FaceStoreTest, ConcurrentReadWrite) {
 }
 
 TEST_F(FaceStoreTest, ConcurrentReadOnly) {
-    // Disable LRU for pure read concurrency test to avoid lock contention simulation
-    // Or keep it to test thread safety of LRU updates.
-    // Let's keep default (LRU enabled) to stress test the locking mechanism.
+    // Keep default (LRU enabled) to stress test the locking mechanism under concurrent reads.
 
     store.insert_faces("test_key", faces1);
     store.insert_faces(frame1, faces2);

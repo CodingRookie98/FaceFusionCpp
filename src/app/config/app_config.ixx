@@ -1,16 +1,13 @@
 /**
  * @file app_config.ixx
- * @brief 应用配置结构体定义 (对应 app_config.yaml)
- *
- * 定义应用级配置结构，包括：
- * - 推理基础设施配置
- * - 资源与性能配置
- * - 日志配置
- * - 模型管理配置
+ * @brief Application global configuration structures
+ * @author CodingRookie
+ * @date 2026-01-27
+ * @details Defines structures corresponding to app_config.yaml, including
+ *          inference, resource, logging, and model management settings.
  */
 module;
 
-// Global Module Fragment - 标准库头文件必须在此处 #include
 #include <string>
 #include <vector>
 
@@ -21,48 +18,49 @@ export import config.types;
 export namespace config {
 
 /**
- * @brief 引擎缓存配置
+ * @brief Configuration for TensorRT engine caching
  */
 struct EngineCacheConfig {
-    bool enable = true;
-    std::string path = "./.cache/tensorrt";
+    bool enable = true;                     ///< Enable or disable engine caching
+    std::string path = "./.cache/tensorrt"; ///< Path to store cached engines
 };
 
 /**
- * @brief 推理基础设施配置
+ * @brief Infrastructure configuration for AI inference
  */
 struct InferenceConfig {
-    int device_id = 0; ///< 显卡/计算设备ID (扩展预留: 未来支持 device_ids 多卡)
-    EngineCacheConfig engine_cache;
-    std::vector<std::string> default_providers = {"tensorrt", "cuda", "cpu"};
+    int device_id = 0;              ///< GPU device identifier
+    EngineCacheConfig engine_cache; ///< TensorRT cache settings
+    std::vector<std::string> default_providers = {"tensorrt", "cuda",
+                                                  "cpu"}; ///< Execution provider priority
 };
 
 /**
- * @brief 资源与性能配置
+ * @brief Resource and performance configuration
  */
 struct ResourceConfig {
-    MemoryStrategy memory_strategy = MemoryStrategy::Strict;
+    MemoryStrategy memory_strategy = MemoryStrategy::Strict; ///< Memory usage strategy
 };
 
 /**
- * @brief 日志配置
+ * @brief Logging system configuration
  */
 struct LoggingConfig {
-    LogLevel level = LogLevel::Info;
-    std::string directory = "./logs"; ///< 日志目录 (文件名固定为 app.log)
-    LogRotation rotation = LogRotation::Daily;
+    LogLevel level = LogLevel::Info;           ///< Minimum logging level
+    std::string directory = "./logs";          ///< Directory for log files
+    LogRotation rotation = LogRotation::Daily; ///< Log file rotation policy
 };
 
 /**
- * @brief 模型管理配置
+ * @brief AI model management configuration
  */
 struct ModelsConfig {
-    std::string path = "./assets/models"; ///< 模型基础目录
-    DownloadStrategy download_strategy = DownloadStrategy::Auto;
+    std::string path = "./assets/models";                        ///< Base directory for model files
+    DownloadStrategy download_strategy = DownloadStrategy::Auto; ///< Policy for model downloading
 };
 
 /**
- * @brief 默认模型配置
+ * @brief Default model names for various tasks
  */
 struct DefaultModels {
     std::string face_detector = "yoloface";
@@ -76,19 +74,16 @@ struct DefaultModels {
 };
 
 /**
- * @brief 应用配置 (对应 app_config.yaml)
- *
- * 静态配置，程序启动时加载，全局生效。
-
+ * @brief Root application configuration structure
  */
 struct AppConfig {
-    std::string config_version; ///< 配置版本，必须为 "1.0"
-    InferenceConfig inference;
-    ResourceConfig resource;
-    LoggingConfig logging;
-    ModelsConfig models;
-    DefaultModels default_models;
-    std::string temp_directory = "./temp"; ///< 临时文件目录
+    std::string config_version;            ///< Config format version (e.g., "1.0")
+    InferenceConfig inference;             ///< Inference-specific settings
+    ResourceConfig resource;               ///< Resource management settings
+    LoggingConfig logging;                 ///< Logging settings
+    ModelsConfig models;                   ///< Model management settings
+    DefaultModels default_models;          ///< Default model selections
+    std::string temp_directory = "./temp"; ///< Directory for temporary files
 };
 
 } // namespace config

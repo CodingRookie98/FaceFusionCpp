@@ -1,3 +1,11 @@
+/**
+ * @file ffmpeg_tests.cpp
+ * @brief Unit tests for FFmpeg media utilities.
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <filesystem>

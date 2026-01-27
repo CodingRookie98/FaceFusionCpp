@@ -1,3 +1,11 @@
+/**
+ * @file test_face_detector.cpp
+ * @brief Unit tests for FaceDetector.
+ * @author CodingRookie
+
+ * * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <opencv2/opencv.hpp>
 #include <filesystem>
@@ -47,7 +55,6 @@ TEST_F(FaceDetectorTest, DetectFaces_Tiffany) {
         detector->load_model(model_path, Options::with_best_providers());
 
         // 4. Detect
-        // Interface uses 'detect' and returns 'DetectionResults'
         auto faces = detector->detect(frame);
 
         // 5. Verify

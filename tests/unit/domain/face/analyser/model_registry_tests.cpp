@@ -1,3 +1,11 @@
+/**
+ * @file model_registry_tests.cpp
+ * @brief Unit tests for FaceModelRegistry.
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <memory>
 #include <string>

@@ -1,3 +1,9 @@
+/**
+ * @file runner_video.cpp
+ * @brief Implementation of video processing logic for the pipeline runner
+ * @author CodingRookie
+ * @date 2026-01-27
+ */
 module;
 #include <string>
 #include <vector>
@@ -25,8 +31,21 @@ using namespace domain::pipeline;
 using namespace foundation::infrastructure::logger;
 using namespace config; // Use config namespace for TaskConfig etc.
 
+/**
+ * @brief Helper class for video processing tasks
+ */
 export class VideoProcessingHelper {
 public:
+    /**
+     * @brief Process a video file through the processing pipeline
+     * @param target_path Path to the input video file
+     * @param task_config Configuration for the task
+     * @param progress_callback Optional callback for progress updates
+     * @param context Processing context (models, sessions, etc.)
+     * @param add_processors_func Function to populate the pipeline with processors
+     * @param cancelled Atomic flag to signal cancellation
+     * @return Result object indicating success or failure
+     */
     static config::Result<void, config::ConfigError> ProcessVideo(
         const std::string& target_path, const config::TaskConfig& task_config,
         ProgressCallback progress_callback, const ProcessorContext& context,
@@ -175,6 +194,9 @@ public:
     }
 
 private:
+    /**
+     * @brief Process video in strict mode (optimized for low memory usage)
+     */
     static config::Result<void, config::ConfigError> ProcessVideoStrict(
         const std::string& target_path, const config::TaskConfig& task_config,
         ProgressCallback progress_callback, const ProcessorContext& context,
@@ -295,6 +317,9 @@ private:
         return config::Result<void, config::ConfigError>::Ok();
     }
 
+    /**
+     * @brief Generate output file path based on task configuration
+     */
     static std::string GenerateOutputPath(const std::string& input_path,
                                           const config::TaskConfig& task_config) {
         namespace fs = std::filesystem;

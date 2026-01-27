@@ -1,4 +1,12 @@
 
+/**
+ * @file thread_pool_tests.cpp
+ * @brief Unit tests for ThreadPool.
+ * @author CodingRookie
+ *
+ * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <future>

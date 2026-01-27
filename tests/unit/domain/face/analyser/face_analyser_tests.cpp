@@ -1,3 +1,11 @@
+/**
+ * @file face_analyser_tests.cpp
+ * @brief Unit tests for FaceAnalyser.
+ * @author CodingRookie
+
+ * * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <opencv2/opencv.hpp>

@@ -1,3 +1,11 @@
+/**
+ * @file face_helper_test.cpp
+ * @brief Unit tests for face helper functions.
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <vector>
 #include <opencv2/opencv.hpp>

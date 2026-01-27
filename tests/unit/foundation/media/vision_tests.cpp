@@ -1,3 +1,11 @@
+/**
+ * @file vision_tests.cpp
+ * @brief Unit tests for vision utilities.
+ * @author CodingRookie
+ *
+ * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <filesystem>
@@ -78,9 +86,7 @@ TEST_F(VisionTest, ResizeFrame) {
     EXPECT_EQ(dst.cols, 50);
     EXPECT_EQ(dst.rows, 50);
 
-    // If target is larger, it should not upscale (based on implementation logic?)
-    // Wait, implementation says: if height > crop_size.height || width > crop_size.width -> resize
-    // down. If smaller, returns clone.
+    // If target is larger than source, it should not upscale (returns clone).
     cv::Size largeSize(200, 200);
     cv::Mat dst2 = resize_frame(src, largeSize);
     EXPECT_EQ(dst2.cols, 100);
@@ -98,8 +104,7 @@ TEST_F(VisionTest, ReadRealImage_Lenna) {
             EXPECT_GT(img.rows, 0);
             EXPECT_EQ(img.channels(), 3);
         } else {
-            // If assets missing, fail or skip.
-            // We decided to try to ensure they exist.
+            // If assets missing, fail.
             FAIL() << "Test asset not found: " << path.string();
         }
     } catch (const std::exception& e) { FAIL() << "Exception finding asset: " << e.what(); }

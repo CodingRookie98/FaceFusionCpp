@@ -1,3 +1,11 @@
+/**
+ * @file face_swapper_tests.cpp
+ * @brief Unit tests for FaceSwapper.
+ * @author CodingRookie
+ *
+ * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -75,9 +83,6 @@ TEST_F(FaceSwapperIntegrationTest, SwapFaceAndVerifySimilarity) {
     // Assert
     ASSERT_FALSE(results.empty());
     EXPECT_FALSE(results[0].crop_frame.empty());
-    // Basic dimension check (depends on model output, e.g., 128x128)
-    // EXPECT_EQ(result.cols, 128);
-    // EXPECT_EQ(result.rows, 128);
 
     cv::Mat result_img = results[0].crop_frame;
     ASSERT_FALSE(result_img.empty());

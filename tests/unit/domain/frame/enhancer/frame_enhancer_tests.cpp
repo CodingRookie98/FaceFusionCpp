@@ -1,3 +1,11 @@
+/**
+ * @file frame_enhancer_tests.cpp
+ * @brief Unit tests for FrameEnhancer.
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>

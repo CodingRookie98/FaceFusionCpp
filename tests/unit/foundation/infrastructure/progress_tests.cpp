@@ -1,4 +1,12 @@
 
+/**
+ * @file progress_tests.cpp
+ * @brief Unit tests for progress indicators.
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 

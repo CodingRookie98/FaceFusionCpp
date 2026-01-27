@@ -1,3 +1,9 @@
+/**
+ * @file pipeline_runner_image_test.cpp
+ * @brief Integration tests for image processing with PipelineRunner
+ * @author CodingRookie
+ * @date 2026-01-27
+ */
 #include <gtest/gtest.h>
 #include <filesystem>
 #include <iostream>

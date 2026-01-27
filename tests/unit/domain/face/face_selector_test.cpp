@@ -1,3 +1,11 @@
+/**
+ * @file face_selector_test.cpp
+ * @brief Unit tests for face selection logic.
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <vector>
 #include <unordered_set>

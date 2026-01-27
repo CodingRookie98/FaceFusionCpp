@@ -1,16 +1,13 @@
 /**
  * @file task_config.ixx
- * @brief 任务配置结构体定义 (对应 task_config.yaml)
- *
- * 定义任务级配置结构，包括：
- * - 任务元信息
- * - 输入输出配置
- * - 资源控制配置
- * - Pipeline 步骤定义
+ * @brief Task-specific configuration structures
+ * @author CodingRookie
+ * @date 2026-01-27
+ * @details Defines structures corresponding to task_config.yaml, including
+ *          task metadata, IO, resources, and pipeline step definitions.
  */
 module;
 
-// Global Module Fragment - 标准库头文件必须在此处 #include
 #include <string>
 #include <vector>
 #include <optional>
@@ -23,144 +20,134 @@ export import config.types;
 export namespace config {
 
 /**
- * @brief 任务元信息
+ * @brief Metadata for a specific processing task
  */
 struct TaskInfo {
-    std::string id;             ///< 唯一任务标识 (格式: [a-zA-Z0-9_])
-    std::string description;    ///< 任务描述
-    bool enable_logging = true; ///< 是否启用独立任务日志
-    bool enable_resume = false; ///< 是否启用断点续处理
+    std::string id;             ///< Unique task identifier (regex: [a-zA-Z0-9_])
+    std::string description;    ///< Human-readable description
+    bool enable_logging = true; ///< Whether to enable task-specific logging
+    bool enable_resume = false; ///< Whether to support resuming from checkpoints
 };
 
 /**
- * @brief 输出配置
+ * @brief Output settings for the processed media
  */
 struct OutputConfig {
-    std::string path;                      ///< 输出路径 (强制绝对路径)
-    std::string prefix = "result_";        ///< 输出文件前缀
-    std::string suffix;                    ///< 输出文件后缀
-    std::string image_format = "png";      ///< 图片格式 [png, jpg, bmp]
-    std::string video_encoder = "libx264"; ///< 视频编码器
-    int video_quality = 80;                ///< 视频质量 [0-100]
-    ConflictPolicy conflict_policy = ConflictPolicy::Error;
-    AudioPolicy audio_policy = AudioPolicy::Copy;
+    std::string path;                      ///< Target directory (absolute path)
+    std::string prefix = "result_";        ///< Prefix for result filenames
+    std::string suffix;                    ///< Suffix for result filenames
+    std::string image_format = "png";      ///< Format for image results (png, jpg, bmp)
+    std::string video_encoder = "libx264"; ///< FFmpeg video encoder name
+    int video_quality = 80;                ///< Video encoding quality (0-100)
+    ConflictPolicy conflict_policy = ConflictPolicy::Error; ///< Policy for existing files
+    AudioPolicy audio_policy = AudioPolicy::Copy;           ///< Policy for audio track
 };
 
 /**
- * @brief IO 配置
+ * @brief IO configuration for input and output
  */
 struct IOConfig {
-    std::vector<std::string> source_paths; ///< 源路径列表 (仅支持图片，可含目录)
-    std::vector<std::string> target_paths; ///< 目标路径列表 (图片/视频/目录混合)
-    OutputConfig output;
+    std::vector<std::string> source_paths; ///< Paths to source images (face providers)
+    std::vector<std::string> target_paths; ///< Paths to target images or videos
+    OutputConfig output;                   ///< Output specific settings
 };
 
 /**
- * @brief 任务资源控制配置
+ * @brief Resource management for a specific task
  */
 struct TaskResourceConfig {
-    int thread_count = 0; ///< 线程数，0 = 自动 (50% CPU)
-    ExecutionOrder execution_order = ExecutionOrder::Sequential;
-    MemoryStrategy memory_strategy = MemoryStrategy::Tolerant; ///< 内存策略
-    int segment_duration_seconds = 0;                          ///< 视频分段秒数，0 = 不分段
+    int thread_count = 0;                                        ///< CPU threads (0 = auto)
+    ExecutionOrder execution_order = ExecutionOrder::Sequential; ///< Media processing order
+    MemoryStrategy memory_strategy = MemoryStrategy::Tolerant;   ///< Memory usage priority
+    int segment_duration_seconds = 0;                            ///< Video segmenting (0 = off)
 };
 
-// ============================================================================
-// Pipeline Step 参数定义
-// ============================================================================
-
 /**
- * @brief Face Swapper 参数
+ * @brief Parameters for Face Swapper processor
  */
 struct FaceSwapperParams {
-    std::string model; ///< 模型名称 [inswapper_128, inswapper_128_fp16]
-    FaceSelectorMode face_selector_mode = FaceSelectorMode::Many;
-    std::optional<std::string> reference_face_path; ///< 参考人脸路径 (mode=reference 时必需)
+    std::string model;                                            ///< Model name identifier
+    FaceSelectorMode face_selector_mode = FaceSelectorMode::Many; ///< Selection strategy
+    std::optional<std::string> reference_face_path;               ///< Required for reference mode
 };
 
 /**
- * @brief Face Enhancer 参数
+ * @brief Parameters for Face Enhancer processor
  */
 struct FaceEnhancerParams {
-    std::string model;         ///< 模型名称 [codeformer, gfpgan_1.2, gfpgan_1.3, gfpgan_1.4]
-    double blend_factor = 0.8; ///< 融合因子 [0.0-1.0]
-    FaceSelectorMode face_selector_mode = FaceSelectorMode::Many;
+    std::string model;         ///< Model name identifier
+    double blend_factor = 0.8; ///< Face blending factor (0.0-1.0)
+    FaceSelectorMode face_selector_mode = FaceSelectorMode::Many; ///< Selection strategy
     std::optional<std::string> reference_face_path;
 };
 
 /**
- * @brief Expression Restorer 参数
+ * @brief Parameters for Expression Restorer processor
  */
 struct ExpressionRestorerParams {
-    std::string model;           ///< 模型名称 [live_portrait]
-    double restore_factor = 0.8; ///< 恢复因子 [0.0-1.0]
-    FaceSelectorMode face_selector_mode = FaceSelectorMode::Many;
+    std::string model;                                            ///< Model name identifier
+    double restore_factor = 0.8;                                  ///< Restoration factor (0.0-1.0)
+    FaceSelectorMode face_selector_mode = FaceSelectorMode::Many; ///< Selection strategy
     std::optional<std::string> reference_face_path;
 };
 
 /**
- * @brief Frame Enhancer 参数
+ * @brief Parameters for Frame Enhancer processor
  */
 struct FrameEnhancerParams {
-    std::string model;           ///< 模型名称 [real_esrgan_x2, real_esrgan_x4, ...]
-    double enhance_factor = 0.8; ///< 增强因子 [0.0-1.0]
+    std::string model;           ///< Model name identifier
+    double enhance_factor = 0.8; ///< Enhancement intensity (0.0-1.0)
 };
 
 /**
- * @brief Step 参数变体类型
+ * @brief Variant type representing parameters for any pipeline step
  */
 using StepParams = std::variant<FaceSwapperParams, FaceEnhancerParams, ExpressionRestorerParams,
                                 FrameEnhancerParams>;
 
 /**
- * @brief Pipeline 步骤定义
- *
- * 支持多个同类型 Step，每个 Step 的 name 和 params 可不同。
+ * @brief Definition of a single step in the processing pipeline
  */
 struct PipelineStep {
-    std::string step;    ///< 处理器类型 (face_swapper, face_enhancer, ...)
-    std::string name;    ///< 步骤别名
-    bool enabled = true; ///< 是否启用
-    StepParams params;   ///< 步骤参数
+    std::string step;    ///< Processor type (e.g., "face_swapper")
+    std::string name;    ///< User-defined name for this step instance
+    bool enabled = true; ///< Whether this step is active
+    StepParams params;   ///< Processor-specific parameters
 };
 
-// ============================================================================
-// Face Analysis 配置
-// ============================================================================
-
 /**
- * @brief 人脸检测器配置
+ * @brief Configuration for face detection service
  */
 struct FaceDetectorConfig {
-    std::vector<std::string> models = {"yoloface", "retinaface", "scrfd"};
-    double score_threshold = 0.5;
+    std::vector<std::string> models = {"yoloface", "retinaface", "scrfd"}; ///< Detector models
+    double score_threshold = 0.5;                                          ///< Min confidence
 };
 
 /**
- * @brief 人脸关键点检测器配置
+ * @brief Configuration for face landmark detection service
  */
 struct FaceLandmarkerConfig {
-    std::string model = "2dfan4"; ///< [2dfan4, peppa_wutz, 68_by_5]
+    std::string model = "2dfan4"; ///< Preferred landmarker model
 };
 
 /**
- * @brief 人脸识别器配置
+ * @brief Configuration for face recognition service
  */
 struct FaceRecognizerConfig {
-    std::string model = "arcface_w600k_r50";
-    double similarity_threshold = 0.6; ///< 相似度阈值 [0.0-1.0]
+    std::string model = "arcface_w600k_r50"; ///< Preferred recognizer model
+    double similarity_threshold = 0.6;       ///< Face matching threshold
 };
 
 /**
- * @brief 人脸遮罩配置
+ * @brief Configuration for face masking service
  */
 struct FaceMaskerConfig {
-    std::vector<std::string> types = {"box", "occlusion", "region"};
-    std::vector<std::string> region = {"face", "eyes"};
+    std::vector<std::string> types = {"box", "occlusion", "region"}; ///< Active maskers
+    std::vector<std::string> region = {"face", "eyes"};              ///< Regions for parsing
 };
 
 /**
- * @brief 人脸分析配置
+ * @brief Aggregate configuration for all face analysis components
  */
 struct FaceAnalysisConfig {
     FaceDetectorConfig face_detector;
@@ -169,22 +156,16 @@ struct FaceAnalysisConfig {
     FaceMaskerConfig face_masker;
 };
 
-// ============================================================================
-// 完整 TaskConfig
-// ============================================================================
-
 /**
- * @brief 任务配置 (对应 task_config.yaml)
- *
- * 动态配置，每次任务执行时加载。
+ * @brief Root task configuration structure
  */
 struct TaskConfig {
-    std::string config_version; ///< 配置版本，必须为 "1.0"
-    TaskInfo task_info;
-    IOConfig io;
-    TaskResourceConfig resource;
-    FaceAnalysisConfig face_analysis;
-    std::vector<PipelineStep> pipeline;
+    std::string config_version;         ///< Config format version (e.g., "1.0")
+    TaskInfo task_info;                 ///< Task metadata
+    IOConfig io;                        ///< IO settings
+    TaskResourceConfig resource;        ///< Resource settings
+    FaceAnalysisConfig face_analysis;   ///< Face analysis settings
+    std::vector<PipelineStep> pipeline; ///< Ordered list of processing steps
 };
 
 } // namespace config

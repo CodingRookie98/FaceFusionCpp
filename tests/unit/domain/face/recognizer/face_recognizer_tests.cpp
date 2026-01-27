@@ -1,3 +1,11 @@
+/**
+ * @file face_recognizer_tests.cpp
+ * @brief Unit tests for FaceRecognizer.
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <opencv2/opencv.hpp>
 #include <memory>
@@ -69,5 +77,3 @@ TEST_F(FaceRecognizerTest, ArcFaceInference) {
     double raw_norm = cv::norm(result.first, cv::NORM_L2);
     EXPECT_GT(raw_norm, 0.0);
 }
-
-// Force rebuild

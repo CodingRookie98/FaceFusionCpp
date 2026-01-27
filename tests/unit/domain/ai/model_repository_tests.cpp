@@ -1,4 +1,12 @@
 
+/**
+ * @file model_repository_tests.cpp
+ * @brief Unit tests for ModelRepository.
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <fstream>

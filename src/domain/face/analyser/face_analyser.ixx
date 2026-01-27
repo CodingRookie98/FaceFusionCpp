@@ -9,7 +9,7 @@ module;
  * @file face_analyser.ixx
  * @brief High-level face analysis and processing module
  * @author CodingRookie
- * @date 2026-01-18
+ * @date 2026-01-27
  */
 export module domain.face.analyser;
 
@@ -30,87 +30,106 @@ export namespace domain::face::analyser {
  * @brief Paths for all face models
  */
 struct ModelPaths {
-    std::string face_detector_yolo;
-    std::string face_detector_scrfd;
-    std::string face_detector_retina;
-    std::string face_landmarker_2dfan;
-    std::string face_landmarker_peppawutz;
-    std::string face_landmarker_68by5;
-    std::string face_recognizer_arcface;
-    std::string face_classifier_fairface;
+    std::string face_detector_yolo;        ///< Path to YOLO face detector model
+    std::string face_detector_scrfd;       ///< Path to SCRFD face detector model
+    std::string face_detector_retina;      ///< Path to RetinaFace face detector model
+    std::string face_landmarker_2dfan;     ///< Path to 2DFAN face landmarker model
+    std::string face_landmarker_peppawutz; ///< Path to Peppawutz face landmarker model
+    std::string face_landmarker_68by5;     ///< Path to 68-from-5 landmark model
+    std::string face_recognizer_arcface;   ///< Path to ArcFace face recognizer model
+    std::string face_classifier_fairface;  ///< Path to FairFace face classifier model
 };
 
 /**
  * @brief Options for face detection
  */
 struct FaceDetectorOptions {
-    detector::DetectorType type = detector::DetectorType::Yolo;
-    float min_score = 0.5f;
-    float iou_threshold = 0.4f;
+    detector::DetectorType type = detector::DetectorType::Yolo; ///< Preferred detector type
+    float min_score = 0.5f;                                     ///< Minimum confidence score
+    float iou_threshold = 0.4f;                                 ///< NMS IOU threshold
 };
 
 /**
  * @brief Options for face landmarking
  */
 struct FaceLandmarkerOptions {
-    landmarker::LandmarkerType type = landmarker::LandmarkerType::_2DFAN;
-    float min_score = 0.5f;
+    landmarker::LandmarkerType type =
+        landmarker::LandmarkerType::_2DFAN; ///< Preferred landmarker type
+    float min_score = 0.5f;                 ///< Minimum confidence score
 };
 
 /**
  * @brief Configuration options for FaceAnalyser
  */
 struct Options {
-    ModelPaths model_paths;
-
-    FaceDetectorOptions face_detector_options;
-    FaceLandmarkerOptions face_landmarker_options;
-
+    ModelPaths model_paths;                        ///< Paths to required model files
+    FaceDetectorOptions face_detector_options;     ///< Configuration for detection
+    FaceLandmarkerOptions face_landmarker_options; ///< Configuration for landmarking
     recognizer::FaceRecognizerType face_recognizer_type =
-        recognizer::FaceRecognizerType::ArcFace_w600k_r50;
-    classifier::ClassifierType face_classifier_type = classifier::ClassifierType::FairFace;
-
-    selector::Options face_selector_options;
-    foundation::ai::inference_session::Options inference_session_options;
+        recognizer::FaceRecognizerType::ArcFace_w600k_r50; ///< Preferred recognizer model
+    classifier::ClassifierType face_classifier_type =
+        classifier::ClassifierType::FairFace; ///< Preferred classifier model
+    selector::Options face_selector_options;  ///< Configuration for face selection
+    foundation::ai::inference_session::Options inference_session_options; ///< ONNX runtime settings
 };
 
 /**
  * @brief Face Analysis Types (Bitmask)
  */
 export enum class FaceAnalysisType : unsigned int {
-    None = 0,
-    Detection = 1 << 0,
-    Landmark = 1 << 1,
-    Embedding = 1 << 2,
-    GenderAge = 1 << 3,
-    All = Detection | Landmark | Embedding | GenderAge
+    None = 0,                                          ///< Perform no analysis
+    Detection = 1 << 0,                                ///< Perform face detection
+    Landmark = 1 << 1,                                 ///< Perform landmark detection
+    Embedding = 1 << 2,                                ///< Extract face embedding
+    GenderAge = 1 << 3,                                ///< Predict gender and age
+    All = Detection | Landmark | Embedding | GenderAge ///< Perform all analysis steps
 };
 
+/**
+ * @brief Bitwise OR operator for FaceAnalysisType
+ */
 export constexpr FaceAnalysisType operator|(FaceAnalysisType lhs, FaceAnalysisType rhs) {
     return static_cast<FaceAnalysisType>(static_cast<unsigned int>(lhs)
                                          | static_cast<unsigned int>(rhs));
 }
 
+/**
+ * @brief Bitwise AND operator for FaceAnalysisType
+ */
 export constexpr FaceAnalysisType operator&(FaceAnalysisType lhs, FaceAnalysisType rhs) {
     return static_cast<FaceAnalysisType>(static_cast<unsigned int>(lhs)
                                          & static_cast<unsigned int>(rhs));
 }
 
+/**
+ * @brief Helper to check if a specific flag is set in a FaceAnalysisType bitmask
+ */
 export constexpr bool has_flag(FaceAnalysisType value, FaceAnalysisType flag) {
     return (value & flag) == flag;
 }
 
 /**
  * @brief FaceAnalyser orchestrates face detection, recognition, and analysis
- * @details This
- * class manages the lifecycle of various face models and provides high-level APIs
- *          to
- * extract face information from images.
+ * @details This class manages the lifecycle of various face models and provides high-level APIs
+ *          to extract face information from images.
  */
 class FaceAnalyser {
 public:
+    /**
+     * @brief Construct a FaceAnalyser with specified options
+     * @param options Configuration for the analyser
+     */
     explicit FaceAnalyser(const Options& options);
 
+    /**
+     * @brief Construct a FaceAnalyser with pre-initialized models
+     * @param options Configuration for the analyser
+     * @param detector Face detector instance
+     * @param landmarker Face landmarker instance
+     * @param recognizer Face recognizer instance
+     * @param classifier Face classifier instance
+     * @param store Optional face store for caching results
+     */
     FaceAnalyser(const Options& options, std::shared_ptr<detector::IFaceDetector> detector,
                  std::shared_ptr<landmarker::IFaceLandmarker> landmarker,
                  std::shared_ptr<recognizer::FaceRecognizer> recognizer,
@@ -130,10 +149,8 @@ public:
 
     /**
      * @brief Detect and analyze multiple faces in a frame
-     * @param vision_frame Input
-     * image frame
+     * @param vision_frame Input image frame
      * @param type Bitmask determining which analysis steps to perform
-     *
      * @return Vector of detected Face objects
      */
     std::vector<Face> get_many_faces(const cv::Mat& vision_frame,
@@ -141,13 +158,10 @@ public:
 
     /**
      * @brief Detect and get a single face (based on selection strategy)
-     * @param
-     * vision_frame Input image frame
+     * @param vision_frame Input image frame
      * @param position Face position index (if applicable)
-
-     * * @param type Bitmask determining which analysis steps to perform
-     * @return Detected
-     * Face object, or empty Face if none found
+     * @param type Bitmask determining which analysis steps to perform
+     * @return Detected Face object, or empty Face if none found
      */
     Face get_one_face(const cv::Mat& vision_frame, unsigned int position = 0,
                       FaceAnalysisType type = FaceAnalysisType::All);

@@ -1,3 +1,11 @@
+/**
+ * @file face_classifier_tests.cpp
+ * @brief Unit tests for FaceClassifier.
+ * @author
+ * CodingRookie
+ * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <memory>
 #include <opencv2/opencv.hpp>

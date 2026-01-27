@@ -1,3 +1,9 @@
+/**
+ * @file ffmpeg_remuxer.ixx
+ * @brief Utilities for audio-video remuxing using FFmpeg
+ * @author CodingRookie
+ * @date 2026-01-27
+ */
 module;
 #include <string>
 #include <vector>
@@ -6,6 +12,9 @@ export module foundation.media.ffmpeg:remuxer;
 
 namespace foundation::media::ffmpeg {
 
+/**
+ * @brief Helper class for remuxing operations
+ */
 export class Remuxer {
 public:
     /**

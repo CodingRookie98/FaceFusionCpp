@@ -1,3 +1,11 @@
+/**
+ * @file face_enhancer_tests.cpp
+ * @brief Unit tests for FaceEnhancer.
+ * @author CodingRookie
+
+ * * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -52,7 +60,6 @@ TEST_F(FaceEnhancerIntegrationTest, EnhanceFaceWithCodeFormer) {
     input.target_faces_landmarks = {target_kps};
     input.face_blend = 100; // Full enhancement
 
-    // 3. Run Enhancement
     // 3. Run Enhancement
     auto results = enhancer->enhance_face(input);
     ASSERT_FALSE(results.empty());

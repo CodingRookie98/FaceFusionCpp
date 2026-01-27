@@ -1,3 +1,9 @@
+/**
+ * @file face_masker_api.ixx
+ * @brief Interfaces for face masking and occlusion detection
+ * @author CodingRookie
+ * @date 2026-01-27
+ */
 module;
 #include <opencv2/core/mat.hpp>
 #include <unordered_set>
@@ -33,7 +39,7 @@ enum class FaceRegion {
 
 /**
  * @brief Interface for face occlusion masker
- * Creates a mask where occlusions (hands, objects) are white (255)
+ * @details Creates a mask where occlusions (hands, objects) are white (255)
  */
 class IFaceOccluder {
 public:
@@ -49,7 +55,7 @@ public:
 
 /**
  * @brief Interface for face region masker (Face Parsing)
- * Creates a mask for specific face regions
+ * @details Creates a mask for specific face regions
  */
 class IFaceRegionMasker {
 public:

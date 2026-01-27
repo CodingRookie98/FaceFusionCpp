@@ -1,3 +1,9 @@
+/**
+ * @file pipeline_integration_test.cpp
+ * @brief Integration tests for the full processing pipeline
+ * @author CodingRookie
+ * @date 2026-01-27
+ */
 #include <gtest/gtest.h>
 #include <opencv2/opencv.hpp>
 #include <filesystem>

@@ -1,3 +1,11 @@
+/**
+ * @file inference_session_registry_tests.cpp
+ * @brief Unit tests for
+ * InferenceSessionRegistry.
+ * @author CodingRookie
+ * @date 2026-01-27
+ */
+
 #include <gtest/gtest.h>
 #include <memory>
 #include <string>
@@ -61,15 +69,7 @@ TEST_F(InferenceSessionRegistryTest, GetSessionReuse) {
     Options opts2 = opts;
     opts2.execution_device_id = 999; // Artificial difference
 
-    // Note: If device 999 doesn't exist, load_model might fail.
-    // But registry checks key BEFORE loading.
-    // Wait, registry usually loads immediately.
-    // If loading fails, it throws.
-    // So we need valid options that are different but still loadable.
-    // Or we rely on registry key check if it creates the object before load?
-    // Usually factory pattern loads immediately.
-
-    // Let's just change a non-critical option if possible.
+    // Change a non-critical option to force a different session key.
     // enable_tensorrt_cache
     opts2.enable_tensorrt_cache = !opts.enable_tensorrt_cache;
     opts2.execution_device_id = 0; // Restore valid device ID
