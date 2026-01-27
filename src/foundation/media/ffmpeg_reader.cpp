@@ -232,6 +232,27 @@ struct VideoReader::Impl {
             }
         }
 
+        // FLUSH DECODER
+        if (codec_ctx) {
+            avcodec_send_packet(codec_ctx, nullptr);
+            while (is_decoding) {
+                int ret = avcodec_receive_frame(codec_ctx, frame);
+                if (ret < 0) break;
+
+                current_pts = frame->best_effort_timestamp;
+                sws_scale(sws_ctx, frame->data, frame->linesize, 0, height, frame_bgr->data,
+                          frame_bgr->linesize);
+
+                cv::Mat mat(height, width, CV_8UC3);
+                for (int y = 0; y < height; y++) {
+                    memcpy(mat.data + y * mat.step[0],
+                           frame_bgr->data[0] + y * frame_bgr->linesize[0], width * 3);
+                }
+                frame_queue.push(std::move(mat));
+                av_frame_unref(frame);
+            }
+        }
+
         // When loop ends (EOF or stop), we shutdown queue so consumers know no more frames coming
         frame_queue.shutdown();
     }
@@ -375,60 +396,27 @@ struct VideoReader::Impl {
     bool seek(int64_t frame_index) {
         if (!is_open || frame_index < 0) { return false; }
 
-        // Calculate target timestamp
-        int64_t target_ts = static_cast<int64_t>(frame_index / fps / time_base);
-
-        // Signal decoding thread to seek
-        {
-            std::unique_lock<std::mutex> lock(seek_mutex);
-            seek_target_ts = target_ts;
-            seek_requested = true;
-        }
-
-        // Wake up thread if it's blocked on push
-        // But wait, if queue is full, thread is blocked on wait.
-        // We need to make space or have a mechanism to interrupt wait.
-        // Our ConcurrentQueue wait condition includes `|| m_shutdown`.
-        // But here we are not shutting down.
-        // We need `frame_queue` to support interrupt or we manually clear it?
-        // Actually, if we call frame_queue.clear(), it clears the queue, notifying `m_not_full`.
-        // So the producer thread will wake up from `push` wait!
-        // EXCEPT: clear() acquires lock. If thread is waiting on condition, lock is released.
-        // So clear() acquires lock, clears queue, notifies not_full.
-        // Producer wakes up, re-acquires lock, sees queue is empty (not full), proceeds to push...
-        // Wait, producer is stuck inside `push` logic:
-        // m_not_full.wait(lock, ...);
-        // m_queue.push(...);
-
-        // If we clear, producer will push the OLD frame it was holding!
-        // This is BAD. The frame it holds is from BEFORE seek.
-
-        // Better approach for SEEK:
-        // 1. Stop decoding thread (join).
-        // 2. Clear queue.
-        // 3. Perform seek on main thread (safe because decoding thread is stopped).
-        // 4. Restart decoding thread.
+        // Calculate target timestamp in stream time base
+        // frame_index / fps = seconds
+        // seconds / time_base = stream units
+        int64_t target_ts = static_cast<int64_t>((double)frame_index / fps / time_base);
 
         stop_decoding();
 
-        // Now safe to operate on ffmpeg context
         avcodec_flush_buffers(codec_ctx);
 
         if (av_seek_frame(format_ctx, video_stream_index, target_ts, AVSEEK_FLAG_BACKWARD) < 0) {
             Logger::get_instance()->error("VideoReader: Seek failed");
-            // Try to restart decoding anyway? Or leave stopped?
-            start_decoding(); // Restart to recover state
+            start_decoding();
             return false;
         }
 
-        // Precise seeking logic (optional but recommended)
-        // For now, consistent with previous implementation's intent (though prev impl tried to read
-        // until match) Since we are async, precise seek is complex. Let's rely on simple seek for
-        // now, or perform precise decode-and-discard loop here BEFORE starting thread.
-
-        // Perform precise seek synchronously here
+        // Synchronous precise seek
         bool found = false;
-        while (!found) {
+        int max_frames_to_skip = 1000; // Safety break
+        int frames_skipped = 0;
+
+        while (!found && frames_skipped < max_frames_to_skip) {
             int ret = av_read_frame(format_ctx, packet);
             if (ret < 0) break;
 
@@ -436,28 +424,26 @@ struct VideoReader::Impl {
                 if (avcodec_send_packet(codec_ctx, packet) == 0) {
                     while (avcodec_receive_frame(codec_ctx, frame) == 0) {
                         int64_t current_ts = frame->best_effort_timestamp;
-                        int64_t current_frame =
-                            static_cast<int64_t>(current_ts * time_base * fps + 0.5);
+                        if (current_ts == AV_NOPTS_VALUE) current_ts = frame->pts;
+
+                        double current_sec = current_ts * time_base;
+                        int64_t current_frame = static_cast<int64_t>(current_sec * fps + 0.5);
 
                         if (current_frame >= frame_index) {
-                            // Found target!
-                            // Push this first frame to queue?
-                            // Or just set current_pts and let loop continue?
-                            // We should push this frame to queue so read_frame() gets it.
-
                             sws_scale(sws_ctx, frame->data, frame->linesize, 0, height,
                                       frame_bgr->data, frame_bgr->linesize);
                             cv::Mat mat(height, width, CV_8UC3);
-                            // Copy logic...
                             for (int y = 0; y < height; y++) {
-                                memcpy(mat.ptr(y), frame_bgr->data[0] + y * frame_bgr->linesize[0],
-                                       width * 3);
+                                memcpy(mat.data + y * mat.step[0],
+                                       frame_bgr->data[0] + y * frame_bgr->linesize[0], width * 3);
                             }
 
-                            // Since we stopped thread, queue should be empty (or we clear it).
                             frame_queue.clear();
                             frame_queue.push(std::move(mat));
+                            current_pts = current_ts;
                             found = true;
+                        } else {
+                            frames_skipped++;
                         }
                         av_frame_unref(frame);
                         if (found) break;
