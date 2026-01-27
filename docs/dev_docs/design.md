@@ -52,7 +52,8 @@ graph TD
 
 ## 3. 详细设计规范 (Detailed Design Specifications)
 
-### 3.1 基础设施配置 (App Configuration)
+### 3.1 应用配置 (App Configuration)
+
 采用分层架构设计，确保配置的可读性与逻辑性。
 *   **设计约束**: 必须显式定义所有关键路径与资源限额，禁止在代码中硬编码环境相关路径。
 *   **参考实现**:
@@ -106,12 +107,12 @@ temp_directory: "./temp"
 
 ```
 
-### 3.2 业务流水线配置 (Task Configuration)
+### 3.2 任务配置 (Task Configuration)
 
 基于 **Pipeline Pattern** 设计，由有序的 **Steps** 组成。
 *   **Step 自包含性**: 每个 Step 包含完整的输入参数 (`params`)，不依赖全局隐式状态。
 *   **链式处理 (Chain Processing)**: 无论执行顺序 (Sequential/Batch)，流水线均为链式处理 (S1结果 -> S2输入 -> S3)，而非原始帧独立处理。
-*   **参考实现**: 见下文 [3.2 业务流水线配置 (Task Configuration)](#32-业务流水线配置-task-configuration)
+*   **参考实现**:
 
 ```yaml
 # Schema Version
@@ -281,9 +282,11 @@ pipeline:
 
 ## 4. 核心业务处理逻辑 (Core Business Logic)
 
+### 4.1 处理器 (Processor)
+
 系统通过标准化的 **Processor** 接口实现具体的图像/视频处理能力。
 
-### 4.1 换脸处理器 (Face Swapper)
+#### 4.1.1 换脸处理器 (Face Swapper)
 *   **功能**: 将源人脸 (Source) 特征映射至目标图像 (Target) 的人脸区域。
 *   **算法逻辑**:
     1.  **特征提取**: 提取 Source 序列所有帧的人脸特征，计算 **平均特征向量 (Average Embedding)** 以消除单帧质量波动。
@@ -292,19 +295,36 @@ pipeline:
         *   **色彩匹配 (Color Matching)**: 统一光影色调。
         *   **边缘融合 (Edge Blending)**: 羽化边缘，消除边界伪影。
 
-### 4.2 人脸增强处理器 (Face Enhancer)
+#### 4.1.2 人脸增强处理器 (Face Enhancer)
 *   **功能**: 对目标图像的人脸区域进行超分辨率重建。
 *   **输入约束**: 仅依赖 `target_paths`，忽略 `source_paths`。
 *   **后处理**: 应用边缘融合以确增强区域与背景的自然过渡。
 
-### 4.3 表情还原处理器 (Expression Restorer)
+#### 4.1.3 表情还原处理器 (Expression Restorer)
 *   **功能**: 将当前帧 (Current Frame) 的人脸表情重置为原始目标帧 (Original Target Frame) 的表情。
 *   **逻辑**: `Result = Restore(CurrentFrame, OriginalTargetFrame.Expression)`
 *   **应用场景**: 消除换脸过程中的表情不协调，强制保留原始视频的目标人物神态与口型。
 
-### 4.4 全帧增强处理器 (Frame Enhancer)
+#### 4.1.4 全帧增强处理器 (Frame Enhancer)
 *   **功能**: 对全画幅进行超分辨率处理。
 *   **适用性**: 提升整体画质，处理背景与非人脸区域。
+
+### 4.2 流水线 (Pipeline)
+*   **核心功能**: 顺序组织并串行执行多组处理器，实现复杂的多阶段图像/视频增强逻辑。
+*   **架构设计**:
+    *   **拓扑结构**: 采用 **线性链式 (Linear Chain)** 结构。
+    *   **解耦机制**: 处理器间通过 **线程安全有界队列 (Thread-Safe Bounded Queues)** 进行物理解耦。
+    *   **处理流**: 每个 Processor 节点仅负责从其 **输入队列 (Input Queue)** 消费数据，处理完成后推送到其 **输出队列 (Output Queue)**。
+*   **设计优势**: 节点无需感知流水线的上下文，支持高度并发的任务流水化处理 (Pipelining)，最大化硬件吞吐量。
+*   **逻辑示意**:
+```mermaid
+graph LR
+    Q1[Queue 1] --> P1(Processor 1)
+    P1 --> Q2[Queue 2]
+    Q2 --> P2(Processor 2)
+    P2 --> Q3[Queue 3]
+    Q3 --> Pn(...)
+```
 
 ---
 
