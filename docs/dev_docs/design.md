@@ -513,7 +513,7 @@ graph LR
 
 ### Phase 3: 业务实现 (Business Implementation)
 *   **模型管理**: 实现线程安全的 `ResourceManager`，对接 TensorRT/ONNX Runtime。
-*   **处理器**: 开发 `FaceSwapper` (Inswapper), `FaceEnhancer` (CodeFormer) 及透传逻辑。
+*   **处理器**: 开发 `FaceSwapper` (Inswapper), `FaceEnhancer` (CodeFormer) 等处理器，以及透传逻辑。
 
 ### Phase 4: 交付与增强 (Delivery & Enhancement)
 *   **优化**: 实现 Strict 模式显存 LRU 缓存与 Batch 模式分块处理。

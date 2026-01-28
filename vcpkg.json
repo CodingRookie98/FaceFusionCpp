@@ -29,7 +29,8 @@
     "openssl",
     "spdlog",
     "yaml-cpp",
-    "gtest"
+    "gtest",
+    "flatbuffers"
   ],
   "builtin-baseline": "b7a701cb475805c27e29ddf635a3b16c37ba51fb"
 }
