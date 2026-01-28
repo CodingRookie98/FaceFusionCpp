@@ -3,7 +3,7 @@
 > **文档标识**: FACE-FUSION-APP-ARCH
 > **密级**: 内部公开 (Internal Public)
 > **状态**: 正式 (Official)
-> **最后更新**: 2026-01-27
+> **最后更新**: 2026-01-28
 
 ## 版本历史 (Version History)
 
@@ -12,6 +12,7 @@
 | V1.0 | 2025-10-01 | ArchTeam | 初始版本                                  |
 | V2.0 | 2026-01-15 | ArchTeam | 重构为 C++20 模块化架构                   |
 | V2.3 | 2026-01-27 | ArchTeam | 新增命令行接口 (CLI) 设计; 优化工程化规范 |
+| V2.4 | 2026-01-28 | ArchTeam | 完善错误码定义、流水线图示及优雅停机策略; 移除实施路线图 |
 
 ---
 
@@ -105,8 +106,6 @@ resource:
 logging:
   # 支持级别: trace, debug, info, warn, error
   level: "info"
-  # 日志存储目录 (注意: 文件名固定为 app.log 或程序指定，不可配置，仅目录可配)
-  directory: "./logs"
   # 日志存储目录 (注意: 文件名固定为 app.log 或程序指定，不可配置，仅目录可配)
   directory: "./logs"
   rotation: "daily"
@@ -260,7 +259,7 @@ face_analysis:
     #                     eye-glasses, left-ear, right-ear, earring, nose, mouth,
     #                     upper-lip, lower-lip, neck, necklace, cloth, hair, hat]
     # Default: "all" (if not specified or empty)
-    region: ["face", "eyes"] # 遮罩区域
+    region: ["all"] # 遮罩区域
     # 融合逻辑: 将由代码内部实现最佳遮罩计算
 
 # 处理流水线 (Processing Pipeline)
@@ -408,12 +407,25 @@ pipeline:
 *   **逻辑示意**:
 ```mermaid
 graph LR
-    Input[Input Source] --> Q1
-    Q1[Queue 1] --> P1(Processor 1)
-    P1 --> Q2[Queue 2]
-    Q2 --> P2(Processor 2)
-    P2 --> Q3[Queue 3]
-    Q3 --> Output[Output Sink]
+    Input[Input Source] -->|Push| Q1
+
+    subgraph Pipeline
+        direction LR
+        Q1[Queue 1<br/>Cap: 20] -->|Pop| P1(Processor 1)
+        P1 -->|Push| Q2[Queue 2<br/>Cap: 20]
+        Q2 -->|Pop| P2(Processor 2)
+        P2 -->|Push| Q3[Queue 3<br/>Cap: 20]
+    end
+
+    Q3 -->|Pop| Output[Output Sink]
+
+    %% Backpressure visualization
+    P1 -.->|Full| Q1
+    P2 -.->|Full| Q2
+
+    style Q1 stroke:#f9f,stroke-width:2px,stroke-dasharray: 5 5
+    style Q2 stroke:#f9f,stroke-width:2px,stroke-dasharray: 5 5
+    style Q3 stroke:#f9f,stroke-width:2px,stroke-dasharray: 5 5
 ```
 
 #### 4.2.1 流水线策略 (Pipeline Strategy)
@@ -433,7 +445,7 @@ graph LR
 为确保代码达到工业级交付标准，必须严格遵守以下工程规范。
 
 ### 5.1 路径解析规范 (Path Resolution Criteria)
-*   **App Config**: 所有路径视为 **相对路径**，基准目录为 **程序安装根目录 (App Root)**。
+*   **App Config**: 所有路径视为 **相对路径**，基准目录为 **程序安装根目录 (App Root)**, 引入 resolve_path() 规范化函数，减少歧义。
 *   **Task Config**: 所有 I/O 路径 (Source/Target/Output) 必须强制转换为 **绝对路径 (Absolute Path)**。
     *   *Rationale*: 消除不同运行模式 (CLI/Server) 下 Current Working Directory (CWD) 不一致导致的路径歧义。
 
@@ -444,10 +456,34 @@ graph LR
     *   Server 实现：推送 WebSocket 消息。
 
 ### 5.3 错误处理与恢复 (Error Handling & Recovery)
+
+#### 5.3.1 错误码定义 (Error Codes)
+系统采用统一的错误码规范：`Exxx` (E + 3位数字)，按模块划分区间。
+
+| Code          | Category    | Description                | Recommended Action     |
+| :------------ | :---------- | :------------------------- | :--------------------- |
+| **E100-E199** | **System**  | **系统级基础设施错误**     | **重启/人工介入**      |
+| E101          | Resource    | Out of Memory (OOM)        | 降低并发数或Batch Size |
+| E102          | Device      | CUDA Device Not Found/Lost | 检查显卡驱动及硬件     |
+| E103          | Thread      | Worker Thread Deadlock     | 重启服务               |
+| **E200-E299** | **Config**  | **配置与初始化错误**       | **修正配置后重启**     |
+| E201          | Schema      | YAML Format Invalid        | 检查配置文件语法       |
+| E202          | Value       | Parameter Out of Range     | 修正参数值             |
+| E203          | Path        | Config File Not Found      | 检查路径               |
+| **E300-E399** | **Model**   | **模型资源错误**           | **检查Assets目录**     |
+| E301          | Load        | Model Load Failed          | 检查模型文件损坏/版本  |
+| E302          | Missing     | Model File Missing         | 运行下载脚本           |
+| **E400-E499** | **Runtime** | **运行时/业务逻辑错误**    | **视策略(Skip/Fail)**  |
+| E401          | IO          | Image Decode Failed        | 跳过坏帧               |
+| E402          | IO          | Video Open Failed          | 检查视频文件           |
+| E403          | Face        | No Face Detected           | 透传 (Pass-through)    |
+| E404          | Face        | Face Not Aligned           | 忽略或重试             |
+
+#### 5.3.2 错误策略
 *   **非致命错误策略**:
-    *   **检测失败 (No Face Detected)**: 记录 WARN 日志，**透传 (Pass-through)** 当前帧，即保留原始图像直接送入输出队列，保持音画同步，严禁抛出异常或直接丢帧。
+    *   **检测失败 (No Face Detected, E403)**: 记录 WARN 日志，**透传 (Pass-through)** 当前帧，即保留原始图像直接送入输出队列，保持音画同步，严禁抛出异常或直接丢帧。
     *   **Batch 容错**: 单帧失败不影响 Batch 中其他帧的处理。
-*   **致命错误**: 资源耗尽、模型文件缺失、I/O 权限拒绝等，应立即中断并上报。
+*   **致命错误**: 资源耗尽 (E101)、模型文件缺失 (E302)、I/O 权限拒绝等，应立即中断并上报。
 
 ### 5.4 版本控制 (Versioning Strategy)
 *   **配置协议版本**: YAML 根节点必须包含 `config_version` (e.g., "1.0")。
@@ -458,7 +494,9 @@ graph LR
 *   **单一事实来源 (SSOT)**: 严禁在配置文件中手动维护版本号，`main` 函数启动 banner 必须读取编译宏。
 
 ### 5.6 优雅停机 (Graceful Shutdown)
-*   **信号处理**: 响应 `SIGINT` / `SIGTERM`。
+*   **信号处理**:
+    *   **Linux/Unix**: 响应 `SIGINT` (Ctrl+C) / `SIGTERM`。
+    *   **Windows**: 使用 `SetConsoleCtrlHandler` 捕获 `CTRL_C_EVENT` 和 `CTRL_CLOSE_EVENT`。
 *   **停机序列**:
     1.  **停止接收**: 关闭 Input Gate，拒绝新帧进入 Pipeline。
     2.  **清空队列**: 等待 In-Flight 任务（GPU 中正在推理的帧）完成，防止数据损坏。
@@ -496,27 +534,3 @@ graph LR
 *   **大文件处理**: 支持按 `duration` 切分长视频。
 *   **关键帧对齐**: 切分点对齐 Keyframe 以避免编码瑕疵。
 *   **合并**: 所有 Segment 处理完成后，自动合并并清理临时分段文件。
-
----
-
-## 6. 实施路线图 (Implementation Roadmap)
-
-本路线图采用 **自底向上 (Bottom-Up)** 策略，分四个阶段推进：
-
-### Phase 1: 基座与设施 (Foundation & Infrastructure)
-*   **C++20 模块化**: 定义 `Core`, `App`, `Pipeline` 等核心 `.ixx` 接口与 Concept 约束。
-*   **基础设施**: 集成 `yaml-cpp` 配置系统、`spdlog` 日志后端及基于信号量的流控配额管理。
-
-### Phase 2: 核心引擎 (Core Engine)
-*   **数据流**: 定义 `FramePacket.fbs` (FlatBuffers) 及其零拷贝视图 (`std::span`)。
-*   **调度器**: 实现支持 Shutdown 语义的线程安全队列与串行流水线调度逻辑。
-
-### Phase 3: 业务实现 (Business Implementation)
-*   **模型管理**: 实现线程安全的 `ResourceManager`，对接 TensorRT/ONNX Runtime。
-*   **处理器**: 开发 `FaceSwapper` (Inswapper), `FaceEnhancer` (CodeFormer) 等处理器，以及透传逻辑。
-
-### Phase 4: 交付与增强 (Delivery & Enhancement)
-*   **优化**: 实现 Strict 模式显存 LRU 缓存与 Batch 模式分块处理。
-*   **集成**: 完成 CLI 参数解析、进度条回调对接，并执行全流程 E2E 测试。
-
----
