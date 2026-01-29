@@ -3,7 +3,7 @@
 > **文档标识**: FACE-FUSION-APP-ARCH
 > **密级**: 内部公开 (Internal Public)
 > **状态**: 正式 (Official)
-> **最后更新**: 2026-01-28
+> **最后更新**: 2026-01-29
 
 ## 版本历史 (Version History)
 
@@ -13,6 +13,7 @@
 | V2.0 | 2026-01-15 | ArchTeam | 重构为 C++20 模块化架构                   |
 | V2.3 | 2026-01-27 | ArchTeam | 新增命令行接口 (CLI) 设计; 优化工程化规范 |
 | V2.4 | 2026-01-28 | ArchTeam | 完善错误码定义、流水线图示及优雅停机策略; 移除实施路线图 |
+| V2.5 | 2026-01-29 | ArchTeam | 优化构建规范、路径解析、日志标准及 FlatBuffers 依赖说明 |
 
 ---
 
@@ -67,6 +68,7 @@ graph TD
 
 ### 3.1 应用配置 (App Configuration)
 采用分层架构设计，确保配置的可读性与逻辑性。
+*   **默认位置**: `config/app_config.yaml` (相对于系统根目录)。
 *   **配置级联**: 遵循优先级 `Task Config > User Config > System Default`。
 *   **硬编码禁令**: 必须显式定义所有关键路径与资源限额，禁止在代码中硬编码环境相关路径。
 
@@ -344,18 +346,24 @@ pipeline:
 
 ---
 
-### 3.3 命令行接口 (Command Line Interface)
+### 3.4 构建系统规范 (Build System Specification)
+*   **单一事实来源 (Single Source of Truth)**: 必须使用 `CMakePresets.json` 定义所有构建预设 (Presets)，禁止在脚本中硬编码编译器标志。
+*   **构建包装器**: `build.py` 仅作为跨平台包装器，负责调用 `cmake --preset` 并提供环境检查等辅助功能。
+*   **开发预设**: 默认使用 `debug` 预设，确保启用所有调试符号与断言。
+*   **发布预设**: 发布版本必须使用 `release` 预设，并启用 LTO (Link Time Optimization)。
+
+### 3.5 命令行接口 (Command Line Interface)
 本设计旨在平衡生产环境的配置管理需求与开发调试的便捷性。
 
-#### 3.3.1 设计原则
+#### 3.5.1 设计原则
 *   **配置优先 (Configuration First)**: 生产环境应始终通过 `-c/--config` 加载完整 YAML，确保可复现性。
 *   **参数覆盖 (CLI Override)**: 命令行显式参数优先级高于配置文件（例如在 Config 中定义了输出路径，但 CLI 又指定了 `-o`，则以 CLI 为准）。
 *   **快捷模式 (Quick Run)**: 支持仅通过 CLI 参数 (`-s`, `-t`) 启动默认流水线，无需预先编写 YAML。
 
-#### 3.3.2 命令结构
+#### 3.5.2 命令结构
 `FaceFusionCpp.exe [GLOBAL_OPTIONS] [TASK_OPTIONS] [PROCESSOR_FLAGS]`
 
-#### 3.3.3 参数规格
+#### 3.5.3 参数规格
 
 | 类别     | 参数 (Short/Long)       | 类型    | 描述                           |
 | :------- | :---------------------- | :------ | :----------------------------- |
@@ -445,9 +453,18 @@ graph LR
 为确保代码达到工业级交付标准，必须严格遵守以下工程规范。
 
 ### 5.1 路径解析规范 (Path Resolution Criteria)
-*   **App Config**: 所有路径视为 **相对路径**，基准目录为 **程序安装根目录 (App Root)**, 引入 resolve_path() 规范化函数，减少歧义。
-*   **Task Config**: 所有 I/O 路径 (Source/Target/Output) 必须强制转换为 **绝对路径 (Absolute Path)**。
-    *   *Rationale*: 消除不同运行模式 (CLI/Server) 下 Current Working Directory (CWD) 不一致导致的路径歧义。
+*   **根目录定义 (Root Directory)**:
+    *   默认为可执行文件所在目录的上一级 (假设结构为 `bin/` 和 `config/` 同级)。
+    *   可通过环境变量 `FACEFUSION_HOME` 显式覆盖。
+*   **标准目录布局 (Standard Layout)**:
+    *   `bin/`: 可执行文件 (FaceFusionCpp)
+    *   `config/`: 配置文件 (app_config.yaml)
+    *   `assets/`: 模型与资源
+    *   `logs/`: 运行日志
+*   **路径解析原则**:
+    *   **App Config**: 所有路径视为 **相对路径** (Relative to Root)。
+    *   **Task Config**: 所有 I/O 路径 (Source/Target/Output) 必须强制转换为 **绝对路径 (Absolute Path)**。
+        *   *Rationale*: 消除不同运行模式 (CLI/Server) 下 Current Working Directory (CWD) 不一致导致的路径歧义。
 
 ### 5.2 进度与遥测解耦 (Progress & Telemetry Decoupling)
 *   **IOC 原则**: 核心 Pipeline 逻辑 **严禁** 直接操作 stdout/stderr。
@@ -457,7 +474,9 @@ graph LR
 
 ### 5.3 错误处理与恢复 (Error Handling & Recovery)
 
-#### 5.3.1 错误码定义 (Error Codes)
+#### 5.3.1 错误码定义 (Error Codes) - [Planned]
+> **注意**: 当前版本尚未完全实装下列错误码，仅作为设计规范参考。实际运行时以标准异常日志为准。
+
 系统采用统一的错误码规范：`Exxx` (E + 3位数字)，按模块划分区间。
 
 | Code          | Category    | Description                | Recommended Action     |
@@ -515,8 +534,9 @@ graph LR
     *   **退出条件**: 当 `State == Shutdown` 且 `Count == 0` 时，消费者收到结束信号（如 `pop` 返回 false）。
     *   **信号传递 (Propagation)**: 前级处理器的结束信号应自动触发下一级输入队列的 Shutdown，实现流水线的多米诺式自然闭合。
 
-### 5.8 数据序列化 (Data Serialization)
+### 5.8 数据序列化 (Data Serialization) - [Implementation Pending]
 *   **技术选型**: **FlatBuffers** (Google)。
+*   **关键依赖**: 本模块是 [Batch 模式](#421-流水线策略-pipeline-strategy) 高效运行的前置条件。
 *   **决策依据**:
     *   **Zero-Copy**: 支持直接对内存映射文件 (mmap) 进行读取而无需反序列化解析步，对于高频 IO 的 Batch 模式至关重要。
     *   **二进制效率**: 相比 JSON (需 Base64 编码，体积膨胀 ~33%)，FlatBuffers 紧凑且无编解码 CPU 开销。
@@ -530,7 +550,60 @@ graph LR
 *   **机制**: 长任务定期写入 `checkpoints/{task_id}.ckpt`。
 *   **恢复**: 重启时检测 checkpoint，跳过已完成的 Frames/Segments。
 
-### 5.10 视频分段处理 (Segmentation Strategy)
-*   **大文件处理**: 支持按 `duration` 切分长视频。
-*   **关键帧对齐**: 切分点对齐 Keyframe 以避免编码瑕疵。
-*   **合并**: 所有 Segment 处理完成后，自动合并并清理临时分段文件。
+### 5.10 增强日志规范 (Enhanced Logging Requirements)
+为了确保系统的可观测性、调试效率及生产环境问题追踪能力，必须严格执行以下日志规范。
+
+#### 5.10.1 日志分级策略 (Log Levels)
+*   **TRACE**: 极详尽的执行路径追踪。
+    *   *必选场景*: 复杂算法内部循环、大对象内存分配/释放细节、锁竞争细节。
+    *   *性能影响*: 仅在开发调试时开启，生产环境禁用。
+*   **DEBUG**: 关键流程节点的调试信息。
+    *   *必选场景*: 
+        *   Pipeline 中每个 Step 的输入/输出参数（Dims, Format）。
+        *   Processor 初始化参数。
+        *   资源加载耗时。
+*   **INFO**: 业务运行状态的关键里程碑。
+    *   *必选场景*: 
+        *   系统启动 Banner (版本、Build Time)。
+        *   配置加载摘要 (Config Summary)。
+        *   任务开始/结束/耗时统计。
+        *   关键硬件检测结果 (GPU Name, VRAM)。
+*   **WARN**: 可恢复的非预期情况。
+    *   *必选场景*: 
+        *   E403 未检测到人脸（透传处理）。
+        *   非关键配置项回退到默认值。
+        *   资源使用率接近阈值 (如 VRAM > 90%)。
+*   **ERROR**: 导致当前任务中断或系统退出的错误。
+    *   *必选场景*: 
+        *   所有 Fatal 异常捕获点。
+        *   I/O 严重故障 (磁盘满、权限拒绝)。
+
+#### 5.10.2 埋点位置要求 (Instrumentation Points)
+*   **入口/出口追踪 (Entry/Exit Tracing)**:
+    *   所有 `Public API` 和 `Pipeline` 关键接口必须记录 Entry/Exit 日志。
+    *   格式: `[ClassName::MethodName] Enter params={...}` / `Exit result={...} duration=xxms`。
+*   **异常捕获块 (Catch Blocks)**:
+    *   所有 `catch` 块必须记录异常详情 (what) 及堆栈信息 (如果可能)。
+    *   禁止静默吞掉异常 (Swallowing Exceptions)。
+*   **性能关键路径 (Critical Path)**:
+    *   Pipeline 每一帧的处理总耗时。
+    *   每个 Processor 的 `process()` 方法耗时。
+    *   *实现*: 建议使用 RAII 风格的 `ScopedTimer` 自动记录 DEBUG 级耗时日志。
+
+#### 5.10.3 隐私与合规 (Privacy & Compliance)
+*   **敏感数据脱敏**: 严禁在日志中明文打印用户密码、API Key 等敏感信息。
+*   **图像数据**: 禁止将 Raw Pixel Data 打印到日志，仅允许打印 Tensor Shape / Metadata。
+
+## 6. 未来规划 (Future Roadmap)
+
+### 6.1 自动化配置校验 (Config Validation)
+*   **目标**: 在应用启动早期拦截配置错误。
+*   **方案**: 引入 JSON Schema 或类似机制，对 `app_config.yaml` 和 `task_config.yaml` 进行结构与类型校验。
+
+### 6.2 插件化处理器架构 (Plugin Architecture)
+*   **目标**: 支持第三方开发者扩展 Processor 而无需修改核心代码。
+*   **方案**: 定义稳定的 C++ ABI 接口，支持动态加载 (`.dll`/`.so`) 外部实现的 Processor。
+
+### 6.3 服务化接口 (Server Mode)
+*   **目标**: 支持 HTTP/RPC 远程调用。
+*   **方案**: 复用现有 Pipeline 逻辑，通过 Websocket 推送进度，通过 REST API 接收任务。
