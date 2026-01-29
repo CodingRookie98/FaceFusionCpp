@@ -66,7 +66,7 @@ public:
         frame_data.sequence_id = 0;
         frame_data.image = image;
         if (!context.source_embedding.empty()) {
-            frame_data.metadata["source_embedding"] = context.source_embedding;
+            frame_data.source_embedding = context.source_embedding;
         }
 
         pipeline->push_frame(std::move(frame_data));

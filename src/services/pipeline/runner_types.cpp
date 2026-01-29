@@ -10,16 +10,22 @@ module;
 #include <string>
 #include <atomic>
 #include <functional>
+#include <optional>
+#include <map>
+#include <any>
+#include <opencv2/core/mat.hpp>
 
 export module services.pipeline.runner:types;
 
-import domain.pipeline;
+import domain.pipeline; // Imports domain::pipeline::FrameData
 import domain.ai.model_repository;
 import domain.face.masker;
 import domain.face.analyser;
 import foundation.ai.inference_session;
 
 export namespace services::pipeline {
+
+using FrameData = domain::pipeline::FrameData; // Use domain type directly
 
 /**
  * @brief Task progress information (frame level)

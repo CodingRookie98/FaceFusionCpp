@@ -68,7 +68,7 @@ public:
                 swap_input.target_faces_landmarks.push_back(face.get_landmark5());
             }
             swap_input.source_embedding = source_embedding;
-            frame.metadata["swap_input"] = std::move(swap_input);
+            frame.swap_input = std::move(swap_input);
         }
 
         // 2. Prepare Enhance Data
@@ -79,7 +79,7 @@ public:
                 enhance_input.target_faces_landmarks.push_back(face.get_landmark5());
             }
             enhance_input.face_blend = 80; // Default blend factor
-            frame.metadata["enhance_input"] = std::move(enhance_input);
+            frame.enhance_input = std::move(enhance_input);
         }
 
         // 3. Prepare Expression Data
@@ -97,7 +97,7 @@ public:
             for (const auto& face : faces) {
                 expression_input.source_landmarks.push_back(face.get_landmark5());
             }
-            frame.metadata["expression_input"] = std::move(expression_input);
+            frame.expression_input = std::move(expression_input);
         }
     }
 

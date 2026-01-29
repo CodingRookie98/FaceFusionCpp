@@ -94,10 +94,9 @@ public:
             return;
         }
 
-        if (frame.metadata.contains("swap_input")) {
+        if (frame.swap_input.has_value()) {
             try {
-                auto input =
-                    std::any_cast<face::swapper::SwapInput>(frame.metadata.at("swap_input"));
+                auto& input = frame.swap_input.value();
 
                 input.target_frame = frame.image;
 
@@ -121,9 +120,8 @@ public:
                     frame.image = face::helper::paste_back(frame.image, res.crop_frame,
                                                            composedMask, res.affine_matrix);
                 }
-            } catch (const std::bad_any_cast& e) {
-                // Ignore cast errors
-                (void)e;
+            } catch (const std::exception& e) {
+                // Logger::get_instance()->error("SwapperAdapter error: " + std::string(e.what()));
             }
         }
     }
@@ -189,10 +187,9 @@ public:
         ensure_loaded();
         if (!m_enhancer) return;
 
-        if (frame.metadata.contains("enhance_input")) {
+        if (frame.enhance_input.has_value()) {
             try {
-                auto input =
-                    std::any_cast<face::enhancer::EnhanceInput>(frame.metadata.at("enhance_input"));
+                auto& input = frame.enhance_input.value();
                 input.target_frame = frame.image;
 
                 auto results = m_enhancer->enhance_face(input);
@@ -226,8 +223,8 @@ public:
                 }
                 // if 0, do nothing (keep original frame)
 
-            } catch (const std::bad_any_cast& e) {
-                std::cerr << "FaceEnhancerAdapter: Bad any cast: " << e.what() << std::endl;
+            } catch (const std::exception& e) {
+                std::cerr << "FaceEnhancerAdapter: Error: " << e.what() << std::endl;
             }
         }
     }
@@ -291,14 +288,13 @@ public:
         ensure_loaded();
         if (!m_restorer) return;
 
-        if (frame.metadata.contains("expression_input")) {
+        if (frame.expression_input.has_value()) {
             try {
-                auto input = std::any_cast<face::expression::RestoreExpressionInput>(
-                    frame.metadata.at("expression_input"));
+                auto& input = frame.expression_input.value();
                 input.target_frame = frame.image;
                 frame.image = m_restorer->restore_expression(input);
-            } catch (const std::bad_any_cast& e) {
-                std::cerr << "ExpressionAdapter: Bad any cast: " << e.what() << std::endl;
+            } catch (const std::exception& e) {
+                std::cerr << "ExpressionAdapter: Error: " << e.what() << std::endl;
             }
         }
     }

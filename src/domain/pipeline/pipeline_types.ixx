@@ -9,8 +9,15 @@ module;
 #include <map>
 #include <string>
 #include <any>
+#include <optional>
+#include <vector>
 
 export module domain.pipeline:types;
+
+import domain.face; // For domain::face::Face
+import domain.face.swapper;
+import domain.face.enhancer;
+import domain.face.expression;
 
 export namespace domain::pipeline {
 
@@ -22,6 +29,17 @@ struct FrameData {
     long long sequence_id = 0; ///< Sequential frame number (0-based)
     double timestamp_ms = 0.0; ///< Presentation timestamp in milliseconds
     cv::Mat image;             ///< Current frame image data (BGR)
+
+    // Optimized Metadata (Strongly Typed)
+    // Avoid std::any for high-frequency data
+    std::vector<float> source_embedding;            // From Runner (global context)
+    std::vector<domain::face::Face> detected_faces; // From Face Analysis Step
+
+    // Processor Specific Inputs (Pre-calculated by Analysis Step)
+    // Using std::optional to indicate presence without map lookup
+    std::optional<domain::face::swapper::SwapInput> swap_input;
+    std::optional<domain::face::enhancer::EnhanceInput> enhance_input;
+    std::optional<domain::face::expression::RestoreExpressionInput> expression_input;
 
     /**
      * @brief Intermediate results shared between processors

@@ -154,7 +154,7 @@ public:
             data.sequence_id = seq_id++;
             data.image = frame;
             if (!context.source_embedding.empty()) {
-                data.metadata["source_embedding"] = context.source_embedding;
+                data.source_embedding = context.source_embedding;
             }
             pipeline->push_frame(std::move(data));
         }
@@ -284,7 +284,7 @@ private:
             data.sequence_id = seq_id++;
             data.image = frame;
             if (!context.source_embedding.empty()) {
-                data.metadata["source_embedding"] = context.source_embedding;
+                data.source_embedding = context.source_embedding;
             }
             pipeline->push_frame(std::move(data));
         }
