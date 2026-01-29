@@ -90,18 +90,24 @@ public:
 private:
     void worker_loop() {
         while (m_active) {
-            auto frame_opt = m_input_queue.pop();
-            if (!frame_opt) break;
+            // Optimization: Fetch batch of frames to reduce lock contention
+            auto frames = m_input_queue.pop_batch(4); // Batch size 4 is a reasonable starting point
 
-            FrameData frame = std::move(*frame_opt);
-
-            if (!frame.is_end_of_stream) {
-                for (auto& processor : m_processors) {
-                    if (processor) { processor->process(frame); }
-                }
+            if (frames.empty()) {
+                // If batch is empty, check if queue is still active or shutdown
+                if (!m_input_queue.is_active()) break;
+                // Otherwise loop again (pop_batch waits, so no busy spin)
+                continue;
             }
 
-            if (m_active) { push_to_output_ordered(std::move(frame)); }
+            for (auto& frame : frames) {
+                if (!frame.is_end_of_stream) {
+                    for (auto& processor : m_processors) {
+                        if (processor) { processor->process(frame); }
+                    }
+                }
+                if (m_active) { push_to_output_ordered(std::move(frame)); }
+            }
         }
     }
 

@@ -9,6 +9,8 @@ module;
 #include <mutex>
 #include <condition_variable>
 #include <optional>
+#include <vector>
+#include <algorithm>
 
 export module domain.pipeline:queue;
 
@@ -61,6 +63,40 @@ public:
         m_queue.pop();
         m_not_full.notify_one();
         return val;
+    }
+
+    /**
+     * @brief Pop multiple items at once to reduce lock contention
+     * @param max_items Maximum number of items to retrieve
+     * @return Vector of items (empty if queue was empty or stopped)
+     */
+    std::vector<T> pop_batch(size_t max_items) {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_not_empty.wait(lock, [this] { return !m_queue.empty() || m_shutdown; });
+
+        std::vector<T> batch;
+        if (m_shutdown && m_queue.empty()) return batch;
+
+        size_t count = std::min(max_items, m_queue.size());
+        batch.reserve(count);
+
+        for (size_t i = 0; i < count; ++i) {
+            batch.push_back(std::move(m_queue.front()));
+            m_queue.pop();
+        }
+
+        if (count > 0) {
+            m_not_full.notify_all(); // Notify producers potentially multiple times or just all
+        }
+        return batch;
+    }
+
+    /**
+     * @brief Check if the queue is active (not shut down)
+     */
+    bool is_active() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return !m_shutdown;
     }
 
     /**
