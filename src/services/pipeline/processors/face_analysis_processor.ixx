@@ -58,7 +58,7 @@ public:
         auto faces = m_analyser->get_many_faces(
             frame.image, domain::face::analyser::FaceAnalysisType::Detection);
 
-        if (faces.empty()) return;
+        if (faces.empty()) { return; }
 
         // 1. Prepare Swap Data
         if (m_reqs.need_swap_data) {

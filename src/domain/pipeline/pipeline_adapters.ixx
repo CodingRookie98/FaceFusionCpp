@@ -27,6 +27,7 @@ import domain.frame.enhancer;
 import domain.face.helper;
 import domain.face.masker;
 import foundation.ai.inference_session;
+import foundation.infrastructure.logger;
 
 export namespace domain::pipeline {
 
@@ -62,6 +63,10 @@ private:
         m_region_masker(std::move(region_masker)) {}
 
 public:
+    ~SwapperAdapter() override {
+        // Explicit destructor helps with stability across module boundaries
+    }
+
     /**
      * @brief Ensures the swapper model is loaded into memory
      */
@@ -76,17 +81,27 @@ public:
 
     /**
      * @brief Process a single frame using the face swapper
-     * @param frame The frame data to be processed and updated
+     * @param frame The frame
+     * data to be processed and updated
      */
     void process(FrameData& frame) override {
+        // using Logger = foundation::infrastructure::logger::Logger;
+        // Logger::get_instance()->debug("SwapperAdapter::process called");
+
         ensure_loaded();
-        if (!m_swapper) return;
+        if (!m_swapper) {
+            // Logger::get_instance()->error("SwapperAdapter: m_swapper is null");
+            return;
+        }
 
         if (frame.metadata.contains("swap_input")) {
             try {
                 auto input =
                     std::any_cast<face::swapper::SwapInput>(frame.metadata.at("swap_input"));
+
                 input.target_frame = frame.image;
+
+                if (input.target_faces_landmarks.empty()) { return; }
 
                 auto results = m_swapper->swap_face(input);
 
@@ -107,8 +122,8 @@ public:
                                                            composedMask, res.affine_matrix);
                 }
             } catch (const std::bad_any_cast& e) {
-                std::cerr << "SwapperAdapter: Bad any cast for swap_input: " << e.what()
-                          << std::endl;
+                // Ignore cast errors
+                (void)e;
             }
         }
     }

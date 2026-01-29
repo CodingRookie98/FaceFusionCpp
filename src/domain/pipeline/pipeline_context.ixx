@@ -2,6 +2,7 @@ module;
 
 #include <memory>
 #include <functional>
+#include <string>
 
 export module domain.pipeline.context;
 
@@ -30,6 +31,14 @@ struct PipelineContext {
 
     // Inference options
     foundation::ai::inference_session::Options inference_options;
+
+    // Model paths (Optional, for adapters)
+    std::string swapper_model_path;
+    std::string enhancer_model_path;
+    std::string expression_feature_path;
+    std::string expression_motion_path;
+    std::string expression_generator_path;
+    std::string frame_enhancer_model_path;
 };
 
 } // namespace domain::pipeline

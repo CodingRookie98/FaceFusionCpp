@@ -222,6 +222,7 @@ private:
                                                       + model_name);
                     } else {
                         domain_ctx.swapper->load_model(model_path, context.inference_options);
+                        domain_ctx.swapper_model_path = model_path;
                     }
                 }
             } else if (step.step == "face_enhancer") {
@@ -245,6 +246,7 @@ private:
                     auto model_path = m_model_repo->ensure_model(model_name);
                     if (!model_path.empty()) {
                         domain_ctx.face_enhancer->load_model(model_path, context.inference_options);
+                        domain_ctx.enhancer_model_path = model_path;
                     }
                 }
             } else if (step.step == "expression_restorer") {
@@ -271,6 +273,9 @@ private:
                     } else {
                         domain_ctx.restorer->load_model(feature_path, motion_path, gen_path,
                                                         context.inference_options);
+                        domain_ctx.expression_feature_path = feature_path;
+                        domain_ctx.expression_motion_path = motion_path;
+                        domain_ctx.expression_generator_path = gen_path;
                     }
                 }
             } else if (step.step == "frame_enhancer") {
@@ -281,19 +286,29 @@ private:
                         if (!params->model.empty()) { model_name = params->model; }
                     }
 
+                    // Eagerly resolve model path
+                    auto model_path = m_model_repo->ensure_model(model_name);
+                    if (model_path.empty()) {
+                        Logger::get_instance()->error("Failed to find or download model: "
+                                                      + model_name);
+                    } else {
+                        domain_ctx.frame_enhancer_model_path = model_path;
+                    }
+
                     // Capture context.inference_options by value to avoid lifetime issues
                     auto options = context.inference_options;
-                    domain_ctx.frame_enhancer_factory = [this, model_name, options]() {
-                        auto model_path = m_model_repo->ensure_model(model_name);
-
+                    // Capture resolved model_path instead of using m_model_repo inside lambda
+                    domain_ctx.frame_enhancer_factory = [model_name, model_path, options]() {
                         auto type = domain::frame::enhancer::FrameEnhancerType::RealEsrGan;
                         if (model_name.find("hat") != std::string::npos) {
                             type = domain::frame::enhancer::FrameEnhancerType::RealHatGan;
                         }
 
-                        // Factory handles loading internally
+                        // Factory handles loading internally.
+                        // Note: Must pass model_name (key) not model_path, as factory derives scale
+                        // from name.
                         return domain::frame::enhancer::FrameEnhancerFactory::create(
-                            type, model_path, options);
+                            type, model_name, options);
                     };
                 }
             }

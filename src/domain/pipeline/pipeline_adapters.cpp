@@ -56,43 +56,44 @@ void RegisterBuiltinAdapters() {
 // Adapter Factory Methods Implementation
 std::shared_ptr<IFrameProcessor> SwapperAdapter::create(const void* ptr) {
     const auto* ctx = static_cast<const PipelineContext*>(ptr);
-    if (!ctx) {
-        std::cerr << "SwapperAdapter::create: Context is null" << std::endl;
-        throw std::runtime_error("Context is null");
-    }
-    if (!ctx->swapper) {
-        std::cerr << "SwapperAdapter::create: Swapper service not initialized" << std::endl;
-        throw std::runtime_error("Swapper service not initialized in context");
-    }
+    if (!ctx) { throw std::runtime_error("Context is null"); }
+    if (!ctx->swapper) { throw std::runtime_error("Swapper service not initialized in context"); }
+    // Use actual model path if available, otherwise default (which will fail if loaded triggered)
+    std::string path = ctx->swapper_model_path.empty() ? "default_model" : ctx->swapper_model_path;
     return std::shared_ptr<IFrameProcessor>(new SwapperAdapter(
-        ctx->swapper, "default_model", ctx->inference_options, ctx->occluder, ctx->region_masker));
+        ctx->swapper, path, ctx->inference_options, ctx->occluder, ctx->region_masker));
 }
 
 std::shared_ptr<IFrameProcessor> FaceEnhancerAdapter::create(const void* ptr) {
     const auto* ctx = static_cast<const PipelineContext*>(ptr);
     if (!ctx->face_enhancer) {
-        std::cerr << "FaceEnhancerAdapter::create: Enhancer service not initialized" << std::endl;
         throw std::runtime_error("Face enhancer service not initialized in context");
     }
-    return std::shared_ptr<IFrameProcessor>(
-        new FaceEnhancerAdapter(ctx->face_enhancer, "default_model", ctx->inference_options,
-                                ctx->occluder, ctx->region_masker));
+    std::string path =
+        ctx->enhancer_model_path.empty() ? "default_model" : ctx->enhancer_model_path;
+    return std::shared_ptr<IFrameProcessor>(new FaceEnhancerAdapter(
+        ctx->face_enhancer, path, ctx->inference_options, ctx->occluder, ctx->region_masker));
 }
 
 std::shared_ptr<IFrameProcessor> ExpressionAdapter::create(const void* ptr) {
     const auto* ctx = static_cast<const PipelineContext*>(ptr);
     if (!ctx->restorer) {
-        std::cerr << "ExpressionAdapter::create: Restorer service not initialized" << std::endl;
         throw std::runtime_error("Expression restorer service not initialized in context");
     }
-    return std::shared_ptr<IFrameProcessor>(new ExpressionAdapter(
-        ctx->restorer, "feat_path", "motion_path", "gen_path", ctx->inference_options));
+    std::string f_path =
+        ctx->expression_feature_path.empty() ? "feat_path" : ctx->expression_feature_path;
+    std::string m_path =
+        ctx->expression_motion_path.empty() ? "motion_path" : ctx->expression_motion_path;
+    std::string g_path =
+        ctx->expression_generator_path.empty() ? "gen_path" : ctx->expression_generator_path;
+
+    return std::shared_ptr<IFrameProcessor>(
+        new ExpressionAdapter(ctx->restorer, f_path, m_path, g_path, ctx->inference_options));
 }
 
 std::shared_ptr<IFrameProcessor> FrameEnhancerAdapter::create(const void* ptr) {
     const auto* ctx = static_cast<const PipelineContext*>(ptr);
     if (!ctx->frame_enhancer_factory) {
-        std::cerr << "FrameEnhancerAdapter::create: Factory not initialized" << std::endl;
         throw std::runtime_error("Frame enhancer factory not provided in context");
     }
     return std::shared_ptr<IFrameProcessor>(new FrameEnhancerAdapter(ctx->frame_enhancer_factory));
