@@ -246,9 +246,9 @@ private:
         std::string model = context.model_repo->ensure_model(model_name);
         if (model.empty()) return nullptr;
 
-        return std::shared_ptr<IFrameProcessor>(new domain::pipeline::SwapperAdapter(
+        return std::make_shared<domain::pipeline::SwapperAdapter>(
             std::move(swapper), model, context.inference_options, context.occluder,
-            context.region_masker));
+            context.region_masker);
     }
 
     std::shared_ptr<IFrameProcessor> CreateFaceEnhancerProcessor(const config::PipelineStep& step,
@@ -275,9 +275,9 @@ private:
         std::shared_ptr<domain::face::enhancer::IFaceEnhancer> shared_enhancer =
             std::move(enhancer_ptr);
 
-        return std::shared_ptr<IFrameProcessor>(new domain::pipeline::FaceEnhancerAdapter(
+        return std::make_shared<domain::pipeline::FaceEnhancerAdapter>(
             shared_enhancer, model, context.inference_options, context.occluder,
-            context.region_masker));
+            context.region_masker);
     }
 
     std::shared_ptr<IFrameProcessor> CreateExpressionProcessor(const config::PipelineStep& step,
@@ -301,8 +301,8 @@ private:
         std::shared_ptr<domain::face::expression::IFaceExpressionRestorer> shared_restorer =
             std::move(restorer_ptr);
 
-        return std::shared_ptr<IFrameProcessor>(new domain::pipeline::ExpressionAdapter(
-            shared_restorer, feature_path, motion_path, generator_path, context.inference_options));
+        return std::make_shared<domain::pipeline::ExpressionAdapter>(
+            shared_restorer, feature_path, motion_path, generator_path, context.inference_options);
     }
 
     std::shared_ptr<IFrameProcessor> CreateFrameEnhancerProcessor(const config::PipelineStep& step,
@@ -326,8 +326,7 @@ private:
             return domain::frame::enhancer::FrameEnhancerFactory::create(type, model_name, options);
         };
 
-        return std::shared_ptr<IFrameProcessor>(
-            new domain::pipeline::FrameEnhancerAdapter(std::move(factory)));
+        return std::make_shared<domain::pipeline::FrameEnhancerAdapter>(std::move(factory));
     }
 };
 

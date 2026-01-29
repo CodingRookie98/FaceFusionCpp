@@ -48,7 +48,18 @@ ModelRepository::ModelRepository() :
 std::shared_ptr<ModelRepository> ModelRepository::get_instance() {
     static std::shared_ptr<ModelRepository> instance;
     static std::once_flag flag;
-    std::call_once(flag, [&]() { instance.reset(new ModelRepository()); });
+
+    // Helper struct to allow make_shared to access private constructor
+    struct PrivateConstructorTag {
+        explicit PrivateConstructorTag() = default;
+    };
+    struct ConstructibleModelRepository : public ModelRepository {
+        ConstructibleModelRepository(PrivateConstructorTag) : ModelRepository() {}
+    };
+
+    std::call_once(flag, [&]() {
+        instance = std::make_shared<ConstructibleModelRepository>(PrivateConstructorTag());
+    });
     return instance;
 }
 

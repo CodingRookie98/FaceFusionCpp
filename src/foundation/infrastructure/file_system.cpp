@@ -98,15 +98,17 @@ std::string absolute_path(const std::string& path) {
 std::string utf8_to_sys_default_local(const std::string& str) {
 #ifdef _WIN32
     if (str.empty()) return "";
-    int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), NULL, 0);
+    int size_needed =
+        MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), NULL, 0);
     std::wstring wstrTo(size_needed, 0);
-    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), &wstrTo[0], size_needed);
+    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), &wstrTo[0],
+                        size_needed);
 
-    int size_needed_ansi =
-        WideCharToMultiByte(CP_ACP, 0, wstrTo.c_str(), (int)wstrTo.size(), NULL, 0, NULL, NULL);
+    int size_needed_ansi = WideCharToMultiByte(
+        CP_ACP, 0, wstrTo.c_str(), static_cast<int>(wstrTo.size()), NULL, 0, NULL, NULL);
     std::string strTo(size_needed_ansi, 0);
-    WideCharToMultiByte(CP_ACP, 0, wstrTo.c_str(), (int)wstrTo.size(), &strTo[0], size_needed_ansi,
-                        NULL, NULL);
+    WideCharToMultiByte(CP_ACP, 0, wstrTo.c_str(), static_cast<int>(wstrTo.size()), &strTo[0],
+                        size_needed_ansi, NULL, NULL);
     return strTo;
 #else
     return str;

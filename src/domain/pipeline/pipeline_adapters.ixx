@@ -323,7 +323,13 @@ public:
             try {
                 input.blend =
                     std::any_cast<unsigned short>(frame.metadata.at("frame_enhancer_blend"));
-            } catch (...) {}
+            } catch (const std::bad_any_cast& e) {
+                std::cerr << "FrameEnhancerAdapter: Bad any cast for frame_enhancer_blend: "
+                          << e.what() << std::endl;
+            } catch (...) {
+                std::cerr << "FrameEnhancerAdapter: Unknown error reading frame_enhancer_blend"
+                          << std::endl;
+            }
         }
 
         frame.image = m_enhancer->enhance_frame(input);
