@@ -142,7 +142,11 @@ public:
         // 6. Reader Loop
         long long seq_id = 0;
         cv::Mat frame;
+        int max_frames = task_config.resource.max_frames;
+
         while (!cancelled && !writer_error) {
+            if (max_frames > 0 && seq_id >= max_frames) break;
+
             frame = reader.read_frame();
             if (frame.empty()) break;
 

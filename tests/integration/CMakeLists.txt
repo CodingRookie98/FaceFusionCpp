@@ -4,6 +4,7 @@ add_facefusion_test(
         app/pipeline_integration_test.cpp
         app/pipeline_runner_video_test.cpp
         app/pipeline_runner_image_test.cpp
+        app/pipeline_benchmark_test.cpp
     LINK_LIBRARIES
         domain_pipeline
         services_pipeline

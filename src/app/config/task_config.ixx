@@ -60,6 +60,7 @@ struct TaskResourceConfig {
     ExecutionOrder execution_order = ExecutionOrder::Sequential; ///< Media processing order
     MemoryStrategy memory_strategy = MemoryStrategy::Tolerant;   ///< Memory usage priority
     int segment_duration_seconds = 0;                            ///< Video segmenting (0 = off)
+    int max_frames = 0; ///< Max frames to process (0 = all)
 };
 
 /**
