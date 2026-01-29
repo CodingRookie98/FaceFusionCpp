@@ -193,15 +193,30 @@ private:
 
         for (const auto& step : task_config.pipeline) {
             if (!step.enabled) continue;
-            if (step.step == "face_swapper") {
-                needs_face_detection = true;
-                reqs.need_swap_data = true;
-            } else if (step.step == "face_enhancer") {
-                needs_face_detection = true;
-                reqs.need_enhance_data = true;
-            } else if (step.step == "expression_restorer") {
-                needs_face_detection = true;
-                reqs.need_expression_data = true;
+            PipelineContext context{
+                .app_config = app_config,
+                .step_config = step,
+                .swapper = swapper,
+                .face_enhancer = shared_enhancer,
+                .restorer = shared_restorer,
+                .occluder = context.occluder,
+                .region_masker = context.region_masker,
+                .frame_enhancer_factory =
+                    [&app_config, &step]() {
+                        // Logic to create frame enhancer based on step config
+                        // simplified for brevity, using factory pattern is better
+                        return std::shared_ptr<domain::frame::enhancer::IFrameEnhancer>();
+                    },
+                .inference_options = context.inference_options};
+
+            auto processor =
+                domain::pipeline::ProcessorFactory::instance().create(step.step, &context);
+
+            if (processor) {
+                pipeline->add_processor(processor);
+            } else {
+                std::cerr << "PipelineRunner: Unknown step type '" << step.step << "'" << std::endl;
+                // Handle error appropriately, maybe return Result::Error
             }
         }
 

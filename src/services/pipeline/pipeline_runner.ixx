@@ -18,6 +18,8 @@ export import config.app;
 export import config.task;
 import config.parser;
 export import :types;
+import services.pipeline.context;
+import processor_factory;
 
 export namespace services::pipeline {
 
