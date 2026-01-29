@@ -28,12 +28,16 @@ import domain.face.helper;
 import domain.face.masker;
 import foundation.ai.inference_session;
 
-namespace domain::pipeline {
+export namespace domain::pipeline {
+
+// Forward declaration
+void RegisterBuiltinAdapters();
 
 /**
  * @brief Adapter for Face Swapper
- * @details Wraps IFaceSwapper to implement IFrameProcessor interface for the pipeline.
- *          Handles model loading, masking (occlusion and region), and pasting the result back.
+ * @details Wraps IFaceSwapper to implement IFrameProcessor
+ * interface for the pipeline. Handles model loading, masking (occlusion and region), and pasting
+ * the result back.
  */
 export class SwapperAdapter : public IFrameProcessor {
 public:
@@ -327,6 +331,9 @@ public:
         if (m_factory_func) { m_enhancer = m_factory_func(); }
         m_loaded = true;
     }
+
+    // Force linking of adapter implementations
+    static void force_link() {}
 
     /**
      * @brief Process a single frame using the frame enhancer

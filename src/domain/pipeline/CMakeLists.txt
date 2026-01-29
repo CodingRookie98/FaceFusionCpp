@@ -7,6 +7,7 @@ target_sources(domain_pipeline
         FILE_SET cxx_modules TYPE CXX_MODULES
         BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
         FILES
+            pipeline_context.ixx
             pipeline.ixx
             pipeline_types.ixx
             pipeline_api.ixx

@@ -3,7 +3,7 @@ module;
 #include <memory>
 #include <functional>
 
-export module services.pipeline.context;
+export module domain.pipeline.context;
 
 import domain.face.swapper;
 import domain.face.enhancer;
@@ -12,7 +12,7 @@ import domain.face.masker;
 import domain.frame.enhancer;
 import foundation.ai.inference_session;
 
-export namespace services::pipeline {
+export namespace domain::pipeline {
 
 struct PipelineContext {
     // config::AppConfig and config::PipelineStep removed due to compilation errors
@@ -32,4 +32,4 @@ struct PipelineContext {
     foundation::ai::inference_session::Options inference_options;
 };
 
-} // namespace services::pipeline
+} // namespace domain::pipeline

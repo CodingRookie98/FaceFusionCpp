@@ -11,7 +11,6 @@ target_sources(services_pipeline
         FILES
             processors/face_analysis_processor.ixx
             pipeline_runner.ixx
-            pipeline_context.ixx
             runner_video.cpp
             runner_image.cpp
             runner_types.cpp

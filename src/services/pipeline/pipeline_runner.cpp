@@ -36,6 +36,7 @@ import services.pipeline.processors.face_analysis;
 import :types;
 import :video;
 import :image;
+import domain.pipeline.context;
 
 namespace services::pipeline {
 
@@ -54,6 +55,9 @@ struct PipelineRunner::Impl {
         m_app_config(app_config), m_running(false), m_cancelled(false) {
         m_model_repo = domain::ai::model_repository::ModelRepository::get_instance();
         m_inference_options = Options::with_best_providers();
+
+        // Ensure builtin adapters are registered
+        domain::pipeline::RegisterBuiltinAdapters();
     }
 
     config::Result<void, config::ConfigError> Run(const config::TaskConfig& task_config,
@@ -191,8 +195,128 @@ private:
         services::pipeline::processors::FaceAnalysisRequirements reqs;
         bool needs_face_detection = false;
 
-        // Note: Logic temporarily removed to fix compilation errors
-        // Will be restored with proper Processor Factory usage in next iteration
+        // 1. Analyze Requirements and Initialize required services based on config
+        domain::pipeline::PipelineContext domain_ctx;
+        domain_ctx.inference_options = context.inference_options;
+        domain_ctx.occluder = context.occluder;
+        domain_ctx.region_masker = context.region_masker;
+
+        for (const auto& step : task_config.pipeline) {
+            if (!step.enabled) continue;
+
+            if (step.step == "face_swapper") {
+                needs_face_detection = true;
+                reqs.need_swap_data = true;
+                if (!domain_ctx.swapper) {
+                    domain_ctx.swapper =
+                        domain::face::swapper::FaceSwapperFactory::create_inswapper();
+
+                    std::string model_name = "inswapper_128_fp16";
+                    if (const auto* params = std::get_if<config::FaceSwapperParams>(&step.params)) {
+                        if (!params->model.empty()) { model_name = params->model; }
+                    }
+
+                    auto model_path = m_model_repo->ensure_model(model_name);
+                    if (model_path.empty()) {
+                        Logger::get_instance()->error("Failed to find or download model: "
+                                                      + model_name);
+                    } else {
+                        domain_ctx.swapper->load_model(model_path, context.inference_options);
+                    }
+                }
+            } else if (step.step == "face_enhancer") {
+                needs_face_detection = true;
+                reqs.need_enhance_data = true;
+                if (!domain_ctx.face_enhancer) {
+                    std::string model_name = "gfpgan_1.4";
+                    if (const auto* params =
+                            std::get_if<config::FaceEnhancerParams>(&step.params)) {
+                        if (!params->model.empty()) { model_name = params->model; }
+                    }
+
+                    auto type = domain::face::enhancer::FaceEnhancerFactory::Type::GfpGan;
+                    if (model_name.find("codeformer") != std::string::npos) {
+                        type = domain::face::enhancer::FaceEnhancerFactory::Type::CodeFormer;
+                    }
+
+                    domain_ctx.face_enhancer =
+                        domain::face::enhancer::FaceEnhancerFactory::create(type);
+
+                    auto model_path = m_model_repo->ensure_model(model_name);
+                    if (!model_path.empty()) {
+                        domain_ctx.face_enhancer->load_model(model_path, context.inference_options);
+                    }
+                }
+            } else if (step.step == "expression_restorer") {
+                needs_face_detection = true;
+                reqs.need_expression_data = true;
+                if (!domain_ctx.restorer) {
+                    domain_ctx.restorer = domain::face::expression::create_live_portrait_restorer();
+
+                    std::string model_name = "live_portrait";
+                    if (const auto* params =
+                            std::get_if<config::ExpressionRestorerParams>(&step.params)) {
+                        if (!params->model.empty()) { model_name = params->model; }
+                    }
+
+                    // Live Portrait requires 3 models: feature, motion, generator
+                    auto feature_path =
+                        m_model_repo->ensure_model("live_portrait_feature_extractor");
+                    auto motion_path = m_model_repo->ensure_model("live_portrait_motion_extractor");
+                    auto gen_path = m_model_repo->ensure_model("live_portrait_generator");
+
+                    if (feature_path.empty() || motion_path.empty() || gen_path.empty()) {
+                        Logger::get_instance()->error(
+                            "Failed to find or download one of LivePortrait models");
+                    } else {
+                        domain_ctx.restorer->load_model(feature_path, motion_path, gen_path,
+                                                        context.inference_options);
+                    }
+                }
+            } else if (step.step == "frame_enhancer") {
+                if (!domain_ctx.frame_enhancer_factory) {
+                    std::string model_name = "real_esrgan_x4_plus";
+                    if (const auto* params =
+                            std::get_if<config::FrameEnhancerParams>(&step.params)) {
+                        if (!params->model.empty()) { model_name = params->model; }
+                    }
+
+                    // Capture context.inference_options by value to avoid lifetime issues
+                    auto options = context.inference_options;
+                    domain_ctx.frame_enhancer_factory = [this, model_name, options]() {
+                        auto model_path = m_model_repo->ensure_model(model_name);
+
+                        auto type = domain::frame::enhancer::FrameEnhancerType::RealEsrGan;
+                        if (model_name.find("hat") != std::string::npos) {
+                            type = domain::frame::enhancer::FrameEnhancerType::RealHatGan;
+                        }
+
+                        // Factory handles loading internally
+                        return domain::frame::enhancer::FrameEnhancerFactory::create(
+                            type, model_path, options);
+                    };
+                }
+            }
+        }
+
+        // 2. Add Face Analysis Processor (if needed)
+        if (needs_face_detection) {
+            pipeline->add_processor(
+                std::make_shared<services::pipeline::processors::FaceAnalysisProcessor>(
+                    context.face_analyser, context.source_embedding, reqs));
+        }
+
+        // 3. Create Processors using Factory
+        for (const auto& step : task_config.pipeline) {
+            if (!step.enabled) continue;
+
+            auto processor = ProcessorFactory::instance().create(step.step, &domain_ctx);
+            if (processor) {
+                pipeline->add_processor(processor);
+            } else {
+                Logger::get_instance()->warn("Failed to create processor for step: " + step.step);
+            }
+        }
     }
 };
 

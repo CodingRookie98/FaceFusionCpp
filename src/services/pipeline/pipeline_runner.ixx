@@ -18,7 +18,9 @@ export import config.app;
 export import config.task;
 import config.parser;
 export import :types;
-import services.pipeline.context;
+import domain.pipeline.context;
+export import domain.pipeline; // Import domain.pipeline to access RegisterBuiltinAdapters (it's
+                               // part of the module interface now)
 import processor_factory;
 
 export namespace services::pipeline {
