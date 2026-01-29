@@ -1,11 +1,14 @@
+module;
+
+#include <string>
+#include <functional>
+#include <map>
+#include <memory>
+#include <iostream>
+
 export module processor_factory;
 
-import <string>;
-import <functional>;
-import <map>;
-import <memory>;
-import <iostream>;
-import frame_processor;
+import domain.pipeline;
 
 namespace domain::pipeline {
 

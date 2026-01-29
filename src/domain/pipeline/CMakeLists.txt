@@ -12,9 +12,14 @@ target_sources(domain_pipeline
             pipeline_api.ixx
             pipeline_adapters.ixx
             queue.ixx
+            processor_factory.ixx
             impl/pipeline_impl.ixx
 )
 
+target_sources(domain_pipeline
+    PRIVATE
+        pipeline_adapters.cpp
+)
 target_link_libraries(domain_pipeline
     PUBLIC
         foundation_infrastructure

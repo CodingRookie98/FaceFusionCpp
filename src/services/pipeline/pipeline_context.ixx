@@ -1,9 +1,10 @@
+module;
+
+#include <memory>
+#include <functional>
+
 export module services.pipeline.context;
 
-import <memory>;
-import <string>;
-import config.types;
-import config.app;
 import domain.face.swapper;
 import domain.face.enhancer;
 import domain.face.expression;
@@ -11,11 +12,10 @@ import domain.face.masker;
 import domain.frame.enhancer;
 import foundation.ai.inference_session;
 
-namespace services::pipeline {
+export namespace services::pipeline {
 
 struct PipelineContext {
-    const config::AppConfig& app_config;
-    const config::PipelineStep& step_config;
+    // config::AppConfig and config::PipelineStep removed due to compilation errors
 
     // Shared services
     std::shared_ptr<domain::face::swapper::IFaceSwapper> swapper;
@@ -24,7 +24,7 @@ struct PipelineContext {
     std::shared_ptr<domain::face::masker::IFaceOccluder> occluder;
     std::shared_ptr<domain::face::masker::IFaceRegionMasker> region_masker;
 
-    // Frame enhancer factory (since it might need custom creation per step)
+    // Frame enhancer factory
     std::function<std::shared_ptr<domain::frame::enhancer::IFrameEnhancer>()>
         frame_enhancer_factory;
 

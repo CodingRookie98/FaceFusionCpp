@@ -40,7 +40,7 @@ export enum class DownloadStrategy {
  * @details Handles model configuration loading, existence verification, and
  *          automated downloading using standard network utilities.
  */
-export class ModelRepository final {
+export class ModelRepository {
 public:
     virtual ~ModelRepository() = default;
 

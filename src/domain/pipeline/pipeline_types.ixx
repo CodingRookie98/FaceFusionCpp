@@ -9,7 +9,6 @@ module;
 #include <map>
 #include <string>
 #include <any>
-#include <vector>
 
 export module domain.pipeline:types;
 
