@@ -133,10 +133,6 @@ int App::run(int argc, char** argv) {
     return 0;
 }
 
-void App::print_help() {
-    // Deprecated, handled by CLI11
-}
-
 void App::print_version() {
     std::cout << "FaceFusionCpp v1.0.0" << std::endl;
 }

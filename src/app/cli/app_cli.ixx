@@ -16,7 +16,6 @@ public:
     static int run(int argc, char** argv);
 
 private:
-    static void print_help();
     static void print_version();
     static void run_pipeline(const std::string& config_path);
 };
