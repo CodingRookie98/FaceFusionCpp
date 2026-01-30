@@ -20,14 +20,13 @@ python build.py
 # 仅构建 Release 版本
 python build.py --config Release --action build
 
-# 运行测试 (会自动先执行构建，除非指定 --no-build)
-python build.py --config Debug --action test
-
-# 运行特定测试 (例如名称包含 "vision" 的测试)
-python build.py --action test --target vision
-
 # 使用正则筛选测试 (推荐方式，不影响构建目标)
 python build.py --action test --test-regex "domain_face.*"
+
+# 使用标签筛选测试 (对应 unit, integration, benchmark)
+python build.py --action test --test-label unit
+python build.py --action test --test-label integration
+python build.py --action test --test-label benchmark
 
 # 仅运行测试，跳过构建 (明确跳过构建步骤)
 python build.py --action test --no-build --test-regex "face"
@@ -56,6 +55,7 @@ python build.py --action build
 | `--action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (先构建后测试)<br>`install` (安装)<br>`package` (打包) | `build` |
 | `--target` | 构建或测试目标 | `all` 或具体名称 | `all` |
 | `--test-regex` | 测试筛选正则 (传递给 `ctest -R`) | 正则表达式 | `None` (默认使用 `--target` 当作筛选若非 `all`) |
+| `--test-label` | 测试标签筛选 (传递给 `ctest -L`) | `unit`, `integration`, `benchmark` | `None` |
 | `--no-build` | 跳过构建步骤(仅测试时有效) | `[flag]` | `False` |
 | `--preset` | 手动指定 CMake Preset | CMakePresets.json 中定义的名称 | 自动检测 |
 | `--clean` | 清理构建目录 | `[flag]` | `False` |
@@ -74,8 +74,9 @@ python build.py --action configure
 # 2. 构建并开发
 python build.py
 
-# 3. 运行测试并查看结果 (会自动重构)
-python build.py --action test
+# 3. 运行测试并查看结果
+python build.py --action test --test-label unit         # 运行快速单元测试 (推荐频繁运行)
+python build.py --action test --test-label integration  # 运行集成测试 (涉及模型，较慢)
 ```
 
 ### 发布流程
