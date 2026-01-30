@@ -117,6 +117,13 @@ std::vector<cv::Point2f> get_warp_template(const WarpTemplateType& warp_template
 std::vector<float> calc_average_embedding(const std::vector<std::vector<float>>& embeddings);
 
 /**
+ * @brief Compute the average embedding from a list of faces and normalize it
+ * @param faces List of faces
+ * @return Normalized average embedding
+ */
+types::Embedding compute_average_embedding(const std::vector<Face>& faces);
+
+/**
  * @brief Create a transformation matrix and target size for image rotation
  */
 std::tuple<cv::Mat, cv::Size> create_rotated_mat_and_size(const double& angle,

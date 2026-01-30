@@ -1,0 +1,27 @@
+namespace domain.face.serialization;
+
+struct Rect {
+    x: float;
+    y: float;
+    width: float;
+    height: float;
+}
+
+table FaceBuffer {
+    box: Rect;
+    landmarks: [float];  // x, y alternating
+    embedding: [float];
+    normed_embedding: [float];
+    detector_score: float;
+    landmarker_score: float;
+    gender: byte;
+    age_min: int;
+    age_max: int;
+    race: byte;
+}
+
+table FaceListChannel {
+    faces: [FaceBuffer];
+}
+
+root_type FaceListChannel;

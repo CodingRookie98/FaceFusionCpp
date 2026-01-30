@@ -26,6 +26,31 @@ class Face {
 public:
     Face() = default;
 
+    /**
+     * @brief Copy constructor (deep copy for mask)
+     */
+    Face(const Face& other);
+
+    /**
+     * @brief Copy assignment operator (deep copy for mask)
+     */
+    Face& operator=(const Face& other);
+
+    /**
+     * @brief Move constructor
+     */
+    Face(Face&& other) noexcept = default;
+
+    /**
+     * @brief Move assignment operator
+     */
+    Face& operator=(Face&& other) noexcept = default;
+
+    /**
+     * @brief Destructor
+     */
+    ~Face() = default;
+
     /** @name Accessors */
     ///@{
 
@@ -82,6 +107,12 @@ public:
      * @return Score value
      */
     [[nodiscard]] types::Score landmarker_score() const noexcept;
+
+    /**
+     * @brief Get the face mask
+     * @return Const reference to the mask
+     */
+    [[nodiscard]] const cv::Mat& mask() const noexcept;
     ///@}
 
     /** @name Auxiliary Accessors */
@@ -149,6 +180,12 @@ public:
      * @param score New score
      */
     void set_landmarker_score(types::Score score) noexcept;
+
+    /**
+     * @brief Set the face mask
+     * @param mask New mask
+     */
+    void set_mask(cv::Mat mask) noexcept;
     ///@}
 
     /** @name Business Logic */
@@ -170,5 +207,6 @@ private:
     Gender m_gender{Gender::Male};
     AgeRange m_age_range{};
     Race m_race{Race::White};
+    cv::Mat m_mask{};
 };
 } // namespace domain::face

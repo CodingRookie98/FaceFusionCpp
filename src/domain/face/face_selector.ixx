@@ -7,6 +7,7 @@
 module;
 #include <vector>
 #include <unordered_set>
+#include <optional>
 
 export module domain.face.selector;
 
@@ -56,11 +57,16 @@ const std::unordered_set<domain::common::types::Race> ALL_RACES = {
  * @brief Configuration for face selection and filtering
  */
 struct Options {
+    SelectorMode mode = SelectorMode::Many;
     Order order = Order::LeftRight; ///< Primary sorting order
     std::unordered_set<domain::common::types::Gender> genders = ALL_GENDERS; ///< Genders to keep
     std::unordered_set<domain::common::types::Race> races = ALL_RACES;       ///< Races to keep
     unsigned int age_start = 0; ///< Minimum age (inclusive)
     unsigned int age_end = 100; ///< Maximum age (inclusive)
+
+    // 相似度筛选参数
+    std::optional<Face> reference_face;
+    float similarity_threshold = 0.6f;
 };
 
 /**

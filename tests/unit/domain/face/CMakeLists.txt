@@ -2,6 +2,7 @@ add_facefusion_test(
     domain_face_tests
     SOURCES
         face_store_test.cpp
+        face_enhancement_tests.cpp
 
     LINK_LIBRARIES
         domain_face

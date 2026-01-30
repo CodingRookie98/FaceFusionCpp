@@ -98,13 +98,51 @@ std::vector<Face> filter_by_age(std::vector<Face> faces, const unsigned int& age
     });
     return faces;
 }
+
+float compute_cosine_similarity(const std::vector<float>& emb1, const std::vector<float>& emb2) {
+    if (emb1.size() != emb2.size() || emb1.empty()) return 0.0f;
+
+    double dot = 0.0;
+    double norm1 = 0.0;
+    double norm2 = 0.0;
+
+    for (size_t i = 0; i < emb1.size(); ++i) {
+        dot += emb1[i] * emb2[i];
+        norm1 += emb1[i] * emb1[i];
+        norm2 += emb2[i] * emb2[i];
+    }
+
+    if (norm1 <= 1e-6 || norm2 <= 1e-6) return 0.0f;
+    return static_cast<float>(dot / (std::sqrt(norm1) * std::sqrt(norm2)));
+}
+
+std::vector<Face> filter_by_similarity(std::vector<Face> faces, const Options& opts) {
+    if (!opts.reference_face.has_value() || opts.mode != SelectorMode::Reference) return faces;
+
+    const auto& ref_emb = opts.reference_face->normed_embedding();
+    if (ref_emb.empty()) return faces;
+
+    std::erase_if(faces, [&](const Face& face) {
+        const auto& target_emb = face.normed_embedding();
+        if (target_emb.empty()) return true;
+
+        float sim = compute_cosine_similarity(ref_emb, target_emb);
+        return sim < opts.similarity_threshold;
+    });
+    return faces;
+}
+
 } // namespace
 
 std::vector<Face> select_faces(const std::vector<Face>& faces, const Options& options) {
     auto res = filter_by_age(faces, options.age_start, options.age_end);
     res = filter_by_gender(res, options.genders);
     res = filter_by_race(res, options.races);
+    res = filter_by_similarity(res, options);
     res = sort_by_order(res, options.order);
+
+    if (options.mode == SelectorMode::One && !res.empty()) { return {res.front()}; }
+
     return res;
 }
 

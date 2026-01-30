@@ -275,6 +275,27 @@ std::vector<float> calc_average_embedding(const std::vector<std::vector<float>>&
     return average_embedding;
 }
 
+types::Embedding compute_average_embedding(const std::vector<Face>& faces) {
+    if (faces.empty()) return {};
+
+    std::vector<std::vector<float>> embeddings;
+    embeddings.reserve(faces.size());
+    for (const auto& face : faces) { embeddings.push_back(face.embedding()); }
+
+    auto avg = calc_average_embedding(embeddings);
+
+    // Normalize
+    double norm = 0.0;
+    for (float v : avg) norm += v * v;
+    norm = std::sqrt(norm);
+
+    if (norm > 1e-6) {
+        for (float& v : avg) v /= static_cast<float>(norm);
+    }
+
+    return avg;
+}
+
 std::tuple<cv::Mat, cv::Size> create_rotated_mat_and_size(const double& angle,
                                                           const cv::Size& src_size) {
     cv::Mat rotated_mat =

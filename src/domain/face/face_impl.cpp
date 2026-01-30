@@ -8,6 +8,36 @@ import domain.face.helper;
 
 namespace domain::face {
 
+// Copy Constructor
+Face::Face(const Face& other) :
+    m_box(other.m_box), m_kps(other.m_kps), m_embedding(other.m_embedding),
+    m_normed_embedding(other.m_normed_embedding), m_detector_score(other.m_detector_score),
+    m_landmarker_score(other.m_landmarker_score), m_gender(other.m_gender),
+    m_age_range(other.m_age_range), m_race(other.m_race) {
+    if (!other.m_mask.empty()) { m_mask = other.m_mask.clone(); }
+}
+
+// Copy Assignment
+Face& Face::operator=(const Face& other) {
+    if (this != &other) {
+        m_box = other.m_box;
+        m_kps = other.m_kps;
+        m_embedding = other.m_embedding;
+        m_normed_embedding = other.m_normed_embedding;
+        m_detector_score = other.m_detector_score;
+        m_landmarker_score = other.m_landmarker_score;
+        m_gender = other.m_gender;
+        m_age_range = other.m_age_range;
+        m_race = other.m_race;
+        if (!other.m_mask.empty()) {
+            m_mask = other.m_mask.clone();
+        } else {
+            m_mask.release();
+        }
+    }
+    return *this;
+}
+
 // 访问器实现
 const cv::Rect2f& Face::box() const noexcept {
     return m_box;
@@ -35,6 +65,9 @@ types::Score Face::detector_score() const noexcept {
 }
 types::Score Face::landmarker_score() const noexcept {
     return m_landmarker_score;
+}
+const cv::Mat& Face::mask() const noexcept {
+    return m_mask;
 }
 
 // 辅助方法
@@ -71,6 +104,10 @@ void Face::set_detector_score(types::Score score) noexcept {
 }
 void Face::set_landmarker_score(types::Score score) noexcept {
     m_landmarker_score = score;
+}
+
+void Face::set_mask(cv::Mat mask) noexcept {
+    m_mask = mask;
 }
 
 bool Face::is_empty() const noexcept {

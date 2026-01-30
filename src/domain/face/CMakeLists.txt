@@ -1,5 +1,6 @@
 find_package(OpenCV REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(flatbuffers CONFIG REQUIRED)
 
 add_modules_library(domain_face)
 
@@ -13,12 +14,13 @@ target_sources(domain_face
             face_selector.ixx
             face_store.ixx
     PRIVATE
-        face.cpp
+        face_impl.cpp
         face_helper.cpp
         face_selector.cpp
         face_store.cpp
 )
 
+target_include_directories(domain_face PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/schema)
 
 target_link_libraries(domain_face
     PUBLIC
@@ -28,6 +30,7 @@ target_link_libraries(domain_face
         domain_common
         foundation_ai
         domain_ai
+        flatbuffers::flatbuffers
 )
 
 
@@ -40,8 +43,3 @@ add_subdirectory(analyser)
 add_subdirectory(swapper)
 add_subdirectory(enhancer)
 add_subdirectory(expression)
-
-
-
-
-
