@@ -30,7 +30,8 @@
     "spdlog",
     "yaml-cpp",
     "gtest",
-    "flatbuffers"
+    "flatbuffers",
+    "cli11"
   ],
   "builtin-baseline": "b7a701cb475805c27e29ddf635a3b16c37ba51fb"
 }
