@@ -18,6 +18,15 @@ import foundation.ai.inference_session;
 
 namespace foundation::ai::inference_session {
 
+InferenceSessionRegistry::InferenceSessionRegistry() {
+    // Initialize pool with default config
+    // TODO: Load config from AppConfig if available
+    session_pool::PoolConfig config;
+    config.max_entries = 3;
+    config.idle_timeout = std::chrono::seconds(60);
+    config.enable = true;
+}
+
 InferenceSessionRegistry& InferenceSessionRegistry::get_instance() {
     static InferenceSessionRegistry instance;
     return instance;
@@ -46,21 +55,20 @@ std::shared_ptr<InferenceSession> InferenceSessionRegistry::get_session(
     if (model_path.empty()) return nullptr;
 
     std::string key = generate_key(model_path, options);
-    std::lock_guard lock(m_mutex);
 
-    if (auto it = m_sessions.find(key); it != m_sessions.end()) {
-        if (auto session = it->second.lock()) { return session; }
-    }
-
-    auto session = std::make_shared<InferenceSession>();
-    session->load_model(model_path, options);
-    m_sessions[key] = session;
-    return session;
+    return m_pool.get_or_create(key, [&]() {
+        auto session = std::make_shared<InferenceSession>();
+        session->load_model(model_path, options);
+        return session;
+    });
 }
 
 void InferenceSessionRegistry::clear() {
-    std::lock_guard lock(m_mutex);
-    m_sessions.clear();
+    m_pool.clear();
+}
+
+size_t InferenceSessionRegistry::cleanup_expired() {
+    return m_pool.cleanup_expired();
 }
 
 } // namespace foundation::ai::inference_session

@@ -14,6 +14,7 @@ module;
 export module foundation.ai.inference_session_registry;
 
 import foundation.ai.inference_session;
+import foundation.ai.session_pool;
 
 namespace foundation::ai::inference_session {
 
@@ -44,15 +45,20 @@ public:
      */
     void clear();
 
+    /**
+     * @brief Trigger cleanup of expired sessions.
+     * @return Number of cleaned sessions.
+     */
+    size_t cleanup_expired();
+
 private:
-    InferenceSessionRegistry() = default;
+    InferenceSessionRegistry();
     ~InferenceSessionRegistry() = default;
 
     InferenceSessionRegistry(const InferenceSessionRegistry&) = delete;
     InferenceSessionRegistry& operator=(const InferenceSessionRegistry&) = delete;
 
-    std::mutex m_mutex;
-    std::unordered_map<std::string, std::weak_ptr<InferenceSession>> m_sessions;
+    session_pool::SessionPool m_pool;
 
     /**
      * @brief Generate a unique key for a model and options combination

@@ -7,9 +7,11 @@ target_sources(foundation_ai
         FILES
         inference_session.ixx
         inference_session_registry.ixx
+        session_pool.ixx
         PRIVATE
         inference_session.cpp
         inference_session_registry.cpp
+        session_pool.cpp
 )
 
 target_link_libraries(foundation_ai

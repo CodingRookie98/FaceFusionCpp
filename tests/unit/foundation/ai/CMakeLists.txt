@@ -17,3 +17,12 @@ add_facefusion_test(
     foundation_infrastructure
     foundation_infrastructure_test_support
 )
+
+add_facefusion_test(
+    session_pool_tests
+    SOURCES
+    session_pool_tests.cpp
+    LINK_LIBRARIES
+    foundation_ai
+    foundation_infrastructure
+)
