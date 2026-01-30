@@ -29,38 +29,46 @@ void signal_handler(int signal) {
 }
 
 int App::run(int argc, char** argv) {
-    std::vector<std::string> args(argv + 1, argv + argc);
+    try {
+        std::vector<std::string> args(argv + 1, argv + argc);
 
-    if (args.empty()) {
-        print_help();
-        return 0;
-    }
-
-    // Register signal handler
-    std::signal(SIGINT, signal_handler);
-
-    for (size_t i = 0; i < args.size(); ++i) {
-        if (args[i] == "--help" || args[i] == "-h") {
+        if (args.empty()) {
             print_help();
             return 0;
         }
-        if (args[i] == "--version" || args[i] == "-v") {
-            print_version();
-            return 0;
-        }
-        if (args[i] == "--config" || args[i] == "-c") {
-            if (i + 1 < args.size()) {
-                run_pipeline(args[i + 1]);
+
+        // Register signal handler
+        std::signal(SIGINT, signal_handler);
+
+        for (size_t i = 0; i < args.size(); ++i) {
+            if (args[i] == "--help" || args[i] == "-h") {
+                print_help();
                 return 0;
-            } else {
-                std::cerr << "Error: --config requires a path argument" << std::endl;
-                return 1;
+            }
+            if (args[i] == "--version" || args[i] == "-v") {
+                print_version();
+                return 0;
+            }
+            if (args[i] == "--config" || args[i] == "-c") {
+                if (i + 1 < args.size()) {
+                    run_pipeline(args[i + 1]);
+                    return 0;
+                } else {
+                    std::cerr << "Error: --config requires a path argument" << std::endl;
+                    return 1;
+                }
             }
         }
-    }
 
-    std::cout << "Unknown command. Use --help to see available options." << std::endl;
-    return 1;
+        std::cout << "Unknown command. Use --help to see available options." << std::endl;
+        return 1;
+    } catch (const std::exception& e) {
+        std::cerr << "\nFatal Error: " << e.what() << std::endl;
+        return 1;
+    } catch (...) {
+        std::cerr << "\nFatal Error: Unknown exception occurred." << std::endl;
+        return 1;
+    }
 }
 
 void App::run_pipeline(const std::string& config_path) {
