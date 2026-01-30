@@ -1,5 +1,6 @@
 # Include config subdirectory
 add_subdirectory(config)
+add_subdirectory(cli)
 
 target_sources(${app_facefusioncpp} PUBLIC
         FILE_SET CXX_MODULES FILES
@@ -11,4 +12,5 @@ target_sources(${app_facefusioncpp} PUBLIC
 target_link_libraries(${app_facefusioncpp} PRIVATE
         foundation_infrastructure
         config_core
+        app_cli
 )

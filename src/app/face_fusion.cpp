@@ -4,13 +4,12 @@
  * @author CodingRookie
  * @date 2026-01-18
  */
-#include <iostream>
+import app.cli;
 
 /**
  * @brief Main function
  * @return Exit code
  */
-int main() {
-    std::cout << "FaceFusionCpp Application" << std::endl;
-    return 0;
+int main(int argc, char** argv) {
+    return app::cli::App::run(argc, argv);
 }
