@@ -81,8 +81,8 @@ graph TD
 - [x] **Task 1.1.1**: 定义日志级别枚举 (TRACE/DEBUG/INFO/WARN/ERROR/CRITICAL)
 - [x] **Task 1.1.2**: 实现日志格式化器
 - [x] **Task 1.1.3**: 集成 spdlog 后端
-- [ ] **Task 1.1.4**: 实现日志轮转 (daily/hourly/size) - *待增强*
-- [ ] **Task 1.1.5**: 添加 `max_files` / `max_total_size` 配置支持 - *待增强*
+- [x] **Task 1.1.4**: 实现日志轮转 (daily/hourly/size)
+- [x] **Task 1.1.5**: 添加 `max_files` / `max_total_size` 配置支持
 
 #### 1.3.2 子任务: ConcurrentQueue 实现 ✅
 
@@ -441,7 +441,6 @@ graph TD
 | 任务                | 所属阶段 | 描述                          |
 | :------------------ | :------: | :---------------------------- |
 | **SessionPool LRU** |    M3    | Session 缓存 + TTL 管理       |
-| **Logger 轮转配置** |    M1    | daily/hourly/size + max_files |
 | **CLI 快捷模式**    |   M10    | `-s/-t/-o` 参数               |
 | **ConfigMerger**    |    M9    | 配置级联优先级                |
 

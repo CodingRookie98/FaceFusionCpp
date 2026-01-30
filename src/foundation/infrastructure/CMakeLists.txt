@@ -23,6 +23,7 @@ target_sources(foundation_infrastructure
             crypto.ixx
             concurrent_crypto.ixx
             concurrent_queue.ixx
+            logger_types.ixx
             logger.ixx
             progress.ixx
         process.ixx

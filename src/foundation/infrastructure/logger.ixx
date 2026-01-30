@@ -11,13 +11,9 @@ module;
  * @date 2026-01-27
  */
 export module foundation.infrastructure.logger;
+export import :types;
 
 export namespace foundation::infrastructure::logger {
-
-/**
- * @brief Log levels supported by the logger
- */
-enum class LogLevel { Trace, Debug, Info, Warn, Error, Critical, Off };
 
 /**
  * @brief Singleton Logger class wrapper around spdlog
@@ -30,6 +26,19 @@ public:
      * @return Shared pointer to the Logger instance
      */
     static std::shared_ptr<Logger> get_instance();
+
+    /**
+     * @brief Initialize Logger with config
+     * @param config Logging configuration
+     * @note Must be called before first use, otherwise default config is used
+     */
+    static void initialize(const LoggingConfig& config);
+
+    /**
+     * @brief Check if Logger is initialized
+     * @return true if initialized
+     */
+    static bool is_initialized() noexcept;
 
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
@@ -88,8 +97,14 @@ public:
 
 private:
     Logger();
+    void setup_sinks();
+    void start_cleanup_task();
+    void cleanup_old_logs();
+
     std::shared_ptr<spdlog::logger> m_logger;
     LogLevel m_level{LogLevel::Info};
+    LoggingConfig m_config;
+    bool m_initialized{false};
 };
 
 } // namespace foundation::infrastructure::logger
