@@ -6,6 +6,7 @@ module;
 #include <atomic>
 #include <thread>
 #include <indicators/progress_bar.hpp>
+#include <CLI/CLI.hpp>
 
 module app.cli;
 
@@ -21,64 +22,25 @@ std::atomic<bool> g_interrupted{false};
 services::pipeline::PipelineRunner* g_active_runner = nullptr;
 
 void signal_handler(int signal) {
+    using foundation::infrastructure::logger::Logger;
     if (signal == SIGINT) {
-        std::cout << "\nInterrupt received (SIGINT). Stopping pipeline...\n";
+        Logger::get_instance()->warn("Interrupt received (SIGINT). Stopping pipeline...");
         g_interrupted = true;
         if (g_active_runner) { g_active_runner->Cancel(); }
-    }
-}
-
-int App::run(int argc, char** argv) {
-    try {
-        std::vector<std::string> args(argv + 1, argv + argc);
-
-        if (args.empty()) {
-            print_help();
-            return 0;
-        }
-
-        // Register signal handler
-        std::signal(SIGINT, signal_handler);
-
-        for (size_t i = 0; i < args.size(); ++i) {
-            if (args[i] == "--help" || args[i] == "-h") {
-                print_help();
-                return 0;
-            }
-            if (args[i] == "--version" || args[i] == "-v") {
-                print_version();
-                return 0;
-            }
-            if (args[i] == "--config" || args[i] == "-c") {
-                if (i + 1 < args.size()) {
-                    run_pipeline(args[i + 1]);
-                    return 0;
-                } else {
-                    std::cerr << "Error: --config requires a path argument" << std::endl;
-                    return 1;
-                }
-            }
-        }
-
-        std::cout << "Unknown command. Use --help to see available options." << std::endl;
-        return 1;
-    } catch (const std::exception& e) {
-        std::cerr << "\nFatal Error: " << e.what() << std::endl;
-        return 1;
-    } catch (...) {
-        std::cerr << "\nFatal Error: Unknown exception occurred." << std::endl;
-        return 1;
     }
 }
 
 void App::run_pipeline(const std::string& config_path) {
     using namespace config;
     using namespace services::pipeline;
+    using foundation::infrastructure::logger::Logger;
+
+    auto logger = Logger::get_instance();
 
     // 1. Load Config
     auto config_result = LoadTaskConfig(config_path);
     if (config_result.is_err()) {
-        std::cerr << "Config Error: " << config_result.error().message << std::endl;
+        logger->error("Config Error: " + config_result.error().message);
         return;
     }
     auto task_config = config_result.value();
@@ -106,7 +68,7 @@ void App::run_pipeline(const std::string& config_path) {
                                     indicators::FontStyle::bold}}};
 
     // 4. Run
-    std::cout << "Starting task: " << task_config.task_info.id << std::endl;
+    logger->info("Starting task: " + task_config.task_info.id);
 
     auto result = runner->Run(task_config, [&](const TaskProgress& p) {
         float progress = 0.0f;
@@ -118,32 +80,61 @@ void App::run_pipeline(const std::string& config_path) {
                             + std::to_string(p.total_frames) + " (" + std::to_string((int)p.fps)
                             + " FPS)";
         bar.set_option(indicators::option::PostfixText{postfix});
-
-        if (g_interrupted) {
-            // If interrupted, we might want to break here or let the runner handle cancel
-        }
     });
 
     // Cleanup
     g_active_runner = nullptr;
 
     if (g_interrupted) {
-        std::cout << "\nTask cancelled by user." << std::endl;
+        logger->warn("Task cancelled by user.");
     } else if (result.is_err()) {
-        std::cerr << "\nPipeline failed: " << result.error().message << std::endl;
+        logger->error("Pipeline failed: " + result.error().message);
     } else {
         bar.set_progress(100.0f);
         bar.set_option(indicators::option::PostfixText{"Completed"});
-        std::cout << "\nTask completed successfully." << std::endl;
+        logger->info("Task completed successfully.");
     }
 }
 
+int App::run(int argc, char** argv) {
+    using foundation::infrastructure::logger::Logger;
+    auto logger = Logger::get_instance();
+
+    CLI::App app{"FaceFusionCpp"};
+// Ensure UTF-8 support for arguments
+#ifdef _WIN32
+    argv = app.ensure_utf8(argv);
+#endif
+
+    std::string config_path;
+    bool show_version = false;
+
+    app.add_option("-c,--config", config_path, "Path to task configuration file");
+    app.add_flag("-v,--version", show_version, "Show version information");
+
+    try {
+        app.parse(argc, argv);
+    } catch (const CLI::ParseError& e) { return app.exit(e); }
+
+    if (show_version) {
+        print_version();
+        return 0;
+    }
+
+    if (!config_path.empty()) {
+        // Register signal handler
+        std::signal(SIGINT, signal_handler);
+        run_pipeline(config_path);
+        return 0;
+    }
+
+    // Show help if no action taken
+    std::cout << app.help() << std::endl;
+    return 0;
+}
+
 void App::print_help() {
-    std::cout << "Usage: FaceFusionCpp [options]" << std::endl;
-    std::cout << "Options:" << std::endl;
-    std::cout << "  -h, --help       Show this help message" << std::endl;
-    std::cout << "  -v, --version    Show version information" << std::endl;
-    std::cout << "  -c, --config     Path to task configuration file" << std::endl;
+    // Deprecated, handled by CLI11
 }
 
 void App::print_version() {

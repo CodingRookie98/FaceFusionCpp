@@ -8,6 +8,7 @@ target_sources(app_cli
 )
 
 find_package(indicators CONFIG REQUIRED)
+find_package(CLI11 CONFIG REQUIRED)
 
 target_link_libraries(app_cli
     PRIVATE
@@ -16,4 +17,5 @@ target_link_libraries(app_cli
         services_pipeline
         foundation_infrastructure
         indicators::indicators
+        CLI11::CLI11
 )
