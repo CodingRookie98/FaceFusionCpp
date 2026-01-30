@@ -1,9 +1,0 @@
-add_facefusion_test(
-    model_repository_tests
-    SOURCES
-    model_repository_tests.cpp
-    LINK_LIBRARIES
-    domain_ai
-    foundation_infrastructure
-    foundation_infrastructure_test_support
-)

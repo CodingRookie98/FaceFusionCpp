@@ -4,7 +4,6 @@ add_facefusion_test(
         app/pipeline_integration_test.cpp
         app/pipeline_runner_video_test.cpp
         app/pipeline_runner_image_test.cpp
-        app/pipeline_benchmark_test.cpp
     LINK_LIBRARIES
         domain_pipeline
         services_pipeline
@@ -23,7 +22,67 @@ add_facefusion_test(
         ${OpenCV_LIBS}
 )
 
-
-# Ensure ONNX Runtime DLLs are copied to the test executable directory
 copy_onnxruntime_libs(app_test_pipeline)
 
+add_facefusion_test(
+    component_integration_tests
+    MAIN_LIB GTest::gmock_main
+    SOURCES
+        domain/face/detector/test_face_detector.cpp
+        domain/face/swapper/face_swapper_tests.cpp
+        domain/face/enhancer/face_enhancer_tests.cpp
+        domain/face/recognizer/face_recognizer_tests.cpp
+        domain/face/masker/face_masker_tests.cpp
+        domain/face/landmarker/face_landmarker_tests.cpp
+        domain/face/classifier/face_classifier_tests.cpp
+        domain/face/expression/face_expression_tests.cpp
+        domain/face/analyser/face_analyser_integration_tests.cpp
+        domain/face/analyser/model_registry_tests.cpp
+        domain/ai/model_repository_tests.cpp
+        domain/frame/enhancer/frame_enhancer_tests.cpp
+        foundation/ai/inference_session_tests.cpp
+        foundation/ai/session_pool_tests.cpp
+        foundation/ai/inference_session_registry_tests.cpp
+        foundation/media/ffmpeg_tests.cpp
+        foundation/media/vision_tests.cpp
+        foundation/infrastructure/network_tests.cpp
+        domain/face/face_helper_test.cpp
+        domain/face/face_selector_test.cpp
+        domain/face/test_face.cpp
+    LINK_LIBRARIES
+        domain_face
+        domain_face_detector
+        domain_face_swapper
+        domain_face_recognizer
+        domain_face_masker
+        domain_face_classifier
+        domain_face_expression
+        domain_face_analyser
+        domain_frame
+        domain_ai
+        foundation_ai
+        foundation_media
+        foundation_infrastructure
+        domain_face_test_support
+        foundation_infrastructure_test_support
+        ${OpenCV_LIBS}
+        GTest::gmock
+)
+
+copy_onnxruntime_libs(component_integration_tests)
+
+add_facefusion_test(
+    test_detector_only
+    MAIN_LIB GTest::gmock_main
+    SOURCES
+        domain/face/detector/test_face_detector.cpp
+    LINK_LIBRARIES
+        domain_face_detector
+        domain_ai
+        foundation_infrastructure
+        foundation_infrastructure_test_support
+        ${OpenCV_LIBS}
+        GTest::gmock
+)
+
+copy_onnxruntime_libs(test_detector_only)

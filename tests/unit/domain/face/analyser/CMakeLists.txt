@@ -1,7 +1,8 @@
 add_facefusion_test(
-    domain_face_analyser_tests
+    face_analyser_unit_tests
+    MAIN_LIB GTest::gmock_main
     SOURCES
-        face_analyser_tests.cpp
+        face_analyser_unit_tests.cpp
     LINK_LIBRARIES
         domain_face_analyser
         domain_face_detector
@@ -9,23 +10,4 @@ add_facefusion_test(
         domain_face_classifier
         domain_face
         domain_ai
-        foundation_ai
-        foundation_infrastructure_test_support
-        GTest::gmock
-)
-
-add_facefusion_test(
-    domain_face_model_registry_tests
-    SOURCES
-        model_registry_tests.cpp
-    LINK_LIBRARIES
-        domain_face_analyser
-        domain_face_detector
-        domain_face_recognizer
-        domain_face_classifier
-        domain_face
-        domain_ai
-        foundation_ai
-        foundation_infrastructure_test_support
-        GTest::gmock
 )

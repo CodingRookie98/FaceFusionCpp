@@ -56,8 +56,3 @@ TEST_F(FaceModelRegistryTest, GetDetectorReuse) {
     auto det3 = registry.get_detector(DetectorType::SCRFD, path, opts);
     EXPECT_NE(det1, det3); // Should be a different instance
 }
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

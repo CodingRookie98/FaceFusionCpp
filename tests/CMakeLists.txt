@@ -14,7 +14,7 @@ include(GoogleTest)
 function(add_facefusion_test TEST_NAME)
     cmake_parse_arguments(PARSE_ARGV 1 ARG
         ""
-        ""
+        "MAIN_LIB"
         "SOURCES;LINK_LIBRARIES"
     )
 
@@ -22,7 +22,10 @@ function(add_facefusion_test TEST_NAME)
     add_executable(${TEST_NAME} ${ARG_SOURCES})
 
     # 链接 GoogleTest 主函数
-    target_link_libraries(${TEST_NAME} PRIVATE GTest::gtest_main)
+    if(NOT ARG_MAIN_LIB)
+        set(ARG_MAIN_LIB GTest::gtest_main)
+    endif()
+    target_link_libraries(${TEST_NAME} PRIVATE ${ARG_MAIN_LIB})
 
     # 链接额外的库
     if(ARG_LINK_LIBRARIES)
@@ -34,13 +37,33 @@ function(add_facefusion_test TEST_NAME)
         setup_resource_copying(${TEST_NAME})
     endif()
 
+    # Determine label based on directory
+    set(TEST_LABELS "facefusion")
+    string(REPLACE "\\" "/" NORMALIZED_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+    message(STATUS "Configuring test ${TEST_NAME} in ${NORMALIZED_SOURCE_DIR}")
+
+    if(NORMALIZED_SOURCE_DIR MATCHES "unit")
+        list(APPEND TEST_LABELS "unit")
+    endif()
+    if(NORMALIZED_SOURCE_DIR MATCHES "integration")
+        list(APPEND TEST_LABELS "integration")
+    endif()
+    if(NORMALIZED_SOURCE_DIR MATCHES "benchmark")
+        list(APPEND TEST_LABELS "benchmark")
+    endif()
+
+    message(STATUS "Test ${TEST_NAME} labels: ${TEST_LABELS}")
+
+    # Escape semicolons in labels list to pass it as a single property value
+    string(REPLACE ";" "\\;" TEST_LABELS_ESCAPED "${TEST_LABELS}")
+
     # 启用测试发现并设置属性
     message(STATUS "Setting test ${TEST_NAME} working directory to: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
     gtest_discover_tests(${TEST_NAME}
         WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
         TEST_PREFIX "${TEST_NAME}."
         PROPERTIES
-            LABELS "facefusion"
+            LABELS "${TEST_LABELS_ESCAPED}"
             TIMEOUT 0
     )
 
@@ -49,3 +72,8 @@ endfunction()
 add_subdirectory(test_support)
 add_subdirectory(unit)
 add_subdirectory(integration)
+
+option(BUILD_BENCHMARK_TESTS "Build benchmark tests" OFF)
+if(BUILD_BENCHMARK_TESTS)
+    add_subdirectory(benchmark)
+endif()

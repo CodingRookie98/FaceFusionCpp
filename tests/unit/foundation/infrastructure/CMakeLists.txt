@@ -23,13 +23,6 @@ add_facefusion_test(
     foundation_infrastructure
 )
 
-add_facefusion_test(
-    network_tests
-    SOURCES
-    network_tests.cpp
-    LINK_LIBRARIES
-    foundation_infrastructure
-)
 
 add_facefusion_test(
         thread_pool_tests

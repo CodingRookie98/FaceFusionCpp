@@ -85,7 +85,7 @@ def run_build(cmake_exe, preset, target, env, project_root):
         sys.exit(1)
 
 
-def run_test(ctest_exe, preset, regex, env, project_root):
+def run_test(ctest_exe, preset, regex, label, env, project_root):
     log("\n=== Action: test ===", "info")
     cmd = [ctest_exe, "--preset", preset, "--no-tests=error"]
 
@@ -93,21 +93,19 @@ def run_test(ctest_exe, preset, regex, env, project_root):
     test_filter = None
     if regex:
         test_filter = regex
-    # Note: we do NOT use --target as filter for ctest anymore if it was "all"
-    # But if target was specified and regex wasn't, usually we assume user might want to test that target
-    # However, --target is for BUILD. --test-regex is for TEST.
-    # The original script used target as fallback for regex. Let's keep that behavior for compatibility if needed,
-    # but strictly speaking it's better to separate them.
-    # Original logic: if args.test_regex: filter=... elif args.target != "all": filter=...
-
-    # We will pass this logic from main, so here we just use what is passed.
+    
     if regex:
         cmd.extend(["-R", regex])
+    
+    if label:
+        cmd.extend(["-L", label])
+        if not test_filter:
+             test_filter = f"label:{label}"
 
     try:
         run_command(cmd, env=env, cwd=project_root, exit_on_error=False)
     except subprocess.CalledProcessError as e:
-        filter_msg = f" '{regex}'" if regex else ""
+        filter_msg = f" '{test_filter}'" if test_filter else ""
         if e.returncode == 8:
             log(f"\nNo tests matched the pattern{filter_msg}.", "warning")
             log("Check if the test target is correctly registered and named.", "info")
@@ -157,6 +155,10 @@ def main():
     parser.add_argument(
         "--test-regex",
         help="Regex for tests to run (passed to ctest -R). If specified, --target is ignored for testing.",
+    )
+    parser.add_argument(
+        "--test-label",
+        help="Label for tests to run (passed to ctest -L).",
     )
     parser.add_argument(
         "--no-build",
@@ -211,7 +213,7 @@ def main():
         if not regex and args.target != "all":
             regex = args.target
 
-        run_test(ctest_exe, preset, regex, env, project_root)
+        run_test(ctest_exe, preset, regex, args.test_label, env, project_root)
 
     elif args.action == "install":
         run_install(cmake_exe, build_dir, env, project_root)
