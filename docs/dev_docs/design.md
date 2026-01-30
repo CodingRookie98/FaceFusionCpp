@@ -3,7 +3,7 @@
 > **文档标识**: FACE-FUSION-APP-ARCH
 > **密级**: 内部公开 (Internal Public)
 > **状态**: 正式 (Official)
-> **最后更新**: 2026-01-29
+> **最后更新**: 2026-01-30
 
 ## 版本历史 (Version History)
 
@@ -14,6 +14,68 @@
 | V2.3 | 2026-01-27 | ArchTeam | 新增命令行接口 (CLI) 设计; 优化工程化规范 |
 | V2.4 | 2026-01-28 | ArchTeam | 完善错误码定义、流水线图示及优雅停机策略; 移除实施路线图 |
 | V2.5 | 2026-01-29 | ArchTeam | 优化构建规范、路径解析、日志标准及 FlatBuffers 依赖说明 |
+| V2.6 | 2026-01-30 | ArchTeam | 添加目录导航; 完善资源管理参数 (LRU/TTL/背压); 增强日志轮转配置; 新增 CLI --validate 模式; 规范 Metrics JSON Schema; 修正拼写错误 |
+
+---
+
+## 目录 (Table of Contents)
+
+- [应用层架构设计说明书 (Application Layer Architecture Design Specification)](#应用层架构设计说明书-application-layer-architecture-design-specification)
+  - [版本历史 (Version History)](#版本历史-version-history)
+  - [目录 (Table of Contents)](#目录-table-of-contents)
+  - [1. 引言 (Introduction)](#1-引言-introduction)
+    - [1.1 目的 (Purpose)](#11-目的-purpose)
+    - [1.2 架构原则 (Architecture Principles)](#12-架构原则-architecture-principles)
+  - [2. 核心架构设计 (Core Architecture Design)](#2-核心架构设计-core-architecture-design)
+    - [2.1 关注点分离 (Separation of Concerns)](#21-关注点分离-separation-of-concerns)
+    - [2.2 运行模式 (Execution Modes)](#22-运行模式-execution-modes)
+  - [3. 详细设计规范 (Detailed Design Specifications)](#3-详细设计规范-detailed-design-specifications)
+    - [3.1 应用配置 (App Configuration)](#31-应用配置-app-configuration)
+    - [3.2 任务配置 (Task Configuration)](#32-任务配置-task-configuration)
+    - [3.3 配置校验机制 (Config Validation Mechanism)](#33-配置校验机制-config-validation-mechanism)
+      - [3.3.1 校验时机](#331-校验时机)
+      - [3.3.2 错误报告格式](#332-错误报告格式)
+      - [3.3.3 未来扩展](#333-未来扩展)
+    - [3.4 构建系统规范 (Build System Specification)](#34-构建系统规范-build-system-specification)
+    - [3.5 命令行接口 (Command Line Interface)](#35-命令行接口-command-line-interface)
+      - [3.5.1 设计原则](#351-设计原则)
+      - [3.5.2 命令结构](#352-命令结构)
+      - [3.5.3 参数规格](#353-参数规格)
+      - [3.5.4 `--system-check` 输出规范](#354---system-check-输出规范)
+  - [4. 核心业务处理逻辑 (Core Business Logic)](#4-核心业务处理逻辑-core-business-logic)
+    - [4.1 处理器 (Processor)](#41-处理器-processor)
+      - [4.1.1 换脸处理器 (Face Swapper)](#411-换脸处理器-face-swapper)
+      - [4.1.2 人脸增强处理器 (Face Enhancer)](#412-人脸增强处理器-face-enhancer)
+      - [4.1.3 表情还原处理器 (Expression Restorer)](#413-表情还原处理器-expression-restorer)
+      - [4.1.4 全帧增强处理器 (Frame Enhancer)](#414-全帧增强处理器-frame-enhancer)
+    - [4.2 流水线 (Pipeline)](#42-流水线-pipeline)
+      - [4.2.1 流水线策略 (Pipeline Strategy)](#421-流水线策略-pipeline-strategy)
+  - [5. 工程化约束与最佳实践 (Engineering Constraints)](#5-工程化约束与最佳实践-engineering-constraints)
+    - [5.1 路径解析规范 (Path Resolution Criteria)](#51-路径解析规范-path-resolution-criteria)
+    - [5.2 进度与遥测解耦 (Progress \& Telemetry Decoupling)](#52-进度与遥测解耦-progress--telemetry-decoupling)
+    - [5.3 错误处理与恢复 (Error Handling \& Recovery)](#53-错误处理与恢复-error-handling--recovery)
+      - [5.3.1 错误码定义 (Error Codes) - *Planned*](#531-错误码定义-error-codes---planned)
+      - [5.3.2 错误策略](#532-错误策略)
+    - [5.4 版本控制 (Versioning Strategy)](#54-版本控制-versioning-strategy)
+    - [5.5 元数据管理 (Metadata Management)](#55-元数据管理-metadata-management)
+    - [5.6 优雅停机 (Graceful Shutdown)](#56-优雅停机-graceful-shutdown)
+    - [5.7 资源并发与流控 (Concurrency \& Flow Control)](#57-资源并发与流控-concurrency--flow-control)
+    - [5.8 数据序列化 (Data Serialization) - *Implementation Pending*](#58-数据序列化-data-serialization---implementation-pending)
+    - [5.9 断点续传 (Checkpointing)](#59-断点续传-checkpointing)
+    - [5.10 增强日志规范 (Enhanced Logging Requirements)](#510-增强日志规范-enhanced-logging-requirements)
+      - [5.10.1 日志分级策略 (Log Levels)](#5101-日志分级策略-log-levels)
+      - [5.10.2 埋点位置要求 (Instrumentation Points)](#5102-埋点位置要求-instrumentation-points)
+      - [5.10.3 隐私与合规 (Privacy \& Compliance)](#5103-隐私与合规-privacy--compliance)
+    - [5.11 Metrics JSON Schema 参考](#511-metrics-json-schema-参考)
+  - [6. 未来规划 (Future Roadmap)](#6-未来规划-future-roadmap)
+    - [6.1 自动化配置校验 (Config Validation) - *部分实现*](#61-自动化配置校验-config-validation---部分实现)
+    - [6.2 插件化处理器架构 (Plugin Architecture)](#62-插件化处理器架构-plugin-architecture)
+    - [6.3 服务化接口 (Server Mode)](#63-服务化接口-server-mode)
+  - [附录 (Appendix)](#附录-appendix)
+    - [A.1 术语表 (Glossary)](#a1-术语表-glossary)
+    - [A.2 配置文件快速对照](#a2-配置文件快速对照)
+    - [A.3 依赖项说明 (Dependencies)](#a3-依赖项说明-dependencies)
+    - [A.4 数据格式选型 (Data Format Selection)](#a4-数据格式选型-data-format-selection)
 
 ---
 
@@ -85,7 +147,11 @@ inference:
   # 引擎缓存策略
   engine_cache:
     enable: true
-    path: "./.cache/tensorrt" # 相对程序根目录
+    path: "./.cache/tensorrt" # 相对系统根目录 (FACEFUSION_HOME)
+    # LRU 缓存容量上限 (Session Cache)
+    max_entries: 3
+    # 空闲超时时间 (秒)，超时后自动释放
+    idle_timeout_seconds: 60
   # 默认推理后端优先级
   default_providers:
     - tensorrt
@@ -103,6 +169,9 @@ resource:
   #         行为: 所有模型在系统启动时预加载，并常驻内存/显存，直到程序退出。
   #         场景: 适合高频实时任务或显存充足环境，避免模型重复加载开销。
   memory_strategy: "strict"
+  # 全局内存配额 (用于背压流控)
+  # 格式: "4GB", "2048MB" 等
+  max_memory_usage: "4GB"
 
 # 日志与调试 (System Logging)
 logging:
@@ -110,7 +179,12 @@ logging:
   level: "info"
   # 日志存储目录 (注意: 文件名固定为 app.log 或程序指定，不可配置，仅目录可配)
   directory: "./logs"
+  # 轮转策略: daily, hourly, size
   rotation: "daily"
+  # 最大保留文件数 (轮转后保留最近 N 个日志文件)
+  max_files: 7
+  # 日志总大小上限 (超出后自动删除最旧文件)
+  max_total_size: "1GB"
 
 # 可观测性 (Observability)
 metrics:
@@ -120,6 +194,7 @@ metrics:
   # 记录 GPU 显存变化曲线
   gpu_memory: true
   # 输出报告文件 (json)
+  # 格式参考: 见 [Metrics JSON Schema 参考](#metrics-json-schema-参考)
   report_path: "./logs/metrics_{timestamp}.json"
 
 # 模型管理 (Model Management)
@@ -137,13 +212,14 @@ temp_directory: "./temp"
 
 # 默认任务配置 (Default Task Settings)
 # 若 Task Config 中未指定，则回退使用此处的默认值
-# 需要按照task_config.yaml的格式
+# 字段名与 task_config.yaml 完全一致
 default_task_settings:
   io:
     output:
       video_encoder: "libx264"
       video_quality: 80
-      output_prefix: "result_"
+      prefix: "result_"      # 与 task_config 一致
+      suffix: ""             # 与 task_config 一致
       conflict_policy: "error"
       audio_policy: "copy"
 ```
@@ -153,7 +229,6 @@ default_task_settings:
 基于 **Pipeline Pattern** 设计，由有序的 **Steps** 组成。
 *   **Step 自包含性**: 每个 Step 包含完整的输入参数 (`params`)，不依赖全局隐式状态。
 *   **链式处理 (Chain Processing)**: 无论执行顺序 (Sequential/Batch)，流水线均为链式处理 (S1结果 -> S2输入 -> S3)，而非原始帧独立处理。
-*   **参考实现**:
 
 **Schema 参考**:
 ```yaml
@@ -191,7 +266,7 @@ io:
   output:
     path: "D:/projects/faceFusionCpp/data/output/" # 强制绝对路径
     prefix: "result_"
-    subfix: "_v1"
+    suffix: "_v1"  # 注意: 拼写为 suffix
 
     # 格式配置
     image_format: "png"      # [png, jpg, bmp]
@@ -254,9 +329,12 @@ face_analysis:
     similarity_threshold: 0.6
   face_masker:
     # 多遮罩融合策略 (Mask Fusion)
-    # Face Occluder Models: [xseg_1, xseg_2]
-    # Face Parser Models: [bisenet_resnet_18, bisenet_resnet_34]
+    # 遮罩类型组合 (多选)
     types: ["box", "occlusion", "region"]
+    # 遮挡检测模型 (用于 occlusion 类型)
+    occluder_model: "xseg"  # Models: [xseg]
+    # 人脸解析模型 (用于 region 类型)
+    parser_model: "bisenet_resnet_34"  # Models: [bisenet_resnet_18, bisenet_resnet_34]
     # Supported Regions: [skin, left-eyebrow, right-eyebrow, left-eye, right-eye,
     #                     eye-glasses, left-ear, right-ear, earring, nose, mouth,
     #                     upper-lip, lower-lip, neck, necklace, cloth, hair, hat]
@@ -343,6 +421,29 @@ pipeline:
 
 ```
 
+---
+
+### 3.3 配置校验机制 (Config Validation Mechanism)
+
+为在应用启动早期拦截配置错误，系统实现以下校验机制：
+
+#### 3.3.1 校验时机
+*   **启动时校验**: 应用启动时自动校验 `app_config.yaml`。
+*   **任务提交时校验**: 收到任务请求时校验 `task_config.yaml`。
+*   **CLI 显式校验**: 通过 `--validate` 参数进行离线校验（见 [3.5.3 CLI 参数](#353-参数规格)）。
+
+#### 3.3.2 错误报告格式
+校验失败时，错误消息必须包含 **问题路径 (YAML Path)** 以便快速定位：
+
+```text
+[E201] YAML Format Invalid: Line 45, Column 3 - unexpected mapping entry
+[E202] Parameter Out of Range: pipeline[1].params.blend_factor = 1.5, expected range [0.0, 1.0]
+[E203] Config File Not Found: config/app_config.yaml does not exist
+```
+
+#### 3.3.3 未来扩展
+*   引入 JSON Schema 或类似机制进行结构与类型的声明式校验。
+*   支持配置 diff 与 migration 工具。
 
 ---
 
@@ -371,7 +472,45 @@ pipeline:
 |          | `-v`, `--version`       | Flag    | 显示构建版本信息               |
 |          | `-c`, `--config`        | Path    | **(核心)** 载入任务配置文件    |
 |          | `--log-level`           | String  | 覆盖日志级别                   |
-|          | `--system-check`        | Flag    | 执行环境完整性自检             |
+|          | `--validate`            | Flag    | 仅校验配置文件合法性，不执行任务 (Dry-Run) |
+|          | `--system-check`        | Flag    | 执行环境完整性自检（见下方输出规范） |
+| **快捷** | `-s`, `--source`        | Path(s) | 源人脸图片路径 (支持多个，逗号分隔) |
+|          | `-t`, `--target`        | Path(s) | 目标图片/视频路径 (支持多个)   |
+|          | `-o`, `--output`        | Path    | 输出目录或文件路径             |
+|          | `--processors`          | String  | 启用的处理器 (逗号分隔，如 `face_swapper,face_enhancer`) |
+
+> **注意**: 快捷模式参数与 `--config` 互斥。使用快捷参数时，系统将应用 `default_task_settings` 中的默认值。
+
+#### 3.5.4 `--system-check` 输出规范
+系统自检结果支持两种输出格式，便于人工查看与脚本集成：
+
+**默认 (人类可读)**:
+```text
+[OK] CUDA Driver: 12.4
+[OK] cuDNN: 8.9.7
+[OK] TensorRT: 10.0.1
+[WARN] Available VRAM: 6.2GB (Recommended: 8GB+)
+[OK] Model Repository: 12 models found
+[OK] FFmpeg Libraries: avcodec 60.3.100, avformat 60.3.100
+[OK] ONNX Runtime: 1.17.0 (CUDA EP)
+---
+Result: 0 FAIL, 1 WARN
+```
+
+**JSON 格式** (添加 `--json` 标志):
+```json
+{
+  "checks": [
+    {"name": "cuda_driver", "status": "ok", "value": "12.4"},
+    {"name": "vram", "status": "warn", "value": "6.2GB", "message": "Recommended: 8GB+"},
+    {"name": "ffmpeg_libs", "status": "ok", "value": "avcodec 60.3.100, avformat 60.3.100"},
+    {"name": "onnxruntime", "status": "ok", "value": "1.17.0", "provider": "CUDA"}
+  ],
+  "summary": {"ok": 6, "warn": 1, "fail": 0}
+}
+```
+
+> **注意**: FFmpeg 使用动态库集成，而非命令行工具。详见 [附录 A.3 依赖项说明](#a3-依赖项说明-dependencies)。
 
 ---
 
@@ -394,7 +533,7 @@ pipeline:
 #### 4.1.2 人脸增强处理器 (Face Enhancer)
 *   **功能**: 对目标图像的人脸区域进行超分辨率重建。
 *   **输入约束**: 仅依赖 `target_paths`，忽略 `source_paths`。
-*   **后处理**: 应用边缘融合以确增强区域与背景的自然过渡。
+*   **后处理**: 应用边缘融合以确保增强区域与背景的自然过渡。
 
 #### 4.1.3 表情还原处理器 (Expression Restorer)
 *   **功能**: 将当前帧 (Current Frame) 的人脸表情重置为原始目标帧 (Original Target Frame) 的表情。
@@ -474,7 +613,7 @@ graph LR
 
 ### 5.3 错误处理与恢复 (Error Handling & Recovery)
 
-#### 5.3.1 错误码定义 (Error Codes) - [Planned]
+#### 5.3.1 错误码定义 (Error Codes) - *Planned*
 > **注意**: 当前版本尚未完全实装下列错误码，仅作为设计规范参考。实际运行时以标准异常日志为准。
 
 系统采用统一的错误码规范：`Exxx` (E + 3位数字)，按模块划分区间。
@@ -534,7 +673,7 @@ graph LR
     *   **退出条件**: 当 `State == Shutdown` 且 `Count == 0` 时，消费者收到结束信号（如 `pop` 返回 false）。
     *   **信号传递 (Propagation)**: 前级处理器的结束信号应自动触发下一级输入队列的 Shutdown，实现流水线的多米诺式自然闭合。
 
-### 5.8 数据序列化 (Data Serialization) - [Implementation Pending]
+### 5.8 数据序列化 (Data Serialization) - *Implementation Pending*
 *   **技术选型**: **FlatBuffers** (Google)。
 *   **关键依赖**: 本模块是 [Batch 模式](#421-流水线策略-pipeline-strategy) 高效运行的前置条件。
 *   **决策依据**:
@@ -547,8 +686,18 @@ graph LR
     *   结合 `batch_buffer_mode: disk` 使用内存映射 (Memory Mapped File) 读写，减少系统调用开销。
 
 ### 5.9 断点续传 (Checkpointing)
+*   **启用条件**: `task_info.enable_resume: true` 时激活。
 *   **机制**: 长任务定期写入 `checkpoints/{task_id}.ckpt`。
-*   **恢复**: 重启时检测 checkpoint，跳过已完成的 Frames/Segments。
+*   **Checkpoint 内容**:
+    *   `last_completed_frame_index`: 已成功处理的最后一帧索引。
+    *   `pipeline_state`: 各 Processor 的内部状态快照 (若有状态)。
+    *   `output_manifest`: 已生成的输出文件列表与校验和。
+*   **恢复流程**:
+    1.  启动时检测 `checkpoints/{task_id}.ckpt` 是否存在。
+    2.  校验 checkpoint 完整性 (校验和验证)。
+    3.  定位到 `last_completed_frame_index + 1`，跳过已处理帧。
+    4.  继续执行剩余帧，追加写入输出文件。
+*   **清理策略**: 任务成功完成后自动删除对应 checkpoint 文件。
 
 ### 5.10 增强日志规范 (Enhanced Logging Requirements)
 为了确保系统的可观测性、调试效率及生产环境问题追踪能力，必须严格执行以下日志规范。
@@ -558,23 +707,23 @@ graph LR
     *   *必选场景*: 复杂算法内部循环、大对象内存分配/释放细节、锁竞争细节。
     *   *性能影响*: 仅在开发调试时开启，生产环境禁用。
 *   **DEBUG**: 关键流程节点的调试信息。
-    *   *必选场景*: 
+    *   *必选场景*:
         *   Pipeline 中每个 Step 的输入/输出参数（Dims, Format）。
         *   Processor 初始化参数。
         *   资源加载耗时。
 *   **INFO**: 业务运行状态的关键里程碑。
-    *   *必选场景*: 
+    *   *必选场景*:
         *   系统启动 Banner (版本、Build Time)。
         *   配置加载摘要 (Config Summary)。
         *   任务开始/结束/耗时统计。
         *   关键硬件检测结果 (GPU Name, VRAM)。
 *   **WARN**: 可恢复的非预期情况。
-    *   *必选场景*: 
+    *   *必选场景*:
         *   E403 未检测到人脸（透传处理）。
         *   非关键配置项回退到默认值。
         *   资源使用率接近阈值 (如 VRAM > 90%)。
 *   **ERROR**: 导致当前任务中断或系统退出的错误。
-    *   *必选场景*: 
+    *   *必选场景*:
         *   所有 Fatal 异常捕获点。
         *   I/O 严重故障 (磁盘满、权限拒绝)。
 
@@ -594,11 +743,58 @@ graph LR
 *   **敏感数据脱敏**: 严禁在日志中明文打印用户密码、API Key 等敏感信息。
 *   **图像数据**: 禁止将 Raw Pixel Data 打印到日志，仅允许打印 Tensor Shape / Metadata。
 
+---
+
+### 5.11 Metrics JSON Schema 参考
+
+以下为 `metrics_{timestamp}.json` 的标准输出格式：
+
+```json
+{
+  "schema_version": "1.0",
+  "task_id": "task_default_001",
+  "timestamp": "2026-01-30T12:34:56Z",
+  "duration_ms": 125000,
+  "summary": {
+    "total_frames": 1500,
+    "processed_frames": 1500,
+    "failed_frames": 0
+  },
+  "step_latency": [
+    {
+      "step_name": "main_swap",
+      "avg_ms": 32.5,
+      "p50_ms": 30.0,
+      "p99_ms": 45.2,
+      "total_ms": 48750
+    },
+    {
+      "step_name": "post_enhancement",
+      "avg_ms": 28.1,
+      "p50_ms": 27.0,
+      "p99_ms": 38.5,
+      "total_ms": 42150
+    }
+  ],
+  "gpu_memory": {
+    "peak_mb": 4200,
+    "avg_mb": 3800,
+    "samples": [
+      {"timestamp_ms": 0, "usage_mb": 2000},
+      {"timestamp_ms": 10000, "usage_mb": 4200},
+      {"timestamp_ms": 125000, "usage_mb": 3500}
+    ]
+  }
+}
+```
+
+---
+
 ## 6. 未来规划 (Future Roadmap)
 
-### 6.1 自动化配置校验 (Config Validation)
-*   **目标**: 在应用启动早期拦截配置错误。
-*   **方案**: 引入 JSON Schema 或类似机制，对 `app_config.yaml` 和 `task_config.yaml` 进行结构与类型校验。
+### 6.1 自动化配置校验 (Config Validation) - *部分实现*
+*   **当前状态**: 已在 [3.3 配置校验机制](#33-配置校验机制-config-validation-mechanism) 中实现基础校验。
+*   **未来目标**: 引入 JSON Schema 进行声明式校验，支持配置迁移工具。
 
 ### 6.2 插件化处理器架构 (Plugin Architecture)
 *   **目标**: 支持第三方开发者扩展 Processor 而无需修改核心代码。
@@ -607,3 +803,80 @@ graph LR
 ### 6.3 服务化接口 (Server Mode)
 *   **目标**: 支持 HTTP/RPC 远程调用。
 *   **方案**: 复用现有 Pipeline 逻辑，通过 Websocket 推送进度，通过 REST API 接收任务。
+
+---
+
+## 附录 (Appendix)
+
+### A.1 术语表 (Glossary)
+
+| 术语                | 定义                                                                |
+| :------------------ | :------------------------------------------------------------------ |
+| **Pipeline**        | 由多个 Processor 串联组成的处理链，按顺序对帧数据进行加工           |
+| **Processor**       | 单一功能的处理单元 (如 FaceSwapper, FaceEnhancer)，遵循统一接口规范 |
+| **Backpressure**    | 当下游处理速度慢于上游时，通过队列满阻塞上游的流控机制              |
+| **Pass-through**    | 透传：当检测失败或无需处理时，原样传递数据而不做任何修改            |
+| **LRU Cache**       | 最近最少使用缓存，用于管理模型加载/卸载策略                         |
+| **Checkpoint**      | 断点文件，记录任务执行进度以支持中断恢复                            |
+| **FACEFUSION_HOME** | 系统根目录环境变量，所有相对路径的基准                              |
+
+### A.2 配置文件快速对照
+
+| 文件                | 位置                     | 生命周期 | 主要用途                      |
+| :------------------ | :----------------------- | :------- | :---------------------------- |
+| `app_config.yaml`   | `config/app_config.yaml` | 进程级   | 全局环境配置 (日志、模型路径) |
+| `task_config.yaml`  | CLI `-c` 指定            | 任务级   | 单次任务的 I/O 与 Pipeline    |
+| `{task_id}.ckpt`    | `checkpoints/`           | 临时     | 断点续传状态                  |
+| `metrics_{ts}.json` | `logs/`                  | 归档     | 任务执行指标报告              |
+
+### A.3 依赖项说明 (Dependencies)
+
+本项目核心外部依赖的集成方式如下：
+
+| 依赖项           | 集成方式        | 说明                                                                                                                |
+| :--------------- | :-------------- | :------------------------------------------------------------------------------------------------------------------ |
+| **FFmpeg**       | 动态库 (Shared) | 使用 `libavcodec`, `libavformat`, `libavutil`, `libswscale` 等库进行视频解码/编码。**不依赖 `ffmpeg` 命令行工具**。 |
+| **ONNX Runtime** | 动态库 (Shared) | 提供跨后端 (CPU/CUDA/TensorRT) 的统一推理接口。                                                                     |
+| **TensorRT**     | 动态库 (Shared) | 通过 ONNX Runtime TensorRT Execution Provider 加速推理。                                                            |
+| **CUDA/cuDNN**   | 系统安装        | GPU 计算基础设施，需预装 CUDA Toolkit 及 cuDNN。                                                                    |
+| **OpenCV**       | 静态库 (Static) | 图像处理基础库，编译时静态链接。                                                                                    |
+| **spdlog**       | Header-Only     | 高性能日志库。                                                                                                      |
+| **yaml-cpp**     | 静态库 (Static) | YAML 配置解析。                                                                                                     |
+
+> [!IMPORTANT]
+> **FFmpeg 集成说明**：本项目通过 C++ 直接调用 FFmpeg 动态库 API（如 `avcodec_open2`, `av_read_frame` 等），而非通过 `subprocess` 调用命令行工具。这种方式：
+> - ✅ 无需将 `ffmpeg.exe` 放入 PATH
+> - ✅ 减少进程间通信开销
+> - ✅ 更精细的错误处理与资源管理
+> - ⚠️ 需确保运行时能找到 FFmpeg `.dll`/`.so` 文件（建议放置于 `bin/` 目录或系统库路径）
+
+### A.4 数据格式选型 (Data Format Selection)
+
+本项目同时依赖 `yaml-cpp` 和 `nlohmann-json` 两个库，根据使用场景采用不同的数据格式：
+
+#### A.4.1 格式对比
+
+| 维度             | **YAML**                     | **JSON/JSONC**               |
+| :--------------- | :--------------------------- | :--------------------------- |
+| **可读性**       | ✅ 优秀（缩进式，无括号噪音） | ⚠️ 中等（括号/逗号较多）      |
+| **注释支持**     | ✅ 原生支持 `#`               | ✅ JSONC 支持 `//` 和 `/* */` |
+| **多行字符串**   | ✅ 原生支持 `                 | ` 和 `>`                     | ❌ 需转义 |
+| **解析性能**     | ⚠️ 较慢（语法复杂）           | ✅ 较快                       |
+| **错误定位**     | ⚠️ 缩进错误定位较模糊         | ✅ 明确的行列定位             |
+| **生态系统兼容** | ⚠️ 主要用于配置文件           | ✅ REST API / 前端集成标准    |
+
+#### A.4.2 架构决策
+
+| 用途                              | 格式 | 库              | 理由                     |
+| :-------------------------------- | :--- | :-------------- | :----------------------- |
+| **配置文件** (人编辑)             | YAML | `yaml-cpp`      | 可读性优秀，原生注释支持 |
+| └─ `app_config.yaml`              |      |                 |                          |
+| └─ `task_config.yaml`             |      |                 |                          |
+| **数据输出** (机器生成/消费)      | JSON | `nlohmann-json` | 解析快，生态系统兼容性好 |
+| └─ `metrics_{timestamp}.json`     |      |                 |                          |
+| └─ `--system-check --json` 输出   |      |                 |                          |
+| **API 响应** (Future Server Mode) | JSON | `nlohmann-json` | REST API 标准格式        |
+| **FlatBuffers 辅助**              | JSON | `nlohmann-json` | Schema 验证与调试        |
+
+> [!NOTE]
+> **统一原则**: 配置文件统一使用 YAML，不提供 JSON 配置替代方案，避免维护成本和用户困惑。
