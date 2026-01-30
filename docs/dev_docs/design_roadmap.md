@@ -147,8 +147,8 @@ graph TD
 - [x] **Task 2.2.1**: InferenceSession - ONNX Runtime Session 封装
 - [x] **Task 2.2.2**: InferenceSessionRegistry - Session 注册管理
 - [x] **Task 2.2.3**: ModelRepository - 模型路径解析与 `download_strategy` 实现
-- [ ] **Task 2.2.4**: SessionPool - LRU 缓存实现 (`max_entries`) - *未实现*
-- [ ] **Task 2.2.5**: SessionPool - TTL 空闲释放 (`idle_timeout_seconds`) - *未实现*
+- [x] **Task 2.2.4**: SessionPool - LRU 缓存实现 (`max_entries`)
+- [x] **Task 2.2.5**: SessionPool - TTL 空闲释放 (`idle_timeout_seconds`)
 
 ---
 
