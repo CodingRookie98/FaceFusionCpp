@@ -15,6 +15,7 @@ import :internal_creators;
 import domain.face.helper;
 import foundation.ai.inference_session;
 import foundation.media.vision;
+import foundation.infrastructure.logger;
 
 namespace domain::face::detector {
 
@@ -56,8 +57,21 @@ private:
 };
 
 DetectionResults Retina::detect(const cv::Mat& visionFrame) {
+    // 1. 设置 ScopeTimer (DEBUG 级耗时记录)
+    foundation::infrastructure::logger::ScopedTimer timer(
+        "RetinaDetector::detect", foundation::infrastructure::logger::LogLevel::Debug);
+    auto& logger = *foundation::infrastructure::logger::Logger::get_instance();
+
     DetectionResults results;
-    if (visionFrame.empty() || !is_model_loaded()) return results;
+    if (visionFrame.empty()) {
+        logger.warn("[RetinaDetector::detect] Received empty frame. Skipping.");
+        return results;
+    }
+
+    if (!is_model_loaded()) {
+        logger.error("[RetinaDetector::detect] Model [E301] load failure or not initialized.");
+        return results;
+    }
 
     auto [inputData, inputImgShape, ratioHeight, ratioWidth] = prepare_input(visionFrame);
 
@@ -71,7 +85,18 @@ DetectionResults Retina::detect(const cv::Mat& visionFrame) {
 
     std::vector<Ort::Value> ortOutputs = run(inputTensors);
 
-    return process_output(ortOutputs, ratioHeight, ratioWidth);
+    if (ortOutputs.empty()) {
+        logger.error("[RetinaDetector::detect] Inference [E401] output empty. Error code: E404");
+        return results;
+    }
+
+    results = process_output(ortOutputs, ratioHeight, ratioWidth);
+
+    // 3. 结果摘要 INFO 记录
+    logger.info("[RetinaDetector::detect] Found " + std::to_string(results.size())
+                + " face candidates.");
+
+    return results;
 }
 
 std::tuple<std::vector<float>, std::vector<int64_t>, float, float> Retina::prepare_input(

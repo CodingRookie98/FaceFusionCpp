@@ -208,25 +208,8 @@ public:
     static float calculate_face_distance(const Face& face1, const Face& face2);
 
 private:
-    std::vector<Face> create_faces(const cv::Mat& vision_frame,
-                                   const std::vector<detector::DetectionResult>& detection_results,
-                                   double detected_angle, FaceAnalysisType type);
-
-    std::pair<types::Embedding, types::Embedding> calculate_embedding(
-        const cv::Mat& vision_frame, const types::Landmarks& face_landmark_5);
-
-    std::tuple<domain::common::types::Gender, domain::common::types::AgeRange,
-               domain::common::types::Race>
-    classify_face(const cv::Mat& vision_frame, const types::Landmarks& face_landmark_5);
-
-    void apply_options(const Options& options);
-
-    Options m_options;
-    std::shared_ptr<detector::IFaceDetector> m_detector;
-    std::shared_ptr<landmarker::IFaceLandmarker> m_landmarker;
-    std::shared_ptr<recognizer::FaceRecognizer> m_recognizer;
-    std::shared_ptr<classifier::IFaceClassifier> m_classifier;
-    std::shared_ptr<store::FaceStore> m_face_store;
+    class Impl;
+    std::unique_ptr<Impl> m_impl;
 };
 
 } // namespace domain::face::analyser

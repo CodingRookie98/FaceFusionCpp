@@ -12,6 +12,7 @@ import :types;
 import :internal_creators;
 import foundation.ai.inference_session;
 import foundation.media.vision;
+import foundation.infrastructure.logger;
 
 namespace domain::face::detector {
 
@@ -56,10 +57,21 @@ private:
 };
 
 DetectionResults Yolo::detect(const cv::Mat& visionFrame) {
-    DetectionResults results;
-    if (visionFrame.empty()) { return results; }
+    // 1. ScopeTimer
+    foundation::infrastructure::logger::ScopedTimer timer(
+        "YoloDetector::detect", foundation::infrastructure::logger::LogLevel::Debug);
+    auto& logger = *foundation::infrastructure::logger::Logger::get_instance();
 
-    if (!is_model_loaded()) { return results; }
+    DetectionResults results;
+    if (visionFrame.empty()) {
+        logger.warn("[YoloDetector::detect] Received empty frame. Skipping.");
+        return results;
+    }
+
+    if (!is_model_loaded()) {
+        logger.error("[YoloDetector::detect] Model [E301] load failure or not initialized.");
+        return results;
+    }
 
     auto [inputData, inputImgShape, ratioHeight, ratioWidth] = prepare_input(visionFrame);
 
@@ -73,7 +85,18 @@ DetectionResults Yolo::detect(const cv::Mat& visionFrame) {
 
     std::vector<Ort::Value> ortOutputs = run(inputTensors);
 
-    return process_output(ortOutputs, ratioHeight, ratioWidth, visionFrame.size());
+    if (ortOutputs.empty()) {
+        logger.error("[YoloDetector::detect] Inference [E401] output empty. Error code: E404");
+        return results;
+    }
+
+    results = process_output(ortOutputs, ratioHeight, ratioWidth, visionFrame.size());
+
+    // 3. Info Log
+    logger.info("[YoloDetector::detect] Found " + std::to_string(results.size())
+                + " face candidates.");
+
+    return results;
 }
 
 std::tuple<std::vector<float>, std::vector<int64_t>, float, float> Yolo::prepare_input(

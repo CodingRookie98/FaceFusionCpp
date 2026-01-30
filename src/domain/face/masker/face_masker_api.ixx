@@ -10,32 +10,11 @@ module;
 
 export module domain.face.masker:api;
 
+import domain.face;
+
 export namespace domain::face::masker {
 
-/**
- * @brief Face regions for semantic segmentation
- */
-enum class FaceRegion {
-    Background,
-    Skin,
-    LeftEyebrow,
-    RightEyebrow,
-    LeftEye,
-    RightEye,
-    EyeGlasses,
-    LeftEar,
-    RightEar,
-    Earring,
-    Nose,
-    Mouth,
-    UpperLip,
-    LowerLip,
-    Neck,
-    Necklace,
-    Cloth,
-    Hair,
-    Hat
-};
+using domain::face::types::FaceRegion;
 
 /**
  * @brief Interface for face occlusion masker

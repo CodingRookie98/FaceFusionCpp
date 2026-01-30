@@ -1,6 +1,7 @@
 module;
 #include <string>
 #include <memory>
+#include <chrono>
 #include <spdlog/spdlog.h>
 
 /**
@@ -105,6 +106,34 @@ private:
     LogLevel m_level{LogLevel::Info};
     LoggingConfig m_config;
     bool m_initialized{false};
+};
+
+/**
+ * @brief Scoped timer for performance logging
+ */
+class ScopedTimer {
+public:
+    /**
+     * @brief Construct a new Scoped Timer
+     * @param name Name of the operation to time
+     * @param level Log level to use for the output
+     */
+    ScopedTimer(std::string name, LogLevel level = LogLevel::Debug);
+
+    /**
+     * @brief Destroy the Scoped Timer and log the duration
+     */
+    ~ScopedTimer();
+
+    ScopedTimer(const ScopedTimer&) = delete;
+    ScopedTimer& operator=(const ScopedTimer&) = delete;
+    ScopedTimer(ScopedTimer&&) = delete;
+    ScopedTimer& operator=(ScopedTimer&&) = delete;
+
+private:
+    std::string m_name;
+    LogLevel m_level;
+    std::chrono::steady_clock::time_point m_start;
 };
 
 } // namespace foundation::infrastructure::logger

@@ -264,4 +264,24 @@ uint64_t parse_size_string(const std::string& size_str) {
     return static_cast<uint64_t>(value * multiplier);
 }
 
+// ScopedTimer Implementation
+
+ScopedTimer::ScopedTimer(std::string name, LogLevel level) :
+    m_name(std::move(name)), m_level(level), m_start(std::chrono::steady_clock::now()) {}
+
+ScopedTimer::~ScopedTimer() {
+    try {
+        auto end = std::chrono::steady_clock::now();
+        auto duration =
+            std::chrono::duration_cast<std::chrono::milliseconds>(end - m_start).count();
+        // Use simple string concatenation to avoid fmt dependency issues if not configured
+        std::string msg = m_name + " took " + std::to_string(duration) + " ms";
+
+        // Use static log method which gets instance safely
+        Logger::get_instance()->log(m_level, msg);
+    } catch (...) {
+        // Destructors should not throw
+    }
+}
+
 } // namespace foundation::infrastructure::logger

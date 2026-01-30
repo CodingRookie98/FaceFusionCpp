@@ -38,11 +38,40 @@ enum class MaskType {
 };
 
 /**
+ * @brief Face regions for semantic segmentation
+ */
+enum class FaceRegion {
+    Background,
+    Skin,
+    LeftEyebrow,
+    RightEyebrow,
+    LeftEye,
+    RightEye,
+    EyeGlasses,
+    LeftEar,
+    RightEar,
+    Earring,
+    Nose,
+    Mouth,
+    UpperLip,
+    LowerLip,
+    Neck,
+    Necklace,
+    Cloth,
+    Hair,
+    Hat
+};
+
+/**
  * @brief Configuration for face masking
  */
 struct MaskOptions {
     std::vector<MaskType> mask_types = {MaskType::Box}; ///< Active mask types
-    float box_mask_blur = 0.3f;                         ///< Blur intensity for box mask
+    std::vector<FaceRegion> regions = {
+        FaceRegion::Skin,         FaceRegion::Nose,     FaceRegion::LeftEyebrow,
+        FaceRegion::RightEyebrow, FaceRegion::LeftEye,  FaceRegion::RightEye,
+        FaceRegion::Mouth,        FaceRegion::UpperLip, FaceRegion::LowerLip}; ///< Active regions
+    float box_mask_blur = 0.3f; ///< Blur intensity for box mask
     std::array<int, 4> box_mask_padding = {0, 0, 0,
                                            0}; ///< Padding for box mask (top, right, bottom, left)
 };

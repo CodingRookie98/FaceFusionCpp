@@ -15,6 +15,7 @@ import :internal_creators;
 import domain.face.helper;
 import foundation.ai.inference_session;
 import foundation.media.vision;
+import foundation.infrastructure.logger;
 
 namespace domain::face::detector {
 
@@ -100,8 +101,21 @@ std::tuple<std::vector<float>, float, float> Scrfd::preProcess(const cv::Mat& vi
 }
 
 DetectionResults Scrfd::detect(const cv::Mat& visionFrame) {
+    // 1. ScopeTimer
+    foundation::infrastructure::logger::ScopedTimer timer(
+        "ScrfdDetector::detect", foundation::infrastructure::logger::LogLevel::Debug);
+    auto& logger = *foundation::infrastructure::logger::Logger::get_instance();
+
     DetectionResults results;
-    if (visionFrame.empty() || !is_model_loaded()) return results;
+    if (visionFrame.empty()) {
+        logger.warn("[ScrfdDetector::detect] Received empty frame. Skipping.");
+        return results;
+    }
+
+    if (!is_model_loaded()) {
+        logger.error("[ScrfdDetector::detect] Model [E301] load failure or not initialized.");
+        return results;
+    }
 
     auto [inputData, inputNodeDims, ratioHeight, ratioWidth] = prepare_input(visionFrame);
 
@@ -115,7 +129,18 @@ DetectionResults Scrfd::detect(const cv::Mat& visionFrame) {
 
     auto ortOutputs = run(inputTensors); // Run Inference
 
-    return process_output(ortOutputs, ratioHeight, ratioWidth); // Process Output
+    if (ortOutputs.empty()) {
+        logger.error("[ScrfdDetector::detect] Inference [E401] output empty. Error code: E404");
+        return results;
+    }
+
+    results = process_output(ortOutputs, ratioHeight, ratioWidth); // Process Output
+
+    // 3. Info Log
+    logger.info("[ScrfdDetector::detect] Found " + std::to_string(results.size())
+                + " face candidates.");
+
+    return results;
 }
 
 std::tuple<std::vector<float>, std::vector<int64_t>, float, float> Scrfd::prepare_input(

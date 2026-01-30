@@ -69,18 +69,10 @@ public:
 
         if (region_mask_enabled && input.region_masker && !input.crop_frame.empty()) {
             futures.emplace_back(pool.enqueue([&]() {
-                using FaceRegion = domain::face::masker::FaceRegion;
-                std::unordered_set<FaceRegion> default_regions;
-                default_regions.insert(FaceRegion::Skin);
-                default_regions.insert(FaceRegion::Nose);
-                default_regions.insert(FaceRegion::LeftEyebrow);
-                default_regions.insert(FaceRegion::RightEyebrow);
-                default_regions.insert(FaceRegion::LeftEye);
-                default_regions.insert(FaceRegion::RightEye);
-                default_regions.insert(FaceRegion::Mouth);
-                default_regions.insert(FaceRegion::UpperLip);
-                default_regions.insert(FaceRegion::LowerLip);
-                return input.region_masker->create_region_mask(input.crop_frame, default_regions);
+                using FaceRegion = domain::face::types::FaceRegion;
+                std::unordered_set<FaceRegion> active_regions(opts.regions.begin(),
+                                                              opts.regions.end());
+                return input.region_masker->create_region_mask(input.crop_frame, active_regions);
             }));
         }
 
