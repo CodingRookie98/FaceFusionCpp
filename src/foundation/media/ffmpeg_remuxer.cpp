@@ -5,10 +5,10 @@
 module;
 
 #include <string>
-#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <memory>
+#include <format>
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -17,8 +17,11 @@ extern "C" {
 
 module foundation.media.ffmpeg;
 import :remuxer;
+import foundation.infrastructure.logger;
 
 namespace foundation::media::ffmpeg {
+
+using foundation::infrastructure::logger::Logger;
 
 // Helper RAII wrapper for AVFormatContext
 struct FormatContextPtr {
@@ -42,14 +45,16 @@ bool Remuxer::merge_av(const std::string& video_path, const std::string& audio_p
 
     // 1. Open Input Video
     if (avformat_open_input(&in_video_ctx.ptr, video_path.c_str(), nullptr, nullptr) < 0) {
-        std::cerr << "Remuxer: Failed to open video input: " << video_path << std::endl;
+        Logger::get_instance()->error(
+            std::format("[FFmpegRemuxer::merge_av] Failed to open video input: {}", video_path));
         return false;
     }
     if (avformat_find_stream_info(in_video_ctx.ptr, nullptr) < 0) return false;
 
     // 2. Open Input Audio
     if (avformat_open_input(&in_audio_ctx.ptr, audio_path.c_str(), nullptr, nullptr) < 0) {
-        std::cerr << "Remuxer: Failed to open audio input: " << audio_path << std::endl;
+        Logger::get_instance()->error(
+            std::format("[FFmpegRemuxer::merge_av] Failed to open audio input: {}", audio_path));
         return false;
     }
     if (avformat_find_stream_info(in_audio_ctx.ptr, nullptr) < 0) return false;
@@ -57,7 +62,7 @@ bool Remuxer::merge_av(const std::string& video_path, const std::string& audio_p
     // 3. Create Output Context
     avformat_alloc_output_context2(&out_ctx.ptr, nullptr, nullptr, output_path.c_str());
     if (!out_ctx.ptr) {
-        std::cerr << "Remuxer: Failed to create output context" << std::endl;
+        Logger::get_instance()->error("[FFmpegRemuxer::merge_av] Failed to create output context");
         return false;
     }
     out_ctx.is_output = true;
@@ -96,14 +101,14 @@ bool Remuxer::merge_av(const std::string& video_path, const std::string& audio_p
     }
 
     if (video_stream_idx == -1) {
-        std::cerr << "Remuxer: No video stream found in input" << std::endl;
+        Logger::get_instance()->error("[FFmpegRemuxer::merge_av] No video stream found in input");
         return false;
     }
 
     // 6. Open Output File
     if (!(out_ctx.ptr->oformat->flags & AVFMT_NOFILE)) {
         if (avio_open(&out_ctx.ptr->pb, output_path.c_str(), AVIO_FLAG_WRITE) < 0) {
-            std::cerr << "Remuxer: Failed to open output file" << std::endl;
+            Logger::get_instance()->error("[FFmpegRemuxer::merge_av] Failed to open output file");
             return false;
         }
     }
@@ -129,8 +134,6 @@ bool Remuxer::merge_av(const std::string& video_path, const std::string& audio_p
     // However, monotonic DTS/PTS is preferred.
     // Let's implement a loop that polls both inputs.
 
-    int64_t video_pts = 0;
-    int64_t audio_pts = 0;
     bool video_eof = false;
     bool audio_eof = false;
 

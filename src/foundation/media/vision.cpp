@@ -14,28 +14,21 @@ module;
 #include <unordered_set>
 #include <tuple>
 #include <algorithm>
-#include <iostream>
 #include <ranges>
+#include <format>
 
 module foundation.media.vision;
 // Assuming correct module names for dependencies.
 // Needs verification if file_system is foundation.infrastructure.file_system
 import foundation.infrastructure.file_system;
-// import foundation.media.ffmpeg; // Forward dependency (ffmpeg not yet moved, ignoring for now or
-// using old name if legacy compile needs it. But we plan to move ffmpeg too) For now, I'll comment
-// out ffmpeg import if it's not strictly used in the C++ logic shown or assume it will be
-// available. In original vision.cpp, isVideo(path) likely came from ffmpeg_runner.
 import foundation.infrastructure.thread_pool;
-
-// We need to resolve isVideo dependency which was likely in ffmpeg_runner.
-// Let's assume we will import foundation.media.ffmpeg once created.
-// Temporarily we might need to fix this if we compile incrementally, but we are doing a batch
-// refactor.
 import foundation.media.ffmpeg;
+import foundation.infrastructure.logger;
 
 namespace foundation::media::vision {
 using namespace foundation::infrastructure;
 using namespace foundation::infrastructure::thread_pool;
+using foundation::infrastructure::logger::Logger;
 
 std::vector<cv::Mat> read_static_images(const std::unordered_set<std::string>& image_paths,
                                         const bool& use_thread_pool) {
@@ -225,7 +218,8 @@ bool copy_image(const std::string& image_path, const std::string& destination,
                 const cv::Size& size) {
     const cv::Mat inputImage = cv::imread(image_path, cv::IMREAD_UNCHANGED);
     if (inputImage.empty()) {
-        std::cerr << "Could not open or find the image: " << image_path << std::endl;
+        Logger::get_instance()->error(
+            std::format("[Vision::copy_image] Could not open or find the image: {}", image_path));
         return false;
     }
 
@@ -264,12 +258,13 @@ bool copy_image(const std::string& image_path, const std::string& destination,
 bool copy_images(const std::vector<std::string>& image_paths,
                  const std::vector<std::string>& destinations, const cv::Size& size) {
     if (image_paths.size() != destinations.size()) {
-        std::cerr << __FUNCTION__ << " The number of image paths and destinations must be equal."
-                  << std::endl;
+        Logger::get_instance()->error(
+            "[Vision::copy_images] The number of image paths and destinations must be equal.");
         return false;
     }
     if (image_paths.empty() || destinations.empty()) {
-        std::cerr << __FUNCTION__ << " No image paths or destination paths provided." << std::endl;
+        Logger::get_instance()->error(
+            "[Vision::copy_images] No image paths or destination paths provided.");
         return false;
     }
 
@@ -344,10 +339,11 @@ bool finalize_images(const std::vector<std::string>& image_paths,
             try {
                 return finalize_image(imagePath, outputPath, size, output_image_quality);
             } catch (const std::exception& e) {
-                std::cerr << "Exception caught: " << e.what() << std::endl;
+                Logger::get_instance()->error(
+                    std::format("[Vision::finalize_images] Exception caught: {}", e.what()));
                 return false;
             } catch (...) {
-                std::cerr << "Unknown exception caught" << std::endl;
+                Logger::get_instance()->error("[Vision::finalize_images] Unknown exception caught");
                 return false;
             }
         }));
