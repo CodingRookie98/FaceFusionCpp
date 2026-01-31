@@ -306,7 +306,6 @@ graph TD
 - [ ] **Task 6.5**: 日志规范化 - 移除所有 `std::cerr`，统一使用 `Logger` 模块
 - [ ] **Task 6.6**: 性能埋点 - 为所有 Adapter 的 `process()` 注入 `ScopedTimer`
 - [ ] **Task 6.7**: 错误处理补全 - 填充空的 `catch` 块，记录 `[E7xx]` 错误码
-- [ ] **Task 6.8**: (可选) 并行多脸处理 - 利用线程池并行处理多张人脸
 
 ---
 
