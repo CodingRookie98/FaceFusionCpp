@@ -32,12 +32,17 @@ public:
                             const foundation::ai::inference_session::Options& options = {}) = 0;
 
     /**
-     * @brief Enhance/Restore a face
-     * @param input Enhancement parameters including the cropped face image
-     * @return List of processed face results
+     * @brief Enhance/Restore a single face crop
+     * @param target_crop Aligned 512x512 face crop
+     * @return Enhanced face crop
      */
-    virtual std::vector<domain::face::types::FaceProcessResult> enhance_face(
-        const EnhanceInput& input) = 0;
+    virtual cv::Mat enhance_face(const cv::Mat& target_crop) = 0;
+
+    /**
+     * @brief Get the expected input size for the model
+     * @return cv::Size
+     */
+    virtual cv::Size get_model_input_size() const = 0;
 };
 
 } // namespace domain::face::enhancer

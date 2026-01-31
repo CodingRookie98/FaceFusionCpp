@@ -10,12 +10,13 @@ import domain.face;
 
 export namespace domain::face::expression {
 
-enum class MaskType { Box, Occlusion, Region };
+// Use common MaskType
+using MaskType = domain::face::types::MaskType;
 
 struct RestoreExpressionInput {
     cv::Mat source_frame;
     std::vector<domain::face::types::Landmarks> source_landmarks;
-    cv::Mat target_frame;
+    // target_frame removed, handled by pipeline
     std::vector<domain::face::types::Landmarks> target_landmarks;
     float restore_factor{0.96f};
 

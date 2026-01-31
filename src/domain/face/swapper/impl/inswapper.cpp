@@ -92,35 +92,20 @@ void InSwapper::init() {
     input.close();
 }
 
-std::vector<FaceProcessResult> InSwapper::swap_face(const SwapInput& input) {
-    if (input.source_embedding.empty() || input.target_frame.empty()) { return {}; }
-    if (input.target_faces_landmarks.empty()) { return {}; } // No faces to swap
+cv::Mat InSwapper::swap_face(cv::Mat target_crop, std::vector<float> source_embedding) {
+    if (source_embedding.empty() || target_crop.empty()) { return {}; }
 
     if (!is_model_loaded()) { throw std::runtime_error("Model is not loaded!"); }
     if (m_initializer_array.empty()) {
         std::call_once(m_init_flag, [this]() { init(); });
     }
 
-    std::vector<FaceProcessResult> results;
-    const auto& targetFrame = input.target_frame;
+    // Input Size Validation
+    cv::Mat processed_crop = target_crop;
+    if (processed_crop.size() != m_size) { cv::resize(processed_crop, processed_crop, m_size); }
 
-    for (const auto& landmarks5 : input.target_faces_landmarks) {
-        auto [croppedTargetFrame, affineMat] = warp_face_by_face_landmarks_5(
-            targetFrame, landmarks5, get_warp_template(m_warp_template_type), m_size);
-
-        cv::Mat swappedFace = apply_swap(input.source_embedding, croppedTargetFrame);
-
-        FaceProcessResult result;
-        result.crop_frame = swappedFace;
-        result.target_crop_frame = croppedTargetFrame;
-        result.affine_matrix = affineMat;
-        result.target_landmarks = landmarks5;
-        result.mask_options = input.mask_options; // Pass through options
-
-        results.push_back(result);
-    }
-
-    return results;
+    // foundation::infrastructure::logger::ScopedTimer timer("InSwapper::Inference");
+    return apply_swap(source_embedding, processed_crop);
 }
 
 std::tuple<std::vector<float>, std::vector<int64_t>, std::vector<float>, std::vector<int64_t>>
@@ -194,34 +179,6 @@ cv::Mat InSwapper::process_output(const std::vector<Ort::Value>& output_tensors)
             .clone(); // B
 
     // Find Global Min/Max manually (proven to work)
-    float minVal = std::numeric_limits<float>::max();
-    float maxVal = std::numeric_limits<float>::lowest();
-    int totalElements = outputHeight * outputWidth * 3;
-    for (int i = 0; i < totalElements; ++i) {
-        if (pdata[i] < minVal) minVal = pdata[i];
-        if (pdata[i] > maxVal) maxVal = pdata[i];
-    }
-
-    float range = maxVal - minVal;
-    if (range < 0.00001f) range = 1.0f;
-    // float scale = 255.0f / range;
-    // Wait, original code calculated `scale` but then used `mat *= 255.f;`. `scale` variable was
-    // NOT used in original loop! Original code: float scale = 255.0f / range; for (auto& mat :
-    // channelMats) {
-    //    mat *= 255.f;
-    // }
-    // It seems `scale` calculation was dead code in original or I missed something.
-    // Let's look at `inswapper.cpp` again. Step 411 line 221.
-    // `float scale = 255.0f / range;`
-    // Line 226: `mat *= 255.f;` (literal 255.f)
-    // So `scale` was indeed unused. I should keep the behavior identical (multiply by 255).
-    // But `range` calculation was also useless if `scale` not used.
-    // However, I should assume the original code *intended* to use 255 directly as per observed
-    // line 226.
-
-    // BUT, is it possible `mat *= scale` was intended?
-    // "Matrix transposition fixed the structure, so we trust the model's color balance now."
-    // comment suggests maybe normalization changed. I will stick to `255.f` as per original source.
 
     for (auto& mat : channelMats) {
         // Simple scaling as the model output is in [0, 1] range.

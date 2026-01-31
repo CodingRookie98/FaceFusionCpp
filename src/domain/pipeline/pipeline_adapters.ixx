@@ -7,6 +7,7 @@ module;
 #include <vector>
 #include <iostream>
 #include <mutex>
+#include <format>
 
 /**
  * @file pipeline_adapters.ixx
@@ -75,7 +76,20 @@ public:
         std::lock_guard<std::mutex> lock(m_load_mutex);
         if (m_loaded) return;
 
-        if (m_swapper && !m_model_path.empty()) { m_swapper->load_model(m_model_path, m_options); }
+        if (m_swapper && !m_model_path.empty()) {
+            m_swapper->load_model(m_model_path, m_options);
+            m_input_size = m_swapper->get_model_input_size();
+
+            // Dynamic template selection based on model input size
+            if (m_input_size.width == 128) {
+                m_template_type = domain::face::helper::WarpTemplateType::Arcface_128_v2;
+            } else if (m_input_size.width == 512) {
+                m_template_type = domain::face::helper::WarpTemplateType::Ffhq_512;
+            } else {
+                // Default fallback
+                m_template_type = domain::face::helper::WarpTemplateType::Arcface_128_v2;
+            }
+        }
         m_loaded = true;
     }
 
@@ -85,43 +99,46 @@ public:
      * data to be processed and updated
      */
     void process(FrameData& frame) override {
-        // using Logger = foundation::infrastructure::logger::Logger;
-        // Logger::get_instance()->debug("SwapperAdapter::process called");
-
         ensure_loaded();
-        if (!m_swapper) {
-            // Logger::get_instance()->error("SwapperAdapter: m_swapper is null");
-            return;
-        }
+        if (!m_swapper) return;
 
         if (frame.swap_input.has_value()) {
             try {
                 auto& input = frame.swap_input.value();
+                if (input.target_faces_landmarks.empty()) return;
 
-                input.target_frame = frame.image;
+                cv::Mat working_frame = frame.image;
 
-                if (input.target_faces_landmarks.empty()) { return; }
+                for (const auto& landmarks : input.target_faces_landmarks) {
+                    // 1. Warp / Crop
+                    auto [crop_frame, affine_matrix] = face::helper::warp_face_by_face_landmarks_5(
+                        working_frame, landmarks, m_template_type, m_input_size);
 
-                auto results = m_swapper->swap_face(input);
+                    // 2. Inference
+                    cv::Mat swapped_crop = m_swapper->swap_face(crop_frame, input.source_embedding);
 
-                for (const auto& res : results) {
-                    // Compose Mask
+                    // 3. Color Match (Task 3.3)
+                    cv::Mat matched_crop =
+                        face::helper::apply_color_match(crop_frame, swapped_crop);
+
+                    // 4. Compose Mask
                     face::masker::MaskCompositor::CompositionInput maskInput;
-                    maskInput.size = res.crop_frame.size();
-                    maskInput.options = res.mask_options;
-                    maskInput.crop_frame =
-                        res.target_crop_frame; // Use target crop for masking analysis
+                    maskInput.size = m_input_size;
+                    maskInput.options = input.mask_options;
+                    maskInput.crop_frame = crop_frame;
                     maskInput.occluder = m_occluder.get();
                     maskInput.region_masker = m_region_masker.get();
 
                     cv::Mat composedMask = face::masker::MaskCompositor::compose(maskInput);
 
-                    // Paste back
-                    frame.image = face::helper::paste_back(frame.image, res.crop_frame,
-                                                           composedMask, res.affine_matrix);
+                    // 5. Paste back
+                    working_frame = face::helper::paste_back(working_frame, matched_crop,
+                                                             composedMask, affine_matrix);
                 }
+                frame.image = working_frame;
+
             } catch (const std::exception& e) {
-                // Logger::get_instance()->error("SwapperAdapter error: " + std::string(e.what()));
+                // Log error
             }
         }
     }
@@ -135,6 +152,10 @@ private:
 
     std::shared_ptr<face::masker::IFaceOccluder> m_occluder;
     std::shared_ptr<face::masker::IFaceRegionMasker> m_region_masker;
+
+    cv::Size m_input_size{128, 128}; // Default, updated on load
+    domain::face::helper::WarpTemplateType m_template_type =
+        domain::face::helper::WarpTemplateType::Arcface_128_v2;
 };
 
 /**
@@ -175,6 +196,17 @@ public:
 
         if (m_enhancer && !m_model_path.empty()) {
             m_enhancer->load_model(m_model_path, m_options);
+            m_input_size = m_enhancer->get_model_input_size();
+
+            // Dynamic template selection based on model input size
+            if (m_input_size.width == 128) {
+                m_template_type = domain::face::helper::WarpTemplateType::Arcface_128_v2;
+            } else if (m_input_size.width == 512) {
+                m_template_type = domain::face::helper::WarpTemplateType::Ffhq_512;
+            } else {
+                // Default fallback
+                m_template_type = domain::face::helper::WarpTemplateType::Ffhq_512;
+            }
         }
         m_loaded = true;
     }
@@ -190,30 +222,36 @@ public:
         if (frame.enhance_input.has_value()) {
             try {
                 auto& input = frame.enhance_input.value();
-                input.target_frame = frame.image;
-
-                auto results = m_enhancer->enhance_face(input);
-
-                if (results.empty()) return;
+                if (input.target_faces_landmarks.empty()) return;
 
                 cv::Mat working_frame = frame.image.clone();
 
-                for (const auto& res : results) {
+                for (const auto& landmarks : input.target_faces_landmarks) {
+                    // 1. Warp
+                    auto [crop_frame, affine_matrix] = face::helper::warp_face_by_face_landmarks_5(
+                        frame.image, landmarks, m_template_type, m_input_size);
+
+                    // 2. Inference
+                    cv::Mat enhanced_crop = m_enhancer->enhance_face(crop_frame);
+
+                    if (enhanced_crop.empty()) continue;
+
+                    // 3. Compose Mask
                     face::masker::MaskCompositor::CompositionInput maskInput;
-                    maskInput.size = res.crop_frame.size();
-                    maskInput.options = res.mask_options;
-                    maskInput.crop_frame = res.target_crop_frame;
+                    maskInput.size = m_input_size;
+                    maskInput.options = input.mask_options;
+                    maskInput.crop_frame = crop_frame;
                     maskInput.occluder = m_occluder.get();
                     maskInput.region_masker = m_region_masker.get();
 
                     cv::Mat composedMask = face::masker::MaskCompositor::compose(maskInput);
 
-                    working_frame = face::helper::paste_back(working_frame, res.crop_frame,
-                                                             composedMask, res.affine_matrix);
+                    // 4. Paste back
+                    working_frame = face::helper::paste_back(working_frame, enhanced_crop,
+                                                             composedMask, affine_matrix);
                 }
 
                 // Global Face Blend
-                // input.face_blend is 0-100
                 if (input.face_blend >= 100) {
                     frame.image = working_frame;
                 } else if (input.face_blend > 0) {
@@ -221,7 +259,7 @@ public:
                     cv::addWeighted(working_frame, alpha, frame.image, 1.0 - alpha, 0.0,
                                     frame.image);
                 }
-                // if 0, do nothing (keep original frame)
+                // if 0, do nothing
 
             } catch (const std::exception& e) {
                 std::cerr << "FaceEnhancerAdapter: Error: " << e.what() << std::endl;
@@ -238,6 +276,10 @@ private:
 
     std::shared_ptr<face::masker::IFaceOccluder> m_occluder;
     std::shared_ptr<face::masker::IFaceRegionMasker> m_region_masker;
+
+    cv::Size m_input_size{512, 512}; // Default, updated on load
+    domain::face::helper::WarpTemplateType m_template_type =
+        domain::face::helper::WarpTemplateType::Ffhq_512;
 };
 
 /**
@@ -276,6 +318,15 @@ public:
 
         if (m_restorer && !m_feature_path.empty()) {
             m_restorer->load_model(m_feature_path, m_motion_path, m_generator_path, m_options);
+            m_size = m_restorer->get_model_input_size();
+
+            // Dynamic template selection
+            if (m_size.width == 512) {
+                m_template_type = domain::face::helper::WarpTemplateType::Ffhq_512;
+            } else {
+                // Default fallback (includes 256x256 which LivePortrait often uses)
+                m_template_type = domain::face::helper::WarpTemplateType::Arcface_128_v2;
+            }
         }
         m_loaded = true;
     }
@@ -291,10 +342,55 @@ public:
         if (frame.expression_input.has_value()) {
             try {
                 auto& input = frame.expression_input.value();
-                input.target_frame = frame.image;
-                frame.image = m_restorer->restore_expression(input);
+
+                if (input.source_frame.empty()) return;
+                if (input.target_landmarks.empty() || input.source_landmarks.empty()) return;
+
+                cv::Mat working_frame = frame.image;
+                size_t count =
+                    std::min(input.target_landmarks.size(), input.source_landmarks.size());
+
+                for (size_t i = 0; i < count; ++i) {
+                    // 1. Warp Source
+                    auto [source_crop, source_affine] = face::helper::warp_face_by_face_landmarks_5(
+                        input.source_frame, input.source_landmarks[i], m_template_type, m_size);
+
+                    // 2. Warp Target
+                    auto [target_crop, target_affine] = face::helper::warp_face_by_face_landmarks_5(
+                        working_frame, input.target_landmarks[i], m_template_type, m_size);
+
+                    // 3. Inference
+                    cv::Mat restored_crop = m_restorer->restore_expression(source_crop, target_crop,
+                                                                           input.restore_factor);
+
+                    if (restored_crop.empty()) continue;
+
+                    // 4. Compose Mask
+                    face::masker::MaskCompositor::CompositionInput maskInput;
+                    maskInput.size = m_size;
+
+                    // Construct options from input fields
+                    domain::face::types::MaskOptions opts;
+                    opts.mask_types.assign(input.mask_types.begin(), input.mask_types.end());
+                    opts.box_mask_blur = input.box_mask_blur;
+                    opts.box_mask_padding = input.box_mask_padding;
+
+                    maskInput.options = opts;
+                    maskInput.crop_frame = target_crop;
+                    maskInput.occluder = nullptr; // Not supported in ExpressionAdapter yet
+                    maskInput.region_masker = nullptr;
+
+                    cv::Mat composedMask = face::masker::MaskCompositor::compose(maskInput);
+
+                    // 5. Paste back
+                    working_frame = face::helper::paste_back(working_frame, restored_crop,
+                                                             composedMask, target_affine);
+                }
+                frame.image = working_frame;
+
             } catch (const std::exception& e) {
-                std::cerr << "ExpressionAdapter: Error: " << e.what() << std::endl;
+                foundation::infrastructure::logger::Logger::get_instance()->error(
+                    std::format("ExpressionAdapter::process failed: {}", e.what()));
             }
         }
     }
@@ -307,6 +403,10 @@ private:
     foundation::ai::inference_session::Options m_options;
     bool m_loaded = false;
     std::mutex m_load_mutex;
+
+    cv::Size m_size{512, 512};
+    domain::face::helper::WarpTemplateType m_template_type =
+        domain::face::helper::WarpTemplateType::Arcface_128_v2;
 };
 
 /**
@@ -362,11 +462,11 @@ public:
                 input.blend =
                     std::any_cast<unsigned short>(frame.metadata.at("frame_enhancer_blend"));
             } catch (const std::bad_any_cast& e) {
-                std::cerr << "FrameEnhancerAdapter: Bad any cast for frame_enhancer_blend: "
-                          << e.what() << std::endl;
+                foundation::infrastructure::logger::Logger::get_instance()->error(std::format(
+                    "FrameEnhancerAdapter: Bad any cast for frame_enhancer_blend: {}", e.what()));
             } catch (...) {
-                std::cerr << "FrameEnhancerAdapter: Unknown error reading frame_enhancer_blend"
-                          << std::endl;
+                foundation::infrastructure::logger::Logger::get_instance()->error(
+                    "FrameEnhancerAdapter: Unknown error reading frame_enhancer_blend");
             }
         }
 

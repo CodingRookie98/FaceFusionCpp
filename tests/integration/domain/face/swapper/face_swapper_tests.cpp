@@ -16,6 +16,7 @@
 import domain.face.swapper;
 import domain.face.masker;
 import domain.face.test_support;
+import domain.face.helper;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
 import foundation.infrastructure.test_support;
@@ -23,6 +24,7 @@ import foundation.infrastructure.test_support;
 using namespace domain::face::swapper;
 using namespace domain::face::masker;
 using namespace domain::face::test_support;
+using namespace domain::face::helper;
 using namespace foundation::infrastructure::test;
 namespace fs = std::filesystem;
 
@@ -71,20 +73,14 @@ TEST_F(FaceSwapperIntegrationTest, SwapFaceAndVerifySimilarity) {
     swapper->load_model(swapper_model_path,
                         foundation::ai::inference_session::Options::with_best_providers());
 
-    SwapInput input;
-    input.target_frame = target_img;
-    input.source_embedding = source_embedding;
-    input.target_faces_landmarks = {target_kps};
-    input.mask_options.mask_types = {domain::face::types::MaskType::Box}; // Use basic mask for now
+    // Manual Crop
+    auto [target_crop, _] = warp_face_by_face_landmarks_5(
+        target_img, target_kps, WarpTemplateType::Arcface_128_v2, cv::Size(128, 128));
 
     // Act
-    auto results = swapper->swap_face(input);
+    cv::Mat result_img = swapper->swap_face(target_crop, source_embedding);
 
     // Assert
-    ASSERT_FALSE(results.empty());
-    EXPECT_FALSE(results[0].crop_frame.empty());
-
-    cv::Mat result_img = results[0].crop_frame;
     ASSERT_FALSE(result_img.empty());
 
     // 4. Verify Result

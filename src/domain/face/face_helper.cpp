@@ -414,4 +414,41 @@ void rotate_image_90n(const cv::Mat& src, cv::Mat& dst, int angle) {
                    // If angle==0, simplistic assignment shares data.
 }
 
+cv::Mat apply_color_match(const cv::Mat& target_crop, const cv::Mat& swapped_crop) {
+    if (target_crop.empty() || swapped_crop.empty()) return swapped_crop.clone();
+
+    cv::Mat target_lab, swapped_lab;
+    cv::cvtColor(target_crop, target_lab, cv::COLOR_BGR2Lab);
+    cv::cvtColor(swapped_crop, swapped_lab, cv::COLOR_BGR2Lab);
+
+    cv::Scalar mean_target, std_target;
+    cv::meanStdDev(target_lab, mean_target, std_target);
+
+    cv::Scalar mean_swapped, std_swapped;
+    cv::meanStdDev(swapped_lab, mean_swapped, std_swapped);
+
+    std::vector<cv::Mat> channels_swapped;
+    cv::split(swapped_lab, channels_swapped);
+
+    for (int i = 0; i < 3; ++i) {
+        channels_swapped[i].convertTo(channels_swapped[i], CV_32F);
+
+        // result = (val - mean_s) * (std_t / std_s) + mean_t
+        double scale = (std_swapped[i] < 1.0e-5) ? 1.0 : (std_target[i] / std_swapped[i]);
+        channels_swapped[i] = (channels_swapped[i] - mean_swapped[i]) * scale + mean_target[i];
+
+        cv::threshold(channels_swapped[i], channels_swapped[i], 0, 0, cv::THRESH_TOZERO);
+        cv::threshold(channels_swapped[i], channels_swapped[i], 255, 255, cv::THRESH_TRUNC);
+
+        channels_swapped[i].convertTo(channels_swapped[i], CV_8U);
+    }
+
+    cv::Mat result_lab;
+    cv::merge(channels_swapped, result_lab);
+
+    cv::Mat result_bgr;
+    cv::cvtColor(result_lab, result_bgr, cv::COLOR_Lab2BGR);
+    return result_bgr;
+}
+
 } // namespace domain::face::helper

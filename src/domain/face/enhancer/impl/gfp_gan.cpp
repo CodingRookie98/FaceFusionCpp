@@ -31,32 +31,15 @@ void GfpGan::load_model(const std::string& model_path,
     m_output_names = {"output"};
 }
 
-std::vector<domain::face::types::FaceProcessResult> GfpGan::enhance_face(
-    const EnhanceInput& input) {
-    if (input.target_faces_landmarks.empty()) return {};
+cv::Mat GfpGan::enhance_face(const cv::Mat& target_crop) {
+    if (target_crop.empty()) return {};
 
-    std::vector<domain::face::types::FaceProcessResult> results;
-    const auto& targetFrame = input.target_frame;
+    // Input Size Validation
+    cv::Mat processed_crop = target_crop;
+    if (processed_crop.size() != m_size) { cv::resize(processed_crop, processed_crop, m_size); }
 
-    for (const auto& landmarks5 : input.target_faces_landmarks) {
-        // Warp
-        auto [croppedTargetFrame, affineMat] = domain::face::helper::warp_face_by_face_landmarks_5(
-            targetFrame, landmarks5, domain::face::helper::get_warp_template(m_warp_template_type),
-            m_size);
-
-        // Inference
-        cv::Mat enhancedFace = apply_enhance(croppedTargetFrame);
-
-        domain::face::types::FaceProcessResult result;
-        result.crop_frame = enhancedFace;
-        result.target_crop_frame = croppedTargetFrame;
-        result.affine_matrix = affineMat;
-        result.target_landmarks = landmarks5;
-        result.mask_options = input.mask_options;
-
-        results.push_back(result);
-    }
-    return results;
+    // foundation::infrastructure::logger::ScopedTimer timer("GfpGan::Inference");
+    return apply_enhance(processed_crop);
 }
 
 std::tuple<std::vector<float>, std::vector<int64_t>> GfpGan::prepare_input(

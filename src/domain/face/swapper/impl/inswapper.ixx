@@ -22,7 +22,9 @@ public:
     void load_model(const std::string& model_path,
                     const foundation::ai::inference_session::Options& options = {}) override;
 
-    std::vector<domain::face::types::FaceProcessResult> swap_face(const SwapInput& input) override;
+    cv::Mat swap_face(cv::Mat target_crop, std::vector<float> source_embedding) override;
+
+    cv::Size get_model_input_size() const override { return m_size; }
 
 private:
     void init();
@@ -43,8 +45,6 @@ private:
     std::vector<float> m_mean = {0.0f, 0.0f, 0.0f};
     std::vector<float> m_standard_deviation = {1.0f, 1.0f, 1.0f};
     std::vector<float> m_initializer_array;
-    domain::face::helper::WarpTemplateType m_warp_template_type =
-        domain::face::helper::WarpTemplateType::Arcface_128_v2;
     std::once_flag m_init_flag;
 };
 

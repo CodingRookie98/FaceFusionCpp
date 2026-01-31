@@ -114,8 +114,8 @@ TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
         // Since we swapped Lenna onto Woman, the result face should look like Lenna.
         EXPECT_LT(distance, 0.65f) << "Swapped face should resemble source face";
     } else {
-        std::cout << "Warning: Face detection failed for similarity check in SingleImage test"
-                  << std::endl;
+        FAIL()
+            << "Face detection failed for similarity check in SingleImage test. Output image might be corrupted or face not found.";
     }
 }
 

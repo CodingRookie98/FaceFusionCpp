@@ -26,11 +26,23 @@ public:
                             const foundation::ai::inference_session::Options& options = {}) = 0;
 
     /**
-     * @brief Restore expression from source to target
-     * @param input Restoration parameters
-     * @return Result image with expressions restored
+     * @brief Restore expression from source crop to target crop
+     * @param source_crop
+     * Aligned source face crop
+     * @param target_crop Aligned target face crop
+     * @param
+     * restore_factor Restoration factor (0.0 - 1.0)
+     * @return Result crop with expressions
+     * restored
      */
-    virtual cv::Mat restore_expression(const RestoreExpressionInput& input) = 0;
+    virtual cv::Mat restore_expression(cv::Mat source_crop, cv::Mat target_crop,
+                                       float restore_factor = 0.96f) = 0;
+
+    /**
+     * @brief Get the expected input size for the model
+     * @return cv::Size
+     */
+    virtual cv::Size get_model_input_size() const = 0;
 };
 
 } // namespace domain::face::expression

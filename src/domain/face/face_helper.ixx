@@ -171,4 +171,13 @@ cv::Rect2f rotate_box_back(const cv::Rect2f& box, int angle, const cv::Size& ori
  */
 void rotate_image_90n(const cv::Mat& src, cv::Mat& dst, int angle);
 
+/**
+ * @brief Apply color matching from target crop to swapped crop (Reinhard Color Transfer in LAB
+ * space)
+ * @param target_crop Original face crop (reference color)
+ * @param swapped_crop Swapped face crop (source color)
+ * @return Color matched swapped crop
+ */
+cv::Mat apply_color_match(const cv::Mat& target_crop, const cv::Mat& swapped_crop);
+
 } // namespace domain::face::helper

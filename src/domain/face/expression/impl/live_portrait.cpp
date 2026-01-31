@@ -28,6 +28,14 @@ bool LivePortrait::FeatureExtractor::is_model_loaded() const {
     return m_session && m_session->is_model_loaded();
 }
 
+cv::Size LivePortrait::FeatureExtractor::get_input_size() const {
+    if (!is_model_loaded()) return {256, 256};
+    auto input_node_dims = m_session->get_input_node_dims();
+    int width = static_cast<int>(input_node_dims[0][2]);
+    int height = static_cast<int>(input_node_dims[0][3]);
+    return {width, height};
+}
+
 std::tuple<std::vector<float>, std::vector<int64_t>> LivePortrait::FeatureExtractor::prepare_input(
     const cv::Mat& frame) const {
     auto input_node_dims = m_session->get_input_node_dims();
@@ -255,84 +263,30 @@ void LivePortrait::load_model(const std::string& feature_extractor_path,
     m_generator_output_size = m_generator.get_output_size();
 }
 
-cv::Mat LivePortrait::restore_expression(const RestoreExpressionInput& input) {
-    if (input.source_frame.empty()) {
-        if (!input.target_frame.empty()) { return input.target_frame.clone(); }
-        return {};
-    }
-    if (input.target_frame.empty()) { return {}; }
-    if (input.source_landmarks.empty() || input.target_landmarks.empty()) {
-        return input.target_frame.clone();
-    }
-    if (input.source_landmarks.size() != input.target_landmarks.size()) {
-        return input.target_frame.clone();
-    }
+cv::Size LivePortrait::get_model_input_size() const {
+    return m_feature_extractor.get_input_size();
+}
+
+cv::Mat LivePortrait::restore_expression(cv::Mat source_crop, cv::Mat target_crop,
+                                         float restore_factor) {
+    if (source_crop.empty() || target_crop.empty()) return {};
 
     if (!m_feature_extractor.is_model_loaded() || !m_motion_extractor.is_model_loaded()
         || !m_generator.is_model_loaded()) {
         throw std::runtime_error("LivePortrait models are not loaded!");
     }
 
-    std::vector<cv::Mat> cropped_source_frames;
-    std::vector<cv::Mat> cropped_target_frames;
-    std::vector<cv::Mat> affine_matrices;
-    std::vector<cv::Mat> restored_frames;
-
-    // Crop faces
-    for (size_t i = 0; i < input.source_landmarks.size(); ++i) {
-        cv::Mat source_crop, target_crop, affine_mat;
-        std::tie(source_crop, std::ignore) = domain::face::helper::warp_face_by_face_landmarks_5(
-            input.source_frame, input.source_landmarks[i], m_warp_template_type,
-            m_generator_output_size);
-
-        std::tie(target_crop, affine_mat) = domain::face::helper::warp_face_by_face_landmarks_5(
-            input.target_frame, input.target_landmarks[i], m_warp_template_type,
-            m_generator_output_size);
-
-        cropped_source_frames.emplace_back(source_crop);
-        cropped_target_frames.emplace_back(target_crop);
-        affine_matrices.emplace_back(affine_mat);
+    // Input Size Validation
+    cv::Size required_size = get_model_input_size();
+    if (source_crop.size() != required_size) {
+        cv::resize(source_crop, source_crop, required_size);
+    }
+    if (target_crop.size() != required_size) {
+        cv::resize(target_crop, target_crop, required_size);
     }
 
-    // Restore faces in parallel if needed
-    for (size_t i = 0; i < cropped_source_frames.size(); ++i) {
-        restored_frames.emplace_back(apply_restore(cropped_source_frames[i],
-                                                   cropped_target_frames[i], input.restore_factor));
-    }
-
-    cv::Mat result_frame = input.target_frame.clone();
-
-    // Paste back
-    for (size_t i = 0; i < cropped_target_frames.size(); ++i) {
-        // Generate mask
-        cv::Mat mask;
-        mask = cv::Mat::ones(m_generator_output_size, CV_32FC1);
-
-        int blur_ksize = static_cast<int>(m_generator_output_size.width * input.box_mask_blur);
-        if (blur_ksize % 2 == 0) blur_ksize++;
-        if (blur_ksize > 1) {
-            cv::Mat temp_mask = cv::Mat::zeros(m_generator_output_size, CV_32FC1);
-            cv::Rect roi(input.box_mask_padding[3], input.box_mask_padding[0],
-                         m_generator_output_size.width - input.box_mask_padding[1]
-                             - input.box_mask_padding[3],
-                         m_generator_output_size.height - input.box_mask_padding[2]
-                             - input.box_mask_padding[0]);
-
-            roi =
-                roi & cv::Rect(0, 0, m_generator_output_size.width, m_generator_output_size.height);
-            if (roi.area() > 0) {
-                temp_mask(roi).setTo(1.0f);
-                cv::GaussianBlur(temp_mask, mask, cv::Size(blur_ksize, blur_ksize), 0);
-            } else {
-                mask.setTo(1.0f);
-            }
-        }
-
-        result_frame = domain::face::helper::paste_back(result_frame, restored_frames[i], mask,
-                                                        affine_matrices[i]);
-    }
-
-    return result_frame;
+    // foundation::infrastructure::logger::ScopedTimer timer("LivePortrait::Inference");
+    return apply_restore(source_crop, target_crop, restore_factor);
 }
 
 cv::Mat LivePortrait::apply_restore(const cv::Mat& cropped_source_frame,

@@ -108,6 +108,12 @@ public:
             cv::min(final_mask, next_mask, final_mask);
         }
 
+        // Final Blur for Edge Blending (Task 3.3)
+        // Smooth transitions between combined masks
+        int kernel_size = std::max(3, static_cast<int>(input.size.width * 0.025f)); // 2.5% of width
+        if (kernel_size % 2 == 0) kernel_size++;
+        cv::GaussianBlur(final_mask, final_mask, cv::Size(kernel_size, kernel_size), 0);
+
         return final_mask;
     }
 

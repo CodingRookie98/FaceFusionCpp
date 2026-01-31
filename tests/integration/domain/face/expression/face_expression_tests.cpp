@@ -15,12 +15,14 @@
 
 import domain.face.expression;
 import domain.face.test_support;
+import domain.face.helper;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
 import foundation.infrastructure.test_support;
 
 using namespace domain::face::expression;
 using namespace domain::face::test_support;
+using namespace domain::face::helper;
 using namespace foundation::infrastructure::test;
 namespace fs = std::filesystem;
 
@@ -80,20 +82,20 @@ TEST_F(LivePortraitTest, RestoreExpressionBasic) {
         restorer->load_model(feature_path, motion_path, generator_path,
                              foundation::ai::inference_session::Options::with_best_providers()));
 
-    // 4. Prepare Input
-    RestoreExpressionInput input;
-    input.source_frame = source_img;
-    input.source_landmarks = {source_kps};
-    input.target_frame = target_img;
-    input.target_landmarks = {target_kps};
-    input.restore_factor = 0.5f;
+    // 4. Manual Crop
+    auto [source_crop, _] = warp_face_by_face_landmarks_5(
+        source_img, source_kps, WarpTemplateType::Arcface_128_v2, cv::Size(512, 512));
+
+    auto [target_crop, __] = warp_face_by_face_landmarks_5(
+        target_img, target_kps, WarpTemplateType::Arcface_128_v2, cv::Size(512, 512));
 
     // 5. Run Restoration
     cv::Mat result;
-    EXPECT_NO_THROW(result = restorer->restore_expression(input));
+    EXPECT_NO_THROW(result = restorer->restore_expression(source_crop, target_crop, 0.5f));
 
     ASSERT_FALSE(result.empty());
-    EXPECT_EQ(result.size(), target_img.size());
+    // Result size is crop size (512x512), not target frame size
+    EXPECT_EQ(result.size(), cv::Size(512, 512));
 
     // Save output
     fs::create_directories("tests_output");

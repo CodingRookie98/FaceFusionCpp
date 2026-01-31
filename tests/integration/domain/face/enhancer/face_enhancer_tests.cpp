@@ -15,6 +15,7 @@
 
 import domain.face.enhancer;
 import domain.face.test_support;
+import domain.face.helper;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
 import foundation.infrastructure.test_support;
@@ -22,6 +23,7 @@ import foundation.infrastructure.test_support;
 using namespace domain::face::enhancer;
 using namespace domain::face::test_support;
 using namespace foundation::infrastructure::test;
+using namespace domain::face::helper;
 namespace fs = std::filesystem;
 
 class FaceEnhancerIntegrationTest : public ::testing::Test {
@@ -55,18 +57,14 @@ TEST_F(FaceEnhancerIntegrationTest, EnhanceFaceWithCodeFormer) {
     enhancer->load_model(model_path,
                          foundation::ai::inference_session::Options::with_best_providers());
 
-    EnhanceInput input;
-    input.target_frame = target_img;
-    input.target_faces_landmarks = {target_kps};
-    input.face_blend = 100; // Full enhancement
+    // Manual crop for test
+    auto [crop, _] = warp_face_by_face_landmarks_5(target_img, target_kps,
+                                                   WarpTemplateType::Ffhq_512, cv::Size(512, 512));
 
     // 3. Run Enhancement
-    auto results = enhancer->enhance_face(input);
-    ASSERT_FALSE(results.empty());
-    cv::Mat result_img = results[0].crop_frame;
+    cv::Mat result_img = enhancer->enhance_face(crop);
 
     // 4. Verify Result
-    // EXPECT_EQ(result_img.size(), target_img.size()); // Crop size != target size usually
     EXPECT_FALSE(result_img.empty());
     EXPECT_EQ(result_img.type(), target_img.type());
 
@@ -95,18 +93,14 @@ TEST_F(FaceEnhancerIntegrationTest, EnhanceFaceWithGfpGan) {
     enhancer->load_model(model_path,
                          foundation::ai::inference_session::Options::with_best_providers());
 
-    EnhanceInput input;
-    input.target_frame = target_img;
-    input.target_faces_landmarks = {target_kps};
-    input.face_blend = 100;
+    // Manual crop for test
+    auto [crop, _] = warp_face_by_face_landmarks_5(target_img, target_kps,
+                                                   WarpTemplateType::Ffhq_512, cv::Size(512, 512));
 
     // 3. Run Enhancement
-    auto results = enhancer->enhance_face(input);
-    ASSERT_FALSE(results.empty());
-    cv::Mat result_img = results[0].crop_frame;
+    cv::Mat result_img = enhancer->enhance_face(crop);
 
     // 4. Verify Result
-    // EXPECT_EQ(result_img.size(), target_img.size());
     EXPECT_FALSE(result_img.empty());
 
     // Save result for visual inspection

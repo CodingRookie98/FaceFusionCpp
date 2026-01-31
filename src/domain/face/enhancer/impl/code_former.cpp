@@ -32,33 +32,16 @@ void CodeFormer::load_model(const std::string& model_path,
     m_output_names = {"output"};
 }
 
-std::vector<FaceProcessResult> CodeFormer::enhance_face(const EnhanceInput& input) {
-    if (input.target_frame.empty()) { return {}; }
-    if (input.target_faces_landmarks.empty()) { return {}; }
-
+cv::Mat CodeFormer::enhance_face(const cv::Mat& target_crop) {
+    if (target_crop.empty()) { return {}; }
     if (!is_model_loaded()) { throw std::runtime_error("model is not loaded"); }
 
-    std::vector<FaceProcessResult> results;
-    const auto& targetFrame = input.target_frame;
+    // Input Size Validation
+    cv::Mat processed_crop = target_crop;
+    if (processed_crop.size() != m_size) { cv::resize(processed_crop, processed_crop, m_size); }
 
-    for (const auto& landmarks : input.target_faces_landmarks) {
-        auto [croppedFrame, affineMatrix] = domain::face::helper::warp_face_by_face_landmarks_5(
-            targetFrame, landmarks, domain::face::helper::get_warp_template(m_warp_template_type),
-            m_size);
-
-        cv::Mat enhancedFrame = apply_enhance(croppedFrame);
-
-        FaceProcessResult result;
-        result.crop_frame = enhancedFrame;
-        result.target_crop_frame = croppedFrame;
-        result.affine_matrix = affineMatrix;
-        result.target_landmarks = landmarks;
-        result.mask_options = input.mask_options;
-
-        results.push_back(result);
-    }
-
-    return results;
+    // foundation::infrastructure::logger::ScopedTimer timer("CodeFormer::Inference");
+    return apply_enhance(processed_crop);
 }
 
 std::tuple<std::vector<float>, std::vector<int64_t>, std::vector<double>, std::vector<int64_t>>

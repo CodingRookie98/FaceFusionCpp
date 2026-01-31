@@ -63,7 +63,7 @@ public:
         // 1. Prepare Swap Data
         if (m_reqs.need_swap_data) {
             domain::face::swapper::SwapInput swap_input;
-            swap_input.target_frame = frame.image;
+            // swap_input.target_frame = frame.image; // Removed in refactoring
             for (const auto& face : faces) {
                 swap_input.target_faces_landmarks.push_back(face.get_landmark5());
             }
@@ -74,7 +74,7 @@ public:
         // 2. Prepare Enhance Data
         if (m_reqs.need_enhance_data) {
             domain::face::enhancer::EnhanceInput enhance_input;
-            enhance_input.target_frame = frame.image;
+            // enhance_input.target_frame = frame.image; // Removed in refactoring
             for (const auto& face : faces) {
                 enhance_input.target_faces_landmarks.push_back(face.get_landmark5());
             }

@@ -33,12 +33,18 @@ public:
                             const foundation::ai::inference_session::Options& options = {}) = 0;
 
     /**
-     * @brief Perform face swapping
-     * @param input Swap parameters including source embedding and target frame
-     * @return List of processed face results (crop, matrix, etc.)
+     * @brief Perform face swapping on a single aligned face crop
+     * @param target_crop Aligned 128x128 face crop
+     * @param source_embedding Source face embedding
+     * @return Swapped face crop
      */
-    virtual std::vector<domain::face::types::FaceProcessResult> swap_face(
-        const SwapInput& input) = 0;
+    virtual cv::Mat swap_face(cv::Mat target_crop, std::vector<float> source_embedding) = 0;
+
+    /**
+     * @brief Get the expected input size for the model
+     * @return cv::Size (e.g., 128x128)
+     */
+    virtual cv::Size get_model_input_size() const = 0;
 };
 
 } // namespace domain::face::swapper

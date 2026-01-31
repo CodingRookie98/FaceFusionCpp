@@ -25,7 +25,10 @@ public:
                     const std::string& motion_extractor_path, const std::string& generator_path,
                     const foundation::ai::inference_session::Options& options = {}) override;
 
-    cv::Mat restore_expression(const RestoreExpressionInput& input) override;
+    cv::Mat restore_expression(cv::Mat source_crop, cv::Mat target_crop,
+                               float restore_factor = 0.96f) override;
+
+    cv::Size get_model_input_size() const override;
 
 private:
     class FeatureExtractor {
@@ -33,6 +36,7 @@ private:
         void load_model(const std::string& path,
                         const foundation::ai::inference_session::Options& options);
         [[nodiscard]] bool is_model_loaded() const;
+        [[nodiscard]] cv::Size get_input_size() const;
         [[nodiscard]] std::vector<float> extract_feature(const cv::Mat& frame) const;
 
         [[nodiscard]] std::tuple<std::vector<float>, std::vector<int64_t>> prepare_input(
@@ -86,8 +90,6 @@ private:
     Generator m_generator;
 
     cv::Size m_generator_output_size{512, 512};
-    domain::face::helper::WarpTemplateType m_warp_template_type =
-        domain::face::helper::WarpTemplateType::Arcface_128_v2;
 
     // Helper functions
     [[nodiscard]] static std::vector<float> get_input_image_data(const cv::Mat& image,
