@@ -12,6 +12,8 @@ target_sources(services_pipeline
             processors/face_analysis_processor.ixx
             pipeline_runner.ixx
             shutdown_handler.ixx
+            checkpoint_manager.ixx
+            metrics_collector.ixx
             runner_video.cpp
             runner_image.cpp
             runner_types.cpp
@@ -21,6 +23,8 @@ target_sources(services_pipeline
     PRIVATE
         pipeline_runner.cpp
         shutdown_handler.cpp
+        checkpoint_manager.cpp
+        metrics_collector.cpp
 )
 
 target_link_libraries(services_pipeline

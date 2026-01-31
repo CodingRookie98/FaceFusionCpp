@@ -467,6 +467,11 @@ struct VideoReader::Impl {
         if (!is_open) { return 0.0; }
         return current_pts * time_base * 1000.0;
     }
+
+    int64_t get_current_frame() const {
+        if (fps <= 0) return 0;
+        return static_cast<int64_t>(get_current_timestamp_ms() * fps / 1000.0);
+    }
 };
 
 VideoReader::VideoReader(const std::string& videoPath) : impl_(std::make_unique<Impl>()) {
@@ -514,6 +519,10 @@ int64_t VideoReader::get_duration_ms() const {
 }
 double VideoReader::get_current_timestamp_ms() const {
     return impl_->get_current_timestamp_ms();
+}
+
+int64_t VideoReader::get_current_frame() const {
+    return impl_->get_current_frame();
 }
 
 } // namespace foundation::media::ffmpeg

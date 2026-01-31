@@ -34,6 +34,7 @@ import foundation.infrastructure.logger;
 import foundation.infrastructure.scoped_timer;
 
 import services.pipeline.processors.face_analysis;
+import services.pipeline.metrics;
 import :types;
 import :video;
 import :image;
@@ -44,6 +45,33 @@ namespace services::pipeline {
 using namespace domain::pipeline;
 using namespace foundation::ai::inference_session;
 using namespace foundation::infrastructure::logger;
+
+/**
+ * @brief Decorator for IFrameProcessor to collect performance metrics
+ */
+class MetricsDecorator : public IFrameProcessor {
+public:
+    MetricsDecorator(std::shared_ptr<IFrameProcessor> processor, MetricsCollector* collector,
+                     std::string step_name) :
+        m_processor(std::move(processor)), m_collector(collector),
+        m_step_name(std::move(step_name)) {}
+
+    void process(FrameData& frame) override {
+        if (m_collector) {
+            ScopedStepTimer timer(*m_collector, m_step_name);
+            m_processor->process(frame);
+        } else {
+            m_processor->process(frame);
+        }
+    }
+
+    void ensure_loaded() override { m_processor->ensure_loaded(); }
+
+private:
+    std::shared_ptr<IFrameProcessor> m_processor;
+    MetricsCollector* m_collector;
+    std::string m_step_name;
+};
 
 // ProcessorContext defined in :types
 
@@ -86,6 +114,11 @@ struct PipelineRunner::Impl {
 
         auto result = ExecuteTask(task_config, progress_callback);
 
+        // Export metrics if enabled
+        if (m_metrics_collector && m_app_config.metrics.enable) {
+            m_metrics_collector->export_json(m_app_config.metrics.report_path);
+        }
+
         m_running = false;
         timer.set_result(result ? "success" : "error");
         return result;
@@ -121,6 +154,7 @@ private:
     std::shared_ptr<domain::ai::model_repository::ModelRepository> m_model_repo;
     std::shared_ptr<domain::face::analyser::FaceAnalyser> m_face_analyser;
     Options m_inference_options;
+    std::unique_ptr<MetricsCollector> m_metrics_collector;
 
     std::shared_ptr<domain::face::analyser::FaceAnalyser> GetFaceAnalyser() {
         if (!m_face_analyser) {
@@ -170,6 +204,14 @@ private:
         context.model_repo = m_model_repo;
         context.inference_options = m_inference_options;
         context.face_analyser = GetFaceAnalyser();
+
+        // Initialize Metrics if enabled
+        if (m_app_config.metrics.enable) {
+            m_metrics_collector = std::make_unique<MetricsCollector>(task_config.task_info.id);
+            m_metrics_collector->set_gpu_sample_interval(
+                std::chrono::milliseconds(m_app_config.metrics.gpu_sample_interval_ms));
+            context.metrics_collector = m_metrics_collector.get();
+        }
 
         if (!task_config.io.source_paths.empty()) {
             auto embed_result = LoadSourceEmbedding(task_config.io.source_paths[0]);
@@ -351,7 +393,8 @@ private:
         if (needs_face_detection) {
             pipeline->add_processor(
                 std::make_shared<services::pipeline::processors::FaceAnalysisProcessor>(
-                    context.face_analyser, context.source_embedding, reqs));
+                    context.face_analyser, context.source_embedding, reqs,
+                    context.metrics_collector));
         }
 
         // 3. Create Processors using Factory
@@ -360,7 +403,12 @@ private:
 
             auto processor = ProcessorFactory::instance().create(step.step, &domain_ctx);
             if (processor) {
-                pipeline->add_processor(processor);
+                if (context.metrics_collector) {
+                    pipeline->add_processor(std::make_shared<MetricsDecorator>(
+                        processor, context.metrics_collector, step.step));
+                } else {
+                    pipeline->add_processor(processor);
+                }
             } else {
                 Logger::get_instance()->warn("Failed to create processor for step: " + step.step);
             }

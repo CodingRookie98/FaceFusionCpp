@@ -144,6 +144,7 @@ public:
     [[nodiscard]] int get_height() const;                  ///< Video height in pixels
     [[nodiscard]] std::int64_t get_duration_ms() const;    ///< Total duration in milliseconds
     [[nodiscard]] double get_current_timestamp_ms() const; ///< Current playback position in ms
+    [[nodiscard]] std::int64_t get_current_frame() const;  ///< Current frame index
 
 private:
     struct Impl;

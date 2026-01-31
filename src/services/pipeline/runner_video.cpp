@@ -22,6 +22,9 @@ import foundation.ai.inference_session;
 import foundation.media.ffmpeg;
 import foundation.infrastructure.logger;
 import foundation.infrastructure.scoped_timer;
+import foundation.infrastructure.crypto;
+import services.pipeline.checkpoint;
+import services.pipeline.metrics;
 import :types;
 import config.types;
 import config.task; // Import TaskConfig
@@ -73,6 +76,41 @@ public:
                                            "io.target_paths");
             timer.set_result("error:open_failed");
             return config::Result<void, config::ConfigError>::Err(err);
+        }
+
+        int64_t start_frame = 0;
+        int64_t total_frames = reader.get_frame_count();
+        std::unique_ptr<CheckpointManager> ckpt_mgr;
+        std::string config_hash;
+
+        // Try to resume if enabled
+        if (task_config.task_info.enable_resume) {
+            ckpt_mgr = std::make_unique<CheckpointManager>("./checkpoints");
+            config_hash = CalculateConfigHash(task_config);
+
+            if (auto saved = ckpt_mgr->load(task_config.task_info.id, config_hash)) {
+                start_frame = saved->last_completed_frame + 1;
+
+                if (start_frame >= total_frames) {
+                    Logger::get_instance()->info(
+                        "[VideoRunner] Task already completed, nothing to resume");
+                    ckpt_mgr->cleanup(task_config.task_info.id);
+                    return config::Result<void, config::ConfigError>::Ok();
+                }
+
+                if (!reader.seek(start_frame)) {
+                    Logger::get_instance()->warn(
+                        "[VideoRunner] Seek failed, starting from beginning");
+                    start_frame = 0;
+                } else {
+                    Logger::get_instance()->info(std::format(
+                        "[VideoRunner] Resuming from frame {}/{}", start_frame, total_frames));
+                }
+            }
+        }
+
+        if (context.metrics_collector) {
+            context.metrics_collector->set_total_frames(total_frames);
         }
 
         // 2. Prepare Output
@@ -132,8 +170,11 @@ public:
                 if (!writer.write_frame(result_opt->image)) {
                     writer_error = true;
                     writer_error_msg = "Failed to write frame";
+                    if (context.metrics_collector) context.metrics_collector->record_frame_failed();
                     break;
                 }
+
+                if (context.metrics_collector) context.metrics_collector->record_frame_completed();
 
                 frame_count++;
                 if (progress_callback && frame_count % 10 == 0) {
@@ -148,7 +189,7 @@ public:
         });
 
         // 6. Reader Loop
-        long long seq_id = 0;
+        long long seq_id = start_frame;
         cv::Mat frame;
         int max_frames = task_config.resource.max_frames;
 
@@ -165,6 +206,17 @@ public:
                 data.source_embedding = context.source_embedding;
             }
             pipeline->push_frame(std::move(data));
+
+            // Save checkpoint periodically (every 30s)
+            if (ckpt_mgr) {
+                CheckpointData ckpt;
+                ckpt.task_id = task_config.task_info.id;
+                ckpt.config_hash = config_hash;
+                ckpt.last_completed_frame = seq_id - 1;
+                ckpt.total_frames = total_frames;
+                ckpt.output_path = output_path;
+                ckpt_mgr->save(ckpt);
+            }
         }
 
         FrameData eos;
@@ -192,6 +244,9 @@ public:
             return config::Result<void, config::ConfigError>::Err(
                 config::ConfigError(config::ErrorCode::E406_OutputWriteFailed, writer_error_msg));
         }
+
+        // Cleanup checkpoint on success
+        if (ckpt_mgr) { ckpt_mgr->cleanup(task_config.task_info.id); }
 
         // 7. Muxing
         if (needs_muxing) {
@@ -232,6 +287,42 @@ private:
             timer.set_result("error:open_failed");
             return config::Result<void, config::ConfigError>::Err(config::ConfigError(
                 config::ErrorCode::E402_VideoOpenFailed, "Failed to open video: " + target_path));
+        }
+
+        int64_t start_frame = 0;
+        int64_t total_frames = reader.get_frame_count();
+        std::unique_ptr<CheckpointManager> ckpt_mgr;
+        std::string config_hash;
+
+        // Try to resume if enabled
+        if (task_config.task_info.enable_resume) {
+            ckpt_mgr = std::make_unique<CheckpointManager>("./checkpoints");
+            config_hash = CalculateConfigHash(task_config);
+
+            if (auto saved = ckpt_mgr->load(task_config.task_info.id, config_hash)) {
+                start_frame = saved->last_completed_frame + 1;
+
+                if (start_frame >= total_frames) {
+                    Logger::get_instance()->info(
+                        "[VideoRunnerStrict] Task already completed, nothing to resume");
+                    ckpt_mgr->cleanup(task_config.task_info.id);
+                    return config::Result<void, config::ConfigError>::Ok();
+                }
+
+                if (!reader.seek(start_frame)) {
+                    Logger::get_instance()->warn(
+                        "[VideoRunnerStrict] Seek failed, starting from beginning");
+                    start_frame = 0;
+                } else {
+                    Logger::get_instance()->info(
+                        std::format("[VideoRunnerStrict] Resuming from frame {}/{}", start_frame,
+                                    total_frames));
+                }
+            }
+        }
+
+        if (context.metrics_collector) {
+            context.metrics_collector->set_total_frames(total_frames);
         }
 
         std::string output_path = GenerateOutputPath(target_path, task_config);
@@ -280,8 +371,10 @@ private:
                 if (!writer.write_frame(result_opt->image)) {
                     writer_error = true;
                     writer_error_msg = "Failed to write frame";
+                    if (context.metrics_collector) context.metrics_collector->record_frame_failed();
                     break;
                 }
+                if (context.metrics_collector) context.metrics_collector->record_frame_completed();
                 frame_count++;
                 if (progress_callback && frame_count % 10 == 0) {
                     TaskProgress progress;
@@ -294,7 +387,7 @@ private:
             }
         });
 
-        long long seq_id = 0;
+        long long seq_id = start_frame;
         cv::Mat frame;
         while (!cancelled && !writer_error) {
             frame = reader.read_frame();
@@ -306,6 +399,17 @@ private:
                 data.source_embedding = context.source_embedding;
             }
             pipeline->push_frame(std::move(data));
+
+            // Save checkpoint periodically (every 30s)
+            if (ckpt_mgr) {
+                CheckpointData ckpt;
+                ckpt.task_id = task_config.task_info.id;
+                ckpt.config_hash = config_hash;
+                ckpt.last_completed_frame = seq_id - 1;
+                ckpt.total_frames = total_frames;
+                ckpt.output_path = output_path;
+                ckpt_mgr->save(ckpt);
+            }
         }
 
         FrameData eos;
@@ -331,6 +435,9 @@ private:
             return config::Result<void, config::ConfigError>::Err(
                 config::ConfigError(config::ErrorCode::E406_OutputWriteFailed, writer_error_msg));
         }
+
+        // Cleanup checkpoint on success
+        if (ckpt_mgr) { ckpt_mgr->cleanup(task_config.task_info.id); }
 
         if (needs_muxing) {
             if (Remuxer::merge_av(video_output_path, target_path, output_path)) {
@@ -365,6 +472,24 @@ private:
             ext = "." + task_config.io.output.image_format;
         }
         return (output_dir / (filename + ext)).string();
+    }
+
+    /**
+     * @brief Calculate SHA1 hash of task configuration for consistency check
+     */
+    static std::string CalculateConfigHash(const config::TaskConfig& task_config) {
+        // Basic serialization of key task parameters to detect changes
+        std::stringstream ss;
+        ss << task_config.task_info.id;
+        for (const auto& path : task_config.io.target_paths) ss << path;
+        for (const auto& path : task_config.io.source_paths) ss << path;
+        ss << task_config.io.output.path;
+        ss << task_config.io.output.video_encoder;
+        ss << task_config.io.output.video_quality;
+        for (const auto& step : task_config.pipeline) {
+            if (step.enabled) ss << step.step;
+        }
+        return foundation::infrastructure::crypto::sha1_string(ss.str());
     }
 };
 

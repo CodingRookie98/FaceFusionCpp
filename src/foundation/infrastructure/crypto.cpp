@@ -45,6 +45,20 @@ std::string sha1(const std::string& file_path) {
     return bytes_to_hex(md_value, md_len);
 }
 
+std::string sha1_string(const std::string& input) {
+    EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
+    const EVP_MD* md = EVP_sha1();
+    unsigned char md_value[EVP_MAX_MD_SIZE];
+    unsigned int md_len;
+
+    EVP_DigestInit_ex(mdctx, md, NULL);
+    EVP_DigestUpdate(mdctx, input.c_str(), input.size());
+    EVP_DigestFinal_ex(mdctx, md_value, &md_len);
+    EVP_MD_CTX_free(mdctx);
+
+    return bytes_to_hex(md_value, md_len);
+}
+
 std::string combined_sha1(const std::unordered_set<std::string>& file_paths) {
     if (file_paths.empty()) { return ""; }
 

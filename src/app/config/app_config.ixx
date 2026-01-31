@@ -49,6 +49,20 @@ struct LoggingConfig {
     LogLevel level = LogLevel::Info;           ///< Minimum logging level
     std::string directory = "./logs";          ///< Directory for log files
     LogRotation rotation = LogRotation::Daily; ///< Log file rotation policy
+    int max_files = 7;                         ///< Max files to keep
+    std::string max_total_size = "1GB";        ///< Max total size of logs
+};
+
+/**
+ * @brief Metrics and observability configuration
+ * @see design.md Section 5.11
+ */
+struct MetricsConfig {
+    bool enable = true;                                          ///< Enable metrics collection
+    bool step_latency = true;                                    ///< Track per-step latency
+    bool gpu_memory = true;                                      ///< Track GPU memory usage
+    std::string report_path = "./logs/metrics_{timestamp}.json"; ///< Output path
+    int gpu_sample_interval_ms = 1000;                           ///< GPU sampling interval
 };
 
 /**
@@ -74,16 +88,17 @@ struct DefaultModels {
 };
 
 /**
- * @brief Root application configuration structure
+ * @brief Global application configuration
  */
 struct AppConfig {
-    std::string config_version;            ///< Config format version (e.g., "1.0")
+    std::string config_version = "1.0";    ///< Config schema version
     InferenceConfig inference;             ///< Inference-specific settings
-    ResourceConfig resource;               ///< Resource management settings
+    ResourceConfig resource;               ///< Resource limits
     LoggingConfig logging;                 ///< Logging settings
+    MetricsConfig metrics;                 ///< Metrics collection settings
     ModelsConfig models;                   ///< Model management settings
     DefaultModels default_models;          ///< Default model selections
-    std::string temp_directory = "./temp"; ///< Directory for temporary files
+    std::string temp_directory = "./temp"; ///< Temp file storage
 };
 
 } // namespace config

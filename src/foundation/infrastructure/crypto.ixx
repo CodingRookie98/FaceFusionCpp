@@ -21,6 +21,13 @@ export namespace foundation::infrastructure::crypto {
 std::string sha1(const std::string& file_path);
 
 /**
+ * @brief Calculate SHA1 hash of a string
+ * @param input Input string
+ * @return SHA1 hash string
+ */
+std::string sha1_string(const std::string& input);
+
+/**
  * @brief Calculate combined SHA1 hash of multiple files
  * @param file_paths Set of file paths to hash
  * @return Combined SHA1 hash string

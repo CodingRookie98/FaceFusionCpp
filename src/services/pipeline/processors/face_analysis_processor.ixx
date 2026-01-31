@@ -18,6 +18,7 @@ import domain.face.swapper;
 import domain.face.enhancer;
 import domain.face.expression;
 import foundation.infrastructure.logger;
+import services.pipeline.metrics;
 
 namespace services::pipeline::processors {
 
@@ -48,13 +49,18 @@ public:
      * @param reqs Flags for required downstream data
      */
     FaceAnalysisProcessor(std::shared_ptr<domain::face::analyser::FaceAnalyser> analyser,
-                          std::vector<float> src_emb, FaceAnalysisRequirements reqs) :
-        m_analyser(std::move(analyser)), source_embedding(std::move(src_emb)), m_reqs(reqs) {}
+                          std::vector<float> src_emb, FaceAnalysisRequirements reqs,
+                          MetricsCollector* metrics = nullptr) :
+        m_analyser(std::move(analyser)), source_embedding(std::move(src_emb)), m_reqs(reqs),
+        m_metrics(metrics) {}
 
     /**
      * @brief Detect faces and attach processing metadata to the frame
      */
     void process(FrameData& frame) override {
+        std::unique_ptr<ScopedStepTimer> timer;
+        if (m_metrics) { timer = std::make_unique<ScopedStepTimer>(*m_metrics, "face_analysis"); }
+
         auto faces = m_analyser->get_many_faces(
             frame.image, domain::face::analyser::FaceAnalysisType::Detection);
 
@@ -105,6 +111,7 @@ private:
     std::shared_ptr<domain::face::analyser::FaceAnalyser> m_analyser;
     std::vector<float> source_embedding;
     FaceAnalysisRequirements m_reqs;
+    MetricsCollector* m_metrics = nullptr;
 };
 
 } // namespace services::pipeline::processors

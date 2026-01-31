@@ -22,6 +22,7 @@ import domain.ai.model_repository;
 import domain.face.masker;
 import domain.face.analyser;
 import foundation.ai.inference_session;
+import services.pipeline.metrics;
 
 export namespace services::pipeline {
 
@@ -57,7 +58,8 @@ struct ProcessorContext {
     std::shared_ptr<domain::face::analyser::FaceAnalyser>
         face_analyser; ///< Service for face analysis
     foundation::ai::inference_session::Options
-        inference_options; ///< Configuration for ONNX inference
+        inference_options;                         ///< Configuration for ONNX inference
+    MetricsCollector* metrics_collector = nullptr; ///< Performance metrics collector
 };
 
 } // namespace services::pipeline
