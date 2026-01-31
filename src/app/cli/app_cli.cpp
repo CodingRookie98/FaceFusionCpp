@@ -5,6 +5,7 @@ module;
 #include <csignal>
 #include <atomic>
 #include <thread>
+#include <memory>
 #include <indicators/progress_bar.hpp>
 #include <CLI/CLI.hpp>
 
@@ -12,23 +13,10 @@ module app.cli;
 
 import config.parser;
 import services.pipeline.runner;
+import services.pipeline.shutdown;
 import foundation.infrastructure.logger;
 
 namespace app::cli {
-
-// Global atomic flag for signal handling
-std::atomic<bool> g_interrupted{false};
-// Global pointer to active runner for cancellation
-services::pipeline::PipelineRunner* g_active_runner = nullptr;
-
-void signal_handler(int signal) {
-    using foundation::infrastructure::logger::Logger;
-    if (signal == SIGINT) {
-        Logger::get_instance()->warn("Interrupt received (SIGINT). Stopping pipeline...");
-        g_interrupted = true;
-        if (g_active_runner) { g_active_runner->Cancel(); }
-    }
-}
 
 void App::run_pipeline(const std::string& config_path) {
     using namespace config;
@@ -50,8 +38,20 @@ void App::run_pipeline(const std::string& config_path) {
     app_config.models.path = "assets/models"; // Default
 
     // 3. Create Runner
-    auto runner = CreatePipelineRunner(app_config);
-    g_active_runner = runner.get();
+    std::shared_ptr<PipelineRunner> runner = CreatePipelineRunner(app_config);
+
+    // Install shutdown handler with proper cleanup
+    ShutdownHandler::install(
+        [runner]() {
+            runner->Cancel();
+            (void)runner->WaitForCompletion(std::chrono::seconds{10});
+            ShutdownHandler::mark_completed();
+        },
+        std::chrono::seconds{5}, // timeout
+        []() {
+            Logger::get_instance()->error("Force terminating due to timeout");
+            std::exit(1);
+        });
 
     // Setup Progress Bar
     indicators::ProgressBar bar{indicators::option::BarWidth{50},
@@ -82,10 +82,10 @@ void App::run_pipeline(const std::string& config_path) {
         bar.set_option(indicators::option::PostfixText{postfix});
     });
 
-    // Cleanup
-    g_active_runner = nullptr;
+    // Uninstall handler after completion
+    ShutdownHandler::uninstall();
 
-    if (g_interrupted) {
+    if (ShutdownHandler::is_shutdown_requested()) {
         logger->warn("Task cancelled by user.");
     } else if (result.is_err()) {
         logger->error("Pipeline failed: " + result.error().message);
@@ -122,8 +122,6 @@ int App::run(int argc, char** argv) {
     }
 
     if (!config_path.empty()) {
-        // Register signal handler
-        std::signal(SIGINT, signal_handler);
         run_pipeline(config_path);
         return 0;
     }

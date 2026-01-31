@@ -10,6 +10,7 @@ module;
 #include <memory>
 #include <string>
 #include <cstddef>
+#include <chrono>
 
 export module services.pipeline.runner;
 
@@ -57,6 +58,13 @@ public:
      * @brief Abort the currently running task
      */
     void Cancel();
+
+    /**
+     * @brief Wait for all in-flight frames to complete processing
+     * @param timeout Maximum wait time
+     * @return true if all frames completed, false if timed out
+     */
+    [[nodiscard]] bool WaitForCompletion(std::chrono::seconds timeout = std::chrono::seconds{10});
 
     /**
      * @brief Check if a task is actively processing

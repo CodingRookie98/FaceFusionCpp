@@ -81,6 +81,26 @@ struct PipelineRunner::Impl {
     }
 
     void Cancel() { m_cancelled = true; }
+
+    bool WaitForCompletion(std::chrono::seconds timeout) {
+        Logger::get_instance()->info(
+            "[PipelineRunner] Waiting for in-flight frames to complete...");
+
+        auto deadline = std::chrono::steady_clock::now() + timeout;
+
+        while (m_running.load() && std::chrono::steady_clock::now() < deadline) {
+            std::this_thread::sleep_for(std::chrono::milliseconds{100});
+        }
+
+        if (m_running.load()) {
+            Logger::get_instance()->warn("[PipelineRunner] WaitForCompletion timed out");
+            return false;
+        }
+
+        Logger::get_instance()->info("[PipelineRunner] All frames completed");
+        return true;
+    }
+
     bool IsRunning() const { return m_running; }
 
 private:
@@ -350,6 +370,10 @@ config::Result<void, config::ConfigError> PipelineRunner::Run(const config::Task
 
 void PipelineRunner::Cancel() {
     m_impl->Cancel();
+}
+
+bool PipelineRunner::WaitForCompletion(std::chrono::seconds timeout) {
+    return m_impl->WaitForCompletion(timeout);
 }
 
 bool PipelineRunner::IsRunning() const {
