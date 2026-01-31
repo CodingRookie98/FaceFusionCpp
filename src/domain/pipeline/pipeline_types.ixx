@@ -11,6 +11,7 @@ module;
 #include <any>
 #include <optional>
 #include <vector>
+#include <memory>
 
 export module domain.pipeline:types;
 
@@ -32,8 +33,8 @@ struct FrameData {
 
     // Optimized Metadata (Strongly Typed)
     // Avoid std::any for high-frequency data
-    std::vector<float> source_embedding;            // From Runner (global context)
-    std::vector<domain::face::Face> detected_faces; // From Face Analysis Step
+    std::shared_ptr<const std::vector<float>> source_embedding; // From Runner (global context)
+    std::vector<domain::face::Face> detected_faces;             // From Face Analysis Step
 
     // Processor Specific Inputs (Pre-calculated by Analysis Step)
     // Using std::optional to indicate presence without map lookup

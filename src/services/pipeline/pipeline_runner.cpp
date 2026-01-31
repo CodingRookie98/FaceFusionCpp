@@ -391,10 +391,10 @@ private:
 
         // 2. Add Face Analysis Processor (if needed)
         if (needs_face_detection) {
+            auto shared_emb = std::make_shared<const std::vector<float>>(context.source_embedding);
             pipeline->add_processor(
                 std::make_shared<services::pipeline::processors::FaceAnalysisProcessor>(
-                    context.face_analyser, context.source_embedding, reqs,
-                    context.metrics_collector));
+                    context.face_analyser, shared_emb, reqs, context.metrics_collector));
         }
 
         // 3. Create Processors using Factory

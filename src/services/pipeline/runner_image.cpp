@@ -60,21 +60,24 @@ public:
         }
 
         PipelineConfig pipeline_config;
-        pipeline_config.worker_thread_count =
-            task_config.resource.thread_count > 0 ? task_config.resource.thread_count : 2;
-        pipeline_config.max_queue_size = 16;
+        pipeline_config.worker_thread_count = task_config.resource.get_effective_thread_count();
+        pipeline_config.max_queue_size = task_config.resource.max_queue_size;
 
         auto pipeline = std::make_shared<Pipeline>(pipeline_config);
         ProcessorContext mutable_context = context;
         add_processors_func(pipeline, task_config, mutable_context);
         pipeline->start();
 
+        std::shared_ptr<const std::vector<float>> shared_source_embedding;
+        if (!context.source_embedding.empty()) {
+            shared_source_embedding =
+                std::make_shared<const std::vector<float>>(context.source_embedding);
+        }
+
         FrameData frame_data;
         frame_data.sequence_id = 0;
         frame_data.image = image;
-        if (!context.source_embedding.empty()) {
-            frame_data.source_embedding = context.source_embedding;
-        }
+        frame_data.source_embedding = shared_source_embedding;
 
         pipeline->push_frame(std::move(frame_data));
 

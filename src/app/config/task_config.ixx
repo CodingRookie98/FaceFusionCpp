@@ -12,6 +12,8 @@ module;
 #include <vector>
 #include <optional>
 #include <variant>
+#include <thread>
+#include <algorithm>
 
 export module config.task;
 
@@ -56,11 +58,22 @@ struct IOConfig {
  * @brief Resource management for a specific task
  */
 struct TaskResourceConfig {
-    int thread_count = 0;                                        ///< CPU threads (0 = auto)
+    int thread_count = 0;    ///< CPU threads (0 = auto)
+    int max_queue_size = 20; ///< Max frames buffered in pipeline (default: 20)
     ExecutionOrder execution_order = ExecutionOrder::Sequential; ///< Media processing order
     MemoryStrategy memory_strategy = MemoryStrategy::Tolerant;   ///< Memory usage priority
     int segment_duration_seconds = 0;                            ///< Video segmenting (0 = off)
     int max_frames = 0; ///< Max frames to process (0 = all)
+
+    /**
+     * @brief Get the effective thread count (handling auto: half of hardware threads)
+     */
+    [[nodiscard]] int get_effective_thread_count() const {
+        if (thread_count > 0) return thread_count;
+        unsigned int hw = std::thread::hardware_concurrency();
+        if (hw == 0) return 2; // Fallback
+        return std::max(1, static_cast<int>(hw / 2));
+    }
 };
 
 /**

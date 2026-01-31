@@ -92,7 +92,7 @@ void InSwapper::init() {
     input.close();
 }
 
-cv::Mat InSwapper::swap_face(cv::Mat target_crop, std::vector<float> source_embedding) {
+cv::Mat InSwapper::swap_face(cv::Mat target_crop, const std::vector<float>& source_embedding) {
     if (source_embedding.empty() || target_crop.empty()) { return {}; }
 
     if (!is_model_loaded()) { throw std::runtime_error("Model is not loaded!"); }

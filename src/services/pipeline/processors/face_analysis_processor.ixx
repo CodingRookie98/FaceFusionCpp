@@ -49,8 +49,8 @@ public:
      * @param reqs Flags for required downstream data
      */
     FaceAnalysisProcessor(std::shared_ptr<domain::face::analyser::FaceAnalyser> analyser,
-                          std::vector<float> src_emb, FaceAnalysisRequirements reqs,
-                          MetricsCollector* metrics = nullptr) :
+                          std::shared_ptr<const std::vector<float>> src_emb,
+                          FaceAnalysisRequirements reqs, MetricsCollector* metrics = nullptr) :
         m_analyser(std::move(analyser)), source_embedding(std::move(src_emb)), m_reqs(reqs),
         m_metrics(metrics) {}
 
@@ -109,7 +109,7 @@ public:
 
 private:
     std::shared_ptr<domain::face::analyser::FaceAnalyser> m_analyser;
-    std::vector<float> source_embedding;
+    std::shared_ptr<const std::vector<float>> source_embedding;
     FaceAnalysisRequirements m_reqs;
     MetricsCollector* m_metrics = nullptr;
 };

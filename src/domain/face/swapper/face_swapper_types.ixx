@@ -1,6 +1,7 @@
 module;
 #include <vector>
 #include <array>
+#include <memory>
 #include <opencv2/core.hpp>
 
 export module domain.face.swapper:types;
@@ -14,7 +15,7 @@ export namespace domain::face::swapper {
  */
 struct SwapInput {
     /// @brief Source face embedding vector
-    domain::face::types::Embedding source_embedding;
+    std::shared_ptr<const std::vector<float>> source_embedding;
     /// @brief Landmarks of target faces to swap
     std::vector<domain::face::types::Landmarks> target_faces_landmarks;
     /// @brief Options for mask generation

@@ -450,6 +450,7 @@ Result<TaskConfig> ParseTaskConfigFromJson(const json& j) {
     // resource
     auto resource_j = detail::GetObject(j, "resource");
     config.resource.thread_count = detail::GetInt(resource_j, "thread_count", 0);
+    config.resource.max_queue_size = detail::GetInt(resource_j, "max_queue_size", 20);
 
     auto exec_order_str = detail::GetString(resource_j, "execution_order", "sequential");
     auto exec_order_r = ParseExecutionOrder(exec_order_str);

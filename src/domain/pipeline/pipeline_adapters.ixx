@@ -106,7 +106,7 @@ public:
         if (frame.swap_input.has_value()) {
             try {
                 auto& input = frame.swap_input.value();
-                if (input.target_faces_landmarks.empty()) return;
+                if (input.target_faces_landmarks.empty() || !input.source_embedding) return;
 
                 cv::Mat working_frame = frame.image;
 
@@ -116,7 +116,8 @@ public:
                         working_frame, landmarks, m_template_type, m_input_size);
 
                     // 2. Inference
-                    cv::Mat swapped_crop = m_swapper->swap_face(crop_frame, input.source_embedding);
+                    cv::Mat swapped_crop =
+                        m_swapper->swap_face(crop_frame, *input.source_embedding);
 
                     // 3. Color Match (Task 3.3)
                     cv::Mat matched_crop =

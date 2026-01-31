@@ -134,7 +134,7 @@ protected:
     }
 };
 
-TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemory) {
+TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemoryOneStep) {
     if (!std::filesystem::exists(video_path) || !std::filesystem::exists(source_path)) {
         GTEST_SKIP() << "Test assets not found.";
     }
@@ -164,10 +164,6 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemory) {
     step1.params = params1;
     task_config.pipeline.push_back(step1);
 
-    // Using same swapper again as step 2 just to test multi-pass logic (normally would be enhancer)
-    // Or just 1 step is enough to verify strict path executes.
-    // Let's do 1 step to be safe on time.
-
     std::string expected_output = "tests_output/pipeline_video_strict_memory_slideshow_scaled.mp4";
     if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
 
@@ -179,13 +175,10 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemory) {
     ASSERT_TRUE(result.is_ok());
     EXPECT_TRUE(std::filesystem::exists(expected_output));
 
-    // Check temp files cleanup
-    // We cannot easily check if temp files existed during run without hooking,
-    // but we can check if they are gone now.
     EXPECT_FALSE(std::filesystem::exists("tests_output/temp_step_0.mp4"));
 }
 
-TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialAllProcessors) {
+TEST_F(PipelineRunnerVideoTest, ProcessVideoTolerantMemoryOneStep) {
     if (!std::filesystem::exists(video_path) || !std::filesystem::exists(source_path)) {
         GTEST_SKIP() << "Test assets not found.";
     }
@@ -195,12 +188,57 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialAllProcessors) {
 
     config::TaskConfig task_config;
     task_config.config_version = "1.0";
-    task_config.task_info.id = "test_video_seq_all";
+    task_config.task_info.id = "test_video_tolerant";
     task_config.io.source_paths.push_back(source_path.string());
     task_config.io.target_paths.push_back(video_path.string());
 
     task_config.io.output.path = "tests_output";
-    task_config.io.output.prefix = "pipeline_video_sequential_all_";
+    task_config.io.output.prefix = "pipeline_video_tolerant_memory_";
+    task_config.io.output.suffix = ""; // pipeline_video_tolerant_memory_slideshow_scaled.mp4
+
+    // Enable Tolerant Memory
+    task_config.resource.memory_strategy = config::MemoryStrategy::Tolerant;
+
+    // Adding two steps to verify multi-pass
+    config::PipelineStep step1;
+    step1.step = "face_swapper";
+    step1.enabled = true;
+    config::FaceSwapperParams params1;
+    params1.model = "inswapper_128_fp16";
+    step1.params = params1;
+    task_config.pipeline.push_back(step1);
+
+    std::string expected_output =
+        "tests_output/pipeline_video_tolerant_memory_slideshow_scaled.mp4";
+    if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
+
+    auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
+
+    if (result.is_err()) {
+        std::cerr << "Tolerant Runner Error: " << result.error().message << std::endl;
+    }
+    ASSERT_TRUE(result.is_ok());
+    EXPECT_TRUE(std::filesystem::exists(expected_output));
+
+    EXPECT_FALSE(std::filesystem::exists("tests_output/temp_step_0.mp4"));
+}
+
+TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialMultiStep) {
+    if (!std::filesystem::exists(video_path) || !std::filesystem::exists(source_path)) {
+        GTEST_SKIP() << "Test assets not found.";
+    }
+
+    config::AppConfig app_config;
+    auto runner = CreatePipelineRunner(app_config);
+
+    config::TaskConfig task_config;
+    task_config.config_version = "1.0";
+    task_config.task_info.id = "test_video_seq_multi_step";
+    task_config.io.source_paths.push_back(source_path.string());
+    task_config.io.target_paths.push_back(video_path.string());
+
+    task_config.io.output.path = "tests_output";
+    task_config.io.output.prefix = "pipeline_video_sequential_multi_step_";
     task_config.io.output.suffix = "";
 
     task_config.resource.execution_order = config::ExecutionOrder::Sequential;
@@ -240,14 +278,14 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialAllProcessors) {
     step4.params = params4;
     task_config.pipeline.push_back(step4);
 
-    std::string expected_output = "tests_output/pipeline_video_sequential_all_slideshow_scaled.mp4";
+    std::string expected_output =
+        "tests_output/pipeline_video_sequential_multi_step_slideshow_scaled.mp4";
     if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
 
     auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
 
     if (result.is_err()) {
-        std::cerr << "Sequential AllProcessors Runner Error: " << result.error().message
-                  << std::endl;
+        std::cerr << "Sequential MultiStep Runner Error: " << result.error().message << std::endl;
     }
     ASSERT_TRUE(result.is_ok());
     EXPECT_TRUE(std::filesystem::exists(expected_output));
@@ -256,7 +294,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialAllProcessors) {
     VerifyVideoContent(expected_output, source_path, 2.0f);
 }
 
-TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMode) {
+TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMutiStep) {
     if (!std::filesystem::exists(video_path) || !std::filesystem::exists(source_path)) {
         GTEST_SKIP() << "Test assets not found.";
     }
@@ -266,7 +304,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMode) {
 
     config::TaskConfig task_config;
     task_config.config_version = "1.0";
-    task_config.task_info.id = "test_video_batch";
+    task_config.task_info.id = "test_video_batch_multi_step";
     task_config.io.source_paths.push_back(source_path.string());
 
     // Add two targets to verify batch iteration (even if implementation is currently sequential)
@@ -278,7 +316,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMode) {
     task_config.io.target_paths.push_back(video_path_2.string());
 
     task_config.io.output.path = "tests_output";
-    task_config.io.output.prefix = "pipeline_video_batch_";
+    task_config.io.output.prefix = "pipeline_video_batch_multi_step_";
     task_config.io.output.suffix = "";
 
     task_config.resource.execution_order = config::ExecutionOrder::Batch;
@@ -318,8 +356,10 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMode) {
     step4.params = params4;
     task_config.pipeline.push_back(step4);
 
-    std::string expected_output_1 = "tests_output/pipeline_video_batch_slideshow_scaled.mp4";
-    std::string expected_output_2 = "tests_output/pipeline_video_batch_slideshow_copy.mp4";
+    std::string expected_output_1 =
+        "tests_output/pipeline_video_batch_multi_step_slideshow_scaled.mp4";
+    std::string expected_output_2 =
+        "tests_output/pipeline_video_batch_multi_step_slideshow_copy.mp4";
 
     if (std::filesystem::exists(expected_output_1)) std::filesystem::remove(expected_output_1);
     if (std::filesystem::exists(expected_output_2)) std::filesystem::remove(expected_output_2);
@@ -327,7 +367,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMode) {
     auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
 
     if (result.is_err()) {
-        std::cerr << "Batch Runner Error: " << result.error().message << std::endl;
+        std::cerr << "Batch MultiStep Runner Error: " << result.error().message << std::endl;
     }
     ASSERT_TRUE(result.is_ok());
     EXPECT_TRUE(std::filesystem::exists(expected_output_1));

@@ -1,6 +1,7 @@
 module;
 #include <string>
 #include <vector>
+#include <memory>
 #include <opencv2/core.hpp>
 
 /**
@@ -38,7 +39,7 @@ public:
      * @param source_embedding Source face embedding
      * @return Swapped face crop
      */
-    virtual cv::Mat swap_face(cv::Mat target_crop, std::vector<float> source_embedding) = 0;
+    virtual cv::Mat swap_face(cv::Mat target_crop, const std::vector<float>& source_embedding) = 0;
 
     /**
      * @brief Get the expected input size for the model

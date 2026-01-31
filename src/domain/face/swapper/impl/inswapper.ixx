@@ -20,9 +20,9 @@ public:
     ~InSwapper() override = default;
 
     void load_model(const std::string& model_path,
-                    const foundation::ai::inference_session::Options& options = {}) override;
+                    const foundation::ai::inference_session::Options& options) override;
 
-    cv::Mat swap_face(cv::Mat target_crop, std::vector<float> source_embedding) override;
+    cv::Mat swap_face(cv::Mat target_crop, const std::vector<float>& source_embedding) override;
 
     cv::Size get_model_input_size() const override { return m_size; }
 

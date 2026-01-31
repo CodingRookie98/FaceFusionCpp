@@ -186,7 +186,12 @@ struct VideoReader::Impl {
                     current_pts = frame->best_effort_timestamp;
 
                     // Convert to BGR
-                    // Optimized: Reuse frame_bgr buffer
+                    // PERFORMANCE NOTE: sws_scale and row-by-row memcpy are the primary
+                    // performance bottlenecks for the video producer.
+                    // Future Optimization:
+                    // 1. Zero-copy wrapping of frame_bgr->data[0] into cv::Mat (if lifetime
+                    // allows).
+                    // 2. Using HW-accelerated scaling/conversion.
                     sws_scale(sws_ctx, frame->data, frame->linesize, 0, height, frame_bgr->data,
                               frame_bgr->linesize);
 
@@ -430,6 +435,11 @@ struct VideoReader::Impl {
                         int64_t current_frame = static_cast<int64_t>(current_sec * fps + 0.5);
 
                         if (current_frame >= frame_index) {
+                            // PERFORMANCE NOTE: sws_scale and the subsequent memcpy are the main
+                            // bottlenecks in the reader's producer loop.
+                            // Future Optimization:
+                            // 1. Use zero-copy wrapping if alignment allows.
+                            // 2. Multithreaded scaling or HW acceleration.
                             sws_scale(sws_ctx, frame->data, frame->linesize, 0, height,
                                       frame_bgr->data, frame_bgr->linesize);
                             cv::Mat mat(height, width, CV_8UC3);

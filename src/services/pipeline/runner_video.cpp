@@ -130,9 +130,8 @@ public:
 
         // 4. Setup Pipeline
         PipelineConfig pipeline_config;
-        pipeline_config.worker_thread_count =
-            task_config.resource.thread_count > 0 ? task_config.resource.thread_count : 2;
-        pipeline_config.max_queue_size = 8;
+        pipeline_config.worker_thread_count = task_config.resource.get_effective_thread_count();
+        pipeline_config.max_queue_size = task_config.resource.max_queue_size;
 
         auto pipeline = std::make_shared<Pipeline>(pipeline_config);
 
@@ -141,6 +140,12 @@ public:
         add_processors_func(pipeline, task_config, mutable_context);
 
         pipeline->start();
+
+        std::shared_ptr<const std::vector<float>> shared_source_embedding;
+        if (!context.source_embedding.empty()) {
+            shared_source_embedding =
+                std::make_shared<const std::vector<float>>(context.source_embedding);
+        }
 
         std::atomic<bool> writer_error = false;
         std::string writer_error_msg;
@@ -202,13 +207,13 @@ public:
             FrameData data;
             data.sequence_id = seq_id++;
             data.image = frame;
-            if (!context.source_embedding.empty()) {
-                data.source_embedding = context.source_embedding;
-            }
+            data.source_embedding = shared_source_embedding;
             pipeline->push_frame(std::move(data));
 
             // Save checkpoint periodically (every 30s)
-            if (ckpt_mgr) {
+            // Optimization: Only construct and call save every 100 frames to reduce per-frame
+            // overhead
+            if (ckpt_mgr && seq_id % 100 == 0) {
                 CheckpointData ckpt;
                 ckpt.task_id = task_config.task_info.id;
                 ckpt.config_hash = config_hash;
@@ -338,14 +343,21 @@ private:
         VideoWriter writer(video_output_path, video_params);
 
         PipelineConfig pipeline_config;
-        pipeline_config.max_queue_size = 4;
-        pipeline_config.worker_thread_count =
-            task_config.resource.thread_count > 0 ? task_config.resource.thread_count : 2;
+        // In strict memory mode, we still respect config but might want to cap it if it's too
+        // large. For now, let's just use the config value as requested.
+        pipeline_config.max_queue_size = std::min(task_config.resource.max_queue_size, 4);
+        pipeline_config.worker_thread_count = task_config.resource.get_effective_thread_count();
 
         auto pipeline = std::make_shared<Pipeline>(pipeline_config);
         ProcessorContext mutable_context = context;
         add_processors_func(pipeline, task_config, mutable_context);
         pipeline->start();
+
+        std::shared_ptr<const std::vector<float>> shared_source_embedding;
+        if (!context.source_embedding.empty()) {
+            shared_source_embedding =
+                std::make_shared<const std::vector<float>>(context.source_embedding);
+        }
 
         std::atomic<bool> writer_error = false;
         std::string writer_error_msg;
@@ -395,9 +407,7 @@ private:
             FrameData data;
             data.sequence_id = seq_id++;
             data.image = frame;
-            if (!context.source_embedding.empty()) {
-                data.source_embedding = context.source_embedding;
-            }
+            data.source_embedding = shared_source_embedding;
             pipeline->push_frame(std::move(data));
 
             // Save checkpoint periodically (every 30s)
