@@ -4,12 +4,16 @@
 add_modules_library(config_core)
 
 target_sources(config_core
+    PRIVATE
+        error_codes.cpp
+        config_validator.cpp
     PUBLIC
         FILE_SET cxx_modules TYPE CXX_MODULES
         FILES
             config_types.ixx
             app_config.ixx
             task_config.ixx
+            config_validator.ixx
 )
 
 # Parser subdirectory

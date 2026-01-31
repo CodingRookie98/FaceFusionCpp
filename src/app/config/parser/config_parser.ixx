@@ -15,6 +15,7 @@ export module config.parser;
 export import config.app;
 export import config.task;
 export import config.types;
+export import config.validator;
 
 export namespace config {
 

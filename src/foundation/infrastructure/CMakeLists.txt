@@ -26,7 +26,8 @@ target_sources(foundation_infrastructure
             logger_types.ixx
             logger.ixx
             progress.ixx
-        process.ixx
+            scoped_timer.ixx
+            process.ixx
             thread_pool.ixx
     PRIVATE
         core_utils.cpp
@@ -37,6 +38,7 @@ target_sources(foundation_infrastructure
         concurrent_crypto.cpp
         logger.cpp
         progress.cpp
+        scoped_timer.cpp
         process.cpp
         thread_pool.cpp
 )

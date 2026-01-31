@@ -18,6 +18,7 @@ import domain.pipeline;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
 import foundation.infrastructure.logger;
+import foundation.infrastructure.scoped_timer;
 import :types;
 import config.types;
 import config.task; // Import TaskConfig
@@ -46,10 +47,16 @@ public:
         ProgressCallback progress_callback, const ProcessorContext& context,
         std::function<void(std::shared_ptr<Pipeline>, const config::TaskConfig&, ProcessorContext&)>
             add_processors_func) {
+        using foundation::infrastructure::ScopedTimer;
+
+        ScopedTimer timer("ImageProcessingHelper::ProcessImage",
+                          std::format("target={}", target_path));
+
         cv::Mat image = cv::imread(target_path);
         if (image.empty()) {
-            return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError("Failed to load image: " + target_path));
+            timer.set_result("error:load_failed");
+            return config::Result<void, config::ConfigError>::Err(config::ConfigError(
+                config::ErrorCode::E401_ImageDecodeFailed, "Failed to load image: " + target_path));
         }
 
         PipelineConfig pipeline_config;
@@ -91,6 +98,7 @@ public:
             progress_callback(progress);
         }
 
+        timer.set_result("success");
         return config::Result<void, config::ConfigError>::Ok();
     }
 

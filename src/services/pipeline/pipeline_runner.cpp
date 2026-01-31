@@ -31,6 +31,7 @@ import domain.ai.model_repository;
 import foundation.ai.inference_session;
 import foundation.media.ffmpeg;
 import foundation.infrastructure.logger;
+import foundation.infrastructure.scoped_timer;
 
 import services.pipeline.processors.face_analysis;
 import :types;
@@ -62,21 +63,31 @@ struct PipelineRunner::Impl {
 
     config::Result<void, config::ConfigError> Run(const config::TaskConfig& task_config,
                                                   ProgressCallback progress_callback) {
+        using foundation::infrastructure::ScopedTimer;
+        namespace logger = foundation::infrastructure::logger;
+
+        ScopedTimer timer("PipelineRunner::Run",
+                          std::format("task_id={}", task_config.task_info.id),
+                          logger::LogLevel::Info);
+
         if (m_running.exchange(true)) {
-            return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError("Pipeline is already running"));
+            timer.set_result("error:already_running");
+            return config::Result<void, config::ConfigError>::Err(config::ConfigError(
+                config::ErrorCode::E400_RuntimeError, "Pipeline is already running"));
         }
         m_cancelled = false;
 
         auto validate_result = config::ValidateTaskConfig(task_config);
         if (!validate_result) {
             m_running = false;
+            timer.set_result("error:validation_failed");
             return config::Result<void, config::ConfigError>::Err(validate_result.error());
         }
 
         auto result = ExecuteTask(task_config, progress_callback);
 
         m_running = false;
+        timer.set_result(result ? "success" : "error");
         return result;
     }
 
@@ -132,7 +143,8 @@ private:
                                                           ProgressCallback progress_callback) {
         if (task_config.io.target_paths.empty()) {
             return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError("No target paths specified", "io.target_paths"));
+                config::ConfigError(config::ErrorCode::E205_RequiredFieldMissing,
+                                    "No target paths specified", "io.target_paths"));
         }
 
         for (const auto& target_path : task_config.io.target_paths) {
@@ -150,8 +162,8 @@ private:
                                                             ProgressCallback progress_callback) {
         namespace fs = std::filesystem;
         if (!fs::exists(target_path)) {
-            return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError("Target file not found: " + target_path));
+            return config::Result<void, config::ConfigError>::Err(config::ConfigError(
+                config::ErrorCode::E402_VideoOpenFailed, "Target file not found: " + target_path));
         }
 
         ProcessorContext context;
@@ -189,13 +201,14 @@ private:
         cv::Mat source_img = cv::imread(source_path);
         if (source_img.empty()) {
             return config::Result<std::vector<float>, config::ConfigError>::Err(
-                config::ConfigError("Failed to load source image: " + source_path));
+                config::ConfigError(config::ErrorCode::E401_ImageDecodeFailed,
+                                    "Failed to load source image: " + source_path));
         }
 
         auto analyser = GetFaceAnalyser();
         if (!analyser) {
-            return config::Result<std::vector<float>, config::ConfigError>::Err(
-                config::ConfigError("Failed to create FaceAnalyser"));
+            return config::Result<std::vector<float>, config::ConfigError>::Err(config::ConfigError(
+                config::ErrorCode::E100_SystemError, "Failed to create FaceAnalyser"));
         }
 
         auto faces = analyser->get_many_faces(
@@ -203,8 +216,8 @@ private:
                             | domain::face::analyser::FaceAnalysisType::Embedding);
 
         if (faces.empty()) {
-            return config::Result<std::vector<float>, config::ConfigError>::Err(
-                config::ConfigError("No face detected in source image"));
+            return config::Result<std::vector<float>, config::ConfigError>::Err(config::ConfigError(
+                config::ErrorCode::E403_NoFaceDetected, "No face detected in source image"));
         }
 
         return config::Result<std::vector<float>, config::ConfigError>::Ok(faces[0].embedding());

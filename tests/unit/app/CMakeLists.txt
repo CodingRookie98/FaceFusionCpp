@@ -4,6 +4,8 @@
 add_facefusion_test(config_parser_tests
     SOURCES
         config/config_parser_tests.cpp
+    MAIN_LIB
+        GTest::gtest
     LINK_LIBRARIES
         config_parser
         GTest::gmock

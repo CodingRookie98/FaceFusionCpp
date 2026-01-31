@@ -21,6 +21,7 @@ import domain.ai.model_repository;
 import foundation.ai.inference_session;
 import foundation.media.ffmpeg;
 import foundation.infrastructure.logger;
+import foundation.infrastructure.scoped_timer;
 import :types;
 import config.types;
 import config.task; // Import TaskConfig
@@ -53,6 +54,10 @@ public:
             add_processors_func,
         std::atomic<bool>& cancelled) {
         using namespace foundation::media::ffmpeg;
+        using foundation::infrastructure::ScopedTimer;
+
+        ScopedTimer timer("VideoProcessingHelper::ProcessVideo",
+                          std::format("target={}", target_path));
 
         if (task_config.resource.memory_strategy == config::MemoryStrategy::Strict) {
             Logger::get_instance()->info("Running in Strict Mode with enhanced I/O optimization");
@@ -63,8 +68,11 @@ public:
         // 1. Open Reader
         VideoReader reader(target_path);
         if (!reader.open()) {
-            return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError("Failed to open video: " + target_path));
+            auto err = config::ConfigError(config::ErrorCode::E402_VideoOpenFailed,
+                                           std::format("Failed to open video: {}", target_path),
+                                           "io.target_paths");
+            timer.set_result("error:open_failed");
+            return config::Result<void, config::ConfigError>::Err(err);
         }
 
         // 2. Prepare Output
@@ -174,13 +182,15 @@ public:
             std::filesystem::remove(video_output_path);
             if (needs_muxing && std::filesystem::exists(output_path))
                 std::filesystem::remove(output_path);
+            timer.set_result("cancelled");
             return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError("Task cancelled"));
+                config::ConfigError(config::ErrorCode::E407_TaskCancelled, "Task cancelled"));
         }
 
         if (writer_error) {
+            timer.set_result("error:writer_failed");
             return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError(writer_error_msg));
+                config::ConfigError(config::ErrorCode::E406_OutputWriteFailed, writer_error_msg));
         }
 
         // 7. Muxing
@@ -188,12 +198,16 @@ public:
             if (Remuxer::merge_av(video_output_path, target_path, output_path)) {
                 std::filesystem::remove(video_output_path);
             } else {
-                Logger::get_instance()->error("Failed to mux audio");
+                Logger::get_instance()->error(
+                    config::ConfigError(config::ErrorCode::E406_OutputWriteFailed,
+                                        "Failed to mux audio")
+                        .formatted());
                 if (std::filesystem::exists(output_path)) std::filesystem::remove(output_path);
                 std::filesystem::rename(video_output_path, output_path);
             }
         }
 
+        timer.set_result("success");
         return config::Result<void, config::ConfigError>::Ok();
     }
 
@@ -208,11 +222,16 @@ private:
             add_processors_func,
         std::atomic<bool>& cancelled) {
         using namespace foundation::media::ffmpeg;
+        using foundation::infrastructure::ScopedTimer;
+
+        ScopedTimer timer("VideoProcessingHelper::ProcessVideoStrict",
+                          std::format("target={}", target_path));
 
         VideoReader reader(target_path);
         if (!reader.open()) {
-            return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError("Failed to open video"));
+            timer.set_result("error:open_failed");
+            return config::Result<void, config::ConfigError>::Err(config::ConfigError(
+                config::ErrorCode::E402_VideoOpenFailed, "Failed to open video: " + target_path));
         }
 
         std::string output_path = GenerateOutputPath(target_path, task_config);
@@ -303,21 +322,29 @@ private:
             std::filesystem::remove(video_output_path);
             if (needs_muxing && std::filesystem::exists(output_path))
                 std::filesystem::remove(output_path);
+            timer.set_result("cancelled");
             return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError("Task cancelled"));
+                config::ConfigError(config::ErrorCode::E407_TaskCancelled, "Task cancelled"));
         }
-        if (writer_error)
+        if (writer_error) {
+            timer.set_result("error:writer_failed");
             return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError(writer_error_msg));
+                config::ConfigError(config::ErrorCode::E406_OutputWriteFailed, writer_error_msg));
+        }
 
         if (needs_muxing) {
             if (Remuxer::merge_av(video_output_path, target_path, output_path)) {
                 std::filesystem::remove(video_output_path);
             } else {
+                Logger::get_instance()->error(
+                    config::ConfigError(config::ErrorCode::E406_OutputWriteFailed,
+                                        "Failed to mux audio")
+                        .formatted());
                 if (std::filesystem::exists(output_path)) std::filesystem::remove(output_path);
                 std::filesystem::rename(video_output_path, output_path);
             }
         }
+        timer.set_result("success");
         return config::Result<void, config::ConfigError>::Ok();
     }
 
