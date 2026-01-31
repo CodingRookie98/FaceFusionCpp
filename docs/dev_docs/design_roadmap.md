@@ -44,8 +44,8 @@ graph TD
 | **M3**  | Platform Layer - AI        | 推理引擎封装 (ONNX Runtime/TensorRT EP)                        |  ✅ 已完成  |     M1     |
 | **M4**  | Domain Layer - Core        | 人脸领域模型 (Face/Embedding/Mask 类型)                        |  ✅ 已完成  |     M1     |
 | **M5**  | Domain Layer - Analyzer    | 人脸分析器 (Detector/Landmarker/Recognizer/Masker)             |  ✅ 已完成  |   M3, M4   |
-| **M6**  | Domain Layer - Processor   | 处理器实现 (Swapper/Enhancer/ExpressionRestorer)               | 🔄 架构重构 |     M5     |
-| **M7**  | Domain Layer - Pipeline    | 流水线基础架构 (Queue/Context/Adapters)                        | 🔄 架构重构 |     M4     |
+| **M6**  | Domain Layer - Processor   | 处理器实现 (Swapper/Enhancer/ExpressionRestorer)               |  ✅ 已完成  |     M5     |
+| **M7**  | Domain Layer - Pipeline    | 流水线基础架构 (Queue/Context/Adapters)                        |  ✅ 已完成  |     M4     |
 | **M8**  | Services Layer             | Pipeline Runner 服务 (Image/Video 处理调度)                    |  ✅ 已完成  | M2, M6, M7 |
 | **M9**  | Application Layer - Config | 配置管理 (AppConfig/TaskConfig 解析与校验)                     | 🔄 基本完成 |     M1     |
 | **M10** | Application Layer - CLI    | 命令行接口 (参数解析/系统检查/任务执行)                        | 🔄 部分完成 |   M8, M9   |
@@ -249,11 +249,11 @@ graph TD
 
 ### 5.3 任务分解
 
-#### 5.4.1 FaceSwapper 🔄
+#### 5.4.1 FaceSwapper ✅
 - [x] **Task 5.1.1**: InSwapper 模型推理 (Legacy)
-- [ ] **Task 5.1.2**: 色彩匹配 (Color Matching) —— **重构中** 移至 Adapter
-- [ ] **Task 5.1.3**: 边缘融合 (Edge Blending) —— **重构中** 移至 Adapter
-- [ ] **Task 5.1.4**: 接口重构 (Aligned Crop Only) —— **进行中**
+- [x] **Task 5.1.2**: 色彩匹配 (Color Matching) —— 已移至 Adapter
+- [x] **Task 5.1.3**: 边缘融合 (Edge Blending) —— 已移至 Adapter
+- [x] **Task 5.1.4**: 接口重构 (Aligned Crop Only)
 - [x] **Task 5.1.5**: 工厂模式实现
 
 #### 5.4.2 FaceEnhancer ✅
@@ -295,7 +295,7 @@ graph TD
 ### 6.3 任务分解 ✅
 
 - [x] **Task 6.1**: PipelineContext - 配置加载与状态管理
-- [ ] **Task 6.2**: PipelineAdapters - **职责加固**: 实现 Warp/Crop/Fusion 逻辑 —— **进行中**
+- [x] **Task 6.2**: PipelineAdapters - **职责加固**: 实现 Warp/Crop/Fusion 逻辑
 - [x] **Task 6.3**: ProcessorFactory - 工厂模式实现
 - [x] **Task 6.4**: Queue Lifecycle - Shutdown 信号传递
 
@@ -432,8 +432,6 @@ graph TD
 | 任务                  | 所属阶段 | 描述                            |
 | :-------------------- | :------: | :------------------------------ |
 | **ConfigValidator**   |    M9    | 配置校验器 + E2xx 错误码        |
-| **Processor Refactor**|    M6    | **职责分离**: Processor 仅处理裁切图 + PIMPL 加固 |
-| **Adapter Enhancement**|   M7    | **图像合成**: 在 Adapter 实现色彩匹配与高斯遮罩平滑 |
 | **--system-check**    |   M10    | 系统自检 (CUDA/TensorRT/FFmpeg) |
 | **--validate**        |   M10    | 配置校验 Dry-Run 模式           |
 | **Graceful Shutdown** |   M10    | 信号处理 (SIGINT/SIGTERM)       |
