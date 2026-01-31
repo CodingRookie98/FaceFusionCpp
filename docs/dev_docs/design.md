@@ -43,7 +43,7 @@
       - [3.5.3 参数规格](#353-参数规格)
       - [3.5.4 `--system-check` 输出规范](#354---system-check-输出规范)
   - [4. 核心业务处理逻辑 (Core Business Logic)](#4-核心业务处理逻辑-core-business-logic)
-    - [4.1 处理器 (Processor)](#41-处理器-processor)
+    - [4.1 处理器与适配器 (Processor and Adapter)](#41-处理器与适配器-processor-and-adapter)
       - [4.1.1 换脸处理器 (Face Swapper)](#411-换脸处理器-face-swapper)
       - [4.1.2 人脸增强处理器 (Face Enhancer)](#412-人脸增强处理器-face-enhancer)
       - [4.1.3 表情还原处理器 (Expression Restorer)](#413-表情还原处理器-expression-restorer)
@@ -518,29 +518,36 @@ Result: 0 FAIL, 1 WARN
 
 ## 4. 核心业务处理逻辑 (Core Business Logic)
 
-### 4.1 处理器 (Processor)
+### 4.1 处理器与适配器 (Processor and Adapter)
 
-系统通过标准化的 **Processor** 接口实现具体的图像/视频处理能力。
-*   **C++20 Concepts**: 使用 `concept Processor` 在编译期约束插件接口（如 `process()`, `InputType`, `OutputType`），替代纯虚函数运行时多态，提升类型安全与内联优化机会。
+系统采用 **AI 核心与图像编排分离 (Core-Orchestration Decoupling)** 的设计原则。
+
+*   **人脸处理器 (Processor)**: 作为 **AI 推理核心**，其职责仅限于处理 **归一化后的裁切图像 (Aligned Crop)**。
+    *   **输入约束**: 仅接受符合模型规格（如 128x128）的裁切图及必要 Embedding 参数。
+    *   **单一职责**: 专注于神经网络推理算法。不感知原图尺寸，不负责几何变换 (Warp/Crop) 或复杂的融合逻辑。
+*   **流水线适配器 (Pipeline Adapter)**: 作为 **业务编排层**，负责维护图像的生命周期与空间变换。
+    *   **几何变换**: 负责根据 Landmarker 关键点从原图中裁切 (Warp/Crop) 人脸。
+    *   **后处理编排**: 调用处理器获取结果后，执行色彩匹配 (Color Matching)、遮罩处理 (Masking) 与贴回融合 (Paste back)。
+    *   **并行加速**: 在适配器层利用线程池并行处理多个人脸，提高整体吞吐量。
 
 #### 4.1.1 换脸处理器 (Face Swapper)
-*   **功能**: 将源人脸 (Source) 特征映射至目标图像 (Target) 的人脸区域。
-*   **算法逻辑**:
-    1.  **特征提取**: 提取 Source 序列所有帧的人脸特征，计算 **平均特征向量 (Average Embedding)** 以消除单帧质量波动。
-    2.  **特征映射**: 将平均特征注入 Target 人脸区域。
-    3.  **后处理 (Post-Processing)**:
-        *   **色彩匹配 (Color Matching)**: 统一光影色调。
-        *   **边缘融合 (Edge Blending)**: 羽化边缘，消除边界伪影。
+*   **核心功能**: 将源人脸 (Source) 特征映射至单张对齐过的目标人脸裁切图 (Target Crop)。
+*   **处理流 (由 Adapter 驱动)**:
+    1.  **裁切 (Adapter)**: 根据 Landmarker 计算仿射矩阵，获取对齐的 Target Crop。
+    2.  **推理 (Processor)**: 将 Source Embedding 注入 Target Crop，生成 Swapped Crop。
+    3.  **色彩匹配 (Adapter)**: 将 Swapped Crop 的色调转换至 Target Crop 空间。
+    4.  **贴回 (Adapter)**: 应用遮罩并将处理后的人脸融合回原始全尺寸帧。
 
 #### 4.1.2 人脸增强处理器 (Face Enhancer)
-*   **功能**: 对目标图像的人脸区域进行超分辨率重建。
-*   **输入约束**: 仅依赖 `target_paths`，忽略 `source_paths`。
-*   **后处理**: 应用边缘融合以确保增强区域与背景的自然过渡。
+*   **核心功能**: 对单张归一化人脸裁切图进行超分辨率重建。
+*   **处理流 (由 Adapter 驱动)**:
+    1.  **裁切与推理**: 同上。
+    2.  **融合**: 应用边缘融合 (Box/Region Blending) 并贴回。
 
 #### 4.1.3 表情还原处理器 (Expression Restorer)
-*   **功能**: 将当前帧 (Current Frame) 的人脸表情重置为原始目标帧 (Original Target Frame) 的表情。
-*   **逻辑**: `Result = Restore(CurrentFrame, OriginalTargetFrame.Expression)`
-*   **应用场景**: 消除换脸过程中的表情不协调，强制保留原始视频的目标人物神态与口型。
+*   **核心功能**: 修正换脸后人脸裁切图的表情指标，使其贴合原始裁切图的神态。
+*   **逻辑**: 处理单张裁切图序列，输出表情还原后的结果图。
+*   **处理流 (由 Adapter 驱动)**: 负责维护原始帧与当前帧的裁切映射，并进行时序编排。
 
 #### 4.1.4 全帧增强处理器 (Frame Enhancer)
 *   **功能**: 对全画幅进行超分辨率处理。
