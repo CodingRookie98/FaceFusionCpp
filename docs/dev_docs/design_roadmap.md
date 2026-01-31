@@ -299,13 +299,13 @@ graph TD
 - [x] **Task 6.3**: ProcessorFactory - 工厂模式实现
 - [x] **Task 6.4**: Queue Lifecycle - Shutdown 信号传递
 
-### 6.4 待优化项 (Industrial Hardening) 🔄
+### 6.4 待优化项 (Industrial Hardening) ✅
 
 > 详细任务文档: [C++_task_pipeline_adapters_hardening.md](./plan/domain/pipeline/C++_task_pipeline_adapters_hardening.md)
 
-- [ ] **Task 6.5**: 日志规范化 - 移除所有 `std::cerr`，统一使用 `Logger` 模块
-- [ ] **Task 6.6**: 性能埋点 - 为所有 Adapter 的 `process()` 注入 `ScopedTimer`
-- [ ] **Task 6.7**: 错误处理补全 - 填充空的 `catch` 块，记录 `[E7xx]` 错误码
+- [x] **Task 6.5**: 日志规范化 - 移除所有 `std::cerr`，统一使用 `Logger` 模块
+- [x] **Task 6.6**: 性能埋点 - 为所有 Adapter 的 `process()` 注入 `ScopedTimer`
+- [x] **Task 6.7**: 错误处理补全 - 填充空的 `catch` 块，记录 `[E7xx]` 错误码
 
 ---
 
