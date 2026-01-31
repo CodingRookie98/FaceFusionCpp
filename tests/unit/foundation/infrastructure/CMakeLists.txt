@@ -63,3 +63,11 @@ add_facefusion_test(
         LINK_LIBRARIES
         foundation_infrastructure
 )
+
+add_facefusion_test(
+        cuda_utils_tests
+        SOURCES
+        cuda_utils_tests.cpp
+        LINK_LIBRARIES
+        foundation_infrastructure
+)

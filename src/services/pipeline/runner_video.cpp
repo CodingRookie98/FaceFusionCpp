@@ -23,6 +23,7 @@ import foundation.media.ffmpeg;
 import foundation.infrastructure.logger;
 import foundation.infrastructure.scoped_timer;
 import foundation.infrastructure.crypto;
+import foundation.infrastructure.cuda_utils;
 import services.pipeline.checkpoint;
 import services.pipeline.metrics;
 import :types;
@@ -146,6 +147,20 @@ public:
 
         pipeline->start();
 
+        // Initial GPU memory sample
+        if (context.metrics_collector) {
+            if (auto mem_info = foundation::infrastructure::cuda::get_gpu_memory_info()) {
+                context.metrics_collector->record_gpu_memory(mem_info->used_mb);
+            }
+        }
+
+        // Initial GPU memory sample
+        if (context.metrics_collector) {
+            if (auto mem_info = foundation::infrastructure::cuda::get_gpu_memory_info()) {
+                context.metrics_collector->record_gpu_memory(mem_info->used_mb);
+            }
+        }
+
         std::shared_ptr<const std::vector<float>> shared_source_embedding;
         if (!context.source_embedding.empty()) {
             shared_source_embedding =
@@ -203,6 +218,9 @@ public:
         cv::Mat frame;
         int max_frames = task_config.resource.max_frames;
 
+        int sample_counter = 0;
+        const int SAMPLE_EVERY_N_FRAMES = 50;
+
         while (!cancelled && !writer_error) {
             if (max_frames > 0 && seq_id >= max_frames) break;
 
@@ -214,6 +232,14 @@ public:
             data.image = frame;
             data.source_embedding = shared_source_embedding;
             pipeline->push_frame(std::move(data));
+
+            // Periodic GPU memory sampling
+            if (context.metrics_collector && ++sample_counter >= SAMPLE_EVERY_N_FRAMES) {
+                sample_counter = 0;
+                if (auto mem_info = foundation::infrastructure::cuda::get_gpu_memory_info()) {
+                    context.metrics_collector->record_gpu_memory(mem_info->used_mb);
+                }
+            }
 
             // Save checkpoint periodically (every 30s)
             // Optimization: Only construct and call save every 100 frames to reduce per-frame
@@ -235,6 +261,13 @@ public:
         pipeline->push_frame(std::move(eos));
 
         if (writer_thread.joinable()) { writer_thread.join(); }
+
+        // Final GPU memory sample
+        if (context.metrics_collector) {
+            if (auto mem_info = foundation::infrastructure::cuda::get_gpu_memory_info()) {
+                context.metrics_collector->record_gpu_memory(mem_info->used_mb);
+            }
+        }
 
         pipeline->stop();
         writer.close();
@@ -363,6 +396,13 @@ private:
         }
         pipeline->start();
 
+        // Initial GPU memory sample
+        if (context.metrics_collector) {
+            if (auto mem_info = foundation::infrastructure::cuda::get_gpu_memory_info()) {
+                context.metrics_collector->record_gpu_memory(mem_info->used_mb);
+            }
+        }
+
         std::shared_ptr<const std::vector<float>> shared_source_embedding;
         if (!context.source_embedding.empty()) {
             shared_source_embedding =
@@ -411,6 +451,10 @@ private:
 
         long long seq_id = start_frame;
         cv::Mat frame;
+
+        int sample_counter = 0;
+        const int SAMPLE_EVERY_N_FRAMES = 50;
+
         while (!cancelled && !writer_error) {
             frame = reader.read_frame();
             if (frame.empty()) break;
@@ -419,6 +463,14 @@ private:
             data.image = frame;
             data.source_embedding = shared_source_embedding;
             pipeline->push_frame(std::move(data));
+
+            // Periodic GPU memory sampling
+            if (context.metrics_collector && ++sample_counter >= SAMPLE_EVERY_N_FRAMES) {
+                sample_counter = 0;
+                if (auto mem_info = foundation::infrastructure::cuda::get_gpu_memory_info()) {
+                    context.metrics_collector->record_gpu_memory(mem_info->used_mb);
+                }
+            }
 
             // Save checkpoint periodically (every 30s)
             if (ckpt_mgr) {
@@ -438,6 +490,14 @@ private:
         pipeline->push_frame(std::move(eos));
 
         if (writer_thread.joinable()) writer_thread.join();
+
+        // Final GPU memory sample
+        if (context.metrics_collector) {
+            if (auto mem_info = foundation::infrastructure::cuda::get_gpu_memory_info()) {
+                context.metrics_collector->record_gpu_memory(mem_info->used_mb);
+            }
+        }
+
         pipeline->stop();
         writer.close();
         reader.close();

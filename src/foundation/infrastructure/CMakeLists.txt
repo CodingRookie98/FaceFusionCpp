@@ -4,6 +4,15 @@ find_package(nlohmann_json REQUIRED)
 find_package(CURL REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(OpenSSL REQUIRED)
+message(STATUS "Checking for CUDA Toolkit...")
+find_package(CUDAToolkit)
+
+if(CUDAToolkit_FOUND)
+    set(CUDA_ENABLED ON)
+    message(STATUS "CUDA Toolkit found at ${CUDAToolkit_LIBRARY_DIR}, enabling GPU metrics sampling")
+else()
+    message(STATUS "CUDA Toolkit NOT found, GPU metrics sampling will be disabled")
+endif()
 # indicators is usually header-only, assuming it's available or we might need to find/add it.
 # For now assuming it is available via include path or fetchcontent in root.
 
@@ -29,6 +38,7 @@ target_sources(foundation_infrastructure
             scoped_timer.ixx
             process.ixx
             thread_pool.ixx
+            cuda_utils.ixx
     PRIVATE
         core_utils.cpp
         network.cpp
@@ -41,6 +51,7 @@ target_sources(foundation_infrastructure
         scoped_timer.cpp
         process.cpp
         thread_pool.cpp
+        cuda_utils.cpp
 )
 
 target_link_libraries(foundation_infrastructure
@@ -53,3 +64,8 @@ target_link_libraries(foundation_infrastructure
         OpenSSL::Crypto
         # indicators::indicators # If it has a target
 )
+
+if(CUDA_ENABLED)
+    target_compile_definitions(foundation_infrastructure PRIVATE CUDA_ENABLED)
+    target_link_libraries(foundation_infrastructure PRIVATE CUDA::cudart)
+endif()
