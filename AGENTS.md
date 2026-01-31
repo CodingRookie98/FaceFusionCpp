@@ -43,7 +43,7 @@ trigger: always_on
 ## 项目管理规范
 - **分支策略**：
   - **严禁直推主分支**。
-  - **流程**：基于主分支新建 -> 实现与测试 -> 验收通过 -> 合并主分支并删除。
+  - **流程**：基于主分支(master 或 {os_name}/dev)新建 -> 实现与测试 -> 验收通过 -> 合并主分支并删除。
   - **命名**：`feature/plan-{name}` 或 `fix/task-{name}`。
 - **文档管理** (`/docs/dev_docs/`)：
   - 计划：`plan/{name}/C++_plan_{title}.md` (使用 `@docs/dev_docs/C++_plan_template.md`)
@@ -56,7 +56,7 @@ trigger: always_on
   - 提交前必须通过 `build.py test`。
 
 ## ⛔ 绝对禁令 (Violations trigger STOP)
-- **直接在主分支开发**：检测到 `git status` 为 `windows/dev` 或 `master` 时修改代码。
+- **直接在主分支开发**：检测到 `git status` 为 `{os_name}/dev` 或 `master` 时修改代码。
 - **无文档即代码**：在未创建/更新 `docs/` 下对应文档前编写业务代码。
 - **无测试即提交**：在未运行 `build.py test` 并截图/贴出日志前进行 git commit（文档/注释等非代码类变更及 `docs/` 目录下内容除外）。
 - **幻觉引用**：引用不存在的文件路径（必须先 `ls` 或 `glob` 确认文件存在）。
