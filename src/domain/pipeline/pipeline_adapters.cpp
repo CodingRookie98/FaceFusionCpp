@@ -88,7 +88,8 @@ std::shared_ptr<IFrameProcessor> ExpressionAdapter::create(const void* ptr) {
         ctx->expression_generator_path.empty() ? "gen_path" : ctx->expression_generator_path;
 
     return std::shared_ptr<IFrameProcessor>(
-        new ExpressionAdapter(ctx->restorer, f_path, m_path, g_path, ctx->inference_options));
+        new ExpressionAdapter(ctx->restorer, f_path, m_path, g_path, ctx->inference_options,
+                              ctx->occluder, ctx->region_masker));
 }
 
 std::shared_ptr<IFrameProcessor> FrameEnhancerAdapter::create(const void* ptr) {

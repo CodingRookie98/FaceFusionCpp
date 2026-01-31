@@ -99,6 +99,7 @@ public:
      * data to be processed and updated
      */
     void process(FrameData& frame) override {
+        foundation::infrastructure::logger::ScopedTimer timer("SwapperAdapter::process");
         ensure_loaded();
         if (!m_swapper) return;
 
@@ -138,7 +139,8 @@ public:
                 frame.image = working_frame;
 
             } catch (const std::exception& e) {
-                // Log error
+                foundation::infrastructure::logger::Logger::get_instance()->error(
+                    std::format("[E701] SwapperAdapter::process failed: {}", e.what()));
             }
         }
     }
@@ -216,6 +218,7 @@ public:
      * @param frame The frame data to be processed and updated
      */
     void process(FrameData& frame) override {
+        foundation::infrastructure::logger::ScopedTimer timer("FaceEnhancerAdapter::process");
         ensure_loaded();
         if (!m_enhancer) return;
 
@@ -262,7 +265,8 @@ public:
                 // if 0, do nothing
 
             } catch (const std::exception& e) {
-                std::cerr << "FaceEnhancerAdapter: Error: " << e.what() << std::endl;
+                foundation::infrastructure::logger::Logger::get_instance()->error(
+                    std::format("FaceEnhancerAdapter::process failed: {}", e.what()));
             }
         }
     }
@@ -299,13 +303,16 @@ private:
     /**
      * @brief Internal constructor
      */
-    explicit ExpressionAdapter(std::shared_ptr<face::expression::IFaceExpressionRestorer> restorer,
-                               std::string feature_path, std::string motion_path,
-                               std::string generator_path,
-                               foundation::ai::inference_session::Options options) :
+    explicit ExpressionAdapter(
+        std::shared_ptr<face::expression::IFaceExpressionRestorer> restorer,
+        std::string feature_path, std::string motion_path, std::string generator_path,
+        foundation::ai::inference_session::Options options,
+        std::shared_ptr<face::masker::IFaceOccluder> occluder = nullptr,
+        std::shared_ptr<face::masker::IFaceRegionMasker> region_masker = nullptr) :
         m_restorer(std::move(restorer)), m_feature_path(std::move(feature_path)),
         m_motion_path(std::move(motion_path)), m_generator_path(std::move(generator_path)),
-        m_options(std::move(options)) {}
+        m_options(std::move(options)), m_occluder(std::move(occluder)),
+        m_region_masker(std::move(region_masker)) {}
 
 public:
     /**
@@ -336,6 +343,7 @@ public:
      * @param frame The frame data to be processed and updated
      */
     void process(FrameData& frame) override {
+        foundation::infrastructure::logger::ScopedTimer timer("ExpressionAdapter::process");
         ensure_loaded();
         if (!m_restorer) return;
 
@@ -377,8 +385,8 @@ public:
 
                     maskInput.options = opts;
                     maskInput.crop_frame = target_crop;
-                    maskInput.occluder = nullptr; // Not supported in ExpressionAdapter yet
-                    maskInput.region_masker = nullptr;
+                    maskInput.occluder = m_occluder.get();
+                    maskInput.region_masker = m_region_masker.get();
 
                     cv::Mat composedMask = face::masker::MaskCompositor::compose(maskInput);
 
@@ -403,6 +411,9 @@ private:
     foundation::ai::inference_session::Options m_options;
     bool m_loaded = false;
     std::mutex m_load_mutex;
+
+    std::shared_ptr<face::masker::IFaceOccluder> m_occluder;
+    std::shared_ptr<face::masker::IFaceRegionMasker> m_region_masker;
 
     cv::Size m_size{512, 512};
     domain::face::helper::WarpTemplateType m_template_type =
@@ -451,6 +462,7 @@ public:
      * @param frame The frame data to be processed and updated
      */
     void process(FrameData& frame) override {
+        foundation::infrastructure::logger::ScopedTimer timer("FrameEnhancerAdapter::process");
         ensure_loaded();
         if (!m_enhancer) return;
 
