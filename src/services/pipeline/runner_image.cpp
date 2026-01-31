@@ -45,7 +45,8 @@ public:
     static config::Result<void, config::ConfigError> ProcessImage(
         const std::string& target_path, const config::TaskConfig& task_config,
         ProgressCallback progress_callback, const ProcessorContext& context,
-        std::function<void(std::shared_ptr<Pipeline>, const config::TaskConfig&, ProcessorContext&)>
+        std::function<config::Result<void, config::ConfigError>(
+            std::shared_ptr<Pipeline>, const config::TaskConfig&, ProcessorContext&)>
             add_processors_func) {
         using foundation::infrastructure::ScopedTimer;
 
@@ -65,7 +66,11 @@ public:
 
         auto pipeline = std::make_shared<Pipeline>(pipeline_config);
         ProcessorContext mutable_context = context;
-        add_processors_func(pipeline, task_config, mutable_context);
+        auto add_result = add_processors_func(pipeline, task_config, mutable_context);
+        if (!add_result) {
+            timer.set_result("error:add_processors_failed");
+            return add_result;
+        }
         pipeline->start();
 
         std::shared_ptr<const std::vector<float>> shared_source_embedding;

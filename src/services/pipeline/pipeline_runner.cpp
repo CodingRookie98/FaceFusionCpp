@@ -226,7 +226,7 @@ private:
 
         auto add_processors = [this](std::shared_ptr<Pipeline> p, const config::TaskConfig& c,
                                      ProcessorContext& ctx) {
-            this->AddProcessorsToPipeline(p, c, ctx);
+            return this->AddProcessorsToPipeline(p, c, ctx);
         };
 
         if (is_video) {
@@ -265,8 +265,9 @@ private:
         return config::Result<std::vector<float>, config::ConfigError>::Ok(faces[0].embedding());
     }
 
-    void AddProcessorsToPipeline(std::shared_ptr<Pipeline> pipeline,
-                                 const config::TaskConfig& task_config, ProcessorContext& context) {
+    config::Result<void, config::ConfigError> AddProcessorsToPipeline(
+        std::shared_ptr<Pipeline> pipeline, const config::TaskConfig& task_config,
+        ProcessorContext& context) {
         services::pipeline::processors::FaceAnalysisRequirements reqs;
         bool needs_face_detection = false;
 
@@ -293,8 +294,11 @@ private:
 
                     auto model_path = m_model_repo->ensure_model(model_name);
                     if (model_path.empty()) {
-                        Logger::get_instance()->error("Failed to find or download model: "
-                                                      + model_name);
+                        // [E302] 模型缺失，立即中止 (design.md Section 5.3.1)
+                        return config::Result<void, config::ConfigError>::Err(
+                            config::ConfigError(config::ErrorCode::E302_ModelFileMissing,
+                                                std::format("Model file not found: {}", model_name),
+                                                "pipeline.step[face_swapper].model"));
                     } else {
                         domain_ctx.swapper->load_model(model_path, context.inference_options);
                         domain_ctx.swapper_model_path = model_path;
@@ -319,7 +323,13 @@ private:
                         domain::face::enhancer::FaceEnhancerFactory::create(type);
 
                     auto model_path = m_model_repo->ensure_model(model_name);
-                    if (!model_path.empty()) {
+                    if (model_path.empty()) {
+                        // [E302] 模型缺失，立即中止
+                        return config::Result<void, config::ConfigError>::Err(
+                            config::ConfigError(config::ErrorCode::E302_ModelFileMissing,
+                                                std::format("Model file not found: {}", model_name),
+                                                "pipeline.step[face_enhancer].model"));
+                    } else {
                         domain_ctx.face_enhancer->load_model(model_path, context.inference_options);
                         domain_ctx.enhancer_model_path = model_path;
                     }
@@ -343,8 +353,11 @@ private:
                     auto gen_path = m_model_repo->ensure_model("live_portrait_generator");
 
                     if (feature_path.empty() || motion_path.empty() || gen_path.empty()) {
-                        Logger::get_instance()->error(
-                            "Failed to find or download one of LivePortrait models");
+                        // [E302] 模型缺失，立即中止
+                        return config::Result<void, config::ConfigError>::Err(config::ConfigError(
+                            config::ErrorCode::E302_ModelFileMissing,
+                            "Failed to find or download one of LivePortrait models",
+                            "pipeline.step[expression_restorer].model"));
                     } else {
                         domain_ctx.restorer->load_model(feature_path, motion_path, gen_path,
                                                         context.inference_options);
@@ -364,8 +377,11 @@ private:
                     // Eagerly resolve model path
                     auto model_path = m_model_repo->ensure_model(model_name);
                     if (model_path.empty()) {
-                        Logger::get_instance()->error("Failed to find or download model: "
-                                                      + model_name);
+                        // [E302] 模型缺失，立即中止
+                        return config::Result<void, config::ConfigError>::Err(
+                            config::ConfigError(config::ErrorCode::E302_ModelFileMissing,
+                                                std::format("Model file not found: {}", model_name),
+                                                "pipeline.step[frame_enhancer].model"));
                     } else {
                         domain_ctx.frame_enhancer_model_path = model_path;
                     }
@@ -413,6 +429,8 @@ private:
                 Logger::get_instance()->warn("Failed to create processor for step: " + step.step);
             }
         }
+
+        return config::Result<void, config::ConfigError>::Ok();
     }
 };
 

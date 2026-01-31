@@ -53,7 +53,8 @@ public:
     static config::Result<void, config::ConfigError> ProcessVideo(
         const std::string& target_path, const config::TaskConfig& task_config,
         ProgressCallback progress_callback, const ProcessorContext& context,
-        std::function<void(std::shared_ptr<Pipeline>, const config::TaskConfig&, ProcessorContext&)>
+        std::function<config::Result<void, config::ConfigError>(
+            std::shared_ptr<Pipeline>, const config::TaskConfig&, ProcessorContext&)>
             add_processors_func,
         std::atomic<bool>& cancelled) {
         using namespace foundation::media::ffmpeg;
@@ -137,7 +138,11 @@ public:
 
         // Mutable context for processor addition (if needed)
         ProcessorContext mutable_context = context;
-        add_processors_func(pipeline, task_config, mutable_context);
+        auto add_result = add_processors_func(pipeline, task_config, mutable_context);
+        if (!add_result) {
+            timer.set_result("error:add_processors_failed");
+            return add_result;
+        }
 
         pipeline->start();
 
@@ -278,7 +283,8 @@ private:
     static config::Result<void, config::ConfigError> ProcessVideoStrict(
         const std::string& target_path, const config::TaskConfig& task_config,
         ProgressCallback progress_callback, const ProcessorContext& context,
-        std::function<void(std::shared_ptr<Pipeline>, const config::TaskConfig&, ProcessorContext&)>
+        std::function<config::Result<void, config::ConfigError>(
+            std::shared_ptr<Pipeline>, const config::TaskConfig&, ProcessorContext&)>
             add_processors_func,
         std::atomic<bool>& cancelled) {
         using namespace foundation::media::ffmpeg;
@@ -350,7 +356,11 @@ private:
 
         auto pipeline = std::make_shared<Pipeline>(pipeline_config);
         ProcessorContext mutable_context = context;
-        add_processors_func(pipeline, task_config, mutable_context);
+        auto add_result = add_processors_func(pipeline, task_config, mutable_context);
+        if (!add_result) {
+            timer.set_result("error:add_processors_failed");
+            return add_result;
+        }
         pipeline->start();
 
         std::shared_ptr<const std::vector<float>> shared_source_embedding;

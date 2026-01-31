@@ -64,7 +64,15 @@ public:
         auto faces = m_analyser->get_many_faces(
             frame.image, domain::face::analyser::FaceAnalysisType::Detection);
 
-        if (faces.empty()) { return; }
+        if (faces.empty()) {
+            // [E403] 必须记录 WARN 日志 (design.md Section 5.3.2)
+            foundation::infrastructure::logger::Logger::get_instance()->warn(std::format(
+                "[E403] No face detected in frame {}, passing through", frame.sequence_id));
+
+            // 记录 metrics: 跳过帧
+            if (m_metrics) { m_metrics->record_frame_skipped(); }
+            return; // 透传帧，不修改
+        }
 
         // 1. Prepare Swap Data
         if (m_reqs.need_swap_data) {
