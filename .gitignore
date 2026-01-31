@@ -91,3 +91,6 @@ Thumbs.db
 
 # agent
 .agents/
+
+# Worktrees
+.worktrees/
