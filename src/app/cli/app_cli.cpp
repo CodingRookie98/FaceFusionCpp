@@ -8,6 +8,9 @@ module;
 #include <memory>
 #include <indicators/progress_bar.hpp>
 #include <CLI/CLI.hpp>
+#include <format>
+#include <filesystem>
+#include <sstream>
 
 module app.cli;
 
@@ -15,32 +18,219 @@ import config.parser;
 import services.pipeline.runner;
 import services.pipeline.shutdown;
 import foundation.infrastructure.logger;
+import foundation.infrastructure.core_utils;
+import app.cli.system_check;
 
 namespace app::cli {
 
-void App::run_pipeline(const std::string& config_path) {
+namespace {
+config::LogLevel parse_log_level(const std::string& level) {
+    auto r = config::ParseLogLevel(level);
+    return r.is_ok() ? r.value() : config::LogLevel::Info;
+}
+} // namespace
+
+int App::run(int argc, char** argv) {
+    CLI::App app{"FaceFusionCpp - Face processing pipeline"};
+
+#ifdef _WIN32
+    argv = app.ensure_utf8(argv);
+#endif
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 全局选项 (Global Options)
+    // ─────────────────────────────────────────────────────────────────────────
+    std::string config_path;
+    std::string app_config_path = "config/app_config.yaml"; // 默认路径
+    std::string log_level;
+    bool show_version = false;
+    bool validate_only = false;
+    bool system_check = false;
+    bool json_output = false;
+
+    app.add_option("-c,--config", config_path, "Path to task configuration file");
+    app.add_option("--app-config", app_config_path, "Path to application config");
+    app.add_option("--log-level", log_level, "Override log level (trace/debug/info/warn/error)")
+        ->check(CLI::IsMember({"trace", "debug", "info", "warn", "error"}));
+    app.add_flag("-v,--version", show_version, "Show version information");
+    app.add_flag("--validate", validate_only, "Validate config without execution");
+    app.add_flag("--system-check", system_check, "Run system environment check");
+    app.add_flag("--json", json_output, "Output in JSON format (with --system-check)");
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 快捷模式选项 (Quick Mode Options)
+    // ─────────────────────────────────────────────────────────────────────────
+    std::vector<std::string> source_paths;
+    std::vector<std::string> target_paths;
+    std::string output_path;
+    std::string processors_str;
+
+    app.add_option("-s,--source", source_paths, "Source face image(s)")->excludes("--config");
+    app.add_option("-t,--target", target_paths, "Target image/video path(s)")->excludes("--config");
+    app.add_option("-o,--output", output_path, "Output directory or file path")
+        ->excludes("--config");
+    app.add_option("--processors", processors_str,
+                   "Comma-separated processor list "
+                   "(face_swapper,face_enhancer,expression_restorer,frame_enhancer)")
+        ->excludes("--config");
+
+    try {
+        app.parse(argc, argv);
+    } catch (const CLI::ParseError& e) { return app.exit(e); }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 处理流程
+    // ─────────────────────────────────────────────────────────────────────────
+
+    if (show_version) {
+        print_version();
+        return 0;
+    }
+
+    if (system_check) { return run_system_check(json_output); }
+
+    // 加载 AppConfig
+    auto app_config = load_app_config(app_config_path, log_level);
+    if (!app_config) {
+        std::cerr << "Failed to load app config: " << app_config_path << std::endl;
+        return 1;
+    }
+
+    if (validate_only) {
+        if (config_path.empty()) {
+            std::cerr << "Error: --validate requires --config" << std::endl;
+            return 1;
+        }
+        return run_validate(config_path, *app_config);
+    }
+
+    if (!config_path.empty()) { return run_pipeline(config_path, *app_config); }
+
+    if (!source_paths.empty() && !target_paths.empty()) {
+        return run_quick_mode(source_paths, target_paths, output_path, processors_str, *app_config);
+    }
+
+    std::cout << app.help() << std::endl;
+    return 0;
+}
+
+int App::run_system_check(bool json_output) {
+    auto report = run_all_checks();
+    if (json_output) {
+        std::cout << format_json(report) << std::endl;
+    } else {
+        std::cout << format_text(report) << std::endl;
+    }
+    return report.fail_count > 0 ? 1 : 0;
+}
+
+int App::run_validate(const std::string& config_path, const config::AppConfig& app_config) {
+    using namespace config;
+    using foundation::infrastructure::logger::Logger;
+
+    Logger::get_instance()->info("Validating configuration: " + config_path);
+
+    // 1. 加载配置
+    auto config_result = LoadTaskConfig(config_path);
+    if (config_result.is_err()) {
+        auto err = config_result.error();
+        Logger::get_instance()->error(err.formatted());
+        std::cerr << err.formatted() << std::endl;
+        return static_cast<int>(err.code);
+    }
+
+    // 2. 运行校验器
+    ConfigValidator validator;
+    auto errors = validator.validate(config_result.value());
+
+    if (errors.empty()) {
+        std::cout << "Configuration valid: " << config_path << std::endl;
+        return 0;
+    }
+
+    // 3. 输出所有错误
+    std::cout << "Validation failed with " << errors.size() << " error(s):\n";
+    for (const auto& err : errors) { std::cout << err.to_config_error().formatted() << "\n"; }
+
+    return static_cast<int>(errors[0].code);
+}
+
+int App::run_pipeline(const std::string& config_path, const config::AppConfig& app_config) {
+    using namespace config;
+    using foundation::infrastructure::logger::Logger;
+
+    // 1. Load Task Config
+    auto config_result = LoadTaskConfig(config_path);
+    if (config_result.is_err()) {
+        Logger::get_instance()->error("Config Error: " + config_result.error().message);
+        return static_cast<int>(config_result.error().code);
+    }
+    auto task_config = config_result.value();
+
+    return run_pipeline_internal(task_config, app_config);
+}
+
+int App::run_quick_mode(const std::vector<std::string>& source_paths,
+                        const std::vector<std::string>& target_paths,
+                        const std::string& output_path, const std::string& processors_str,
+                        const config::AppConfig& app_config) {
+    using namespace config;
+
+    // 1. 构建 TaskConfig
+    TaskConfig task_config;
+    task_config.task_info.id =
+        "quick_" + foundation::infrastructure::core_utils::random::generate_uuid();
+    task_config.io.source_paths = source_paths;
+    task_config.io.target_paths = target_paths;
+
+    if (!output_path.empty()) {
+        task_config.io.output.path = output_path;
+    } else {
+        // 默认输出目录
+        task_config.io.output.path = "./output/";
+    }
+
+    // 2. 解析 processors
+    std::vector<std::string> processors;
+    if (processors_str.empty()) {
+        processors = {"face_swapper"}; // 默认处理器
+    } else {
+        // Split by comma
+        std::stringstream ss(processors_str);
+        std::string item;
+        while (std::getline(ss, item, ',')) {
+            // Trim whitespace
+            item.erase(0, item.find_first_not_of(" \t"));
+            item.erase(item.find_last_not_of(" \t") + 1);
+            if (!item.empty()) { processors.push_back(item); }
+        }
+    }
+
+    // 3. 添加 pipeline steps
+    for (const auto& proc : processors) {
+        PipelineStep step;
+        step.step = proc;
+        step.enabled = true;
+        // 使用默认参数 (在 run_pipeline_internal 中会由 runner 处理或在 TaskConfig 中保留默认)
+        task_config.pipeline.push_back(step);
+    }
+
+    // 4. 运行
+    return run_pipeline_internal(task_config, app_config);
+}
+
+int App::run_pipeline_internal(const config::TaskConfig& task_config,
+                               const config::AppConfig& app_config) {
     using namespace config;
     using namespace services::pipeline;
     using foundation::infrastructure::logger::Logger;
 
     auto logger = Logger::get_instance();
 
-    // 1. Load Config
-    auto config_result = LoadTaskConfig(config_path);
-    if (config_result.is_err()) {
-        logger->error("Config Error: " + config_result.error().message);
-        return;
-    }
-    auto task_config = config_result.value();
-
-    // 2. Setup AppConfig (Default for now, later load from app_config.yaml)
-    AppConfig app_config;
-    app_config.models.path = "assets/models"; // Default
-
-    // 3. Create Runner
+    // 1. Create Runner
     std::shared_ptr<PipelineRunner> runner = CreatePipelineRunner(app_config);
 
-    // Install shutdown handler with proper cleanup
+    // 2. Install shutdown handler
     ShutdownHandler::install(
         [runner]() {
             runner->Cancel();
@@ -53,7 +243,7 @@ void App::run_pipeline(const std::string& config_path) {
             std::exit(1);
         });
 
-    // Setup Progress Bar
+    // 3. Setup Progress Bar
     indicators::ProgressBar bar{indicators::option::BarWidth{50},
                                 indicators::option::Start{"["},
                                 indicators::option::Fill{"="},
@@ -76,59 +266,53 @@ void App::run_pipeline(const std::string& config_path) {
 
         bar.set_progress(progress);
 
-        std::string postfix = "Frame: " + std::to_string(p.current_frame) + "/"
-                            + std::to_string(p.total_frames) + " (" + std::to_string((int)p.fps)
-                            + " FPS)";
+        std::string postfix =
+            std::format("Frame: {}/{} ({:.1f} FPS)", p.current_frame, p.total_frames, p.fps);
         bar.set_option(indicators::option::PostfixText{postfix});
     });
 
-    // Uninstall handler after completion
+    // Uninstall handler
     ShutdownHandler::uninstall();
 
     if (ShutdownHandler::is_shutdown_requested()) {
         logger->warn("Task cancelled by user.");
+        return 1;
     } else if (result.is_err()) {
         logger->error("Pipeline failed: " + result.error().message);
+        return static_cast<int>(result.error().code);
     } else {
         bar.set_progress(100.0f);
         bar.set_option(indicators::option::PostfixText{"Completed"});
         logger->info("Task completed successfully.");
+        return 0;
     }
 }
 
-int App::run(int argc, char** argv) {
+std::optional<config::AppConfig> App::load_app_config(const std::string& path,
+                                                      const std::string& log_level_override) {
+    using namespace config;
     using foundation::infrastructure::logger::Logger;
-    auto logger = Logger::get_instance();
 
-    CLI::App app{"FaceFusionCpp"};
-// Ensure UTF-8 support for arguments
-#ifdef _WIN32
-    argv = app.ensure_utf8(argv);
-#endif
+    AppConfig config;
 
-    std::string config_path;
-    bool show_version = false;
-
-    app.add_option("-c,--config", config_path, "Path to task configuration file");
-    app.add_flag("-v,--version", show_version, "Show version information");
-
-    try {
-        app.parse(argc, argv);
-    } catch (const CLI::ParseError& e) { return app.exit(e); }
-
-    if (show_version) {
-        print_version();
-        return 0;
+    // 尝试从文件加载
+    if (std::filesystem::exists(path)) {
+        auto result = LoadAppConfig(path);
+        if (result.is_ok()) {
+            config = std::move(result).value();
+        } else {
+            Logger::get_instance()->warn("Failed to load app config, using defaults: "
+                                         + result.error().message);
+        }
     }
 
-    if (!config_path.empty()) {
-        run_pipeline(config_path);
-        return 0;
-    }
+    // 应用日志级别覆盖
+    if (!log_level_override.empty()) { config.logging.level = parse_log_level(log_level_override); }
 
-    // Show help if no action taken
-    std::cout << app.help() << std::endl;
-    return 0;
+    // 初始化 Logger
+    Logger::configure(config.logging);
+
+    return config;
 }
 
 void App::print_version() {

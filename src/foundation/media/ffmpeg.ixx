@@ -84,6 +84,11 @@ export bool compose_video_from_images(const std::string& inputImagePattern,
                                       const VideoParams& videoParams);
 
 /**
+ * @brief Get FFmpeg library version string
+ */
+export std::string get_version_string();
+
+/**
  * @brief Stream-based video decoder (Reader)
  */
 export class VideoReader {

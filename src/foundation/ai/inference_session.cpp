@@ -61,6 +61,18 @@ std::unordered_set<ExecutionProvider> get_best_available_providers() {
     return result;
 }
 
+RuntimeInfo get_runtime_info() {
+    RuntimeInfo info;
+    info.version = Ort::GetApi().GetVersionString();
+
+    auto providers = get_best_available_providers();
+    if (providers.contains(ExecutionProvider::TensorRT)) info.provider = "TensorRT";
+    else if (providers.contains(ExecutionProvider::CUDA)) info.provider = "CUDA";
+    else info.provider = "CPU";
+
+    return info;
+}
+
 struct InferenceSession::Impl {
     std::unique_ptr<Ort::Session> m_ort_session;
     Ort::SessionOptions m_session_options;

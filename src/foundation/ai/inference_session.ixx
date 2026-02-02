@@ -37,6 +37,19 @@ export enum class ExecutionProvider {
 export std::unordered_set<ExecutionProvider> get_best_available_providers();
 
 /**
+ * @brief Runtime information for ONNX Runtime
+ */
+export struct RuntimeInfo {
+    std::string version;
+    std::string provider;
+};
+
+/**
+ * @brief Get ONNX Runtime version and best provider
+ */
+export RuntimeInfo get_runtime_info();
+
+/**
  * @brief Configuration options for an InferenceSession
  */
 export struct Options {
