@@ -349,7 +349,7 @@ graph TD
 | **TaskConfig**      | 任务配置解析 (`task_config.ixx`)  |    ✅     |
 | **ConfigTypes**     | 配置类型定义 (`config_types.ixx`) |    ✅     |
 | **ConfigParser**    | YAML 配置解析器 (`parser/`)       |    ✅     |
-| **ConfigValidator** | 配置校验器                        | ⏳ 未实现 |
+| **ConfigValidator** | 配置校验器                        | 🔄 部分完成 |
 | **ConfigMerger**    | 配置级联合并                      | ⏳ 未实现 |
 
 ### 8.3 任务分解
@@ -362,15 +362,28 @@ graph TD
   - [x] FaceSwapperParams, FaceEnhancerParams, ExpressionRestorerParams, FrameEnhancerParams
   - [x] FaceAnalysisConfig (Detector/Landmarker/Recognizer/Masker)
   - [x] PipelineStep 定义
-- [ ] **Task 8.3**: ConfigValidator - 错误报告格式 (E201/E202/E203) - *未实现*
+- [ ] **Task 8.3**: ConfigValidator 增强 - *部分实现*
+  > 详细任务文档: [C++_task_M9_config_validator_enhancement.md](./plan/config/C++_task_M9_config_validator_enhancement.md)
+  - [x] 基础校验框架 (`ConfigValidator` 类)
+  - [x] AppConfig 版本校验 (`config_version`)
+  - [x] 路径存在性校验 (`validate_path_exists`)
+  - [x] 参数范围校验 (`validate_range`)
+  - [ ] TaskConfig 版本校验
+  - [ ] face_swapper 参数校验
+  - [ ] face_analysis 参数校验
 - [ ] **Task 8.4**: ConfigMerger - 级联优先级 (Task > User > Default) - *未实现*
-- [ ] **Task 8.5**: `--validate` Dry-Run 模式 - *未实现*
+  > 详细任务文档: [C++_task_M9_config_merger_implementation.md](./plan/config/C++_task_M9_config_merger_implementation.md)
+  - [ ] `DefaultTaskSettings` 结构定义
+  - [ ] `default_task_settings` YAML 解析
+  - [ ] `MergeConfigs()` 合并逻辑
+  - [ ] CLI 集成调用
+- [x] **Task 8.5**: `--validate` Dry-Run 模式 - *已实现*
 
 > [!NOTE]
-> 配置解析基础已完成，但尚未实现设计文档中定义的：
-> - 错误报告格式 (YAML Path 定位)
-> - `config_version` 版本校验
-> - 配置级联合并机制
+> 配置解析基础已完成，ConfigValidator 基础框架已实现，但仍需补充：
+> - TaskConfig 版本校验
+> - face_swapper/face_analysis 参数校验
+> - 配置级联合并机制 (ConfigMerger)
 
 ---
 
@@ -388,26 +401,38 @@ graph TD
 | `-c/--config` 参数  |   ✅   | 载入任务配置文件                 |
 | `-v/--version` 参数 |   ✅   | 显示版本信息 (`print_version()`) |
 | `run_pipeline()`    |   ✅   | 执行流水线                       |
+| `-s/-t/-o` 快捷模式 |   ✅   | 快捷参数已实现                   |
+| `--processors`      |   ✅   | 处理器选择已实现                 |
+| `--system-check`    |  🔄   | 基础已实现，需完善               |
+| `--validate`        |   ✅   | 配置校验模式已实现               |
+| `--log-level`       |   ✅   | 日志级别覆盖已实现               |
+| 信号处理            |   ✅   | `ShutdownHandler` 已实现         |
 
 ### 9.3 任务分解
 
 - [x] **Task 9.1**: 参数解析基础 (`-c`)
 - [x] **Task 9.2**: 版本信息 (`-v`)
-- [ ] **Task 9.3**: `-h/--help` 帮助信息 - *待增强*
-- [ ] **Task 9.4**: `-s/-t/-o` 快捷模式参数 - *未实现*
-- [ ] **Task 9.5**: `--processors` 处理器选择 - *未实现*
-- [ ] **Task 9.6**: `--system-check` 系统自检 (人类可读 + JSON) - *未实现*
-- [ ] **Task 9.7**: `--validate` 配置校验模式 - *未实现*
-- [ ] **Task 9.8**: `--log-level` 日志级别覆盖 - *未实现*
-- [ ] **Task 9.9**: 信号处理 (Graceful Shutdown) - *未实现*
+- [x] **Task 9.3**: `-h/--help` 帮助信息 (CLI11 自动生成)
+- [x] **Task 9.4**: `-s/-t/-o` 快捷模式参数
+- [x] **Task 9.5**: `--processors` 处理器选择
+- [ ] **Task 9.6**: `--system-check` 系统自检完善 - *部分实现*
+  > 详细任务文档: [C++_task_M9_system_check_completion.md](./plan/config/C++_task_M9_system_check_completion.md)
+  - [x] CUDA Driver 版本检查
+  - [x] VRAM 可用量检查
+  - [x] FFmpeg 库版本检查
+  - [x] ONNX Runtime 版本检查
+  - [ ] cuDNN 版本检查
+  - [ ] TensorRT 版本检查
+  - [ ] Model Repository 检查
+- [x] **Task 9.7**: `--validate` 配置校验模式
+- [x] **Task 9.8**: `--log-level` 日志级别覆盖
+- [x] **Task 9.9**: 信号处理 (Graceful Shutdown)
 - [ ] **Task 9.10**: 启动 Banner (版本/构建时间) - *待增强*
 
-> [!IMPORTANT]
-> CLI 当前仅实现最基础功能，需补充：
-> - 设计文档中定义的全部参数
-> - `--system-check` 系统自检功能
-> - `--validate` 配置校验
-> - 信号处理与优雅停机
+> [!NOTE]
+> CLI 核心功能已基本完成，仅剩以下待完善项：
+> - `--system-check` 需添加 cuDNN/TensorRT 版本和模型仓库检查
+> - 启动 Banner 需从编译宏读取版本信息
 
 ---
 
@@ -437,20 +462,17 @@ graph TD
 
 ### 高优先级 (P0) - 核心功能缺失
 
-| 任务                  | 所属阶段 | 描述                            |
-| :-------------------- | :------: | :------------------------------ |
-| **ConfigValidator**   |    M9    | 配置校验器 + E2xx 错误码        |
-| **--system-check**    |   M10    | 系统自检 (CUDA/TensorRT/FFmpeg) |
-| **--validate**        |   M10    | 配置校验 Dry-Run 模式           |
-| **Graceful Shutdown** |   M10    | 信号处理 (SIGINT/SIGTERM)       |
+| 任务                         | 所属阶段 | 描述                                       | 任务文档                                                                 |
+| :--------------------------- | :------: | :----------------------------------------- | :----------------------------------------------------------------------- |
+| **ConfigValidator 增强**     |    M9    | TaskConfig 版本校验 + face_swapper 参数    | [C++_task_M9_config_validator_enhancement.md](./plan/config/C++_task_M9_config_validator_enhancement.md) |
+| **ConfigMerger**             |    M9    | 配置级联优先级 (Task > User > Default)     | [C++_task_M9_config_merger_implementation.md](./plan/config/C++_task_M9_config_merger_implementation.md) |
 
 ### 中优先级 (P1) - 设计规范完整性
 
-| 任务                | 所属阶段 | 描述                          |
-| :------------------ | :------: | :---------------------------- |
-| **SessionPool LRU** |    M3    | Session 缓存 + TTL 管理       |
-| **CLI 快捷模式**    |   M10    | `-s/-t/-o` 参数               |
-| **ConfigMerger**    |    M9    | 配置级联优先级                |
+| 任务                   | 所属阶段 | 描述                               | 任务文档                                                               |
+| :--------------------- | :------: | :--------------------------------- | :--------------------------------------------------------------------- |
+| **SystemCheck 完善**   |   M10    | cuDNN/TensorRT 版本 + 模型仓库检查 | [C++_task_M9_system_check_completion.md](./plan/config/C++_task_M9_system_check_completion.md) |
+| **SessionPool LRU**    |    M3    | Session 缓存 + TTL 管理            | [C++_task_session_pool_lru_ttl.md](./plan/platform/C++_task_session_pool_lru_ttl.md) |
 
 ### 低优先级 (P2) - 增强功能
 
