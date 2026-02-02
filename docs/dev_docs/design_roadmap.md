@@ -406,7 +406,7 @@ graph TD
 | `run_pipeline()`    |   ✅   | 执行流水线                       |
 | `-s/-t/-o` 快捷模式 |   ✅   | 快捷参数已实现                   |
 | `--processors`      |   ✅   | 处理器选择已实现                 |
-| `--system-check`    |  🔄   | 基础已实现，需完善               |
+| `--system-check`    |   ✅   | 系统自检完整实现                 |
 | `--validate`        |   ✅   | 配置校验模式已实现               |
 | `--log-level`       |   ✅   | 日志级别覆盖已实现               |
 | 信号处理            |   ✅   | `ShutdownHandler` 已实现         |
@@ -418,15 +418,15 @@ graph TD
 - [x] **Task 9.3**: `-h/--help` 帮助信息 (CLI11 自动生成)
 - [x] **Task 9.4**: `-s/-t/-o` 快捷模式参数
 - [x] **Task 9.5**: `--processors` 处理器选择
-- [ ] **Task 9.6**: `--system-check` 系统自检完善 - *部分实现*
+- [x] **Task 9.6**: `--system-check` 系统自检完善 - *已完成*
   > 详细任务文档: [C++_task_M9_system_check_completion.md](./plan/config/C++_task_M9_system_check_completion.md)
   - [x] CUDA Driver 版本检查
   - [x] VRAM 可用量检查
   - [x] FFmpeg 库版本检查
   - [x] ONNX Runtime 版本检查
-  - [ ] cuDNN 版本检查
-  - [ ] TensorRT 版本检查
-  - [ ] Model Repository 检查
+  - [x] cuDNN 版本检查
+  - [x] TensorRT 版本检查
+  - [x] Model Repository 检查
 - [x] **Task 9.7**: `--validate` 配置校验模式
 - [x] **Task 9.8**: `--log-level` 日志级别覆盖
 - [x] **Task 9.9**: 信号处理 (Graceful Shutdown)
@@ -434,7 +434,6 @@ graph TD
 
 > [!NOTE]
 > CLI 核心功能已基本完成，仅剩以下待完善项：
-> - `--system-check` 需添加 cuDNN/TensorRT 版本和模型仓库检查
 > - 启动 Banner 需从编译宏读取版本信息
 
 ---
@@ -474,7 +473,7 @@ graph TD
 
 | 任务                   | 所属阶段 | 描述                               | 任务文档                                                               |
 | :--------------------- | :------: | :--------------------------------- | :--------------------------------------------------------------------- |
-| **SystemCheck 完善**   |   M10    | cuDNN/TensorRT 版本 + 模型仓库检查 | [C++_task_M9_system_check_completion.md](./plan/config/C++_task_M9_system_check_completion.md) |
+| ~~**SystemCheck 完善**~~   |   M10    | ✅ 已完成 | [C++_task_M9_system_check_completion.md](./plan/config/C++_task_M9_system_check_completion.md) |
 | **SessionPool LRU**    |    M3    | Session 缓存 + TTL 管理 (对应 design.md 3.1 engine_cache) | [C++_task_session_pool_lru_ttl.md](./plan/platform/C++_task_session_pool_lru_ttl.md) |
 
 ### 低优先级 (P2) - 增强功能
