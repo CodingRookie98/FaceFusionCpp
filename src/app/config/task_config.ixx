@@ -35,12 +35,12 @@ struct TaskInfo {
  * @brief Output settings for the processed media
  */
 struct OutputConfig {
-    std::string path;                      ///< Target directory (absolute path)
-    std::string prefix = "result_";        ///< Prefix for result filenames
-    std::string suffix;                    ///< Suffix for result filenames
-    std::string image_format = "png";      ///< Format for image results (png, jpg, bmp)
-    std::string video_encoder = "libx264"; ///< FFmpeg video encoder name
-    int video_quality = 80;                ///< Video encoding quality (0-100)
+    std::string path;          ///< Target directory (absolute path)
+    std::string prefix;        ///< Prefix for result filenames
+    std::string suffix;        ///< Suffix for result filenames
+    std::string image_format;  ///< Format for image results (png, jpg, bmp)
+    std::string video_encoder; ///< FFmpeg video encoder name
+    int video_quality = 0;     ///< Video encoding quality (0-100)
     ConflictPolicy conflict_policy = ConflictPolicy::Error; ///< Policy for existing files
     AudioPolicy audio_policy = AudioPolicy::Copy;           ///< Policy for audio track
 };
@@ -58,8 +58,8 @@ struct IOConfig {
  * @brief Resource management for a specific task
  */
 struct TaskResourceConfig {
-    int thread_count = 0;    ///< CPU threads (0 = auto)
-    int max_queue_size = 20; ///< Max frames buffered in pipeline (default: 20)
+    int thread_count = 0;   ///< CPU threads (0 = auto)
+    int max_queue_size = 0; ///< Max frames buffered in pipeline (default: 20)
     ExecutionOrder execution_order = ExecutionOrder::Sequential; ///< Media processing order
     MemoryStrategy memory_strategy = MemoryStrategy::Tolerant;   ///< Memory usage priority
     int segment_duration_seconds = 0;                            ///< Video segmenting (0 = off)
@@ -134,22 +134,22 @@ struct PipelineStep {
  */
 struct FaceDetectorConfig {
     std::vector<std::string> models = {"yoloface", "retinaface", "scrfd"}; ///< Detector models
-    double score_threshold = 0.5;                                          ///< Min confidence
+    double score_threshold = 0.0;                                          ///< Min confidence
 };
 
 /**
  * @brief Configuration for face landmark detection service
  */
 struct FaceLandmarkerConfig {
-    std::string model = "2dfan4"; ///< Preferred landmarker model
+    std::string model; ///< Preferred landmarker model
 };
 
 /**
  * @brief Configuration for face recognition service
  */
 struct FaceRecognizerConfig {
-    std::string model = "arcface_w600k_r50"; ///< Preferred recognizer model
-    double similarity_threshold = 0.6;       ///< Face matching threshold
+    std::string model;                 ///< Preferred recognizer model
+    double similarity_threshold = 0.0; ///< Face matching threshold
 };
 
 /**

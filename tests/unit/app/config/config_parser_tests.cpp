@@ -74,6 +74,9 @@ TEST(TaskConfigValidationTest, ValidConfig) {
     config.io.source_paths = {"."};
     config.io.target_paths = {"."};
     config.io.output.path = ".";
+    config.io.output.image_format = "png";
+    config.io.output.video_encoder = "libx264";
+    config.io.output.video_quality = 80;
     config.face_analysis.face_detector.score_threshold = 0.5;
     config.face_analysis.face_recognizer.similarity_threshold = 0.6;
 
@@ -93,6 +96,7 @@ TEST(TaskConfigValidationTest, InvalidVideoQuality) {
     config.io.source_paths = {"."};
     config.io.target_paths = {"."};
     config.io.output.path = ".";
+    config.io.output.image_format = "png";
     config.io.output.video_quality = 150; // Invalid
     config.face_analysis.face_detector.score_threshold = 0.5;
     config.face_analysis.face_recognizer.similarity_threshold = 0.6;
@@ -129,6 +133,7 @@ TEST(TaskConfigValidationTest, FaceAnalysisRangeValidation) {
     config.io.source_paths = {"."};
     config.io.target_paths = {"."};
     config.io.output.path = ".";
+    config.io.output.image_format = "png";
 
     // Invalid detector threshold
     config.face_analysis.face_detector.score_threshold = 1.5;
@@ -156,6 +161,7 @@ TEST(TaskConfigValidationTest, ReferenceFacePathRequired) {
     config.io.source_paths = {"."};
     config.io.target_paths = {"."};
     config.io.output.path = ".";
+    config.io.output.image_format = "png";
 
     PipelineStep step;
     step.step = "face_swapper";
@@ -185,6 +191,7 @@ TEST(TaskConfigValidationTest, ReferenceFacePathExists) {
     config.io.source_paths = {"."};
     config.io.target_paths = {"."};
     config.io.output.path = ".";
+    config.io.output.image_format = "png";
 
     PipelineStep step;
     step.step = "face_swapper";

@@ -15,6 +15,7 @@ module;
 module app.cli;
 
 import config.parser;
+import config.merger;
 import services.pipeline.runner;
 import services.pipeline.shutdown;
 import foundation.infrastructure.logger;
@@ -173,9 +174,12 @@ int App::run_validate(const std::string& config_path, const config::AppConfig& a
         return static_cast<int>(err.code);
     }
 
-    // 2. 运行校验器
+    // 2. 合并配置
+    auto task_config = MergeConfigs(config_result.value(), app_config);
+
+    // 3. 运行校验器
     ConfigValidator validator;
-    auto errors = validator.validate(config_result.value());
+    auto errors = validator.validate(task_config);
 
     if (errors.empty()) {
         std::cout << "Configuration valid: " << config_path << std::endl;
@@ -199,7 +203,7 @@ int App::run_pipeline(const std::string& config_path, const config::AppConfig& a
         Logger::get_instance()->error("Config Error: " + config_result.error().message);
         return static_cast<int>(config_result.error().code);
     }
-    auto task_config = config_result.value();
+    auto task_config = MergeConfigs(config_result.value(), app_config);
 
     return run_pipeline_internal(task_config, app_config);
 }
@@ -250,7 +254,10 @@ int App::run_quick_mode(const std::vector<std::string>& source_paths,
         task_config.pipeline.push_back(step);
     }
 
-    // 4. 运行
+    // 4. 合并配置 (应用全局默认设置)
+    task_config = MergeConfigs(task_config, app_config);
+
+    // 5. 运行
     return run_pipeline_internal(task_config, app_config);
 }
 
