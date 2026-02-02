@@ -28,6 +28,40 @@ config::LogLevel parse_log_level(const std::string& level) {
     auto r = config::ParseLogLevel(level);
     return r.is_ok() ? r.value() : config::LogLevel::Info;
 }
+
+foundation::infrastructure::logger::LoggingConfig convert_logging_config(
+    const config::LoggingConfig& config) {
+    using namespace foundation::infrastructure::logger;
+    LoggingConfig result;
+
+    // Convert LogLevel
+    switch (config.level) {
+    case config::LogLevel::Trace: result.level = LogLevel::Trace; break;
+    case config::LogLevel::Debug: result.level = LogLevel::Debug; break;
+    case config::LogLevel::Info: result.level = LogLevel::Info; break;
+    case config::LogLevel::Warn: result.level = LogLevel::Warn; break;
+    case config::LogLevel::Error: result.level = LogLevel::Error; break;
+    default: result.level = LogLevel::Info; break;
+    }
+
+    result.directory = config.directory;
+
+    // Convert RotationPolicy
+    switch (config.rotation) {
+    case config::LogRotation::Daily: result.rotation = RotationPolicy::Daily; break;
+    case config::LogRotation::Hourly: result.rotation = RotationPolicy::Hourly; break;
+    case config::LogRotation::Size: result.rotation = RotationPolicy::Size; break;
+    default: result.rotation = RotationPolicy::Daily; break;
+    }
+
+    result.max_files = static_cast<uint32_t>(config.max_files);
+
+    try {
+        result.max_total_size_bytes = parse_size_string(config.max_total_size);
+    } catch (...) { result.max_total_size_bytes = 1ULL << 30; }
+
+    return result;
+}
 } // namespace
 
 int App::run(int argc, char** argv) {
@@ -178,8 +212,9 @@ int App::run_quick_mode(const std::vector<std::string>& source_paths,
 
     // 1. 构建 TaskConfig
     TaskConfig task_config;
-    task_config.task_info.id =
-        "quick_" + foundation::infrastructure::core_utils::random::generate_uuid();
+    std::string uuid = foundation::infrastructure::core_utils::random::generate_uuid();
+    std::replace(uuid.begin(), uuid.end(), '-', '_');
+    task_config.task_info.id = "quick_" + uuid;
     task_config.io.source_paths = source_paths;
     task_config.io.target_paths = target_paths;
 
@@ -310,7 +345,7 @@ std::optional<config::AppConfig> App::load_app_config(const std::string& path,
     if (!log_level_override.empty()) { config.logging.level = parse_log_level(log_level_override); }
 
     // 初始化 Logger
-    Logger::configure(config.logging);
+    Logger::initialize(convert_logging_config(config.logging));
 
     return config;
 }

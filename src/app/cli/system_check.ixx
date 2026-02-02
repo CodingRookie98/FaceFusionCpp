@@ -1,12 +1,9 @@
-/**
- * @file system_check.ixx
- * @brief System environment check module
- * @see design.md Section 3.5.4 - --system-check Output Specification
- */
-export module app.cli.system_check;
+module;
 
-import <string>;
-import <vector>;
+#include <string>
+#include <vector>
+
+export module app.cli.system_check;
 
 export namespace app::cli {
 

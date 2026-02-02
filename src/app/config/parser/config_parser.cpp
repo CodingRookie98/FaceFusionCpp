@@ -289,6 +289,16 @@ Result<AppConfig> ParseAppConfigFromJson(const json& j) {
     if (!log_rotation_r) { return Result<AppConfig>::Err(log_rotation_r.error()); }
     config.logging.rotation = log_rotation_r.value();
 
+    // metrics
+    auto metrics_j = detail::GetObject(j, "metrics");
+    config.metrics.enable = detail::GetBool(metrics_j, "enable", true);
+    config.metrics.step_latency = detail::GetBool(metrics_j, "step_latency", true);
+    config.metrics.gpu_memory = detail::GetBool(metrics_j, "gpu_memory", true);
+    config.metrics.report_path =
+        detail::GetString(metrics_j, "report_path", "./logs/metrics_{timestamp}.json");
+    config.metrics.gpu_sample_interval_ms =
+        detail::GetInt(metrics_j, "gpu_sample_interval_ms", 1000);
+
     // models
     auto models_j = detail::GetObject(j, "models");
     config.models.path = detail::GetString(models_j, "path", "./assets/models");

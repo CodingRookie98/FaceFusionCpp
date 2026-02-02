@@ -63,7 +63,7 @@ std::unordered_set<ExecutionProvider> get_best_available_providers() {
 
 RuntimeInfo get_runtime_info() {
     RuntimeInfo info;
-    info.version = Ort::GetApi().GetVersionString();
+    info.version = Ort::GetVersionString();
 
     auto providers = get_best_available_providers();
     if (providers.contains(ExecutionProvider::TensorRT)) info.provider = "TensorRT";
