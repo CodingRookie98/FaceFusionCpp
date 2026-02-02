@@ -1,11 +1,17 @@
 module;
 
 #include <format>
+#include <filesystem>
 #include <nlohmann/json.hpp>
 
 // CUDA/TensorRT headers (conditional)
 #ifdef CUDA_ENABLED
 #include <cuda_runtime.h>
+#include <cudnn.h>
+#endif
+
+#ifdef TENSORRT_ENABLED
+#include <NvInferVersion.h>
 #endif
 
 module app.cli.system_check;
@@ -21,19 +27,37 @@ SystemCheckReport run_all_checks() {
     SystemCheckReport report;
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 1. CUDA Driver Check
+    // 1. CUDA Runtime Check
     // ─────────────────────────────────────────────────────────────────────────
 #ifdef CUDA_ENABLED
     int cuda_version = 0;
-    cudaError_t err = cudaDriverGetVersion(&cuda_version);
+    cudaError_t err = cudaRuntimeGetVersion(&cuda_version);
     if (err == cudaSuccess && cuda_version > 0) {
         int major = cuda_version / 1000;
         int minor = (cuda_version % 1000) / 10;
         report.checks.push_back(
-            {"cuda_driver", CheckStatus::Ok, std::format("{}.{}", major, minor), ""});
+            {"cuda_runtime", CheckStatus::Ok, std::format("{}.{}", major, minor), ""});
+
+        // cuDNN Check
+        size_t cudnn_version = cudnnGetVersion();
+        // cuDNN 9+ uses major * 10000 + minor * 100 + patch
+        // cuDNN 8 uses major * 1000 + minor * 100 + patch
+        int cudnn_major, cudnn_minor, cudnn_patch;
+        if (cudnn_version >= 90000) {
+            cudnn_major = cudnn_version / 10000;
+            cudnn_minor = (cudnn_version % 10000) / 100;
+            cudnn_patch = cudnn_version % 100;
+        } else {
+            cudnn_major = cudnn_version / 1000;
+            cudnn_minor = (cudnn_version % 1000) / 100;
+            cudnn_patch = cudnn_version % 100;
+        }
+        report.checks.push_back({"cudnn", CheckStatus::Ok,
+                                 std::format("{}.{}.{}", cudnn_major, cudnn_minor, cudnn_patch),
+                                 ""});
     } else {
         report.checks.push_back(
-            {"cuda_driver", CheckStatus::Fail, "Not Found", "CUDA driver not available"});
+            {"cuda_runtime", CheckStatus::Fail, "Not Found", "CUDA runtime not available"});
     }
 
     // VRAM Check
@@ -47,6 +71,13 @@ SystemCheckReport run_all_checks() {
 #else
     report.checks.push_back(
         {"cuda_driver", CheckStatus::Warn, "N/A", "Built without CUDA support"});
+#endif
+
+#ifdef TENSORRT_ENABLED
+    // 1.2 TensorRT Check
+    report.checks.push_back(
+        {"tensorrt", CheckStatus::Ok,
+         std::format("{}.{}.{}", NV_TENSORRT_MAJOR, NV_TENSORRT_MINOR, NV_TENSORRT_PATCH), ""});
 #endif
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -65,7 +96,30 @@ SystemCheckReport run_all_checks() {
     // ─────────────────────────────────────────────────────────────────────────
     // 4. Model Repository
     // ─────────────────────────────────────────────────────────────────────────
-    // TODO: Count models in assets/models/
+    {
+        std::filesystem::path model_dir = "./assets/models";
+        int model_count = 0;
+
+        if (std::filesystem::exists(model_dir)) {
+            for (const auto& entry : std::filesystem::directory_iterator(model_dir)) {
+                if (entry.is_regular_file()) {
+                    auto ext = entry.path().extension().string();
+                    if (ext == ".onnx" || ext == ".engine" || ext == ".trt") { model_count++; }
+                }
+            }
+        }
+
+        if (model_count > 0) {
+            report.checks.push_back({"model_repository", CheckStatus::Ok,
+                                     std::format("{} models found", model_count), ""});
+        } else if (std::filesystem::exists(model_dir)) {
+            report.checks.push_back({"model_repository", CheckStatus::Warn, "0 models found",
+                                     "Run model download script"});
+        } else {
+            report.checks.push_back({"model_repository", CheckStatus::Fail, "Directory not found",
+                                     "assets/models/ does not exist"});
+        }
+    }
 
     // Calculate summary
     for (const auto& c : report.checks) {
@@ -108,6 +162,16 @@ std::string format_json(const SystemCheckReport& report) {
                                                            "fail";
         item["value"] = c.value;
         if (!c.message.empty()) { item["message"] = c.message; }
+
+        // Add provider field for onnxruntime
+        if (c.name == "onnxruntime" && c.value.find("(") != std::string::npos) {
+            auto pos = c.value.find("(");
+            auto end = c.value.find(")");
+            if (pos != std::string::npos && end != std::string::npos) {
+                item["provider"] = c.value.substr(pos + 1, end - pos - 1);
+            }
+        }
+
         j["checks"].push_back(item);
     }
     j["summary"]["ok"] = report.ok_count;
