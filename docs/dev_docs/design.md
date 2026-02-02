@@ -214,7 +214,7 @@ temp_directory: "./temp"
 
 # 默认任务配置 (Default Task Settings)
 # 若 Task Config 中未指定，则回退使用此处的默认值
-# 字段名与 task_config.yaml 完全一致
+# 字段名与 task_config.yaml 完全一致，只要task_config.yaml有的字段和值都可以在这里设置，这里仅展示部分
 default_task_settings:
   io:
     output:

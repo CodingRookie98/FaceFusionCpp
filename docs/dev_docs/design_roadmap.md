@@ -3,7 +3,7 @@
 > **标准参考 & 跨文档链接**:
 > *   架构设计文档: [应用层架构设计说明书](./design.md)
 > *   质量与评估标准: [C++代码质量与评估标准指南](./C++_quality_standard.md)
-> *   最后更新: 2026-01-30
+> *   最后更新: 2026-02-02
 
 ## 0. 计划概述
 
@@ -47,9 +47,9 @@ graph TD
 | **M6**  | Domain Layer - Processor   | 处理器实现 (Swapper/Enhancer/ExpressionRestorer)               |  ✅ 已完成  |     M5     |
 | **M7**  | Domain Layer - Pipeline    | 流水线基础架构 (Queue/Context/Adapters)                        |  ✅ 已完成  |     M4     |
 | **M8**  | Services Layer             | Pipeline Runner 服务 (Image/Video 处理调度)                    |  ✅ 已完成  | M2, M6, M7 |
-| **M9**  | Application Layer - Config | 配置管理 (AppConfig/TaskConfig 解析与校验)                     | 🔄 基本完成 |     M1     |
-| **M10** | Application Layer - CLI    | 命令行接口 (参数解析/系统检查/任务执行)                        | 🔄 部分完成 |   M8, M9   |
-| **M11** | Integration & Verification | 端到端集成测试与性能验证                                       |  ⏳ 未开始  |    M10     |
+| **M9**  | Application Layer - Config | 配置管理 (AppConfig/TaskConfig 解析与校验/ConfigMerger)        | 🔄 基本完成 |     M1     |
+| **M10** | Application Layer - CLI    | 命令行接口 (参数解析/系统检查/--validate/任务执行)             | 🔄 部分完成 |   M8, M9   |
+| **M11** | Integration & Verification | 端到端集成测试/性能验证/Metrics JSON Schema                    |  ⏳ 未开始  |    M10     |
 
 ---
 
@@ -82,7 +82,7 @@ graph TD
 - [x] **Task 1.1.2**: 实现日志格式化器
 - [x] **Task 1.1.3**: 集成 spdlog 后端
 - [x] **Task 1.1.4**: 实现日志轮转 (daily/hourly/size)
-- [x] **Task 1.1.5**: 添加 `max_files` / `max_total_size` 配置支持
+- [x] **Task 1.1.5**: 添加 `max_files` / `max_total_size` 配置支持 (对应 design.md 3.1 日志轮转配置增强)
 
 #### 1.3.2 子任务: ConcurrentQueue 实现 ✅
 
@@ -147,8 +147,8 @@ graph TD
 - [x] **Task 2.2.1**: InferenceSession - ONNX Runtime Session 封装
 - [x] **Task 2.2.2**: InferenceSessionRegistry - Session 注册管理
 - [x] **Task 2.2.3**: ModelRepository - 模型路径解析与 `download_strategy` 实现
-- [x] **Task 2.2.4**: SessionPool - LRU 缓存实现 (`max_entries`)
-- [x] **Task 2.2.5**: SessionPool - TTL 空闲释放 (`idle_timeout_seconds`)
+- [x] **Task 2.2.4**: SessionPool - LRU 缓存实现 (`max_entries`) - 对应 design.md 3.1 engine_cache 配置
+- [x] **Task 2.2.5**: SessionPool - TTL 空闲释放 (`idle_timeout_seconds`) - 对应 design.md 3.1 engine_cache 配置
 
 ---
 
@@ -373,17 +373,25 @@ graph TD
   - [ ] face_analysis 参数校验
 - [ ] **Task 8.4**: ConfigMerger - 级联优先级 (Task > User > Default) - *未实现*
   > 详细任务文档: [C++_task_M9_config_merger_implementation.md](./plan/config/C++_task_M9_config_merger_implementation.md)
-  - [ ] `DefaultTaskSettings` 结构定义
-  - [ ] `default_task_settings` YAML 解析
-  - [ ] `MergeConfigs()` 合并逻辑
+  > 
+  > **设计说明** (来自 design.md 第 217 行): 
+  > `default_task_settings` 字段名与 `task_config.yaml` 完全一致，可包含 TaskConfig 的任意字段作为默认值。
+  - [ ] `DefaultTaskSettings` 结构定义 (使用 `std::optional` 表示可选字段)
+  - [ ] `default_task_settings` YAML 解析 (仅解析配置文件中存在的字段)
+  - [ ] `MergeConfigs()` 合并逻辑 (仅当 TaskConfig 字段为空/默认时应用)
   - [ ] CLI 集成调用
-- [x] **Task 8.5**: `--validate` Dry-Run 模式 - *已实现*
+- [x] **Task 8.5**: `--validate` Dry-Run 模式 - *已实现* (对应 design.md 3.5.3 CLI 参数规格)
 
 > [!NOTE]
 > 配置解析基础已完成，ConfigValidator 基础框架已实现，但仍需补充：
 > - TaskConfig 版本校验
 > - face_swapper/face_analysis 参数校验
 > - 配置级联合并机制 (ConfigMerger)
+>
+> **ConfigMerger 设计要点** (design.md 第 215-227 行):
+> - `default_task_settings` 字段名与 `task_config.yaml` 完全一致
+> - 可包含 TaskConfig 的任意字段作为默认值 (示例仅展示 `io.output`)
+> - 优先级: TaskConfig 显式值 > AppConfig default_task_settings > 代码硬编码默认值
 
 ---
 
@@ -448,7 +456,7 @@ graph TD
 - [ ] **Task 10.2**: 端到端视频换脸测试
 - [ ] **Task 10.3**: 断点续传测试 (Checkpointing)
 - [ ] **Task 10.4**: 性能基准测试 (1080p 视频处理速度)
-- [ ] **Task 10.5**: Metrics JSON 输出验证
+- [ ] **Task 10.5**: Metrics JSON 输出验证 (对应 design.md 5.11 Metrics JSON Schema 规范)
 - [ ] **Task 10.6**: 内存/显存峰值监控
 
 **验收标准**:
@@ -464,7 +472,7 @@ graph TD
 
 | 任务                         | 所属阶段 | 描述                                       | 任务文档                                                                 |
 | :--------------------------- | :------: | :----------------------------------------- | :----------------------------------------------------------------------- |
-| **ConfigValidator 增强**     |    M9    | TaskConfig 版本校验 + face_swapper 参数    | [C++_task_M9_config_validator_enhancement.md](./plan/config/C++_task_M9_config_validator_enhancement.md) |
+| **ConfigValidator 增强**     |    M9    | TaskConfig 版本校验 + face_swapper 参数 ✅   | [C++_task_M9_config_validator_enhancement.md](./plan/config/C++_task_M9_config_validator_enhancement.md) |
 | **ConfigMerger**             |    M9    | 配置级联优先级 (Task > User > Default)     | [C++_task_M9_config_merger_implementation.md](./plan/config/C++_task_M9_config_merger_implementation.md) |
 
 ### 中优先级 (P1) - 设计规范完整性
@@ -472,14 +480,14 @@ graph TD
 | 任务                   | 所属阶段 | 描述                               | 任务文档                                                               |
 | :--------------------- | :------: | :--------------------------------- | :--------------------------------------------------------------------- |
 | **SystemCheck 完善**   |   M10    | cuDNN/TensorRT 版本 + 模型仓库检查 | [C++_task_M9_system_check_completion.md](./plan/config/C++_task_M9_system_check_completion.md) |
-| **SessionPool LRU**    |    M3    | Session 缓存 + TTL 管理            | [C++_task_session_pool_lru_ttl.md](./plan/platform/C++_task_session_pool_lru_ttl.md) |
+| **SessionPool LRU**    |    M3    | Session 缓存 + TTL 管理 (对应 design.md 3.1 engine_cache) | [C++_task_session_pool_lru_ttl.md](./plan/platform/C++_task_session_pool_lru_ttl.md) |
 
 ### 低优先级 (P2) - 增强功能
 
-| 任务              | 所属阶段 | 描述         |
-| :---------------- | :------: | :----------- |
-| **Checkpointing** |   M11    | 断点续传     |
-| **Metrics JSON**  |   M11    | 性能指标输出 |
+| 任务              | 所属阶段 | 描述                                                      |
+| :---------------- | :------: | :-------------------------------------------------------- |
+| **Checkpointing** |   M11    | 断点续传                                                  |
+| **Metrics JSON**  |   M11    | 性能指标输出 (schema_version/step_latency/gpu_memory)     |
 
 ---
 
