@@ -4,6 +4,7 @@
 > *   架构设计文档: [应用层架构设计说明书](./design.md)
 > *   质量与评估标准: [C++代码质量与评估标准指南](./C++_quality_standard.md)
 > *   最后更新: 2026-02-02
+> *   更新内容: M11 集成测试详细设计，新增测试素材规范与硬件适配验收标准
 
 ## 0. 计划概述
 
@@ -454,21 +455,148 @@ graph TD
 
 ### 10.1 目标
 
-端到端集成测试与性能验证。
+端到端集成测试与性能验证，确保系统在真实场景下的稳定性与性能表现。
 
-### 10.2 任务分解
+> **标准测试素材**: 详见 [design.md - A.3 标准测试素材](./design.md#a3-标准测试素材-standard-test-assets)
+
+### 10.2 测试素材
+
+#### 10.2.1 标准 Source Face
+
+推荐使用 `lenna.bmp` (512×512, bgr24) 作为统一 Source Face：
+- ✅ 经典测试图，人脸清晰正面
+- ✅ 标准 BMP 格式，无解码歧义
+- ✅ 文件最小，加载快
+
+**路径**: `assets/standard_face_test_images/lenna.bmp`
+
+#### 10.2.2 测试矩阵
+
+| 用例名称 | Source | Target | 类型 | 分类 |
+| :------- | :----- | :----- | :--- | :--- |
+| `img_512_baseline` | `lenna.bmp` | `tiffany.bmp` (512×512) | 图片 | P0 基线 |
+| `img_720p_standard` | `lenna.bmp` | `girl.bmp` (720×576) | 图片 | P0 基线 |
+| `img_2k_stress` | `lenna.bmp` | `woman.jpg` (1992×1120) | 图片 | P1 压力 |
+| `img_palette_edge` | `lenna.bmp` | `man.bmp` (1024×1024, pal8) | 图片 | P2 边界 |
+| `video_720p_vertical` | `lenna.bmp` | `slideshow_scaled.mp4` (720×1280, 491帧) | 视频 | P0 基线 |
+
+### 10.3 任务分解
+
+#### 10.3.1 P0 - 核心功能验证 (必须通过)
 
 - [ ] **Task 10.1**: 端到端图片换脸测试
-- [ ] **Task 10.2**: 端到端视频换脸测试
-- [ ] **Task 10.3**: 断点续传测试 (Checkpointing)
-- [ ] **Task 10.4**: 性能基准测试 (1080p 视频处理速度)
-- [ ] **Task 10.5**: Metrics JSON 输出验证 (对应 design.md 5.11 Metrics JSON Schema 规范)
-- [ ] **Task 10.6**: 内存/显存峰值监控
+  - 测试用例: `img_512_baseline`, `img_720p_standard`
+  - 验证点:
+    - 输出文件存在且可正常打开
+    - 人脸区域已被替换 (视觉检查或 SSIM 对比)
+    - 无异常日志 (ERROR 级别)
+  - 验收标准: 参见 [design.md A.3.3 硬件适配验收标准](./design.md#a33-硬件适配验收标准)
 
-**验收标准**:
-- 图片处理 < 2s/张 (RTX 3090)
-- 视频处理 > 20 FPS (1080p, RTX 3090)
-- 无内存泄漏 (Valgrind/AddressSanitizer)
+- [ ] **Task 10.2**: 端到端视频换脸测试
+  - 测试用例: `video_720p_vertical`
+  - 验证点:
+    - 输出视频帧数 = 输入帧数 (491帧)
+    - 音轨正确保留 (AAC, 44.1kHz)
+    - 处理 FPS 达标 (GTX 1650: ≥ 5 FPS)
+  - 验收标准: 总耗时 < 120s (GTX 1650 适配)
+
+- [ ] **Task 10.5**: Metrics JSON 输出验证
+  - 验证点:
+    - 文件生成于 `logs/metrics_{timestamp}.json`
+    - JSON Schema 符合 [design.md 5.11](./design.md#511-metrics-json-schema-参考) 规范
+    - 包含 `schema_version`, `task_id`, `duration_ms`, `summary`, `step_latency`
+  - 依赖: 需在 Task 10.1/10.2 完成后验证
+
+#### 10.3.2 P1 - 性能与资源监控
+
+- [ ] **Task 10.4**: 性能基准测试
+  - 测试场景: `video_720p_vertical` (491帧)
+  - 采集指标:
+    - 平均 FPS / P50 / P99 帧耗时
+    - 每个 Pipeline Step 的延迟分布
+  - 输出: 性能基准报告 (Markdown 格式)
+
+- [ ] **Task 10.6**: 内存/显存峰值监控
+  - 监控方式:
+    - 显存: NVML API 或 `nvidia-smi` 采样
+    - 内存: 平台 API (`GetProcessMemoryInfo` / `/proc/self/status`)
+  - 验收标准:
+    - GTX 1650 (4GB): 显存峰值 < 3.5 GB
+    - 无内存泄漏 (处理前后 RSS 差异 < 50MB)
+
+#### 10.3.3 P2 - 边界与增强功能
+
+- [ ] **Task 10.3**: 断点续传测试 (Checkpointing)
+  - 前置依赖: [design.md 5.9 断点续传](./design.md#59-断点续传-checkpointing) 机制实现
+  - 测试场景:
+    1. 正常中断恢复 (SIGINT 后重启)
+    2. Checkpoint 文件损坏检测
+    3. 帧索引跳转准确性验证
+  - 验证点:
+    - `checkpoints/{task_id}.ckpt` 正确生成
+    - 恢复后继续处理，无重复帧
+    - 任务完成后自动清理 checkpoint
+
+- [ ] **Task 10.7**: 边界情况测试
+  - 测试用例: `img_palette_edge` (调色板图片)
+  - 验证点:
+    - 调色板格式 (pal8) 自动转换为 RGB24
+    - WebP 伪装文件 (`woman.jpg`) 正确解码
+    - 无人脸帧透传处理，生成 WARN 日志
+
+### 10.4 验收标准汇总
+
+> **硬件基准**: 以下标准基于 GTX 1650 (4GB VRAM) 测试环境
+> 
+> **⚠️ 构建模式要求**:
+> - **性能测试 (Task 10.1/10.2/10.4)**: **必须使用 Release 模式**，Debug 模式数据无参考价值
+> - **功能正确性测试**: Debug 或 Release 均可
+> - **内存泄漏检测 (Task 10.6)**: 使用 Debug 模式 + ASan，或 Release + Valgrind
+
+| 测试类别 | 测试项 | 阈值 (Release) | 说明 |
+| :------- | :----- | :------------- | :--- |
+| **图片 - 512px** | 处理耗时 | < 3s | 基线小图 |
+| **图片 - 720p** | 处理耗时 | < 5s | 标准分辨率 |
+| **图片 - 2K** | 处理耗时 | < 10s | 压力测试 |
+| **视频 - 720p** | 处理 FPS | ≥ 5 FPS | 491帧测试视频 |
+| **视频 - 720p** | 总耗时 | < 120s | 允许 20% 余量 |
+| **显存峰值** | 所有测试 | < 3.5 GB | 留 500MB 安全余量 |
+| **内存泄漏** | 处理前后 | Δ < 50MB | Valgrind/ASan 验证 |
+
+> **高端硬件参考**: RTX 3090 标准见 [design.md A.3.3](./design.md#a33-硬件适配验收标准)
+
+### 10.5 测试配置模板
+
+```yaml
+# test_config_baseline.yaml - 基线测试配置
+config_version: "1.0"
+
+task_info:
+  id: "m11_e2e_baseline"
+  description: "M11 End-to-End Baseline Test"
+  enable_logging: true
+
+io:
+  source_paths:
+    - "./assets/standard_face_test_images/lenna.bmp"
+  target_paths:
+    - "./assets/standard_face_test_videos/slideshow_scaled.mp4"
+  output:
+    path: "./test_output/"
+    prefix: "m11_test_"
+    conflict_policy: "overwrite"
+
+resource:
+  max_queue_size: 10  # 低显存适配
+  execution_order: "sequential"
+
+pipeline:
+  - step: "face_swapper"
+    enabled: true
+    params:
+      model: "inswapper_128_fp16"
+      face_selector_mode: "many"
+```
 
 ---
 
@@ -629,7 +757,7 @@ graph TD
 | 风险点                 | 可能性 | 影响         | 缓解措施                                          |
 | :--------------------- | :----: | :----------- | :------------------------------------------------ |
 | TensorRT 版本兼容性    |   高   | 推理失败     | 多版本测试矩阵；明确 CUDA/cuDNN/TensorRT 版本组合 |
-| FFmpeg API 变更        |   中   | 编译失败     | 锁定 FFmpeg 6.x 版本；封装抽象层                  |
+| FFmpeg API 变更        |   中   | 编译失败     | 锁定 FFmpeg 7.x 版本；封装抽象层                  |
 | ONNX 模型精度差异      |   中   | 输出质量下降 | 与 Python 版本 A/B 对比测试                       |
 | 视频分段处理时音画同步 |   中   | 输出错误     | 帧级时间戳精确管理；集成测试覆盖                  |
 | 显存 OOM (长视频)      |   高   | 处理中断     | 实现 `segment_duration_seconds` 分段；背压流控    |
