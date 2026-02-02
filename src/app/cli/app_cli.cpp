@@ -21,6 +21,7 @@ import services.pipeline.shutdown;
 import foundation.infrastructure.logger;
 import foundation.infrastructure.core_utils;
 import app.cli.system_check;
+import app.version;
 
 namespace app::cli {
 
@@ -130,6 +131,13 @@ int App::run(int argc, char** argv) {
         std::cerr << "Failed to load app config: " << app_config_path << std::endl;
         return 1;
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 启动日志序列 (符合 design.md 5.10.1 INFO 级必选场景)
+    // ─────────────────────────────────────────────────────────────────────────
+    print_startup_banner();          // 1. 版本 Banner
+    log_config_summary(*app_config); // 2. 配置摘要
+    log_hardware_info();             // 3. 硬件信息
 
     if (validate_only) {
         if (config_path.empty()) {
@@ -358,7 +366,47 @@ std::optional<config::AppConfig> App::load_app_config(const std::string& path,
 }
 
 void App::print_version() {
-    std::cout << "FaceFusionCpp v1.0.0" << std::endl;
+    std::cout << app::version::get_version_string() << std::endl;
+}
+
+void App::print_startup_banner() {
+    using foundation::infrastructure::logger::Logger;
+    Logger::get_instance()->info(app::version::get_banner());
+}
+
+void App::log_config_summary(const config::AppConfig& app_config) {
+    using foundation::infrastructure::logger::Logger;
+    auto logger = Logger::get_instance();
+
+    logger->info("=== Configuration Summary ===");
+    logger->info(std::format("  Device ID: {}", app_config.inference.device_id));
+    logger->info(std::format("  Memory Strategy: {}",
+                             app_config.resource.memory_strategy == config::MemoryStrategy::Strict ?
+                                 "strict" :
+                                 "tolerant"));
+    logger->info(std::format("  Log Level: {}", config::ToString(app_config.logging.level)));
+    logger->info(std::format("  Models Path: {}", app_config.models.path));
+    logger->info("=============================");
+}
+
+void App::log_hardware_info() {
+    using foundation::infrastructure::logger::Logger;
+    auto logger = Logger::get_instance();
+
+    // 复用 system_check 模块的检测逻辑
+    auto report = run_all_checks();
+
+    logger->info("=== Hardware Environment ===");
+    for (const auto& check : report.checks) {
+        if (check.status == CheckStatus::Ok) {
+            logger->info(std::format("  {}: {}", check.name, check.value));
+        } else if (check.status == CheckStatus::Warn) {
+            logger->warn(std::format("  {}: {} ({})", check.name, check.value, check.message));
+        } else {
+            logger->error(std::format("  {}: {} ({})", check.name, check.value, check.message));
+        }
+    }
+    logger->info("============================");
 }
 
 } // namespace app::cli

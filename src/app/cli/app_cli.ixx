@@ -18,6 +18,10 @@ public:
 
 private:
     static void print_version();
+    static void print_startup_banner();
+    static void log_config_summary(const config::AppConfig& app_config);
+    static void log_hardware_info();
+
     static int run_pipeline(const std::string& config_path, const config::AppConfig& app_config);
     static int run_pipeline_internal(const config::TaskConfig& task_config,
                                      const config::AppConfig& app_config);
