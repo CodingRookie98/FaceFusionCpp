@@ -48,7 +48,7 @@ graph TD
 | **M7**  | Domain Layer - Pipeline    | 流水线基础架构 (Queue/Context/Adapters)                        |  ✅ 已完成  |     M4     |
 | **M8**  | Services Layer             | Pipeline Runner 服务 (Image/Video 处理调度)                    |  ✅ 已完成  | M2, M6, M7 |
 | **M9**  | Application Layer - Config | 配置管理 (AppConfig/TaskConfig 解析与校验/ConfigMerger)        |  ✅ 已完成  |     M1     |
-| **M10** | Application Layer - CLI    | 命令行接口 (参数解析/系统检查/--validate/任务执行)             | 🔄 部分完成 |   M8, M9   |
+| **M10** | Application Layer - CLI    | 命令行接口 (参数解析/系统检查/--validate/任务执行)             |  ✅ 已完成  |   M8, M9   |
 | **M11** | Integration & Verification | 端到端集成测试/性能验证/Metrics JSON Schema                    |  ⏳ 未开始  |    M10     |
 
 ---
@@ -390,7 +390,7 @@ graph TD
 
 ---
 
-## 阶段九: Application Layer - CLI (M10) 🔄 部分完成
+## 阶段九: Application Layer - CLI (M10) ✅ 已完成
 
 ### 9.1 目标
 
@@ -430,17 +430,23 @@ graph TD
 - [x] **Task 9.7**: `--validate` 配置校验模式
 - [x] **Task 9.8**: `--log-level` 日志级别覆盖
 - [x] **Task 9.9**: 信号处理 (Graceful Shutdown)
-- [ ] **Task 9.10**: 启动 Banner 增强 (版本/构建时间/配置摘要) - *待实现*
+- [x] **Task 9.10**: 启动 Banner 增强 (版本/构建时间/配置摘要) - *已完成*
   > 详细任务文档: [C++_task_M10_startup_banner_enhancement.md](./plan/services/C++_task_M10_startup_banner_enhancement.md)
-  - [ ] CMake 版本注入 (消除 `print_version()` 中 v1.0.0 硬编码)
-  - [ ] 启动 Banner 通过 Logger (INFO 级) 输出
-  - [ ] 配置加载摘要日志 (Config Summary)
-  - [ ] 硬件检测信息记录到启动日志
+  - [x] CMake 版本注入 (消除 `print_version()` 中 v1.0.0 硬编码)
+  - [x] 启动 Banner 通过 Logger (INFO 级) 输出
+  - [x] 配置加载摘要日志 (Config Summary)
+  - [x] 硬件检测信息记录到启动日志
 
 > [!NOTE]
-> CLI 核心功能已基本完成，Task 9.10 为日志规范完善任务：
-> - 来自 design.md 5.10.1: 启动 Banner、Config Summary、硬件信息必须通过 Logger 输出
-> - 来自 design.md 5.5: 版本信息必须通过 CMake 编译期注入，禁止硬编码
+> **M10 已完成** (2026-02-02 确认):
+> - 所有 CLI 参数已实现 (-c, -v, -s/-t/-o, --processors, --system-check, --validate, --log-level)
+> - 信号处理 (ShutdownHandler) 已完成
+> - 启动 Banner 增强已完成:
+>   - CMake 版本注入 (`cmake/version.cmake` + `version.cpp.in`)
+>   - 版本模块 (`app.version`) 消除硬编码
+>   - `print_startup_banner()` 通过 Logger 输出
+>   - `log_config_summary()` 配置摘要日志
+>   - `log_hardware_info()` 硬件检测信息日志
 
 ---
 
@@ -477,10 +483,10 @@ graph TD
 
 ### 中优先级 (P1) - 设计规范完整性
 
-| 任务                   | 所属阶段 | 描述                               | 任务文档                                                               |
-| :--------------------- | :------: | :--------------------------------- | :--------------------------------------------------------------------- |
-| ~~**SystemCheck 完善**~~   |   M10    | ✅ 已完成 | [C++_task_M9_system_check_completion.md](./plan/config/C++_task_M9_system_check_completion.md) |
-| **SessionPool LRU**    |    M3    | Session 缓存 + TTL 管理 (对应 design.md 3.1 engine_cache) | [C++_task_session_pool_lru_ttl.md](./plan/platform/C++_task_session_pool_lru_ttl.md) |
+| 任务                       | 所属阶段 | 描述                                                      | 任务文档                                                                             |
+| :------------------------- | :------: | :-------------------------------------------------------- | :----------------------------------------------------------------------------------- |
+| ~~**SystemCheck 完善**~~   |   M10    | ✅ 已完成                                                  | [C++_task_M9_system_check_completion.md](./plan/config/C++_task_M9_system_check_completion.md) |
+| ~~**SessionPool LRU**~~    |    M3    | ✅ 已完成 (Task 2.2.4 + 2.2.5)                             | [C++_task_session_pool_lru_ttl.md](./plan/platform/C++_task_session_pool_lru_ttl.md) |
 
 ### 低优先级 (P2) - 增强功能
 
@@ -557,7 +563,7 @@ graph TD
         ConfigParser
     end
 
-    subgraph "M10: App/CLI 🔄"
+    subgraph "M10: App/CLI ✅"
         CLI
     end
 
