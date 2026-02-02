@@ -430,11 +430,17 @@ graph TD
 - [x] **Task 9.7**: `--validate` 配置校验模式
 - [x] **Task 9.8**: `--log-level` 日志级别覆盖
 - [x] **Task 9.9**: 信号处理 (Graceful Shutdown)
-- [ ] **Task 9.10**: 启动 Banner (版本/构建时间) - *待增强*
+- [ ] **Task 9.10**: 启动 Banner 增强 (版本/构建时间/配置摘要) - *待实现*
+  > 详细任务文档: [C++_task_M10_startup_banner_enhancement.md](./plan/services/C++_task_M10_startup_banner_enhancement.md)
+  - [ ] CMake 版本注入 (消除 `print_version()` 中 v1.0.0 硬编码)
+  - [ ] 启动 Banner 通过 Logger (INFO 级) 输出
+  - [ ] 配置加载摘要日志 (Config Summary)
+  - [ ] 硬件检测信息记录到启动日志
 
 > [!NOTE]
-> CLI 核心功能已基本完成，仅剩以下待完善项：
-> - 启动 Banner 需从编译宏读取版本信息
+> CLI 核心功能已基本完成，Task 9.10 为日志规范完善任务：
+> - 来自 design.md 5.10.1: 启动 Banner、Config Summary、硬件信息必须通过 Logger 输出
+> - 来自 design.md 5.5: 版本信息必须通过 CMake 编译期注入，禁止硬编码
 
 ---
 
