@@ -47,7 +47,7 @@ graph TD
 | **M6**  | Domain Layer - Processor   | 处理器实现 (Swapper/Enhancer/ExpressionRestorer)               |  ✅ 已完成  |     M5     |
 | **M7**  | Domain Layer - Pipeline    | 流水线基础架构 (Queue/Context/Adapters)                        |  ✅ 已完成  |     M4     |
 | **M8**  | Services Layer             | Pipeline Runner 服务 (Image/Video 处理调度)                    |  ✅ 已完成  | M2, M6, M7 |
-| **M9**  | Application Layer - Config | 配置管理 (AppConfig/TaskConfig 解析与校验/ConfigMerger)        | 🔄 基本完成 |     M1     |
+| **M9**  | Application Layer - Config | 配置管理 (AppConfig/TaskConfig 解析与校验/ConfigMerger)        |  ✅ 已完成  |     M1     |
 | **M10** | Application Layer - CLI    | 命令行接口 (参数解析/系统检查/--validate/任务执行)             | 🔄 部分完成 |   M8, M9   |
 | **M11** | Integration & Verification | 端到端集成测试/性能验证/Metrics JSON Schema                    |  ⏳ 未开始  |    M10     |
 
@@ -335,7 +335,7 @@ graph TD
 
 ---
 
-## 阶段八: Application Layer - Config (M9) 🔄 基本完成
+## 阶段八: Application Layer - Config (M9) ✅ 已完成
 
 ### 8.1 目标
 
@@ -349,8 +349,8 @@ graph TD
 | **TaskConfig**      | 任务配置解析 (`task_config.ixx`)  |    ✅     |
 | **ConfigTypes**     | 配置类型定义 (`config_types.ixx`) |    ✅     |
 | **ConfigParser**    | YAML 配置解析器 (`parser/`)       |    ✅     |
-| **ConfigValidator** | 配置校验器                        | 🔄 部分完成 |
-| **ConfigMerger**    | 配置级联合并                      | ⏳ 未实现 |
+| **ConfigValidator** | 配置校验器                        |    ✅     |
+| **ConfigMerger**    | 配置级联合并                      |    ✅     |
 
 ### 8.3 任务分解
 
@@ -362,36 +362,31 @@ graph TD
   - [x] FaceSwapperParams, FaceEnhancerParams, ExpressionRestorerParams, FrameEnhancerParams
   - [x] FaceAnalysisConfig (Detector/Landmarker/Recognizer/Masker)
   - [x] PipelineStep 定义
-- [ ] **Task 8.3**: ConfigValidator 增强 - *部分实现*
+- [x] **Task 8.3**: ConfigValidator 增强 - *已完成*
   > 详细任务文档: [C++_task_M9_config_validator_enhancement.md](./plan/config/C++_task_M9_config_validator_enhancement.md)
   - [x] 基础校验框架 (`ConfigValidator` 类)
   - [x] AppConfig 版本校验 (`config_version`)
   - [x] 路径存在性校验 (`validate_path_exists`)
   - [x] 参数范围校验 (`validate_range`)
-  - [ ] TaskConfig 版本校验
-  - [ ] face_swapper 参数校验
-  - [ ] face_analysis 参数校验
-- [ ] **Task 8.4**: ConfigMerger - 级联优先级 (Task > User > Default) - *未实现*
+  - [x] TaskConfig 版本校验
+  - [x] face_swapper 参数校验
+  - [x] face_analysis 参数校验
+- [x] **Task 8.4**: ConfigMerger - 级联优先级 (Task > User > Default) - *已完成*
   > 详细任务文档: [C++_task_M9_config_merger_implementation.md](./plan/config/C++_task_M9_config_merger_implementation.md)
   > 
   > **设计说明** (来自 design.md 第 217 行): 
   > `default_task_settings` 字段名与 `task_config.yaml` 完全一致，可包含 TaskConfig 的任意字段作为默认值。
-  - [ ] `DefaultTaskSettings` 结构定义 (使用 `std::optional` 表示可选字段)
-  - [ ] `default_task_settings` YAML 解析 (仅解析配置文件中存在的字段)
-  - [ ] `MergeConfigs()` 合并逻辑 (仅当 TaskConfig 字段为空/默认时应用)
-  - [ ] CLI 集成调用
+  - [x] `DefaultTaskSettings` 结构定义 (使用 `std::optional` 表示可选字段)
+  - [x] `default_task_settings` YAML 解析 (仅解析配置文件中存在的字段)
+  - [x] `MergeConfigs()` 合并逻辑 (仅当 TaskConfig 字段为空/默认时应用)
+  - [x] CLI 集成调用
 - [x] **Task 8.5**: `--validate` Dry-Run 模式 - *已实现* (对应 design.md 3.5.3 CLI 参数规格)
 
 > [!NOTE]
-> 配置解析基础已完成，ConfigValidator 基础框架已实现，但仍需补充：
-> - TaskConfig 版本校验
-> - face_swapper/face_analysis 参数校验
-> - 配置级联合并机制 (ConfigMerger)
->
-> **ConfigMerger 设计要点** (design.md 第 215-227 行):
-> - `default_task_settings` 字段名与 `task_config.yaml` 完全一致
-> - 可包含 TaskConfig 的任意字段作为默认值 (示例仅展示 `io.output`)
-> - 优先级: TaskConfig 显式值 > AppConfig default_task_settings > 代码硬编码默认值
+> **M9 已完成** (2026-02-02 确认):
+> - ConfigValidator: 完整实现 TaskConfig/AppConfig 版本校验、face_swapper/face_analysis 参数校验
+> - ConfigMerger: 完整实现级联优先级 (Task > App > Hardcoded)，含单元测试覆盖
+> - 详见: `src/app/config/config_validator.cpp` (247行), `config_merger.cpp` (136行)
 
 ---
 
@@ -472,8 +467,8 @@ graph TD
 
 | 任务                         | 所属阶段 | 描述                                       | 任务文档                                                                 |
 | :--------------------------- | :------: | :----------------------------------------- | :----------------------------------------------------------------------- |
-| **ConfigValidator 增强**     |    M9    | TaskConfig 版本校验 + face_swapper 参数 ✅   | [C++_task_M9_config_validator_enhancement.md](./plan/config/C++_task_M9_config_validator_enhancement.md) |
-| **ConfigMerger**             |    M9    | 配置级联优先级 (Task > User > Default)     | [C++_task_M9_config_merger_implementation.md](./plan/config/C++_task_M9_config_merger_implementation.md) |
+| ~~**ConfigValidator 增强**~~ |    M9    | ✅ 已完成                                   | [C++_task_M9_config_validator_enhancement.md](./plan/config/C++_task_M9_config_validator_enhancement.md) |
+| ~~**ConfigMerger**~~         |    M9    | ✅ 已完成                                   | [C++_task_M9_config_merger_implementation.md](./plan/config/C++_task_M9_config_merger_implementation.md) |
 
 ### 中优先级 (P1) - 设计规范完整性
 
@@ -551,7 +546,7 @@ graph TD
         VideoRunner
     end
 
-    subgraph "M9: App/Config 🔄"
+    subgraph "M9: App/Config ✅"
         AppConfig
         TaskConfig
         ConfigParser
