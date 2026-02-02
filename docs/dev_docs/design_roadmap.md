@@ -4,7 +4,7 @@
 > *   架构设计文档: [应用层架构设计说明书](./design.md)
 > *   质量与评估标准: [C++代码质量与评估标准指南](./C++_quality_standard.md)
 > *   最后更新: 2026-02-02
-> *   更新内容: M11 集成测试详细设计，新增测试素材规范与硬件适配验收标准
+> *   更新内容: engine_cache 配置集成评估；新增 Task 2.2.6/2.2.7 补全配置对接
 
 ## 0. 计划概述
 
@@ -42,7 +42,7 @@ graph TD
 | :-----: | :------------------------- | :------------------------------------------------------------- | :--------: | :--------: |
 | **M1**  | Foundation Layer           | 基础设施模块 (Logger/FileSystem/ThreadPool/ConcurrentQueue)    |  ✅ 已完成  |     无     |
 | **M2**  | Platform Layer - Media     | 媒体处理模块 (FFmpeg 封装/图像编解码)                          |  ✅ 已完成  |     M1     |
-| **M3**  | Platform Layer - AI        | 推理引擎封装 (ONNX Runtime/TensorRT EP)                        |  ✅ 已完成  |     M1     |
+| **M3**  | Platform Layer - AI        | 推理引擎封装 (ONNX Runtime/TensorRT EP)                        |  ⚠️ 待补全  |     M1     |
 | **M4**  | Domain Layer - Core        | 人脸领域模型 (Face/Embedding/Mask 类型)                        |  ✅ 已完成  |     M1     |
 | **M5**  | Domain Layer - Analyzer    | 人脸分析器 (Detector/Landmarker/Recognizer/Masker)             |  ✅ 已完成  |   M3, M4   |
 | **M6**  | Domain Layer - Processor   | 处理器实现 (Swapper/Enhancer/ExpressionRestorer)               |  ✅ 已完成  |     M5     |
@@ -106,7 +106,7 @@ graph TD
 
 ---
 
-## 阶段二: Platform Layer (M2 + M3) ✅ 已完成
+## 阶段二: Platform Layer (M2 + M3) ⚠️ M3 待补全
 
 ### 2.1 Media 子模块 (M2) ✅
 
@@ -129,7 +129,10 @@ graph TD
 - [x] **Task 2.1.3**: Vision - 图像 I/O 和变换
 - [x] **Task 2.1.4**: FFmpeg Remuxer - 音频重混流
 
-### 2.2 AI 推理子模块 (M3) ✅
+### 2.2 AI 推理子模块 (M3) ⚠️ 待补全
+
+> **评估状态**: 底层 SessionPool (LRU/TTL) 已完整实现，但 `engine_cache` 配置字段未完全对接。
+> 详见: [engine_cache 配置集成评估报告](./evaluation/C++_evaluation_engine_cache.md)
 
 #### 2.2.1 目标
 
@@ -143,13 +146,17 @@ graph TD
 | **InferenceSessionRegistry** | `foundation/ai/inference_session_registry.ixx` | Session 注册与管理   |   ✅   |
 | **ModelRepository**          | `domain/ai/model_repository.ixx`               | 模型路径管理与下载   |   ✅   |
 
-#### 2.2.3 任务分解 ✅
+#### 2.2.3 任务分解 ⚠️ 待补全
 
 - [x] **Task 2.2.1**: InferenceSession - ONNX Runtime Session 封装
 - [x] **Task 2.2.2**: InferenceSessionRegistry - Session 注册管理
 - [x] **Task 2.2.3**: ModelRepository - 模型路径解析与 `download_strategy` 实现
 - [x] **Task 2.2.4**: SessionPool - LRU 缓存实现 (`max_entries`) - 对应 design.md 3.1 engine_cache 配置
+  > ⚠️ **注意**: 底层 LRU 机制已完成，但配置未对接。详见 [评估报告](./evaluation/C++_evaluation_engine_cache.md)
 - [x] **Task 2.2.5**: SessionPool - TTL 空闲释放 (`idle_timeout_seconds`) - 对应 design.md 3.1 engine_cache 配置
+  > ⚠️ **注意**: 底层 TTL 机制已完成，但配置未对接。详见 [评估报告](./evaluation/C++_evaluation_engine_cache.md)
+- [ ] **Task 2.2.6**: EngineCacheConfig 扩展 - 添加 `max_entries` 和 `idle_timeout_seconds` 字段及 YAML 解析 *(新增)*
+- [ ] **Task 2.2.7**: 配置集成 - 移除 InferenceSessionRegistry 硬编码，从 AppConfig 加载参数；传递 cache path 到 InferenceSession *(新增)*
 
 ---
 
@@ -618,10 +625,12 @@ pipeline:
 
 ### 低优先级 (P2) - 增强功能
 
-| 任务              | 所属阶段 | 描述                                                      |
-| :---------------- | :------: | :-------------------------------------------------------- |
-| **Checkpointing** |   M11    | 断点续传                                                  |
-| **Metrics JSON**  |   M11    | 性能指标输出 (schema_version/step_latency/gpu_memory)     |
+| 任务              | 所属阶段 | 描述                                                      | 任务文档 |
+| :---------------- | :------: | :-------------------------------------------------------- | :------- |
+| **Checkpointing** |   M11    | 断点续传                                                  | - |
+| **Metrics JSON**  |   M11    | 性能指标输出 (schema_version/step_latency/gpu_memory)     | - |
+| **EngineCacheConfig 扩展** | M3 | 添加 `max_entries`/`idle_timeout_seconds` 字段及解析 (Task 2.2.6) | [评估报告](./evaluation/C++_evaluation_engine_cache.md) |
+| **配置集成** | M3 | 移除硬编码，从 AppConfig 加载 SessionPool 参数 (Task 2.2.7) | [评估报告](./evaluation/C++_evaluation_engine_cache.md) |
 
 ---
 
