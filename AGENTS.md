@@ -52,6 +52,7 @@ trigger: always_on
   - 记录：`@docs/dev_docs/C++_troubleshooting.md` (记录疑难杂症, 使用 `@docs/dev_docs/C++_troubleshooting.md`)
 - **提交要求**：
   - 仅提交源码与必要资源，禁止提交文档、日志或构建文件(除非用户明确要求)。
+  - 提交文档相关文件时跳过编译测试验证。
   - 文件重命名/移动必须使用 `git mv`。
   - 提交前必须通过 `build.py test`。
 

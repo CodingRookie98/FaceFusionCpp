@@ -12,6 +12,7 @@
 
 import services.pipeline.runner;
 import config.task;
+import config.merger;
 import domain.ai.model_repository;
 import foundation.infrastructure.test_support;
 import domain.face.analyser;
@@ -76,7 +77,8 @@ TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
     step1.params = params1;
     task_config.pipeline.push_back(step1);
 
-    auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
+    auto merged_task_config = config::MergeConfigs(task_config, app_config);
+    auto result = runner->Run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
 
     if (result.is_err()) {
         std::cerr << "Image Runner Error: " << result.error().message << std::endl;
@@ -154,7 +156,8 @@ TEST_F(PipelineRunnerImageTest, ProcessImageBatch) {
     step1.params = params1;
     task_config.pipeline.push_back(step1);
 
-    auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
+    auto merged_task_config = config::MergeConfigs(task_config, app_config);
+    auto result = runner->Run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
 
     ASSERT_TRUE(result.is_ok());
 
@@ -245,7 +248,8 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
     step4.params = params4;
     task_config.pipeline.push_back(step4);
 
-    auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
+    auto merged_task_config = config::MergeConfigs(task_config, app_config);
+    auto result = runner->Run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
 
     ASSERT_TRUE(result.is_ok());
 

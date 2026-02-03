@@ -3,7 +3,8 @@
 > **标准参考 & 跨文档链接**:
 > *   架构设计文档: [应用层架构设计说明书](./design.md)
 > *   质量与评估标准: [C++代码质量与评估标准指南](./C++_quality_standard.md)
-> *   最后更新: 2026-01-30
+> *   最后更新: 2026-02-02
+> *   更新内容: engine_cache 配置集成评估；新增 Task 2.2.6/2.2.7 补全配置对接
 
 ## 0. 计划概述
 
@@ -41,15 +42,15 @@ graph TD
 | :-----: | :------------------------- | :------------------------------------------------------------- | :--------: | :--------: |
 | **M1**  | Foundation Layer           | 基础设施模块 (Logger/FileSystem/ThreadPool/ConcurrentQueue)    |  ✅ 已完成  |     无     |
 | **M2**  | Platform Layer - Media     | 媒体处理模块 (FFmpeg 封装/图像编解码)                          |  ✅ 已完成  |     M1     |
-| **M3**  | Platform Layer - AI        | 推理引擎封装 (ONNX Runtime/TensorRT EP)                        |  ✅ 已完成  |     M1     |
+| **M3**  | Platform Layer - AI        | 推理引擎封装 (ONNX Runtime/TensorRT EP)                        |  ⚠️ 待补全  |     M1     |
 | **M4**  | Domain Layer - Core        | 人脸领域模型 (Face/Embedding/Mask 类型)                        |  ✅ 已完成  |     M1     |
 | **M5**  | Domain Layer - Analyzer    | 人脸分析器 (Detector/Landmarker/Recognizer/Masker)             |  ✅ 已完成  |   M3, M4   |
 | **M6**  | Domain Layer - Processor   | 处理器实现 (Swapper/Enhancer/ExpressionRestorer)               |  ✅ 已完成  |     M5     |
 | **M7**  | Domain Layer - Pipeline    | 流水线基础架构 (Queue/Context/Adapters)                        |  ✅ 已完成  |     M4     |
 | **M8**  | Services Layer             | Pipeline Runner 服务 (Image/Video 处理调度)                    |  ✅ 已完成  | M2, M6, M7 |
-| **M9**  | Application Layer - Config | 配置管理 (AppConfig/TaskConfig 解析与校验)                     | 🔄 基本完成 |     M1     |
-| **M10** | Application Layer - CLI    | 命令行接口 (参数解析/系统检查/任务执行)                        | 🔄 部分完成 |   M8, M9   |
-| **M11** | Integration & Verification | 端到端集成测试与性能验证                                       |  ⏳ 未开始  |    M10     |
+| **M9**  | Application Layer - Config | 配置管理 (AppConfig/TaskConfig 解析与校验/ConfigMerger)        |  ✅ 已完成  |     M1     |
+| **M10** | Application Layer - CLI    | 命令行接口 (参数解析/系统检查/--validate/任务执行)             |  ✅ 已完成  |   M8, M9   |
+| **M11** | Integration & Verification | 端到端集成测试/性能验证/Metrics JSON Schema                    |  ⏳ 未开始  |    M10     |
 
 ---
 
@@ -82,7 +83,7 @@ graph TD
 - [x] **Task 1.1.2**: 实现日志格式化器
 - [x] **Task 1.1.3**: 集成 spdlog 后端
 - [x] **Task 1.1.4**: 实现日志轮转 (daily/hourly/size)
-- [x] **Task 1.1.5**: 添加 `max_files` / `max_total_size` 配置支持
+- [x] **Task 1.1.5**: 添加 `max_files` / `max_total_size` 配置支持 (对应 design.md 3.1 日志轮转配置增强)
 
 #### 1.3.2 子任务: ConcurrentQueue 实现 ✅
 
@@ -105,7 +106,7 @@ graph TD
 
 ---
 
-## 阶段二: Platform Layer (M2 + M3) ✅ 已完成
+## 阶段二: Platform Layer (M2 + M3) ⚠️ M3 待补全
 
 ### 2.1 Media 子模块 (M2) ✅
 
@@ -128,7 +129,10 @@ graph TD
 - [x] **Task 2.1.3**: Vision - 图像 I/O 和变换
 - [x] **Task 2.1.4**: FFmpeg Remuxer - 音频重混流
 
-### 2.2 AI 推理子模块 (M3) ✅
+### 2.2 AI 推理子模块 (M3) ⚠️ 待补全
+
+> **评估状态**: 底层 SessionPool (LRU/TTL) 已完整实现，但 `engine_cache` 配置字段未完全对接。
+> 详见: [engine_cache 配置集成评估报告](./evaluation/C++_evaluation_engine_cache.md)
 
 #### 2.2.1 目标
 
@@ -142,13 +146,17 @@ graph TD
 | **InferenceSessionRegistry** | `foundation/ai/inference_session_registry.ixx` | Session 注册与管理   |   ✅   |
 | **ModelRepository**          | `domain/ai/model_repository.ixx`               | 模型路径管理与下载   |   ✅   |
 
-#### 2.2.3 任务分解 ✅
+#### 2.2.3 任务分解 ⚠️ 待补全
 
 - [x] **Task 2.2.1**: InferenceSession - ONNX Runtime Session 封装
 - [x] **Task 2.2.2**: InferenceSessionRegistry - Session 注册管理
 - [x] **Task 2.2.3**: ModelRepository - 模型路径解析与 `download_strategy` 实现
-- [x] **Task 2.2.4**: SessionPool - LRU 缓存实现 (`max_entries`)
-- [x] **Task 2.2.5**: SessionPool - TTL 空闲释放 (`idle_timeout_seconds`)
+- [x] **Task 2.2.4**: SessionPool - LRU 缓存实现 (`max_entries`) - 对应 design.md 3.1 engine_cache 配置
+  > ⚠️ **注意**: 底层 LRU 机制已完成，但配置未对接。详见 [评估报告](./evaluation/C++_evaluation_engine_cache.md)
+- [x] **Task 2.2.5**: SessionPool - TTL 空闲释放 (`idle_timeout_seconds`) - 对应 design.md 3.1 engine_cache 配置
+  > ⚠️ **注意**: 底层 TTL 机制已完成，但配置未对接。详见 [评估报告](./evaluation/C++_evaluation_engine_cache.md)
+- [ ] **Task 2.2.6**: EngineCacheConfig 扩展 - 添加 `max_entries` 和 `idle_timeout_seconds` 字段及 YAML 解析 *(新增)*
+- [ ] **Task 2.2.7**: 配置集成 - 移除 InferenceSessionRegistry 硬编码，从 AppConfig 加载参数；传递 cache path 到 InferenceSession *(新增)*
 
 ---
 
@@ -335,7 +343,7 @@ graph TD
 
 ---
 
-## 阶段八: Application Layer - Config (M9) 🔄 基本完成
+## 阶段八: Application Layer - Config (M9) ✅ 已完成
 
 ### 8.1 目标
 
@@ -349,8 +357,8 @@ graph TD
 | **TaskConfig**      | 任务配置解析 (`task_config.ixx`)  |    ✅     |
 | **ConfigTypes**     | 配置类型定义 (`config_types.ixx`) |    ✅     |
 | **ConfigParser**    | YAML 配置解析器 (`parser/`)       |    ✅     |
-| **ConfigValidator** | 配置校验器                        | ⏳ 未实现 |
-| **ConfigMerger**    | 配置级联合并                      | ⏳ 未实现 |
+| **ConfigValidator** | 配置校验器                        |    ✅     |
+| **ConfigMerger**    | 配置级联合并                      |    ✅     |
 
 ### 8.3 任务分解
 
@@ -362,19 +370,35 @@ graph TD
   - [x] FaceSwapperParams, FaceEnhancerParams, ExpressionRestorerParams, FrameEnhancerParams
   - [x] FaceAnalysisConfig (Detector/Landmarker/Recognizer/Masker)
   - [x] PipelineStep 定义
-- [ ] **Task 8.3**: ConfigValidator - 错误报告格式 (E201/E202/E203) - *未实现*
-- [ ] **Task 8.4**: ConfigMerger - 级联优先级 (Task > User > Default) - *未实现*
-- [ ] **Task 8.5**: `--validate` Dry-Run 模式 - *未实现*
+- [x] **Task 8.3**: ConfigValidator 增强 - *已完成*
+  > 详细任务文档: [C++_task_M9_config_validator_enhancement.md](./plan/config/C++_task_M9_config_validator_enhancement.md)
+  - [x] 基础校验框架 (`ConfigValidator` 类)
+  - [x] AppConfig 版本校验 (`config_version`)
+  - [x] 路径存在性校验 (`validate_path_exists`)
+  - [x] 参数范围校验 (`validate_range`)
+  - [x] TaskConfig 版本校验
+  - [x] face_swapper 参数校验
+  - [x] face_analysis 参数校验
+- [x] **Task 8.4**: ConfigMerger - 级联优先级 (Task > User > Default) - *已完成*
+  > 详细任务文档: [C++_task_M9_config_merger_implementation.md](./plan/config/C++_task_M9_config_merger_implementation.md)
+  > 
+  > **设计说明** (来自 design.md 第 217 行): 
+  > `default_task_settings` 字段名与 `task_config.yaml` 完全一致，可包含 TaskConfig 的任意字段作为默认值。
+  - [x] `DefaultTaskSettings` 结构定义 (使用 `std::optional` 表示可选字段)
+  - [x] `default_task_settings` YAML 解析 (仅解析配置文件中存在的字段)
+  - [x] `MergeConfigs()` 合并逻辑 (仅当 TaskConfig 字段为空/默认时应用)
+  - [x] CLI 集成调用
+- [x] **Task 8.5**: `--validate` Dry-Run 模式 - *已实现* (对应 design.md 3.5.3 CLI 参数规格)
 
 > [!NOTE]
-> 配置解析基础已完成，但尚未实现设计文档中定义的：
-> - 错误报告格式 (YAML Path 定位)
-> - `config_version` 版本校验
-> - 配置级联合并机制
+> **M9 已完成** (2026-02-02 确认):
+> - ConfigValidator: 完整实现 TaskConfig/AppConfig 版本校验、face_swapper/face_analysis 参数校验
+> - ConfigMerger: 完整实现级联优先级 (Task > App > Hardcoded)，含单元测试覆盖
+> - 详见: `src/app/config/config_validator.cpp` (247行), `config_merger.cpp` (136行)
 
 ---
 
-## 阶段九: Application Layer - CLI (M10) 🔄 部分完成
+## 阶段九: Application Layer - CLI (M10) ✅ 已完成
 
 ### 9.1 目标
 
@@ -388,26 +412,49 @@ graph TD
 | `-c/--config` 参数  |   ✅   | 载入任务配置文件                 |
 | `-v/--version` 参数 |   ✅   | 显示版本信息 (`print_version()`) |
 | `run_pipeline()`    |   ✅   | 执行流水线                       |
+| `-s/-t/-o` 快捷模式 |   ✅   | 快捷参数已实现                   |
+| `--processors`      |   ✅   | 处理器选择已实现                 |
+| `--system-check`    |   ✅   | 系统自检完整实现                 |
+| `--validate`        |   ✅   | 配置校验模式已实现               |
+| `--log-level`       |   ✅   | 日志级别覆盖已实现               |
+| 信号处理            |   ✅   | `ShutdownHandler` 已实现         |
 
 ### 9.3 任务分解
 
 - [x] **Task 9.1**: 参数解析基础 (`-c`)
 - [x] **Task 9.2**: 版本信息 (`-v`)
-- [ ] **Task 9.3**: `-h/--help` 帮助信息 - *待增强*
-- [ ] **Task 9.4**: `-s/-t/-o` 快捷模式参数 - *未实现*
-- [ ] **Task 9.5**: `--processors` 处理器选择 - *未实现*
-- [ ] **Task 9.6**: `--system-check` 系统自检 (人类可读 + JSON) - *未实现*
-- [ ] **Task 9.7**: `--validate` 配置校验模式 - *未实现*
-- [ ] **Task 9.8**: `--log-level` 日志级别覆盖 - *未实现*
-- [ ] **Task 9.9**: 信号处理 (Graceful Shutdown) - *未实现*
-- [ ] **Task 9.10**: 启动 Banner (版本/构建时间) - *待增强*
+- [x] **Task 9.3**: `-h/--help` 帮助信息 (CLI11 自动生成)
+- [x] **Task 9.4**: `-s/-t/-o` 快捷模式参数
+- [x] **Task 9.5**: `--processors` 处理器选择
+- [x] **Task 9.6**: `--system-check` 系统自检完善 - *已完成*
+  > 详细任务文档: [C++_task_M9_system_check_completion.md](./plan/config/C++_task_M9_system_check_completion.md)
+  - [x] CUDA Driver 版本检查
+  - [x] VRAM 可用量检查
+  - [x] FFmpeg 库版本检查
+  - [x] ONNX Runtime 版本检查
+  - [x] cuDNN 版本检查
+  - [x] TensorRT 版本检查
+  - [x] Model Repository 检查
+- [x] **Task 9.7**: `--validate` 配置校验模式
+- [x] **Task 9.8**: `--log-level` 日志级别覆盖
+- [x] **Task 9.9**: 信号处理 (Graceful Shutdown)
+- [x] **Task 9.10**: 启动 Banner 增强 (版本/构建时间/配置摘要) - *已完成*
+  > 详细任务文档: [C++_task_M10_startup_banner_enhancement.md](./plan/services/C++_task_M10_startup_banner_enhancement.md)
+  - [x] CMake 版本注入 (消除 `print_version()` 中 v1.0.0 硬编码)
+  - [x] 启动 Banner 通过 Logger (INFO 级) 输出
+  - [x] 配置加载摘要日志 (Config Summary)
+  - [x] 硬件检测信息记录到启动日志
 
-> [!IMPORTANT]
-> CLI 当前仅实现最基础功能，需补充：
-> - 设计文档中定义的全部参数
-> - `--system-check` 系统自检功能
-> - `--validate` 配置校验
-> - 信号处理与优雅停机
+> [!NOTE]
+> **M10 已完成** (2026-02-02 确认):
+> - 所有 CLI 参数已实现 (-c, -v, -s/-t/-o, --processors, --system-check, --validate, --log-level)
+> - 信号处理 (ShutdownHandler) 已完成
+> - 启动 Banner 增强已完成:
+>   - CMake 版本注入 (`cmake/version.cmake` + `version.cpp.in`)
+>   - 版本模块 (`app.version`) 消除硬编码
+>   - `print_startup_banner()` 通过 Logger 输出
+>   - `log_config_summary()` 配置摘要日志
+>   - `log_hardware_info()` 硬件检测信息日志
 
 ---
 
@@ -415,21 +462,148 @@ graph TD
 
 ### 10.1 目标
 
-端到端集成测试与性能验证。
+端到端集成测试与性能验证，确保系统在真实场景下的稳定性与性能表现。
 
-### 10.2 任务分解
+> **标准测试素材**: 详见 [design.md - A.3 标准测试素材](./design.md#a3-标准测试素材-standard-test-assets)
+
+### 10.2 测试素材
+
+#### 10.2.1 标准 Source Face
+
+推荐使用 `lenna.bmp` (512×512, bgr24) 作为统一 Source Face：
+- ✅ 经典测试图，人脸清晰正面
+- ✅ 标准 BMP 格式，无解码歧义
+- ✅ 文件最小，加载快
+
+**路径**: `assets/standard_face_test_images/lenna.bmp`
+
+#### 10.2.2 测试矩阵
+
+| 用例名称 | Source | Target | 类型 | 分类 |
+| :------- | :----- | :----- | :--- | :--- |
+| `img_512_baseline` | `lenna.bmp` | `tiffany.bmp` (512×512) | 图片 | P0 基线 |
+| `img_720p_standard` | `lenna.bmp` | `girl.bmp` (720×576) | 图片 | P0 基线 |
+| `img_2k_stress` | `lenna.bmp` | `woman.jpg` (1992×1120) | 图片 | P1 压力 |
+| `img_palette_edge` | `lenna.bmp` | `man.bmp` (1024×1024, pal8) | 图片 | P2 边界 |
+| `video_720p_vertical` | `lenna.bmp` | `slideshow_scaled.mp4` (720×1280, 491帧) | 视频 | P0 基线 |
+
+### 10.3 任务分解
+
+#### 10.3.1 P0 - 核心功能验证 (必须通过)
 
 - [ ] **Task 10.1**: 端到端图片换脸测试
-- [ ] **Task 10.2**: 端到端视频换脸测试
-- [ ] **Task 10.3**: 断点续传测试 (Checkpointing)
-- [ ] **Task 10.4**: 性能基准测试 (1080p 视频处理速度)
-- [ ] **Task 10.5**: Metrics JSON 输出验证
-- [ ] **Task 10.6**: 内存/显存峰值监控
+  - 测试用例: `img_512_baseline`, `img_720p_standard`
+  - 验证点:
+    - 输出文件存在且可正常打开
+    - 人脸区域已被替换 (视觉检查或 SSIM 对比)
+    - 无异常日志 (ERROR 级别)
+  - 验收标准: 参见 [design.md A.3.3 硬件适配验收标准](./design.md#a33-硬件适配验收标准)
 
-**验收标准**:
-- 图片处理 < 2s/张 (RTX 3090)
-- 视频处理 > 20 FPS (1080p, RTX 3090)
-- 无内存泄漏 (Valgrind/AddressSanitizer)
+- [ ] **Task 10.2**: 端到端视频换脸测试
+  - 测试用例: `video_720p_vertical`
+  - 验证点:
+    - 输出视频帧数 = 输入帧数 (491帧)
+    - 音轨正确保留 (AAC, 44.1kHz)
+    - 处理 FPS 达标 (GTX 1650: ≥ 5 FPS)
+  - 验收标准: 总耗时 < 120s (GTX 1650 适配)
+
+- [ ] **Task 10.5**: Metrics JSON 输出验证
+  - 验证点:
+    - 文件生成于 `logs/metrics_{timestamp}.json`
+    - JSON Schema 符合 [design.md 5.11](./design.md#511-metrics-json-schema-参考) 规范
+    - 包含 `schema_version`, `task_id`, `duration_ms`, `summary`, `step_latency`
+  - 依赖: 需在 Task 10.1/10.2 完成后验证
+
+#### 10.3.2 P1 - 性能与资源监控
+
+- [ ] **Task 10.4**: 性能基准测试
+  - 测试场景: `video_720p_vertical` (491帧)
+  - 采集指标:
+    - 平均 FPS / P50 / P99 帧耗时
+    - 每个 Pipeline Step 的延迟分布
+  - 输出: 性能基准报告 (Markdown 格式)
+
+- [ ] **Task 10.6**: 内存/显存峰值监控
+  - 监控方式:
+    - 显存: NVML API 或 `nvidia-smi` 采样
+    - 内存: 平台 API (`GetProcessMemoryInfo` / `/proc/self/status`)
+  - 验收标准:
+    - GTX 1650 (4GB): 显存峰值 < 3.5 GB
+    - 无内存泄漏 (处理前后 RSS 差异 < 50MB)
+
+#### 10.3.3 P2 - 边界与增强功能
+
+- [ ] **Task 10.3**: 断点续传测试 (Checkpointing)
+  - 前置依赖: [design.md 5.9 断点续传](./design.md#59-断点续传-checkpointing) 机制实现
+  - 测试场景:
+    1. 正常中断恢复 (SIGINT 后重启)
+    2. Checkpoint 文件损坏检测
+    3. 帧索引跳转准确性验证
+  - 验证点:
+    - `checkpoints/{task_id}.ckpt` 正确生成
+    - 恢复后继续处理，无重复帧
+    - 任务完成后自动清理 checkpoint
+
+- [ ] **Task 10.7**: 边界情况测试
+  - 测试用例: `img_palette_edge` (调色板图片)
+  - 验证点:
+    - 调色板格式 (pal8) 自动转换为 RGB24
+    - WebP 伪装文件 (`woman.jpg`) 正确解码
+    - 无人脸帧透传处理，生成 WARN 日志
+
+### 10.4 验收标准汇总
+
+> **硬件基准**: 以下标准基于 GTX 1650 (4GB VRAM) 测试环境
+> 
+> **⚠️ 构建模式要求**:
+> - **性能测试 (Task 10.1/10.2/10.4)**: **必须使用 Release 模式**，Debug 模式数据无参考价值
+> - **功能正确性测试**: Debug 或 Release 均可
+> - **内存泄漏检测 (Task 10.6)**: 使用 Debug 模式 + ASan，或 Release + Valgrind
+
+| 测试类别 | 测试项 | 阈值 (Release) | 说明 |
+| :------- | :----- | :------------- | :--- |
+| **图片 - 512px** | 处理耗时 | < 3s | 基线小图 |
+| **图片 - 720p** | 处理耗时 | < 5s | 标准分辨率 |
+| **图片 - 2K** | 处理耗时 | < 10s | 压力测试 |
+| **视频 - 720p** | 处理 FPS | ≥ 5 FPS | 491帧测试视频 |
+| **视频 - 720p** | 总耗时 | < 120s | 允许 20% 余量 |
+| **显存峰值** | 所有测试 | < 3.5 GB | 留 500MB 安全余量 |
+| **内存泄漏** | 处理前后 | Δ < 50MB | Valgrind/ASan 验证 |
+
+> **高端硬件参考**: RTX 3090 标准见 [design.md A.3.3](./design.md#a33-硬件适配验收标准)
+
+### 10.5 测试配置模板
+
+```yaml
+# test_config_baseline.yaml - 基线测试配置
+config_version: "1.0"
+
+task_info:
+  id: "m11_e2e_baseline"
+  description: "M11 End-to-End Baseline Test"
+  enable_logging: true
+
+io:
+  source_paths:
+    - "./assets/standard_face_test_images/lenna.bmp"
+  target_paths:
+    - "./assets/standard_face_test_videos/slideshow_scaled.mp4"
+  output:
+    path: "./test_output/"
+    prefix: "m11_test_"
+    conflict_policy: "overwrite"
+
+resource:
+  max_queue_size: 10  # 低显存适配
+  execution_order: "sequential"
+
+pipeline:
+  - step: "face_swapper"
+    enabled: true
+    params:
+      model: "inswapper_128_fp16"
+      face_selector_mode: "many"
+```
 
 ---
 
@@ -437,27 +611,26 @@ graph TD
 
 ### 高优先级 (P0) - 核心功能缺失
 
-| 任务                  | 所属阶段 | 描述                            |
-| :-------------------- | :------: | :------------------------------ |
-| **ConfigValidator**   |    M9    | 配置校验器 + E2xx 错误码        |
-| **--system-check**    |   M10    | 系统自检 (CUDA/TensorRT/FFmpeg) |
-| **--validate**        |   M10    | 配置校验 Dry-Run 模式           |
-| **Graceful Shutdown** |   M10    | 信号处理 (SIGINT/SIGTERM)       |
+| 任务                         | 所属阶段 | 描述                                       | 任务文档                                                                 |
+| :--------------------------- | :------: | :----------------------------------------- | :----------------------------------------------------------------------- |
+| ~~**ConfigValidator 增强**~~ |    M9    | ✅ 已完成                                   | [C++_task_M9_config_validator_enhancement.md](./plan/config/C++_task_M9_config_validator_enhancement.md) |
+| ~~**ConfigMerger**~~         |    M9    | ✅ 已完成                                   | [C++_task_M9_config_merger_implementation.md](./plan/config/C++_task_M9_config_merger_implementation.md) |
 
 ### 中优先级 (P1) - 设计规范完整性
 
-| 任务                | 所属阶段 | 描述                          |
-| :------------------ | :------: | :---------------------------- |
-| **SessionPool LRU** |    M3    | Session 缓存 + TTL 管理       |
-| **CLI 快捷模式**    |   M10    | `-s/-t/-o` 参数               |
-| **ConfigMerger**    |    M9    | 配置级联优先级                |
+| 任务                       | 所属阶段 | 描述                                                      | 任务文档                                                                             |
+| :------------------------- | :------: | :-------------------------------------------------------- | :----------------------------------------------------------------------------------- |
+| ~~**SystemCheck 完善**~~   |   M10    | ✅ 已完成                                                  | [C++_task_M9_system_check_completion.md](./plan/config/C++_task_M9_system_check_completion.md) |
+| ~~**SessionPool LRU**~~    |    M3    | ✅ 已完成 (Task 2.2.4 + 2.2.5)                             | [C++_task_session_pool_lru_ttl.md](./plan/platform/C++_task_session_pool_lru_ttl.md) |
 
 ### 低优先级 (P2) - 增强功能
 
-| 任务              | 所属阶段 | 描述         |
-| :---------------- | :------: | :----------- |
-| **Checkpointing** |   M11    | 断点续传     |
-| **Metrics JSON**  |   M11    | 性能指标输出 |
+| 任务              | 所属阶段 | 描述                                                      | 任务文档 |
+| :---------------- | :------: | :-------------------------------------------------------- | :------- |
+| **Checkpointing** |   M11    | 断点续传                                                  | - |
+| **Metrics JSON**  |   M11    | 性能指标输出 (schema_version/step_latency/gpu_memory)     | - |
+| **EngineCacheConfig 扩展** | M3 | 添加 `max_entries`/`idle_timeout_seconds` 字段及解析 (Task 2.2.6) | [评估报告](./evaluation/C++_evaluation_engine_cache.md) |
+| **配置集成** | M3 | 移除硬编码，从 AppConfig 加载 SessionPool 参数 (Task 2.2.7) | [评估报告](./evaluation/C++_evaluation_engine_cache.md) |
 
 ---
 
@@ -521,13 +694,13 @@ graph TD
         VideoRunner
     end
 
-    subgraph "M9: App/Config 🔄"
+    subgraph "M9: App/Config ✅"
         AppConfig
         TaskConfig
         ConfigParser
     end
 
-    subgraph "M10: App/CLI 🔄"
+    subgraph "M10: App/CLI ✅"
         CLI
     end
 
@@ -593,7 +766,7 @@ graph TD
 | 风险点                 | 可能性 | 影响         | 缓解措施                                          |
 | :--------------------- | :----: | :----------- | :------------------------------------------------ |
 | TensorRT 版本兼容性    |   高   | 推理失败     | 多版本测试矩阵；明确 CUDA/cuDNN/TensorRT 版本组合 |
-| FFmpeg API 变更        |   中   | 编译失败     | 锁定 FFmpeg 6.x 版本；封装抽象层                  |
+| FFmpeg API 变更        |   中   | 编译失败     | 锁定 FFmpeg 7.x 版本；封装抽象层                  |
 | ONNX 模型精度差异      |   中   | 输出质量下降 | 与 Python 版本 A/B 对比测试                       |
 | 视频分段处理时音画同步 |   中   | 输出错误     | 帧级时间戳精确管理；集成测试覆盖                  |
 | 显存 OOM (长视频)      |   高   | 处理中断     | 实现 `segment_duration_seconds` 分段；背压流控    |

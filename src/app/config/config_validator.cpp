@@ -19,8 +19,15 @@ namespace config {
 std::vector<ValidationError> ConfigValidator::validate(const TaskConfig& config) {
     std::vector<ValidationError> errors;
 
+    if (!config.config_version.empty() && config.config_version != SUPPORTED_CONFIG_VERSION) {
+        errors.push_back({ErrorCode::E204_ConfigVersionMismatch, "config_version",
+                          config.config_version,
+                          std::format("supported version {}", SUPPORTED_CONFIG_VERSION)});
+    }
+
     validate_task_info(config.task_info, errors);
     validate_io(config.io, errors);
+    validate_face_analysis(config.face_analysis, errors);
     validate_pipeline(config.pipeline, errors);
 
     return errors;
@@ -94,6 +101,17 @@ void ConfigValidator::validate_io(const IOConfig& io, std::vector<ValidationErro
     validate_output(io.output, errors);
 }
 
+void ConfigValidator::validate_face_analysis(const FaceAnalysisConfig& fa,
+                                             std::vector<ValidationError>& errors) {
+    // Face detector score threshold: [0.0, 1.0]
+    validate_range(fa.face_detector.score_threshold, 0.0, 1.0,
+                   "face_analysis.face_detector.score_threshold", errors);
+
+    // Face recognizer similarity threshold: [0.0, 1.0]
+    validate_range(fa.face_recognizer.similarity_threshold, 0.0, 1.0,
+                   "face_analysis.face_recognizer.similarity_threshold", errors);
+}
+
 void ConfigValidator::validate_output(const OutputConfig& output,
                                       std::vector<ValidationError>& errors) {
     // Output path must not be empty
@@ -105,7 +123,8 @@ void ConfigValidator::validate_output(const OutputConfig& output,
     // Image format validation
     static const std::vector<std::string> valid_formats = {"png", "jpg", "bmp", "jpeg"};
     std::string fmt = output.image_format;
-    std::transform(fmt.begin(), fmt.end(), fmt.begin(), ::tolower);
+    std::transform(fmt.begin(), fmt.end(), fmt.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     if (std::find(valid_formats.begin(), valid_formats.end(), fmt) == valid_formats.end()) {
         errors.push_back({ErrorCode::E202_ParameterOutOfRange, "io.output.image_format",
                           std::format("\"{}\"", output.image_format),
@@ -130,7 +149,8 @@ void ConfigValidator::validate_pipeline(const std::vector<PipelineStep>& steps,
 
         // Validate step type
         std::string step_type = step.step;
-        std::transform(step_type.begin(), step_type.end(), step_type.begin(), ::tolower);
+        std::transform(step_type.begin(), step_type.end(), step_type.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
         if (std::find(valid_steps.begin(), valid_steps.end(), step_type) == valid_steps.end()) {
             errors.push_back(
@@ -147,14 +167,47 @@ void ConfigValidator::validate_pipeline(const std::vector<PipelineStep>& steps,
 void ConfigValidator::validate_step_params(const StepParams& params, const std::string& step_type,
                                            const std::string& path_prefix,
                                            std::vector<ValidationError>& errors) {
-    if (step_type == "face_enhancer") {
+    if (step_type == "face_swapper") {
+        if (const auto* p = std::get_if<FaceSwapperParams>(&params)) {
+            if (p->face_selector_mode == FaceSelectorMode::Reference) {
+                if (!p->reference_face_path.has_value() || p->reference_face_path->empty()) {
+                    errors.push_back({ErrorCode::E205_RequiredFieldMissing,
+                                      path_prefix + ".params.reference_face_path", "",
+                                      "required when face_selector_mode is 'reference'"});
+                } else {
+                    validate_path_exists(*p->reference_face_path,
+                                         path_prefix + ".params.reference_face_path", errors);
+                }
+            }
+        }
+    } else if (step_type == "face_enhancer") {
         if (const auto* p = std::get_if<FaceEnhancerParams>(&params)) {
             validate_range(p->blend_factor, 0.0, 1.0, path_prefix + ".params.blend_factor", errors);
+            if (p->face_selector_mode == FaceSelectorMode::Reference) {
+                if (!p->reference_face_path.has_value() || p->reference_face_path->empty()) {
+                    errors.push_back({ErrorCode::E205_RequiredFieldMissing,
+                                      path_prefix + ".params.reference_face_path", "",
+                                      "required when face_selector_mode is 'reference'"});
+                } else {
+                    validate_path_exists(*p->reference_face_path,
+                                         path_prefix + ".params.reference_face_path", errors);
+                }
+            }
         }
     } else if (step_type == "expression_restorer") {
         if (const auto* p = std::get_if<ExpressionRestorerParams>(&params)) {
             validate_range(p->restore_factor, 0.0, 1.0, path_prefix + ".params.restore_factor",
                            errors);
+            if (p->face_selector_mode == FaceSelectorMode::Reference) {
+                if (!p->reference_face_path.has_value() || p->reference_face_path->empty()) {
+                    errors.push_back({ErrorCode::E205_RequiredFieldMissing,
+                                      path_prefix + ".params.reference_face_path", "",
+                                      "required when face_selector_mode is 'reference'"});
+                } else {
+                    validate_path_exists(*p->reference_face_path,
+                                         path_prefix + ".params.reference_face_path", errors);
+                }
+            }
         }
     } else if (step_type == "frame_enhancer") {
         if (const auto* p = std::get_if<FrameEnhancerParams>(&params)) {

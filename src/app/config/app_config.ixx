@@ -10,6 +10,7 @@ module;
 
 #include <string>
 #include <vector>
+#include <optional>
 
 export module config.app;
 
@@ -88,17 +89,57 @@ struct DefaultModels {
 };
 
 /**
+ * @brief Default settings for task configuration (fallback values)
+ * @see design.md Section 3.1 - default_task_settings
+ * @see design.md V2.6 - 配置级联优先级
+ *
+ * 设计原则:
+ * - 字段名与 task_config.yaml 完全一致
+ * - 使用 std::optional 表示"是否在 app_config.yaml 中显式定义"
+ * - 仅当 TaskConfig 中对应字段为空/默认值时，才应用此处的默认值
+ * - 优先级: TaskConfig 显式值 > AppConfig defaults > 代码硬编码默认值
+ */
+struct DefaultTaskSettings {
+    // IO Defaults
+    struct IODefaults {
+        struct OutputDefaults {
+            std::optional<std::string> video_encoder;      ///< Default: "libx264"
+            std::optional<int> video_quality;              ///< Default: 80
+            std::optional<std::string> prefix;             ///< Default: "result_"
+            std::optional<std::string> suffix;             ///< Default: ""
+            std::optional<std::string> image_format;       ///< Default: "png"
+            std::optional<ConflictPolicy> conflict_policy; ///< Default: Error
+            std::optional<AudioPolicy> audio_policy;       ///< Default: Copy
+        } output;
+    } io;
+
+    // Resource Defaults
+    struct ResourceDefaults {
+        std::optional<int> thread_count;               ///< Default: 0 (auto)
+        std::optional<int> max_queue_size;             ///< Default: 20
+        std::optional<ExecutionOrder> execution_order; ///< Default: Sequential
+    } resource;
+
+    // Face Analysis Defaults
+    struct FaceAnalysisDefaults {
+        std::optional<double> score_threshold;      ///< Default: 0.5
+        std::optional<double> similarity_threshold; ///< Default: 0.6
+    } face_analysis;
+};
+
+/**
  * @brief Global application configuration
  */
 struct AppConfig {
-    std::string config_version = "1.0";    ///< Config schema version
-    InferenceConfig inference;             ///< Inference-specific settings
-    ResourceConfig resource;               ///< Resource limits
-    LoggingConfig logging;                 ///< Logging settings
-    MetricsConfig metrics;                 ///< Metrics collection settings
-    ModelsConfig models;                   ///< Model management settings
-    DefaultModels default_models;          ///< Default model selections
-    std::string temp_directory = "./temp"; ///< Temp file storage
+    std::string config_version = "1.0";        ///< Config schema version
+    InferenceConfig inference;                 ///< Inference-specific settings
+    ResourceConfig resource;                   ///< Resource limits
+    LoggingConfig logging;                     ///< Logging settings
+    MetricsConfig metrics;                     ///< Metrics collection settings
+    ModelsConfig models;                       ///< Model management settings
+    DefaultModels default_models;              ///< Default model selections
+    DefaultTaskSettings default_task_settings; ///< NEW: Default task-specific settings
+    std::string temp_directory = "./temp";     ///< Temp file storage
 };
 
 } // namespace config

@@ -170,6 +170,13 @@ bool compose_video_from_images(const std::string& inputImagePattern,
     return true;
 }
 
+std::string get_version_string() {
+    unsigned int avc = avcodec_version();
+    unsigned int avf = avformat_version();
+    return std::format("avcodec {}.{}.{}, avformat {}.{}.{}", (avc >> 16) & 0xff, (avc >> 8) & 0xff,
+                       avc & 0xff, (avf >> 16) & 0xff, (avf >> 8) & 0xff, avf & 0xff);
+}
+
 VideoParams::VideoParams(const std::string& videoPath) {
     if (videoPath.empty()) {
         return; // default values

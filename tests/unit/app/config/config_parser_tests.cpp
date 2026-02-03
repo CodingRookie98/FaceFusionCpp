@@ -74,6 +74,9 @@ TEST(TaskConfigValidationTest, ValidConfig) {
     config.io.source_paths = {"."};
     config.io.target_paths = {"."};
     config.io.output.path = ".";
+    config.io.output.image_format = "png";
+    config.io.output.video_encoder = "libx264";
+    config.io.output.video_quality = 80;
     config.face_analysis.face_detector.score_threshold = 0.5;
     config.face_analysis.face_recognizer.similarity_threshold = 0.6;
 
@@ -93,6 +96,7 @@ TEST(TaskConfigValidationTest, InvalidVideoQuality) {
     config.io.source_paths = {"."};
     config.io.target_paths = {"."};
     config.io.output.path = ".";
+    config.io.output.image_format = "png";
     config.io.output.video_quality = 150; // Invalid
     config.face_analysis.face_detector.score_threshold = 0.5;
     config.face_analysis.face_recognizer.similarity_threshold = 0.6;
@@ -105,6 +109,102 @@ TEST(TaskConfigValidationTest, InvalidVideoQuality) {
     auto result = ValidateTaskConfig(config);
     EXPECT_TRUE(result.is_err());
     EXPECT_THAT(result.error().yaml_path, Eq("io.output.video_quality"));
+}
+
+// ============================================================================
+// ConfigValidator Enhancement Tests (Task M9)
+// ============================================================================
+
+TEST(TaskConfigValidationTest, VersionMismatch) {
+    TaskConfig config;
+    config.config_version = "2.0"; // Unsupported
+    config.task_info.id = "test";
+
+    auto result = ValidateTaskConfig(config);
+    EXPECT_TRUE(result.is_err());
+    EXPECT_EQ(result.error().code, ErrorCode::E204_ConfigVersionMismatch);
+    EXPECT_EQ(result.error().yaml_path, "config_version");
+}
+
+TEST(TaskConfigValidationTest, FaceAnalysisRangeValidation) {
+    TaskConfig config;
+    config.config_version = "1.0";
+    config.task_info.id = "test";
+    config.io.source_paths = {"."};
+    config.io.target_paths = {"."};
+    config.io.output.path = ".";
+    config.io.output.image_format = "png";
+
+    // Invalid detector threshold
+    config.face_analysis.face_detector.score_threshold = 1.5;
+    config.face_analysis.face_recognizer.similarity_threshold = 0.6;
+
+    auto result = ValidateTaskConfig(config);
+    EXPECT_TRUE(result.is_err());
+    EXPECT_EQ(result.error().code, ErrorCode::E202_ParameterOutOfRange);
+    EXPECT_EQ(result.error().yaml_path, "face_analysis.face_detector.score_threshold");
+
+    // Invalid similarity threshold
+    config.face_analysis.face_detector.score_threshold = 0.5;
+    config.face_analysis.face_recognizer.similarity_threshold = -0.1;
+
+    result = ValidateTaskConfig(config);
+    EXPECT_TRUE(result.is_err());
+    EXPECT_EQ(result.error().code, ErrorCode::E202_ParameterOutOfRange);
+    EXPECT_EQ(result.error().yaml_path, "face_analysis.face_recognizer.similarity_threshold");
+}
+
+TEST(TaskConfigValidationTest, ReferenceFacePathRequired) {
+    TaskConfig config;
+    config.config_version = "1.0";
+    config.task_info.id = "test";
+    config.io.source_paths = {"."};
+    config.io.target_paths = {"."};
+    config.io.output.path = ".";
+    config.io.output.image_format = "png";
+
+    PipelineStep step;
+    step.step = "face_swapper";
+    FaceSwapperParams params;
+    params.face_selector_mode = FaceSelectorMode::Reference;
+    params.reference_face_path = std::nullopt; // Missing
+    step.params = params;
+    config.pipeline.push_back(step);
+
+    auto result = ValidateTaskConfig(config);
+    EXPECT_TRUE(result.is_err());
+    EXPECT_EQ(result.error().code, ErrorCode::E205_RequiredFieldMissing);
+    EXPECT_EQ(result.error().yaml_path, "pipeline[0].params.reference_face_path");
+
+    // Test empty path
+    params.reference_face_path = "";
+    config.pipeline[0].params = params;
+    result = ValidateTaskConfig(config);
+    EXPECT_TRUE(result.is_err());
+    EXPECT_EQ(result.error().code, ErrorCode::E205_RequiredFieldMissing);
+}
+
+TEST(TaskConfigValidationTest, ReferenceFacePathExists) {
+    TaskConfig config;
+    config.config_version = "1.0";
+    config.task_info.id = "test";
+    config.io.source_paths = {"."};
+    config.io.target_paths = {"."};
+    config.io.output.path = ".";
+    config.io.output.image_format = "png";
+
+    PipelineStep step;
+    step.step = "face_swapper";
+    FaceSwapperParams params;
+    params.face_selector_mode = FaceSelectorMode::Reference;
+    params.reference_face_path = "non_existent_path_xyz.jpg";
+    step.params = params;
+    config.pipeline.push_back(step);
+
+    auto result = ValidateTaskConfig(config);
+    EXPECT_TRUE(result.is_err());
+    EXPECT_EQ(result.error().code, ErrorCode::E206_InvalidPath);
+    EXPECT_EQ(result.error().yaml_path, "pipeline[0].params.reference_face_path");
 }
 
 int main(int argc, char** argv) {

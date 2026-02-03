@@ -13,6 +13,7 @@
 
 import services.pipeline.runner;
 import config.task;
+import config.merger;
 import domain.ai.model_repository;
 import foundation.infrastructure.test_support;
 import domain.face;
@@ -167,7 +168,8 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemoryOneStep) {
     std::string expected_output = "tests_output/pipeline_video_strict_memory_slideshow_scaled.mp4";
     if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
 
-    auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
+    auto merged_task_config = config::MergeConfigs(task_config, app_config);
+    auto result = runner->Run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
 
     if (result.is_err()) {
         std::cerr << "Strict Runner Error: " << result.error().message << std::endl;
@@ -212,7 +214,8 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoTolerantMemoryOneStep) {
         "tests_output/pipeline_video_tolerant_memory_slideshow_scaled.mp4";
     if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
 
-    auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
+    auto merged_task_config = config::MergeConfigs(task_config, app_config);
+    auto result = runner->Run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
 
     if (result.is_err()) {
         std::cerr << "Tolerant Runner Error: " << result.error().message << std::endl;
@@ -282,7 +285,8 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialMultiStep) {
         "tests_output/pipeline_video_sequential_multi_step_slideshow_scaled.mp4";
     if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
 
-    auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
+    auto merged_task_config = config::MergeConfigs(task_config, app_config);
+    auto result = runner->Run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
 
     if (result.is_err()) {
         std::cerr << "Sequential MultiStep Runner Error: " << result.error().message << std::endl;
@@ -364,7 +368,8 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMutiStep) {
     if (std::filesystem::exists(expected_output_1)) std::filesystem::remove(expected_output_1);
     if (std::filesystem::exists(expected_output_2)) std::filesystem::remove(expected_output_2);
 
-    auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {});
+    auto merged_task_config = config::MergeConfigs(task_config, app_config);
+    auto result = runner->Run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
 
     if (result.is_err()) {
         std::cerr << "Batch MultiStep Runner Error: " << result.error().message << std::endl;

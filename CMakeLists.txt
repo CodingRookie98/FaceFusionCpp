@@ -4,6 +4,8 @@ project(FaceFusionCpp
         DESCRIPTION "This project is the C++ version of the open-source project FaceFusion."
 )
 
+include(cmake/version.cmake)
+
 # --- 路径与输出目录配置 ---
 if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")

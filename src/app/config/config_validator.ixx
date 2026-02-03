@@ -74,6 +74,8 @@ private:
 
     void validate_io(const IOConfig& io, std::vector<ValidationError>& errors);
 
+    void validate_face_analysis(const FaceAnalysisConfig& fa, std::vector<ValidationError>& errors);
+
     void validate_output(const OutputConfig& output, std::vector<ValidationError>& errors);
 
     void validate_pipeline(const std::vector<PipelineStep>& steps,

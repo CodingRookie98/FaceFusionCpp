@@ -7,6 +7,7 @@ target_sources(config_core
     PRIVATE
         error_codes.cpp
         config_validator.cpp
+        config_merger.cpp
     PUBLIC
         FILE_SET cxx_modules TYPE CXX_MODULES
         FILES
@@ -14,6 +15,7 @@ target_sources(config_core
             app_config.ixx
             task_config.ixx
             config_validator.ixx
+            config_merger.ixx
 )
 
 # Parser subdirectory

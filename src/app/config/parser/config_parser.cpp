@@ -92,6 +92,24 @@ json GetObject(const json& j, const std::string& key) {
     return json::object();
 }
 
+/// JSON 安全获取可选字符串
+std::optional<std::string> GetOptionalString(const json& j, const std::string& key) {
+    if (j.contains(key) && j[key].is_string()) { return j[key].get<std::string>(); }
+    return std::nullopt;
+}
+
+/// JSON 安全获取可选整数
+std::optional<int> GetOptionalInt(const json& j, const std::string& key) {
+    if (j.contains(key) && j[key].is_number_integer()) { return j[key].get<int>(); }
+    return std::nullopt;
+}
+
+/// JSON 安全获取可选浮点数
+std::optional<double> GetOptionalDouble(const json& j, const std::string& key) {
+    if (j.contains(key) && j[key].is_number()) { return j[key].get<double>(); }
+    return std::nullopt;
+}
+
 } // namespace detail
 
 // ============================================================================
@@ -289,6 +307,16 @@ Result<AppConfig> ParseAppConfigFromJson(const json& j) {
     if (!log_rotation_r) { return Result<AppConfig>::Err(log_rotation_r.error()); }
     config.logging.rotation = log_rotation_r.value();
 
+    // metrics
+    auto metrics_j = detail::GetObject(j, "metrics");
+    config.metrics.enable = detail::GetBool(metrics_j, "enable", true);
+    config.metrics.step_latency = detail::GetBool(metrics_j, "step_latency", true);
+    config.metrics.gpu_memory = detail::GetBool(metrics_j, "gpu_memory", true);
+    config.metrics.report_path =
+        detail::GetString(metrics_j, "report_path", "./logs/metrics_{timestamp}.json");
+    config.metrics.gpu_sample_interval_ms =
+        detail::GetInt(metrics_j, "gpu_sample_interval_ms", 1000);
+
     // models
     auto models_j = detail::GetObject(j, "models");
     config.models.path = detail::GetString(models_j, "path", "./assets/models");
@@ -316,6 +344,60 @@ Result<AppConfig> ParseAppConfigFromJson(const json& j) {
         defaults_j, "expression_restorer_motion", "live_portrait_motion_extractor");
     config.default_models.expression_restorer_generator =
         detail::GetString(defaults_j, "expression_restorer_generator", "live_portrait_generator");
+
+    // default_task_settings
+    auto dts_j = detail::GetObject(j, "default_task_settings");
+
+    // IO defaults
+    auto io_defaults_j = detail::GetObject(dts_j, "io");
+    auto output_defaults_j = detail::GetObject(io_defaults_j, "output");
+
+    config.default_task_settings.io.output.video_encoder =
+        detail::GetOptionalString(output_defaults_j, "video_encoder");
+    config.default_task_settings.io.output.video_quality =
+        detail::GetOptionalInt(output_defaults_j, "video_quality");
+    config.default_task_settings.io.output.prefix =
+        detail::GetOptionalString(output_defaults_j, "prefix");
+    config.default_task_settings.io.output.suffix =
+        detail::GetOptionalString(output_defaults_j, "suffix");
+    config.default_task_settings.io.output.image_format =
+        detail::GetOptionalString(output_defaults_j, "image_format");
+
+    if (auto conflict_str = detail::GetOptionalString(output_defaults_j, "conflict_policy")) {
+        auto conflict_r = ParseConflictPolicy(*conflict_str);
+        if (conflict_r) {
+            config.default_task_settings.io.output.conflict_policy = conflict_r.value();
+        }
+    }
+
+    if (auto audio_str = detail::GetOptionalString(output_defaults_j, "audio_policy")) {
+        auto audio_r = ParseAudioPolicy(*audio_str);
+        if (audio_r) { config.default_task_settings.io.output.audio_policy = audio_r.value(); }
+    }
+
+    // Resource defaults
+    auto resource_defaults_j = detail::GetObject(dts_j, "resource");
+    config.default_task_settings.resource.thread_count =
+        detail::GetOptionalInt(resource_defaults_j, "thread_count");
+    config.default_task_settings.resource.max_queue_size =
+        detail::GetOptionalInt(resource_defaults_j, "max_queue_size");
+
+    if (auto exec_order_str = detail::GetOptionalString(resource_defaults_j, "execution_order")) {
+        auto exec_order_r = ParseExecutionOrder(*exec_order_str);
+        if (exec_order_r) {
+            config.default_task_settings.resource.execution_order = exec_order_r.value();
+        }
+    }
+
+    // Face analysis defaults
+    auto fa_defaults_j = detail::GetObject(dts_j, "face_analysis");
+    auto detector_defaults_j = detail::GetObject(fa_defaults_j, "face_detector");
+    config.default_task_settings.face_analysis.score_threshold =
+        detail::GetOptionalDouble(detector_defaults_j, "score_threshold");
+
+    auto recognizer_defaults_j = detail::GetObject(fa_defaults_j, "face_recognizer");
+    config.default_task_settings.face_analysis.similarity_threshold =
+        detail::GetOptionalDouble(recognizer_defaults_j, "similarity_threshold");
 
     // temp_directory
     config.temp_directory = detail::GetString(j, "temp_directory", "./temp");
@@ -358,7 +440,7 @@ Result<PipelineStep> ParsePipelineStep(const json& step_j) {
 
     if (step_type == "face_swapper") {
         FaceSwapperParams params;
-        params.model = detail::GetString(params_j, "model", "inswapper_128");
+        params.model = detail::GetString(params_j, "model", "");
 
         auto mode_str = detail::GetString(params_j, "face_selector_mode", "many");
         auto mode_r = ParseFaceSelectorMode(mode_str);
@@ -371,7 +453,7 @@ Result<PipelineStep> ParsePipelineStep(const json& step_j) {
         step.params = std::move(params);
     } else if (step_type == "face_enhancer") {
         FaceEnhancerParams params;
-        params.model = detail::GetString(params_j, "model", "gfpgan_1.4");
+        params.model = detail::GetString(params_j, "model", "");
         params.blend_factor = detail::GetDouble(params_j, "blend_factor", 0.8);
 
         auto mode_str = detail::GetString(params_j, "face_selector_mode", "many");
@@ -385,7 +467,7 @@ Result<PipelineStep> ParsePipelineStep(const json& step_j) {
         step.params = std::move(params);
     } else if (step_type == "expression_restorer") {
         ExpressionRestorerParams params;
-        params.model = detail::GetString(params_j, "model", "live_portrait");
+        params.model = detail::GetString(params_j, "model", "");
         params.restore_factor = detail::GetDouble(params_j, "restore_factor", 0.8);
 
         auto mode_str = detail::GetString(params_j, "face_selector_mode", "many");
@@ -399,7 +481,7 @@ Result<PipelineStep> ParsePipelineStep(const json& step_j) {
         step.params = std::move(params);
     } else if (step_type == "frame_enhancer") {
         FrameEnhancerParams params;
-        params.model = detail::GetString(params_j, "model", "real_esrgan_x2");
+        params.model = detail::GetString(params_j, "model", "");
         params.enhance_factor = detail::GetDouble(params_j, "enhance_factor", 0.8);
         step.params = std::move(params);
     } else {
@@ -431,31 +513,34 @@ Result<TaskConfig> ParseTaskConfigFromJson(const json& j) {
 
     auto output_j = detail::GetObject(io_j, "output");
     config.io.output.path = detail::GetString(output_j, "path", "");
-    config.io.output.prefix = detail::GetString(output_j, "prefix", "result_");
+    config.io.output.prefix = detail::GetString(output_j, "prefix", "");
     config.io.output.suffix = detail::GetString(output_j, "suffix", "");
-    config.io.output.image_format = detail::GetString(output_j, "image_format", "png");
-    config.io.output.video_encoder = detail::GetString(output_j, "video_encoder", "libx264");
-    config.io.output.video_quality = detail::GetInt(output_j, "video_quality", 80);
+    config.io.output.image_format = detail::GetString(output_j, "image_format", "");
+    config.io.output.video_encoder = detail::GetString(output_j, "video_encoder", "");
+    config.io.output.video_quality = detail::GetInt(output_j, "video_quality", 0);
 
-    auto conflict_str = detail::GetString(output_j, "conflict_policy", "error");
-    auto conflict_r = ParseConflictPolicy(conflict_str);
-    if (!conflict_r) { return Result<TaskConfig>::Err(conflict_r.error()); }
-    config.io.output.conflict_policy = conflict_r.value();
+    auto conflict_str = detail::GetString(output_j, "conflict_policy", "");
+    if (!conflict_str.empty()) {
+        auto conflict_r = ParseConflictPolicy(conflict_str);
+        if (conflict_r) { config.io.output.conflict_policy = conflict_r.value(); }
+    }
 
-    auto audio_str = detail::GetString(output_j, "audio_policy", "copy");
-    auto audio_r = ParseAudioPolicy(audio_str);
-    if (!audio_r) { return Result<TaskConfig>::Err(audio_r.error()); }
-    config.io.output.audio_policy = audio_r.value();
+    auto audio_str = detail::GetString(output_j, "audio_policy", "");
+    if (!audio_str.empty()) {
+        auto audio_r = ParseAudioPolicy(audio_str);
+        if (audio_r) { config.io.output.audio_policy = audio_r.value(); }
+    }
 
     // resource
     auto resource_j = detail::GetObject(j, "resource");
     config.resource.thread_count = detail::GetInt(resource_j, "thread_count", 0);
-    config.resource.max_queue_size = detail::GetInt(resource_j, "max_queue_size", 20);
+    config.resource.max_queue_size = detail::GetInt(resource_j, "max_queue_size", 0);
 
-    auto exec_order_str = detail::GetString(resource_j, "execution_order", "sequential");
-    auto exec_order_r = ParseExecutionOrder(exec_order_str);
-    if (!exec_order_r) { return Result<TaskConfig>::Err(exec_order_r.error()); }
-    config.resource.execution_order = exec_order_r.value();
+    auto exec_order_str = detail::GetString(resource_j, "execution_order", "");
+    if (!exec_order_str.empty()) {
+        auto exec_order_r = ParseExecutionOrder(exec_order_str);
+        if (exec_order_r) { config.resource.execution_order = exec_order_r.value(); }
+    }
 
     config.resource.segment_duration_seconds =
         detail::GetInt(resource_j, "segment_duration_seconds", 0);
@@ -469,16 +554,15 @@ Result<TaskConfig> ParseTaskConfigFromJson(const json& j) {
         config.face_analysis.face_detector.models = {"yoloface", "retinaface", "scrfd"};
     }
     config.face_analysis.face_detector.score_threshold =
-        detail::GetDouble(detector_j, "score_threshold", 0.5);
+        detail::GetDouble(detector_j, "score_threshold", 0.0);
 
     auto landmarker_j = detail::GetObject(fa_j, "face_landmarker");
-    config.face_analysis.face_landmarker.model = detail::GetString(landmarker_j, "model", "2dfan4");
+    config.face_analysis.face_landmarker.model = detail::GetString(landmarker_j, "model", "");
 
     auto recognizer_j = detail::GetObject(fa_j, "face_recognizer");
-    config.face_analysis.face_recognizer.model =
-        detail::GetString(recognizer_j, "model", "arcface_w600k_r50");
+    config.face_analysis.face_recognizer.model = detail::GetString(recognizer_j, "model", "");
     config.face_analysis.face_recognizer.similarity_threshold =
-        detail::GetDouble(recognizer_j, "similarity_threshold", 0.6);
+        detail::GetDouble(recognizer_j, "similarity_threshold", 0.0);
 
     auto masker_j = detail::GetObject(fa_j, "face_masker");
     config.face_analysis.face_masker.types = detail::GetStringArray(masker_j, "types");
