@@ -92,9 +92,13 @@ DetectionResults Yolo::detect(const cv::Mat& visionFrame) {
 
     results = process_output(ortOutputs, ratioHeight, ratioWidth, visionFrame.size());
 
-    // 3. Info Log
-    logger.info("[YoloDetector::detect] Found " + std::to_string(results.size())
-                + " face candidates.");
+    // 3. Results Log
+    if (results.empty()) {
+        logger.warn("[YoloDetector::detect] No face candidates found.");
+    } else {
+        logger.debug("[YoloDetector::detect] Found " + std::to_string(results.size())
+                    + " face candidates.");
+    }
 
     return results;
 }

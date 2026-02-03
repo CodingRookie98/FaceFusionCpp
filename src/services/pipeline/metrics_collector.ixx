@@ -13,6 +13,7 @@ module;
 #include <chrono>
 #include <filesystem>
 #include <mutex>
+#include <thread>
 #include <cstdint>
 
 export module services.pipeline.metrics;
@@ -184,7 +185,7 @@ private:
     std::chrono::steady_clock::time_point m_start_time;
 
     // Step timing
-    std::unordered_map<std::string, std::chrono::steady_clock::time_point> m_step_starts;
+    std::unordered_map<std::string, std::unordered_map<std::thread::id, std::chrono::steady_clock::time_point>> m_step_starts;
     std::unordered_map<std::string, std::vector<double>> m_step_samples;
 
     // Frame counting

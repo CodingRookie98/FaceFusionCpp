@@ -148,6 +148,10 @@ struct InferenceSession::Impl {
             m_logger->warn("CUDA execution provider is not available in your environment.");
             return;
         }
+
+        // Fix for "Attempt to use DefaultLogger but none has been registered"
+        get_static_env();
+
         m_cuda_provider_options = std::make_unique<OrtCUDAProviderOptions>();
         m_cuda_provider_options->device_id = m_options.execution_device_id;
         if (m_options.trt_max_workspace_size > 0) {
@@ -168,11 +172,16 @@ struct InferenceSession::Impl {
             return;
         }
 
+        // Fix for "Attempt to use DefaultLogger but none has been registered"
+        // Ensure global environment is created before creating provider options
+        // which might internally use logging
+        get_static_env();
+
         std::vector<const char*> keys;
         std::vector<const char*> values;
         const auto& api = Ort::GetApi();
         OrtTensorRTProviderOptionsV2* tensorrt_provider_options_v2;
-        api.CreateTensorRTProviderOptions(&tensorrt_provider_options_v2);
+        Ort::ThrowOnError(api.CreateTensorRTProviderOptions(&tensorrt_provider_options_v2));
 
         std::string trt_max_workspace_size_str;
         if (m_options.trt_max_workspace_size > 0) {
@@ -294,7 +303,7 @@ struct InferenceSession::Impl {
 
         for (size_t i = 0; i < num_input_nodes; i++) {
             m_input_names_ptrs.push_back(
-                std::move(m_ort_session->GetInputNameAllocated(i, allocator)));
+                m_ort_session->GetInputNameAllocated(i, allocator));
             m_input_names.push_back(m_input_names_ptrs[i].get());
 
             auto type_info = m_ort_session->GetInputTypeInfo(i);
@@ -304,7 +313,7 @@ struct InferenceSession::Impl {
 
         for (size_t i = 0; i < num_output_nodes; i++) {
             m_output_names_ptrs.push_back(
-                std::move(m_ort_session->GetOutputNameAllocated(i, allocator)));
+                m_ort_session->GetOutputNameAllocated(i, allocator));
             m_output_names.push_back(m_output_names_ptrs[i].get());
 
             auto type_info = m_ort_session->GetOutputTypeInfo(i);

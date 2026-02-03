@@ -12,6 +12,8 @@ module;
 #include <chrono>
 #include <filesystem>
 #include <mutex>
+#include <thread>
+#include <format>
 #include <nlohmann/json.hpp>
 
 module services.pipeline.metrics;
@@ -38,26 +40,38 @@ void MetricsCollector::set_gpu_sample_interval(std::chrono::milliseconds interva
 }
 
 void MetricsCollector::start_step(const std::string& step_name) {
+    auto tid = std::this_thread::get_id();
     std::lock_guard<std::mutex> lock(m_mutex);
-    m_step_starts[step_name] = std::chrono::steady_clock::now();
+    m_step_starts[step_name][tid] = std::chrono::steady_clock::now();
 }
 
 void MetricsCollector::end_step(const std::string& step_name) {
     auto end_time = std::chrono::steady_clock::now();
+    auto tid = std::this_thread::get_id();
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    auto it = m_step_starts.find(step_name);
-    if (it == m_step_starts.end()) {
+    auto it_step = m_step_starts.find(step_name);
+    if (it_step == m_step_starts.end()) {
         Logger::get_instance()->warn(std::format(
-            "[MetricsCollector] end_step called without matching start_step: {}", step_name));
+            "[MetricsCollector] end_step called for unknown step: {}", step_name));
         return;
     }
 
-    double duration_ms = std::chrono::duration<double, std::milli>(end_time - it->second).count();
+    auto it_tid = it_step->second.find(tid);
+    if (it_tid == it_step->second.end()) {
+        std::ostringstream ss;
+        ss << tid;
+        Logger::get_instance()->warn(std::format(
+            "[MetricsCollector] end_step called without matching start_step for step: {} in thread: {}", 
+            step_name, ss.str()));
+        return;
+    }
+
+    double duration_ms = std::chrono::duration<double, std::milli>(end_time - it_tid->second).count();
 
     m_step_samples[step_name].push_back(duration_ms);
-    m_step_starts.erase(it);
+    it_step->second.erase(it_tid);
 }
 
 void MetricsCollector::record_frame_completed() {

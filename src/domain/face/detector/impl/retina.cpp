@@ -92,9 +92,13 @@ DetectionResults Retina::detect(const cv::Mat& visionFrame) {
 
     results = process_output(ortOutputs, ratioHeight, ratioWidth);
 
-    // 3. 结果摘要 INFO 记录
-    logger.info("[RetinaDetector::detect] Found " + std::to_string(results.size())
-                + " face candidates.");
+    // 3. Results Log
+    if (results.empty()) {
+        logger.warn("[RetinaDetector::detect] No face candidates found.");
+    } else {
+        logger.debug("[RetinaDetector::detect] Found " + std::to_string(results.size())
+                    + " face candidates.");
+    }
 
     return results;
 }

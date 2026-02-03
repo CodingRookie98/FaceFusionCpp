@@ -136,9 +136,13 @@ DetectionResults Scrfd::detect(const cv::Mat& visionFrame) {
 
     results = process_output(ortOutputs, ratioHeight, ratioWidth); // Process Output
 
-    // 3. Info Log
-    logger.info("[ScrfdDetector::detect] Found " + std::to_string(results.size())
-                + " face candidates.");
+    // 3. Results Log
+    if (results.empty()) {
+        logger.warn("[ScrfdDetector::detect] No face candidates found.");
+    } else {
+        logger.debug("[ScrfdDetector::detect] Found " + std::to_string(results.size())
+                    + " face candidates.");
+    }
 
     return results;
 }
