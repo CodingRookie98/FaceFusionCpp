@@ -1,12 +1,15 @@
 CompileFlags:
-  Add: [-std=c++20, -fmodules]
----
-If:
-  PathMatch: .*\.ixx
-CompileFlags:
-  Add: [-x, c++-module]
----
-If:
-  PathMatch: .*\.cppm
-CompileFlags:
-  Add: [-x, c++-module]
+  Add: [-std=c++20, -Wall, -Wextra, -fprebuilt-module-path=build/linux-x64-debug]
+  CompilationDatabase: build/linux-x64-debug
+
+Index:
+  Background: Build
+
+Diagnostics:
+  UnusedIncludes: Strict
+  MissingIncludes: Strict
+
+InlayHints:
+  Enabled: true
+  ParameterNames: true
+  DeducedTypes: true
