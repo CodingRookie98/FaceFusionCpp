@@ -8,6 +8,7 @@ module;
 #include <future>
 #include <memory>
 #include <type_traits>
+#include <tuple>
 
 /**
  * @file thread_pool.ixx
@@ -44,18 +45,29 @@ public:
      * @return std::future holding the result of the task
      */
     template <class F, class... Args>
-    auto enqueue(F&& f, Args&&... args)
-        -> std::future<typename std::invoke_result<F, Args...>::type> {
-        using return_type = typename std::invoke_result<F, Args...>::type;
+    auto enqueue(F&& f, Args&&... args) -> std::future<std::invoke_result_t<F, Args...>> {
+        using return_type = std::invoke_result_t<F, Args...>;
 
-        auto task = std::make_shared<std::packaged_task<return_type()>>(
-            std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+        auto promise = std::make_shared<std::promise<return_type>>();
+        std::future<return_type> res = promise->get_future();
 
-        std::future<return_type> res = task->get_future();
+        auto task = [f = std::forward<F>(f), args = std::make_tuple(std::forward<Args>(args)...),
+                     promise]() mutable {
+            try {
+                if constexpr (std::is_void_v<return_type>) {
+                    std::apply(std::move(f), std::move(args));
+                    promise->set_value();
+                } else {
+                    promise->set_value(std::apply(std::move(f), std::move(args)));
+                }
+            } catch (...) {
+                try {
+                    promise->set_exception(std::current_exception());
+                } catch (...) {}
+            }
+        };
 
-        // Wrap the task in a void function and pass to the worker
-        enqueue_raw([task]() { (*task)(); });
-
+        enqueue_raw(std::move(task));
         return res;
     }
 

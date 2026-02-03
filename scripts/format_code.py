@@ -33,6 +33,13 @@ def main():
     # 1. Check for clang-format
     clang_format = shutil.which("clang-format")
     if not clang_format:
+        # Try versioned executables commonly found on Linux
+        for version in range(21, 14, -1):
+            clang_format = shutil.which(f"clang-format-{version}")
+            if clang_format:
+                break
+    
+    if not clang_format:
         log("Error: clang-format executable not found in PATH.", "error")
         log(
             "Please install LLVM/Clang and ensure bin directory is in your PATH.",

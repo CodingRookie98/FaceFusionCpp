@@ -41,7 +41,7 @@ void RegisterBuiltinAdapters();
  * interface for the pipeline. Handles model loading, masking (occlusion and region), and pasting
  * the result back.
  */
-export class SwapperAdapter : public IFrameProcessor {
+class SwapperAdapter : public IFrameProcessor {
 public:
     /**
      * @brief Construct a new Swapper Adapter
@@ -166,7 +166,7 @@ private:
  * @details Wraps IFaceEnhancer to implement IFrameProcessor interface for the pipeline.
  *          Handles face enhancement, global face blending, and pasting back.
  */
-export class FaceEnhancerAdapter : public IFrameProcessor {
+class FaceEnhancerAdapter : public IFrameProcessor {
 public:
     /**
      * @brief Construct a new Face Enhancer Adapter
@@ -291,7 +291,7 @@ private:
  * @brief Adapter for Face Expression Restorer
  * @details Wraps IFaceExpressionRestorer to implement IFrameProcessor interface for the pipeline.
  */
-export class ExpressionAdapter : public IFrameProcessor {
+class ExpressionAdapter : public IFrameProcessor {
 public:
     /**
      * @brief Construct a new Expression Adapter
@@ -425,7 +425,7 @@ private:
  * @brief Adapter for Frame Enhancer
  * @details Wraps IFrameEnhancer to implement IFrameProcessor interface for the pipeline.
  */
-export class FrameEnhancerAdapter : public IFrameProcessor {
+class FrameEnhancerAdapter : public IFrameProcessor {
 public:
     /**
      * @brief Construct a new Frame Enhancer Adapter

@@ -76,7 +76,7 @@ struct Options {
 /**
  * @brief Face Analysis Types (Bitmask)
  */
-export enum class FaceAnalysisType : unsigned int {
+enum class FaceAnalysisType : unsigned int {
     None = 0,                                          ///< Perform no analysis
     Detection = 1 << 0,                                ///< Perform face detection
     Landmark = 1 << 1,                                 ///< Perform landmark detection
@@ -88,7 +88,7 @@ export enum class FaceAnalysisType : unsigned int {
 /**
  * @brief Bitwise OR operator for FaceAnalysisType
  */
-export constexpr FaceAnalysisType operator|(FaceAnalysisType lhs, FaceAnalysisType rhs) {
+constexpr FaceAnalysisType operator|(FaceAnalysisType lhs, FaceAnalysisType rhs) {
     return static_cast<FaceAnalysisType>(static_cast<unsigned int>(lhs)
                                          | static_cast<unsigned int>(rhs));
 }
@@ -96,7 +96,7 @@ export constexpr FaceAnalysisType operator|(FaceAnalysisType lhs, FaceAnalysisTy
 /**
  * @brief Bitwise AND operator for FaceAnalysisType
  */
-export constexpr FaceAnalysisType operator&(FaceAnalysisType lhs, FaceAnalysisType rhs) {
+constexpr FaceAnalysisType operator&(FaceAnalysisType lhs, FaceAnalysisType rhs) {
     return static_cast<FaceAnalysisType>(static_cast<unsigned int>(lhs)
                                          & static_cast<unsigned int>(rhs));
 }
@@ -104,7 +104,7 @@ export constexpr FaceAnalysisType operator&(FaceAnalysisType lhs, FaceAnalysisTy
 /**
  * @brief Helper to check if a specific flag is set in a FaceAnalysisType bitmask
  */
-export constexpr bool has_flag(FaceAnalysisType value, FaceAnalysisType flag) {
+constexpr bool has_flag(FaceAnalysisType value, FaceAnalysisType flag) {
     return (value & flag) == flag;
 }
 

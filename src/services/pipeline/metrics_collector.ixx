@@ -219,7 +219,7 @@ private:
 /**
  * @brief RAII helper for automatic step timing
  */
-export class ScopedStepTimer {
+class ScopedStepTimer {
 public:
     ScopedStepTimer(MetricsCollector& collector, std::string step_name) :
         m_collector(collector), m_step_name(std::move(step_name)) {

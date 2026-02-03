@@ -6,9 +6,12 @@
  */
 
 module;
+
+#include <cstdint>
+#include <foundation/infrastructure/opencv_workaround.hpp>
+#include <opencv2/opencv.hpp>
 #include <filesystem>
 #include <future>
-#include <opencv2/opencv.hpp>
 #include <vector>
 #include <string>
 #include <unordered_set>

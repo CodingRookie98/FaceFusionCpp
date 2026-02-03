@@ -1,3 +1,5 @@
+module;
+#include <memory>
 module domain.face.detector;
 
 import :factory;

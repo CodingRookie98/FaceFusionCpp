@@ -6,6 +6,7 @@
  */
 
 module;
+#include <foundation/infrastructure/opencv_workaround.hpp>
 #include <opencv2/opencv.hpp>
 #include <limits>
 #include <algorithm>

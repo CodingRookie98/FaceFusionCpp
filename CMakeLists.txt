@@ -25,6 +25,7 @@ endforeach()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
+set(CMAKE_CXX_EXTENSIONS OFF) # 强制使用 strict C++20，避免 PCM 匹配错误
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_link_options(-static-libgcc -static-libstdc++)
@@ -52,10 +53,29 @@ enable_testing()
 # 配置 GoogleTest 依赖（使用 vcpkg）
 option(BUILD_TESTING "Build tests" ON)
 
+find_package(Python3 REQUIRED)
+
+include(cmake/dependencies.cmake)
+
+# --- OpenCV C++20 Compatibility Patch ---
+# This is an enterprise-grade workaround for an ambiguity in OpenCV 4.x Rect class
+# when compiled with C++20 standard.
+set(VCPKG_INSTALLED_DIR "${CMAKE_BINARY_DIR}/vcpkg_installed")
+if (EXISTS "${VCPKG_INSTALLED_DIR}")
+    message(STATUS "Checking for OpenCV C++20 compatibility patch...")
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/scripts/patch_opencv.py" "${VCPKG_INSTALLED_DIR}"
+        RESULT_VARIABLE PATCH_RESULT
+    )
+    if (PATCH_RESULT EQUAL 0)
+        message(STATUS "OpenCV patch check completed.")
+    else ()
+        message(WARNING "OpenCV patch script failed with exit code ${PATCH_RESULT}.")
+    endif ()
+endif ()
 include(cmake/resources.cmake)
 include(cmake/options.cmake)
 include(cmake/modules_lib.cmake)
-include(cmake/dependencies.cmake)
 
 add_subdirectory(src)
 

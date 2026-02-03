@@ -1,5 +1,6 @@
 module;
 
+#include <cstdint>
 #include <optional>
 #ifdef CUDA_ENABLED
 #include <cuda_runtime.h>

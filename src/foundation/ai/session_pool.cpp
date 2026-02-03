@@ -4,6 +4,8 @@
  */
 
 module;
+
+#include <functional>
 #include <memory>
 #include <string>
 #include <chrono>

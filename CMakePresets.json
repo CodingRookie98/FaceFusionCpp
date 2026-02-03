@@ -25,7 +25,8 @@
             "binaryDir": "${sourceDir}/build/linux-x64-release",
             "installDir": "${sourceDir}/build/install/linux-x64-release",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_TESTING": "ON"
             }
         },
         {
@@ -36,7 +37,8 @@
             "binaryDir": "${sourceDir}/build/linux-x64-debug",
             "installDir": "${sourceDir}/build/install/linux-x64-debug",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_TESTING": "ON"
             }
         },
         {
@@ -73,7 +75,8 @@
             "binaryDir": "${sourceDir}/build/msvc-x64-release",
             "installDir": "${sourceDir}/build/install/msvc-x64-release",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_TESTING": "ON"
             }
         },
         {
@@ -84,7 +87,8 @@
             "binaryDir": "${sourceDir}/build/msvc-x64-debug",
             "installDir": "${sourceDir}/build/install/msvc-x64-debug",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_TESTING": "ON"
             }
         }
     ],

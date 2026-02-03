@@ -7,8 +7,8 @@
 
 // Ensure the included flatbuffers.h is the same version as when this file was
 // generated, otherwise it may not be compatible.
-static_assert(FLATBUFFERS_VERSION_MAJOR == 25 && FLATBUFFERS_VERSION_MINOR == 1
-                  && FLATBUFFERS_VERSION_REVISION == 21,
+static_assert(FLATBUFFERS_VERSION_MAJOR == 25 && FLATBUFFERS_VERSION_MINOR == 9
+                  && FLATBUFFERS_VERSION_REVISION == 23,
               "Non-compatible flatbuffers version included");
 
 namespace domain { namespace face { namespace serialization {
@@ -29,7 +29,6 @@ private:
     float height_;
 
 public:
-    struct Traits;
     Rect() : x_(0), y_(0), width_(0), height_(0) {}
     Rect(float _x, float _y, float _width, float _height) :
         x_(::flatbuffers::EndianScalar(_x)), y_(::flatbuffers::EndianScalar(_y)),
@@ -50,13 +49,8 @@ public:
 };
 FLATBUFFERS_STRUCT_END(Rect, 16);
 
-struct Rect::Traits {
-    using type = Rect;
-};
-
 struct FaceBuffer FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     typedef FaceBufferBuilder Builder;
-    struct Traits;
     enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
         VT_BOX = 4,
         VT_LANDMARKS = 6,
@@ -165,11 +159,6 @@ inline ::flatbuffers::Offset<FaceBuffer> CreateFaceBuffer(
     return builder_.Finish();
 }
 
-struct FaceBuffer::Traits {
-    using type = FaceBuffer;
-    static auto constexpr Create = CreateFaceBuffer;
-};
-
 inline ::flatbuffers::Offset<FaceBuffer> CreateFaceBufferDirect(
     ::flatbuffers::FlatBufferBuilder& _fbb, const domain::face::serialization::Rect* box = nullptr,
     const std::vector<float>* landmarks = nullptr, const std::vector<float>* embedding = nullptr,
@@ -186,7 +175,6 @@ inline ::flatbuffers::Offset<FaceBuffer> CreateFaceBufferDirect(
 
 struct FaceListChannel FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     typedef FaceListChannelBuilder Builder;
-    struct Traits;
     enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE { VT_FACES = 4 };
     const ::flatbuffers::Vector<::flatbuffers::Offset<domain::face::serialization::FaceBuffer>>*
     faces() const {
@@ -229,11 +217,6 @@ inline ::flatbuffers::Offset<FaceListChannel> CreateFaceListChannel(
     builder_.add_faces(faces);
     return builder_.Finish();
 }
-
-struct FaceListChannel::Traits {
-    using type = FaceListChannel;
-    static auto constexpr Create = CreateFaceListChannel;
-};
 
 inline ::flatbuffers::Offset<FaceListChannel> CreateFaceListChannelDirect(
     ::flatbuffers::FlatBufferBuilder& _fbb,

@@ -6,6 +6,10 @@
  */
 
 module;
+
+#include <cstdint>
+#include <foundation/infrastructure/opencv_workaround.hpp>
+#include <opencv2/opencv.hpp>
 #include <string>
 #include <vector>
 #include <iostream>
@@ -15,8 +19,6 @@ module;
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
-
-#include <opencv2/opencv.hpp>
 
 extern "C" {
 #include <libavcodec/avcodec.h>

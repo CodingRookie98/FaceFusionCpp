@@ -1,5 +1,7 @@
 
 module;
+
+#include <cstdint>
 #include <indicators/progress_bar.hpp>
 #include <string>
 #include <memory>
