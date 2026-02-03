@@ -12,10 +12,10 @@ trigger: always_on
 **当用户显式提及“工作流程”时，在执行任何 [代码修改] 或 [重构任务] 之前，你必须执行以下动作：**
 
 1. 🛑 **HALT**：停止所有代码编写意图。
-2. 📖 **READ**：使用 `read` 工具读取 @docs/dev_docs/workflow.md。
-3. ✅ **CHECK**：严格按照 @docs/dev_docs/workflow.md 中的 Checklists 逐项执行（切分支 -> 写计划 -> 获批准 -> 编码）。
+2. 📖 **READ**：使用 `read` 工具读取 @docs/dev/workflow.md。
+3. ✅ **CHECK**：严格按照 @docs/dev/workflow.md 中的 Checklists 逐项执行（切分支 -> 写计划 -> 获批准 -> 编码）。
 
-> **违规警告**：在触发工作流程的情况下，未读取 @docs/dev_docs/workflow.md 而直接修改代码将被视为严重违规。
+> **违规警告**：在触发工作流程的情况下，未读取 @docs/dev/workflow.md 而直接修改代码将被视为严重违规。
 
 ## C++ 20 开发规范
 - **标准与模块**：强制 C++20。使用模块化（`.ixx`/`.cppm` 接口，`.cpp` 实现）替代传统头文件。
@@ -45,11 +45,11 @@ trigger: always_on
   - **严禁直推主分支**。
   - **流程**：基于主分支(master 或 {os_name}/dev)新建 -> 实现与测试 -> 验收通过 -> 合并主分支并删除。
   - **命名**：`feature/plan-{name}` 或 `fix/task-{name}`。
-- **文档管理** (`/docs/dev_docs/`)：
-  - 计划：`plan/{name}/C++_plan_{title}.md` (使用 `@docs/dev_docs/C++_plan_template.md`)
-  - 任务：`plan/{name}/task/C++_task_{title}.md` (使用 `@docs/dev_docs/C++_task_template.md`)
-  - 评估：`evaluation/C++_evaluation_{title}.md` (使用 `@docs/dev_docs/C++_evaluation_template.md`)
-  - 记录：`@docs/dev_docs/C++_troubleshooting.md` (记录疑难杂症, 使用 `@docs/dev_docs/C++_troubleshooting.md`)
+- **文档管理** (`/docs/dev/`)：
+  - 计划：`plan/{name}/C++_plan_{title}.md` (使用 `@docs/dev/C++_plan_template.md`)
+  - 任务：`plan/{name}/task/C++_task_{title}.md` (使用 `@docs/dev/C++_task_template.md`)
+  - 评估：`evaluation/C++_evaluation_{title}.md` (使用 `@docs/dev/C++_evaluation_template.md`)
+  - 记录：`@docs/dev/C++_troubleshooting.md` (记录疑难杂症, 使用 `@docs/dev/C++_troubleshooting.md`)
 - **提交要求**：
   - 仅提交源码与必要资源，禁止提交文档、日志或构建文件(除非用户明确要求)。
   - 提交文档相关文件时跳过编译测试验证。
