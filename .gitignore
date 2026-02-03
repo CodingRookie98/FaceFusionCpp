@@ -94,3 +94,6 @@ Thumbs.db
 
 # Worktrees
 .worktrees/
+
+# opencode
+opencode.json
