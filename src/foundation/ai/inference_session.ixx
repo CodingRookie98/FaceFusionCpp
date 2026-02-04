@@ -58,13 +58,15 @@ export struct Options {
     size_t trt_max_workspace_size = 0;        ///< Maximum workspace size for TensorRT in GB
     bool enable_tensorrt_embed_engine = true; ///< Enable TensorRT engine embedding
     bool enable_tensorrt_cache = true;        ///< Enable TensorRT engine caching
+    std::string engine_cache_path;            ///< Path to store cached engines
 
     bool operator==(const Options& other) const {
         return execution_providers == other.execution_providers
             && execution_device_id == other.execution_device_id
             && trt_max_workspace_size == other.trt_max_workspace_size
             && enable_tensorrt_embed_engine == other.enable_tensorrt_embed_engine
-            && enable_tensorrt_cache == other.enable_tensorrt_cache;
+            && enable_tensorrt_cache == other.enable_tensorrt_cache
+            && engine_cache_path == other.engine_cache_path;
     }
 
     /**

@@ -280,6 +280,10 @@ Result<AppConfig> ParseAppConfigFromJson(const json& j) {
     config.inference.engine_cache.enable = detail::GetBool(engine_cache_j, "enable", true);
     config.inference.engine_cache.path =
         detail::GetString(engine_cache_j, "path", "./.cache/tensorrt");
+    config.inference.engine_cache.max_entries =
+        static_cast<size_t>(detail::GetInt(engine_cache_j, "max_entries", 3));
+    config.inference.engine_cache.idle_timeout_seconds =
+        detail::GetInt(engine_cache_j, "idle_timeout_seconds", 60);
 
     config.inference.default_providers = detail::GetStringArray(inference_j, "default_providers");
     if (config.inference.default_providers.empty()) {

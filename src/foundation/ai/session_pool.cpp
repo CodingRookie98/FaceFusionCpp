@@ -79,6 +79,18 @@ SessionPool::SessionPool(const PoolConfig& config) : m_impl(std::make_unique<Imp
     m_impl->config = config;
 }
 
+void SessionPool::set_config(const PoolConfig& config) {
+    std::lock_guard lock(m_impl->mutex);
+    m_impl->config = config;
+
+    // Immediate capacity check if max_entries is reduced
+    if (m_impl->config.max_entries > 0) {
+        while (m_impl->cache.size() > m_impl->config.max_entries) {
+            m_impl->evict_lru();
+        }
+    }
+}
+
 SessionPool::~SessionPool() = default;
 
 std::shared_ptr<InferenceSession> SessionPool::get_or_create(

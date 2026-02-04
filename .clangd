@@ -7,7 +7,7 @@ Index:
 
 Diagnostics:
   UnusedIncludes: Strict
-  MissingIncludes: Strict
+  # MissingIncludes: Strict
 
 InlayHints:
   Enabled: true

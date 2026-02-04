@@ -3,8 +3,8 @@
 > **标准参考 & 跨文档链接**:
 > *   架构设计文档: [应用层架构设计说明书](./design.md)
 > *   质量与评估标准: [C++代码质量与评估标准指南](./C++_quality_standard.md)
-> *   最后更新: 2026-02-02
-> *   更新内容: engine_cache 配置集成评估；新增 Task 2.2.6/2.2.7 补全配置对接
+> *   最后更新: 2026-02-04
+> *   更新内容: engine_cache 配置集成完成；M3 里程碑完成；阶段二完成
 
 ## 0. 计划概述
 
@@ -42,7 +42,7 @@ graph TD
 | :-----: | :------------------------- | :------------------------------------------------------------- | :--------: | :--------: |
 | **M1**  | Foundation Layer           | 基础设施模块 (Logger/FileSystem/ThreadPool/ConcurrentQueue)    |  ✅ 已完成  |     无     |
 | **M2**  | Platform Layer - Media     | 媒体处理模块 (FFmpeg 封装/图像编解码)                          |  ✅ 已完成  |     M1     |
-| **M3**  | Platform Layer - AI        | 推理引擎封装 (ONNX Runtime/TensorRT EP)                        |  ⚠️ 待补全  |     M1     |
+| **M3**  | Platform Layer - AI        | 推理引擎封装 (ONNX Runtime/TensorRT EP)                        |  ✅ 已完成  |     M1     |
 | **M4**  | Domain Layer - Core        | 人脸领域模型 (Face/Embedding/Mask 类型)                        |  ✅ 已完成  |     M1     |
 | **M5**  | Domain Layer - Analyzer    | 人脸分析器 (Detector/Landmarker/Recognizer/Masker)             |  ✅ 已完成  |   M3, M4   |
 | **M6**  | Domain Layer - Processor   | 处理器实现 (Swapper/Enhancer/ExpressionRestorer)               |  ✅ 已完成  |     M5     |
@@ -106,7 +106,7 @@ graph TD
 
 ---
 
-## 阶段二: Platform Layer (M2 + M3) ⚠️ M3 待补全
+## 阶段二: Platform Layer (M2 + M3) ✅ 已完成
 
 ### 2.1 Media 子模块 (M2) ✅
 
@@ -129,9 +129,9 @@ graph TD
 - [x] **Task 2.1.3**: Vision - 图像 I/O 和变换
 - [x] **Task 2.1.4**: FFmpeg Remuxer - 音频重混流
 
-### 2.2 AI 推理子模块 (M3) ⚠️ 待补全
+### 2.2 AI 推理子模块 (M3) ✅ 已完成
 
-> **评估状态**: 底层 SessionPool (LRU/TTL) 已完整实现，但 `engine_cache` 配置字段未完全对接。
+> **评估状态**: 底层 SessionPool (LRU/TTL) 已完整实现，`engine_cache` 配置字段已完成对接。
 > 详见: [engine_cache 配置集成评估报告](./evaluation/C++_evaluation_engine_cache.md)
 
 #### 2.2.1 目标
@@ -146,7 +146,7 @@ graph TD
 | **InferenceSessionRegistry** | `foundation/ai/inference_session_registry.ixx` | Session 注册与管理   |   ✅   |
 | **ModelRepository**          | `domain/ai/model_repository.ixx`               | 模型路径管理与下载   |   ✅   |
 
-#### 2.2.3 任务分解 ⚠️ 待补全
+#### 2.2.3 任务分解 ✅
 
 - [x] **Task 2.2.1**: InferenceSession - ONNX Runtime Session 封装
 - [x] **Task 2.2.2**: InferenceSessionRegistry - Session 注册管理
@@ -155,8 +155,8 @@ graph TD
   > ⚠️ **注意**: 底层 LRU 机制已完成，但配置未对接。详见 [评估报告](./evaluation/C++_evaluation_engine_cache.md)
 - [x] **Task 2.2.5**: SessionPool - TTL 空闲释放 (`idle_timeout_seconds`) - 对应 design.md 3.1 engine_cache 配置
   > ⚠️ **注意**: 底层 TTL 机制已完成，但配置未对接。详见 [评估报告](./evaluation/C++_evaluation_engine_cache.md)
-- [ ] **Task 2.2.6**: EngineCacheConfig 扩展 - 添加 `max_entries` 和 `idle_timeout_seconds` 字段及 YAML 解析 *(新增)*
-- [ ] **Task 2.2.7**: 配置集成 - 移除 InferenceSessionRegistry 硬编码，从 AppConfig 加载参数；传递 cache path 到 InferenceSession *(新增)*
+- [x] **Task 2.2.6**: EngineCacheConfig 扩展 - 添加 `max_entries` 和 `idle_timeout_seconds` 字段及 YAML 解析 *(新增)*
+- [x] **Task 2.2.7**: 配置集成 - 移除 InferenceSessionRegistry 硬编码，从 AppConfig 加载参数；传递 cache path 到 InferenceSession *(新增)*
 
 ---
 
@@ -381,8 +381,8 @@ graph TD
   - [x] face_analysis 参数校验
 - [x] **Task 8.4**: ConfigMerger - 级联优先级 (Task > User > Default) - *已完成*
   > 详细任务文档: [C++_task_M9_config_merger_implementation.md](./plan/config/C++_task_M9_config_merger_implementation.md)
-  > 
-  > **设计说明** (来自 design.md 第 217 行): 
+  >
+  > **设计说明** (来自 design.md 第 217 行):
   > `default_task_settings` 字段名与 `task_config.yaml` 完全一致，可包含 TaskConfig 的任意字段作为默认值。
   - [x] `DefaultTaskSettings` 结构定义 (使用 `std::optional` 表示可选字段)
   - [x] `default_task_settings` YAML 解析 (仅解析配置文件中存在的字段)
@@ -554,7 +554,7 @@ graph TD
 ### 10.4 验收标准汇总
 
 > **硬件基准**: 以下标准基于 GTX 1650 (4GB VRAM) 测试环境
-> 
+>
 > **⚠️ 构建模式要求**:
 > - **性能测试 (Task 10.1/10.2/10.4)**: **必须使用 Release 模式**，Debug 模式数据无参考价值
 > - **功能正确性测试**: Debug 或 Release 均可
@@ -629,8 +629,8 @@ pipeline:
 | :---------------- | :------: | :-------------------------------------------------------- | :------- |
 | **Checkpointing** |   M11    | 断点续传                                                  | - |
 | **Metrics JSON**  |   M11    | 性能指标输出 (schema_version/step_latency/gpu_memory)     | - |
-| **EngineCacheConfig 扩展** | M3 | 添加 `max_entries`/`idle_timeout_seconds` 字段及解析 (Task 2.2.6) | [评估报告](./evaluation/C++_evaluation_engine_cache.md) |
-| **配置集成** | M3 | 移除硬编码，从 AppConfig 加载 SessionPool 参数 (Task 2.2.7) | [评估报告](./evaluation/C++_evaluation_engine_cache.md) |
+| ~~**EngineCacheConfig 扩展**~~ | M3 | ✅ 已完成 (Task 2.2.6) | [评估报告](./evaluation/C++_evaluation_engine_cache.md) |
+| ~~**配置集成**~~ | M3 | ✅ 已完成 (Task 2.2.7) | [评估报告](./evaluation/C++_evaluation_engine_cache.md) |
 
 ---
 

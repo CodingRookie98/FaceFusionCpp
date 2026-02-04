@@ -19,12 +19,13 @@ import foundation.ai.inference_session;
 namespace foundation::ai::inference_session {
 
 InferenceSessionRegistry::InferenceSessionRegistry() {
-    // Initialize pool with default config
-    // TODO: Load config from AppConfig if available
-    session_pool::PoolConfig config;
-    config.max_entries = 3;
-    config.idle_timeout = std::chrono::seconds(60);
-    config.enable = true;
+    // Default initialization
+}
+
+void InferenceSessionRegistry::configure(const session_pool::PoolConfig& config,
+                                         const std::string& cache_path) {
+    m_pool.set_config(config);
+    m_cache_path = cache_path;
 }
 
 InferenceSessionRegistry& InferenceSessionRegistry::get_instance() {
@@ -58,7 +59,11 @@ std::shared_ptr<InferenceSession> InferenceSessionRegistry::get_session(
 
     return m_pool.get_or_create(key, [&]() {
         auto session = std::make_shared<InferenceSession>();
-        session->load_model(model_path, options);
+        auto session_opts = options;
+        if (session_opts.engine_cache_path.empty()) {
+            session_opts.engine_cache_path = m_cache_path;
+        }
+        session->load_model(model_path, session_opts);
         return session;
     });
 }

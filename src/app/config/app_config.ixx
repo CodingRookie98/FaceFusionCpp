@@ -24,6 +24,8 @@ export namespace config {
 struct EngineCacheConfig {
     bool enable = true;                     ///< Enable or disable engine caching
     std::string path = "./.cache/tensorrt"; ///< Path to store cached engines
+    size_t max_entries = 3;                 ///< LRU Cache Capacity
+    int idle_timeout_seconds = 60;          ///< TTL Timeout in seconds
 };
 
 /**
@@ -80,9 +82,9 @@ struct ModelsConfig {
 struct DefaultModels {
     std::string face_detector = "yoloface";
     std::string face_recognizer = "arcface_w600k_r50";
-    std::string face_swapper = "inswapper_128";
+    std::string face_swapper = "inswapper_128_fp16";
     std::string face_enhancer = "gfpgan_1.4";
-    std::string frame_enhancer = "real_esrgan_x4plus";
+    std::string frame_enhancer = "real_esrgan_x2_fp16";
     std::string expression_restorer_feature = "live_portrait_feature_extractor";
     std::string expression_restorer_motion = "live_portrait_motion_extractor";
     std::string expression_restorer_generator = "live_portrait_generator";

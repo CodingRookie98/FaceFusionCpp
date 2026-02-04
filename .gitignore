@@ -97,3 +97,7 @@ Thumbs.db
 
 # opencode
 opencode.json
+
+.trae/
+
+.clangd

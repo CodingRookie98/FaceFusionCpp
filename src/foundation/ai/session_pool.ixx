@@ -41,6 +41,12 @@ public:
     SessionPool& operator=(const SessionPool&) = delete;
 
     /**
+     * @brief Update pool configuration
+     * @param config New configuration
+     */
+    void set_config(const PoolConfig& config);
+
+    /**
      * @brief Get or create a session
      * @param key Unique identifier (usually model_path + options hash)
      * @param factory Factory function to create a new session

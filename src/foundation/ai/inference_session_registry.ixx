@@ -32,6 +32,13 @@ public:
     static InferenceSessionRegistry& get_instance();
 
     /**
+     * @brief Configure the registry and internal session pool.
+     * @param config Pool configuration (max entries, idle timeout).
+     * @param cache_path Path for engine caching.
+     */
+    void configure(const session_pool::PoolConfig& config, const std::string& cache_path);
+
+    /**
      * @brief Get a shared inference session.
      * @param model_path Path to the ONNX model file.
      * @param options Session options.
@@ -59,6 +66,7 @@ private:
     InferenceSessionRegistry& operator=(const InferenceSessionRegistry&) = delete;
 
     session_pool::SessionPool m_pool;
+    std::string m_cache_path = "./.cache/tensorrt"; ///< Cache path for TensorRT engines
 
     /**
      * @brief Generate a unique key for a model and options combination

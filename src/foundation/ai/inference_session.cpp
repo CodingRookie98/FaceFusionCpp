@@ -197,10 +197,23 @@ struct InferenceSession::Impl {
         std::string enable_tensorrt_cache;
         std::string enable_tensorrt_embed_engine;
         std::string tensorrt_embed_engine_path;
+        std::string base_path = m_options.engine_cache_path.empty() ? "./trt_engine_cache"
+                                                                    : m_options.engine_cache_path;
+
+        // Ensure base path exists
+        try {
+            if (!base_path.empty() && base_path != ".") {
+                std::filesystem::create_directories(base_path);
+            }
+        } catch (const std::exception& e) {
+            m_logger->warn(std::format("Failed to create engine cache directory [{}]: {}", base_path,
+                                       e.what()));
+        }
+
         if (m_options.enable_tensorrt_embed_engine) {
             enable_tensorrt_cache = std::to_string(m_options.enable_tensorrt_cache);
             enable_tensorrt_embed_engine = std::to_string(m_options.enable_tensorrt_embed_engine);
-            tensorrt_embed_engine_path = "./trt_engine_cache";
+            tensorrt_embed_engine_path = base_path;
 
             keys.emplace_back("trt_engine_cache_enable");
             values.emplace_back(enable_tensorrt_cache.c_str());
@@ -215,9 +228,19 @@ struct InferenceSession::Impl {
             if (enable_tensorrt_embed_engine.empty()) {
                 keys.emplace_back("trt_engine_cache_enable");
                 values.emplace_back("1");
-                tensorrt_cache_path = "./trt_engine_cache/trt_engines";
+                tensorrt_cache_path = base_path + "/trt_engines";
             } else {
                 tensorrt_cache_path = "trt_engines";
+            }
+
+            // Ensure cache path exists
+            try {
+                if (!tensorrt_cache_path.empty() && tensorrt_cache_path != ".") {
+                    std::filesystem::create_directories(tensorrt_cache_path);
+                }
+            } catch (const std::exception& e) {
+                m_logger->warn(std::format("Failed to create engine cache subdirectory [{}]: {}",
+                                           tensorrt_cache_path, e.what()));
             }
 
             keys.emplace_back("trt_engine_cache_path");

@@ -21,6 +21,8 @@ import services.pipeline.shutdown;
 import foundation.infrastructure.logger;
 import foundation.infrastructure.core_utils;
 import foundation.ai.inference_session_registry;
+import domain.ai.model_repository;
+import domain.face.model_registry;
 import app.cli.system_check;
 import app.version;
 
@@ -133,6 +135,27 @@ int App::run(int argc, char** argv) {
             return 1;
         }
 
+        // 初始化 ModelRepository
+        auto model_repo = domain::ai::model_repository::ModelRepository::get_instance();
+        model_repo->set_base_path(app_config->models.path);
+        // 假设 models_info.json 位于 models.path 的父目录 (例如 assets/models_info.json)
+        // 或者直接位于 models.path (如果配置指向 assets)
+        // 这里采用保守策略：如果 models.path 是 assets/models，则找 assets/models_info.json
+        std::filesystem::path models_path(app_config->models.path);
+        std::filesystem::path info_path = models_path.parent_path() / "models_info.json";
+        if (std::filesystem::exists(info_path)) {
+            model_repo->set_model_info_file_path(info_path.string());
+        } else {
+            // Fallback: try inside models path
+            info_path = models_path / "models_info.json";
+            if (std::filesystem::exists(info_path)) {
+                model_repo->set_model_info_file_path(info_path.string());
+            } else {
+                 foundation::infrastructure::logger::Logger::get_instance()->warn(
+                    "models_info.json not found in " + models_path.parent_path().string() + " or " + models_path.string());
+            }
+        }
+
         // ─────────────────────────────────────────────────────────────────────────
         // 启动日志序列 (符合 design.md 5.10.1 INFO 级必选场景)
         // ─────────────────────────────────────────────────────────────────────────
@@ -142,7 +165,7 @@ int App::run(int argc, char** argv) {
 
         if (validate_only) {
             if (config_path.empty()) {
-                std::cerr << "Error: --validate requires --config" << std::endl;
+                std::cerr << "Error: --validate requires --config" << '\n';
                 exit_code = 1;
             } else {
                 exit_code = run_validate(config_path, *app_config);
@@ -153,7 +176,7 @@ int App::run(int argc, char** argv) {
             exit_code =
                 run_quick_mode(source_paths, target_paths, output_path, processors_str, *app_config);
         } else {
-            std::cout << app.help() << std::endl;
+            std::cout << app.help() << '\n';
             exit_code = 0;
         }
     }
@@ -161,6 +184,7 @@ int App::run(int argc, char** argv) {
     // ─────────────────────────────────────────────────────────────────────────
     // 清理资源 (重要：避免 CUDA 驱动提前关闭导致的析构崩溃)
     // ─────────────────────────────────────────────────────────────────────────
+    domain::face::FaceModelRegistry::get_instance().clear();
     foundation::ai::inference_session::InferenceSessionRegistry::get_instance().clear();
 
     return exit_code;
@@ -395,6 +419,11 @@ void App::log_config_summary(const config::AppConfig& app_config) {
                                  "tolerant"));
     logger->info(std::format("  Log Level: {}", config::ToString(app_config.logging.level)));
     logger->info(std::format("  Models Path: {}", app_config.models.path));
+    logger->info(std::format("  Engine Cache: {} (Path: {}, Max: {}, TTL: {}s)",
+                             app_config.inference.engine_cache.enable ? "Enabled" : "Disabled",
+                             app_config.inference.engine_cache.path,
+                             app_config.inference.engine_cache.max_entries,
+                             app_config.inference.engine_cache.idle_timeout_seconds));
     logger->info("=============================");
 }
 
