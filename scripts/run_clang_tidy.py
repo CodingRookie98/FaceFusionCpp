@@ -5,6 +5,8 @@ import subprocess
 import shutil
 from pathlib import Path
 import math
+import concurrent.futures
+import time
 
 # Add script directory to sys.path
 script_dir = Path(__file__).parent.resolve()
@@ -31,6 +33,14 @@ def main():
 
     # 1. Check for clang-tidy
     clang_tidy = shutil.which("clang-tidy")
+    if not clang_tidy:
+        # Try versioned binaries
+        for version in range(21, 10, -1):
+            name = f"clang-tidy-{version}"
+            clang_tidy = shutil.which(name)
+            if clang_tidy:
+                break
+
     if not clang_tidy:
         log("Error: clang-tidy executable not found in PATH.", "error")
         log(
@@ -92,29 +102,47 @@ def main():
         log("No files found to check.", "warning")
         sys.exit(0)
 
-    log(f"Found {len(files_to_check)} files. Collecting for batch analysis...", "info")
+    log(f"Found {len(files_to_check)} files. Starting parallel analysis...", "info")
 
-    # 4. Run clang-tidy in batches
-    # Windows command line limit is 32k chars. 50 paths should be safe.
-    batch_size = 50
+    # 4. Run clang-tidy in parallel
+    # Use number of CPU cores for parallelism
+    max_workers = os.cpu_count() or 4
     files_to_check = [str(f) for f in files_to_check]
     total_files = len(files_to_check)
 
     errors_found = False
+    completed_count = 0
+    start_time = time.time()
 
-    for i in range(0, total_files, batch_size):
-        batch = files_to_check[i : i + batch_size]
-        end_idx = min(i + batch_size, total_files)
-        log(f"Checking batch ({i + 1} to {end_idx})...", "info")
-
-        cmd = [clang_tidy, "-p", str(build_path_used)] + batch
-
+    def run_tidy_on_file(file_path):
+        cmd = [clang_tidy, "-p", str(build_path_used), file_path]
         try:
-            # We allow it to fail (non-zero exit) if it finds issues, but we want to capture that
-            subprocess.run(cmd, check=True)
-        except subprocess.CalledProcessError:
-            log("Warnings or errors found in batch.", "warning")
-            errors_found = True
+            # Capture output to avoid interleaving in terminal
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            return file_path, result.returncode, result.stdout, result.stderr
+        except Exception as e:
+            return file_path, 1, "", str(e)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_file = {executor.submit(run_tidy_on_file, f): f for f in files_to_check}
+
+        for future in concurrent.futures.as_completed(future_to_file):
+            file_path, returncode, stdout, stderr = future.result()
+            completed_count += 1
+
+            # Show progress every 10 files or at the end
+            if completed_count % 10 == 0 or completed_count == total_files:
+                elapsed = time.time() - start_time
+                log(f"Progress: {completed_count}/{total_files} files checked ({elapsed:.1f}s)...", "info")
+
+            if returncode != 0 or stdout or stderr:
+                if stdout or stderr:
+                    log(f"\n[Issue in {file_path}]", "warning")
+                    if stdout:
+                        print(stdout)
+                    if stderr:
+                        print(stderr)
+                errors_found = True
 
     if errors_found:
         log("Analysis complete with issues.", "warning")

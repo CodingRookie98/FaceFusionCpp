@@ -20,6 +20,7 @@ import services.pipeline.runner;
 import services.pipeline.shutdown;
 import foundation.infrastructure.logger;
 import foundation.infrastructure.core_utils;
+import foundation.ai.inference_session_registry;
 import app.cli.system_check;
 import app.version;
 
@@ -118,43 +119,51 @@ int App::run(int argc, char** argv) {
     // 处理流程
     // ─────────────────────────────────────────────────────────────────────────
 
+    int exit_code = 0;
     if (show_version) {
         print_version();
-        return 0;
-    }
-
-    if (system_check) { return run_system_check(json_output); }
-
-    // 加载 AppConfig
-    auto app_config = load_app_config(app_config_path, log_level);
-    if (!app_config) {
-        std::cerr << "Failed to load app config: " << app_config_path << std::endl;
-        return 1;
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // 启动日志序列 (符合 design.md 5.10.1 INFO 级必选场景)
-    // ─────────────────────────────────────────────────────────────────────────
-    print_startup_banner();          // 1. 版本 Banner
-    log_config_summary(*app_config); // 2. 配置摘要
-    log_hardware_info();             // 3. 硬件信息
-
-    if (validate_only) {
-        if (config_path.empty()) {
-            std::cerr << "Error: --validate requires --config" << std::endl;
+        exit_code = 0;
+    } else if (system_check) {
+        exit_code = run_system_check(json_output);
+    } else {
+        // 加载 AppConfig
+        auto app_config = load_app_config(app_config_path, log_level);
+        if (!app_config) {
+            std::cerr << "Failed to load app config: " << app_config_path << std::endl;
             return 1;
         }
-        return run_validate(config_path, *app_config);
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // 启动日志序列 (符合 design.md 5.10.1 INFO 级必选场景)
+        // ─────────────────────────────────────────────────────────────────────────
+        print_startup_banner();          // 1. 版本 Banner
+        log_config_summary(*app_config); // 2. 配置摘要
+        log_hardware_info();             // 3. 硬件信息
+
+        if (validate_only) {
+            if (config_path.empty()) {
+                std::cerr << "Error: --validate requires --config" << std::endl;
+                exit_code = 1;
+            } else {
+                exit_code = run_validate(config_path, *app_config);
+            }
+        } else if (!config_path.empty()) {
+            exit_code = run_pipeline(config_path, *app_config);
+        } else if (!source_paths.empty() && !target_paths.empty()) {
+            exit_code =
+                run_quick_mode(source_paths, target_paths, output_path, processors_str, *app_config);
+        } else {
+            std::cout << app.help() << std::endl;
+            exit_code = 0;
+        }
     }
 
-    if (!config_path.empty()) { return run_pipeline(config_path, *app_config); }
+    // ─────────────────────────────────────────────────────────────────────────
+    // 清理资源 (重要：避免 CUDA 驱动提前关闭导致的析构崩溃)
+    // ─────────────────────────────────────────────────────────────────────────
+    foundation::ai::inference_session::InferenceSessionRegistry::get_instance().clear();
 
-    if (!source_paths.empty() && !target_paths.empty()) {
-        return run_quick_mode(source_paths, target_paths, output_path, processors_str, *app_config);
-    }
-
-    std::cout << app.help() << std::endl;
-    return 0;
+    return exit_code;
 }
 
 int App::run_system_check(bool json_output) {

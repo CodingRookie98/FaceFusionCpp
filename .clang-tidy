@@ -45,8 +45,8 @@ Checks: >
 WarningsAsErrors: ""
 
 # 头文件过滤器（正则表达式）
-# 只检查匹配该模式的头文件
-HeaderFilterRegex: ".*"
+# 包含 src 目录下的所有文件，排除 build 目录
+HeaderFilterRegex: 'src/.*'
 
 # 是否检查系统头文件
 SystemHeaders: false
