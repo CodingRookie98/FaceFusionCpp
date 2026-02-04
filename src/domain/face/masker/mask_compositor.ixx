@@ -37,8 +37,11 @@ public:
 
         // 1. Box Mask Task
         bool box_mask_enabled = false;
-        for (auto t : opts.mask_types)
-            if (t == domain::face::types::MaskType::Box) box_mask_enabled = true;
+        for (auto t : opts.mask_types) {
+            if (t == domain::face::types::MaskType::Box) {
+                box_mask_enabled = true;
+            }
+        }
 
         if (box_mask_enabled) {
             futures.emplace_back(pool.enqueue([&]() {
@@ -48,10 +51,13 @@ public:
 
         // 2. Occlusion Mask Task
         bool occlusion_mask_enabled = false;
-        for (auto t : opts.mask_types)
-            if (t == domain::face::types::MaskType::Occlusion) occlusion_mask_enabled = true;
+        for (auto t : opts.mask_types) {
+            if (t == domain::face::types::MaskType::Occlusion) {
+                occlusion_mask_enabled = true;
+            }
+        }
 
-        if (occlusion_mask_enabled && input.occluder && !input.crop_frame.empty()) {
+        if (occlusion_mask_enabled && input.occluder != nullptr && !input.crop_frame.empty()) {
             futures.emplace_back(pool.enqueue([&]() -> cv::Mat {
                 cv::Mat occ = input.occluder->create_occlusion_mask(input.crop_frame);
                 // Invert: 255 (occluded) -> 0 (keep original), 0 (clear) -> 255 (swap)
@@ -64,14 +70,17 @@ public:
 
         // 3. Region Mask Task
         bool region_mask_enabled = false;
-        for (auto t : opts.mask_types)
-            if (t == domain::face::types::MaskType::Region) region_mask_enabled = true;
+        for (auto t : opts.mask_types) {
+            if (t == domain::face::types::MaskType::Region) {
+                region_mask_enabled = true;
+            }
+        }
 
-        if (region_mask_enabled && input.region_masker && !input.crop_frame.empty()) {
+        if (region_mask_enabled && input.region_masker != nullptr && !input.crop_frame.empty()) {
             futures.emplace_back(pool.enqueue([&]() {
                 using FaceRegion = domain::face::types::FaceRegion;
                 std::unordered_set<FaceRegion> active_regions(opts.regions.begin(),
-                                                              opts.regions.end());
+                                                               opts.regions.end());
                 return input.region_masker->create_region_mask(input.crop_frame, active_regions);
             }));
         }
@@ -110,8 +119,10 @@ public:
 
         // Final Blur for Edge Blending (Task 3.3)
         // Smooth transitions between combined masks
-        int kernel_size = std::max(3, static_cast<int>(input.size.width * 0.025f)); // 2.5% of width
-        if (kernel_size % 2 == 0) kernel_size++;
+        int kernel_size = std::max(3, static_cast<int>(input.size.width * 0.025F)); // 2.5% of width
+        if (kernel_size % 2 == 0) {
+            kernel_size++;
+        }
         cv::GaussianBlur(final_mask, final_mask, cv::Size(kernel_size, kernel_size), 0);
 
         return final_mask;
@@ -120,25 +131,35 @@ public:
 private:
     static cv::Mat create_box_mask(const cv::Size& size, float blur,
                                    const std::array<int, 4>& padding) {
-        int blur_amount = static_cast<int>(size.width * 0.5f * blur);
+        int blur_amount = static_cast<int>(size.width * 0.5F * blur);
         int blur_area = std::max(blur_amount / 2, 1);
 
         cv::Mat mask = cv::Mat::ones(size, CV_32FC1);
 
-        int pad_top = std::max(blur_area, static_cast<int>(size.height * padding[0] / 100.0f));
-        int pad_right = std::max(blur_area, static_cast<int>(size.width * padding[1] / 100.0f));
-        int pad_bot = std::max(blur_area, static_cast<int>(size.height * padding[2] / 100.0f));
-        int pad_left = std::max(blur_area, static_cast<int>(size.width * padding[3] / 100.0f));
+        int pad_top = std::max(blur_area, static_cast<int>(size.height * padding[0] / 100.0F));
+        int pad_right = std::max(blur_area, static_cast<int>(size.width * padding[1] / 100.0F));
+        int pad_bot = std::max(blur_area, static_cast<int>(size.height * padding[2] / 100.0F));
+        int pad_left = std::max(blur_area, static_cast<int>(size.width * padding[3] / 100.0F));
 
         // Set borders to 0
-        if (pad_top > 0) mask(cv::Rect(0, 0, size.width, pad_top)) = 0;
-        if (pad_bot > 0) mask(cv::Rect(0, size.height - pad_bot, size.width, pad_bot)) = 0;
-        if (pad_left > 0) mask(cv::Rect(0, 0, pad_left, size.height)) = 0;
-        if (pad_right > 0) mask(cv::Rect(size.width - pad_right, 0, pad_right, size.height)) = 0;
+        if (pad_top > 0) {
+            mask(cv::Rect(0, 0, size.width, pad_top)) = 0;
+        }
+        if (pad_bot > 0) {
+            mask(cv::Rect(0, size.height - pad_bot, size.width, pad_bot)) = 0;
+        }
+        if (pad_left > 0) {
+            mask(cv::Rect(0, 0, pad_left, size.height)) = 0;
+        }
+        if (pad_right > 0) {
+            mask(cv::Rect(size.width - pad_right, 0, pad_right, size.height)) = 0;
+        }
 
         // Blur
         if (blur_amount > 0) {
-            if (blur_amount % 2 == 0) blur_amount++;
+            if (blur_amount % 2 == 0) {
+                blur_amount++;
+            }
             cv::GaussianBlur(mask, mask, cv::Size(0, 0), blur_amount * 0.25);
         }
 

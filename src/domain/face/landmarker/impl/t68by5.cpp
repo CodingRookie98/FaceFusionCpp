@@ -21,7 +21,7 @@ struct T68By5::Impl {
         const domain::face::types::Landmarks& landmarks5) const {
         auto landmark5 = landmarks5;
         const auto warp_template = domain::face::helper::get_warp_template(
-            domain::face::helper::WarpTemplateType::Ffhq_512);
+            domain::face::helper::WarpTemplateType::Ffhq512);
 
         cv::Mat affine_matrix = domain::face::helper::estimate_matrix_by_face_landmark_5(
             landmark5, warp_template, cv::Size(1, 1));

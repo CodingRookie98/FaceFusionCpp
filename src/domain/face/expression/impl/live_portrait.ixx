@@ -24,12 +24,12 @@ public:
 
     void load_model(const std::string& feature_extractor_path,
                     const std::string& motion_extractor_path, const std::string& generator_path,
-                    const foundation::ai::inference_session::Options& options = {}) override;
+                    const foundation::ai::inference_session::Options& options) override;
 
     cv::Mat restore_expression(cv::Mat source_crop, cv::Mat target_crop,
-                               float restore_factor = 0.96f) override;
+                               float restore_factor) override;
 
-    cv::Size get_model_input_size() const override;
+    [[nodiscard]] cv::Size get_model_input_size() const override;
 
 private:
     class FeatureExtractor {

@@ -5,6 +5,7 @@
  * @date 2026-01-27
  */
 module;
+#include <cstdint>
 #include <shared_mutex>
 #include <vector>
 #include <string>
@@ -22,7 +23,7 @@ export namespace domain::face::store {
 /**
  * @brief Hashing strategy for image frames
  */
-enum class HashStrategy {
+enum class HashStrategy : std::uint8_t {
     SHA1, ///< cryptographic SHA1 hash (slow, accurate)
     FNV1a ///< Fast Non-Volatile hash (fast, good for small-medium sets)
 };

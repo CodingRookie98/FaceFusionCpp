@@ -59,7 +59,7 @@ TEST_F(FaceEnhancerIntegrationTest, EnhanceFaceWithCodeFormer) {
 
     // Manual crop for test
     auto [crop, _] = warp_face_by_face_landmarks_5(target_img, target_kps,
-                                                   WarpTemplateType::Ffhq_512, cv::Size(512, 512));
+                                                   WarpTemplateType::Ffhq512, cv::Size(512, 512));
 
     // 3. Run Enhancement
     cv::Mat result_img = enhancer->enhance_face(crop);
@@ -95,7 +95,7 @@ TEST_F(FaceEnhancerIntegrationTest, EnhanceFaceWithGfpGan) {
 
     // Manual crop for test
     auto [crop, _] = warp_face_by_face_landmarks_5(target_img, target_kps,
-                                                   WarpTemplateType::Ffhq_512, cv::Size(512, 512));
+                                                   WarpTemplateType::Ffhq512, cv::Size(512, 512));
 
     // 3. Run Enhancement
     cv::Mat result_img = enhancer->enhance_face(crop);

@@ -100,16 +100,16 @@ struct PipelineRunner::Impl {
 
         if (m_running.exchange(true)) {
             timer.set_result("error:already_running");
-            return config::Result<void, config::ConfigError>::Err(config::ConfigError(
-                config::ErrorCode::E400_RuntimeError, "Pipeline is already running"));
+            return config::Result<void, config::ConfigError>::err(config::ConfigError(
+                config::ErrorCode::E400RuntimeError, "Pipeline is already running"));
         }
         m_cancelled = false;
 
-        auto validate_result = config::ValidateTaskConfig(task_config);
+        auto validate_result = config::validate_task_config(task_config);
         if (!validate_result) {
             m_running = false;
             timer.set_result("error:validation_failed");
-            return config::Result<void, config::ConfigError>::Err(validate_result.error());
+            return config::Result<void, config::ConfigError>::err(validate_result.error());
         }
 
         auto result = ExecuteTask(task_config, progress_callback);
@@ -176,8 +176,8 @@ private:
     config::Result<void, config::ConfigError> ExecuteTask(const config::TaskConfig& task_config,
                                                           ProgressCallback progress_callback) {
         if (task_config.io.target_paths.empty()) {
-            return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError(config::ErrorCode::E205_RequiredFieldMissing,
+            return config::Result<void, config::ConfigError>::err(
+                config::ConfigError(config::ErrorCode::E205RequiredFieldMissing,
                                     "No target paths specified", "io.target_paths"));
         }
 
@@ -188,7 +188,7 @@ private:
             if (!result) return result;
         }
 
-        return config::Result<void, config::ConfigError>::Ok();
+        return config::Result<void, config::ConfigError>::ok();
     }
 
     config::Result<void, config::ConfigError> ProcessTarget(const std::string& target_path,
@@ -196,8 +196,8 @@ private:
                                                             ProgressCallback progress_callback) {
         namespace fs = std::filesystem;
         if (!fs::exists(target_path)) {
-            return config::Result<void, config::ConfigError>::Err(config::ConfigError(
-                config::ErrorCode::E402_VideoOpenFailed, "Target file not found: " + target_path));
+            return config::Result<void, config::ConfigError>::err(config::ConfigError(
+                config::ErrorCode::E402VideoOpenFailed, "Target file not found: " + target_path));
         }
 
         ProcessorContext context;
@@ -218,7 +218,7 @@ private:
             if (embed_result) {
                 context.source_embedding = std::move(embed_result).value();
             } else {
-                return config::Result<void, config::ConfigError>::Err(embed_result.error());
+                return config::Result<void, config::ConfigError>::err(embed_result.error());
             }
         }
 
@@ -242,15 +242,15 @@ private:
         const std::string& source_path) {
         cv::Mat source_img = cv::imread(source_path);
         if (source_img.empty()) {
-            return config::Result<std::vector<float>, config::ConfigError>::Err(
-                config::ConfigError(config::ErrorCode::E401_ImageDecodeFailed,
+            return config::Result<std::vector<float>, config::ConfigError>::err(
+                config::ConfigError(config::ErrorCode::E401ImageDecodeFailed,
                                     "Failed to load source image: " + source_path));
         }
 
         auto analyser = GetFaceAnalyser();
         if (!analyser) {
-            return config::Result<std::vector<float>, config::ConfigError>::Err(config::ConfigError(
-                config::ErrorCode::E100_SystemError, "Failed to create FaceAnalyser"));
+            return config::Result<std::vector<float>, config::ConfigError>::err(config::ConfigError(
+                config::ErrorCode::E100SystemError, "Failed to create FaceAnalyser"));
         }
 
         auto faces = analyser->get_many_faces(
@@ -258,11 +258,11 @@ private:
                             | domain::face::analyser::FaceAnalysisType::Embedding);
 
         if (faces.empty()) {
-            return config::Result<std::vector<float>, config::ConfigError>::Err(config::ConfigError(
-                config::ErrorCode::E403_NoFaceDetected, "No face detected in source image"));
+            return config::Result<std::vector<float>, config::ConfigError>::err(config::ConfigError(
+                config::ErrorCode::E403NoFaceDetected, "No face detected in source image"));
         }
 
-        return config::Result<std::vector<float>, config::ConfigError>::Ok(faces[0].embedding());
+        return config::Result<std::vector<float>, config::ConfigError>::ok(faces[0].embedding());
     }
 
     config::Result<void, config::ConfigError> AddProcessorsToPipeline(
@@ -295,8 +295,8 @@ private:
                     auto model_path = m_model_repo->ensure_model(model_name);
                     if (model_path.empty()) {
                         // [E302] 模型缺失，立即中止 (design.md Section 5.3.1)
-                        return config::Result<void, config::ConfigError>::Err(
-                            config::ConfigError(config::ErrorCode::E302_ModelFileMissing,
+                        return config::Result<void, config::ConfigError>::err(
+                            config::ConfigError(config::ErrorCode::E302ModelFileMissing,
                                                 std::format("Model file not found: {}", model_name),
                                                 "pipeline.step[face_swapper].model"));
                     } else {
@@ -325,8 +325,8 @@ private:
                     auto model_path = m_model_repo->ensure_model(model_name);
                     if (model_path.empty()) {
                         // [E302] 模型缺失，立即中止
-                        return config::Result<void, config::ConfigError>::Err(
-                            config::ConfigError(config::ErrorCode::E302_ModelFileMissing,
+                        return config::Result<void, config::ConfigError>::err(
+                            config::ConfigError(config::ErrorCode::E302ModelFileMissing,
                                                 std::format("Model file not found: {}", model_name),
                                                 "pipeline.step[face_enhancer].model"));
                     } else {
@@ -354,8 +354,8 @@ private:
 
                     if (feature_path.empty() || motion_path.empty() || gen_path.empty()) {
                         // [E302] 模型缺失，立即中止
-                        return config::Result<void, config::ConfigError>::Err(config::ConfigError(
-                            config::ErrorCode::E302_ModelFileMissing,
+                        return config::Result<void, config::ConfigError>::err(config::ConfigError(
+                            config::ErrorCode::E302ModelFileMissing,
                             "Failed to find or download one of LivePortrait models",
                             "pipeline.step[expression_restorer].model"));
                     } else {
@@ -378,8 +378,8 @@ private:
                     auto model_path = m_model_repo->ensure_model(model_name);
                     if (model_path.empty()) {
                         // [E302] 模型缺失，立即中止
-                        return config::Result<void, config::ConfigError>::Err(
-                            config::ConfigError(config::ErrorCode::E302_ModelFileMissing,
+                        return config::Result<void, config::ConfigError>::err(
+                            config::ConfigError(config::ErrorCode::E302ModelFileMissing,
                                                 std::format("Model file not found: {}", model_name),
                                                 "pipeline.step[frame_enhancer].model"));
                     } else {
@@ -430,7 +430,7 @@ private:
             }
         }
 
-        return config::Result<void, config::ConfigError>::Ok();
+        return config::Result<void, config::ConfigError>::ok();
     }
 };
 

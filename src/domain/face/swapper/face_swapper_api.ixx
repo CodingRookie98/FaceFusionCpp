@@ -31,7 +31,7 @@ public:
      * @param options Inference options (device, threads, etc.)
      */
     virtual void load_model(const std::string& model_path,
-                            const foundation::ai::inference_session::Options& options = {}) = 0;
+                            const foundation::ai::inference_session::Options& options) = 0;
 
     /**
      * @brief Perform face swapping on a single aligned face crop
@@ -45,7 +45,7 @@ public:
      * @brief Get the expected input size for the model
      * @return cv::Size (e.g., 128x128)
      */
-    virtual cv::Size get_model_input_size() const = 0;
+    [[nodiscard]] virtual cv::Size get_model_input_size() const = 0;
 };
 
 } // namespace domain::face::swapper

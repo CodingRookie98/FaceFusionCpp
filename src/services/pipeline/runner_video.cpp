@@ -73,11 +73,11 @@ public:
         // 1. Open Reader
         VideoReader reader(target_path);
         if (!reader.open()) {
-            auto err = config::ConfigError(config::ErrorCode::E402_VideoOpenFailed,
+            auto err = config::ConfigError(config::ErrorCode::E402VideoOpenFailed,
                                            std::format("Failed to open video: {}", target_path),
                                            "io.target_paths");
             timer.set_result("error:open_failed");
-            return config::Result<void, config::ConfigError>::Err(err);
+            return config::Result<void, config::ConfigError>::err(err);
         }
 
         int64_t start_frame = 0;
@@ -97,7 +97,7 @@ public:
                     Logger::get_instance()->info(
                         "[VideoRunner] Task already completed, nothing to resume");
                     ckpt_mgr->cleanup(task_config.task_info.id);
-                    return config::Result<void, config::ConfigError>::Ok();
+                    return config::Result<void, config::ConfigError>::ok();
                 }
 
                 if (!reader.seek(start_frame)) {
@@ -278,14 +278,14 @@ public:
             if (needs_muxing && std::filesystem::exists(output_path))
                 std::filesystem::remove(output_path);
             timer.set_result("cancelled");
-            return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError(config::ErrorCode::E407_TaskCancelled, "Task cancelled"));
+            return config::Result<void, config::ConfigError>::err(
+                config::ConfigError(config::ErrorCode::E407TaskCancelled, "Task cancelled"));
         }
 
         if (writer_error) {
             timer.set_result("error:writer_failed");
-            return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError(config::ErrorCode::E406_OutputWriteFailed, writer_error_msg));
+            return config::Result<void, config::ConfigError>::err(
+                config::ConfigError(config::ErrorCode::E406OutputWriteFailed, writer_error_msg));
         }
 
         // Cleanup checkpoint on success
@@ -297,7 +297,7 @@ public:
                 std::filesystem::remove(video_output_path);
             } else {
                 Logger::get_instance()->error(
-                    config::ConfigError(config::ErrorCode::E406_OutputWriteFailed,
+                    config::ConfigError(config::ErrorCode::E406OutputWriteFailed,
                                         "Failed to mux audio")
                         .formatted());
                 if (std::filesystem::exists(output_path)) std::filesystem::remove(output_path);
@@ -306,7 +306,7 @@ public:
         }
 
         timer.set_result("success");
-        return config::Result<void, config::ConfigError>::Ok();
+        return config::Result<void, config::ConfigError>::ok();
     }
 
 private:
@@ -329,8 +329,8 @@ private:
         VideoReader reader(target_path);
         if (!reader.open()) {
             timer.set_result("error:open_failed");
-            return config::Result<void, config::ConfigError>::Err(config::ConfigError(
-                config::ErrorCode::E402_VideoOpenFailed, "Failed to open video: " + target_path));
+            return config::Result<void, config::ConfigError>::err(config::ConfigError(
+                config::ErrorCode::E402VideoOpenFailed, "Failed to open video: " + target_path));
         }
 
         int64_t start_frame = 0;
@@ -350,7 +350,7 @@ private:
                     Logger::get_instance()->info(
                         "[VideoRunnerStrict] Task already completed, nothing to resume");
                     ckpt_mgr->cleanup(task_config.task_info.id);
-                    return config::Result<void, config::ConfigError>::Ok();
+                    return config::Result<void, config::ConfigError>::ok();
                 }
 
                 if (!reader.seek(start_frame)) {
@@ -507,13 +507,13 @@ private:
             if (needs_muxing && std::filesystem::exists(output_path))
                 std::filesystem::remove(output_path);
             timer.set_result("cancelled");
-            return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError(config::ErrorCode::E407_TaskCancelled, "Task cancelled"));
+            return config::Result<void, config::ConfigError>::err(
+                config::ConfigError(config::ErrorCode::E407TaskCancelled, "Task cancelled"));
         }
         if (writer_error) {
             timer.set_result("error:writer_failed");
-            return config::Result<void, config::ConfigError>::Err(
-                config::ConfigError(config::ErrorCode::E406_OutputWriteFailed, writer_error_msg));
+            return config::Result<void, config::ConfigError>::err(
+                config::ConfigError(config::ErrorCode::E406OutputWriteFailed, writer_error_msg));
         }
 
         // Cleanup checkpoint on success
@@ -524,7 +524,7 @@ private:
                 std::filesystem::remove(video_output_path);
             } else {
                 Logger::get_instance()->error(
-                    config::ConfigError(config::ErrorCode::E406_OutputWriteFailed,
+                    config::ConfigError(config::ErrorCode::E406OutputWriteFailed,
                                         "Failed to mux audio")
                         .formatted());
                 if (std::filesystem::exists(output_path)) std::filesystem::remove(output_path);
@@ -532,7 +532,7 @@ private:
             }
         }
         timer.set_result("success");
-        return config::Result<void, config::ConfigError>::Ok();
+        return config::Result<void, config::ConfigError>::ok();
     }
 
     /**

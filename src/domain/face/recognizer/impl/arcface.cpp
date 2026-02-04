@@ -28,7 +28,7 @@ std::tuple<std::vector<float>, std::vector<int64_t>> ArcFace::prepare_input(
     using namespace domain::face::helper;
 
     // Get warp template
-    auto warp_template = get_warp_template(WarpTemplateType::Arcface_112_v2);
+    auto warp_template = get_warp_template(WarpTemplateType::Arcface112V2);
 
     // Warp face
     cv::Mat cropped_frame;

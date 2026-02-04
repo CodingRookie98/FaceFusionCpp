@@ -56,8 +56,8 @@ public:
         cv::Mat image = cv::imread(target_path);
         if (image.empty()) {
             timer.set_result("error:load_failed");
-            return config::Result<void, config::ConfigError>::Err(config::ConfigError(
-                config::ErrorCode::E401_ImageDecodeFailed, "Failed to load image: " + target_path));
+            return config::Result<void, config::ConfigError>::err(config::ConfigError(
+                config::ErrorCode::E401ImageDecodeFailed, "Failed to load image: " + target_path));
         }
 
         PipelineConfig pipeline_config;
@@ -107,7 +107,7 @@ public:
         }
 
         timer.set_result("success");
-        return config::Result<void, config::ConfigError>::Ok();
+        return config::Result<void, config::ConfigError>::ok();
     }
 
 private:

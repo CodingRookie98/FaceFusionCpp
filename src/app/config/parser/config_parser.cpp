@@ -29,19 +29,19 @@ namespace detail {
 /// 读取文件内容
 Result<std::string> ReadFileContent(const std::filesystem::path& path) {
     if (!std::filesystem::exists(path)) {
-        return Result<std::string>::Err(ConfigError(ErrorCode::E203_ConfigFileNotFound,
+        return Result<std::string>::err(ConfigError(ErrorCode::E203ConfigFileNotFound,
                                                     "File not found: " + path.string(), "path"));
     }
 
     std::ifstream file(path);
     if (!file.is_open()) {
-        return Result<std::string>::Err(ConfigError(
-            ErrorCode::E203_ConfigFileNotFound, "Failed to open file: " + path.string(), "path"));
+        return Result<std::string>::err(ConfigError(
+            ErrorCode::E203ConfigFileNotFound, "Failed to open file: " + path.string(), "path"));
     }
 
     std::stringstream buffer;
     buffer << file.rdbuf();
-    return Result<std::string>::Ok(buffer.str());
+    return Result<std::string>::ok(buffer.str());
 }
 
 /// 转为小写
@@ -116,15 +116,15 @@ std::optional<double> GetOptionalDouble(const json& j, const std::string& key) {
 // 枚举字符串转换实现
 // ============================================================================
 
-Result<MemoryStrategy> ParseMemoryStrategy(const std::string& str) {
+Result<MemoryStrategy> parse_memory_strategy(const std::string& str) {
     auto lower = detail::ToLower(str);
-    if (lower == "strict") return Result<MemoryStrategy>::Ok(MemoryStrategy::Strict);
-    if (lower == "tolerant") return Result<MemoryStrategy>::Ok(MemoryStrategy::Tolerant);
-    return Result<MemoryStrategy>::Err(ConfigError(
-        ErrorCode::E202_ParameterOutOfRange, "Invalid memory_strategy: " + str, "memory_strategy"));
+    if (lower == "strict") return Result<MemoryStrategy>::ok(MemoryStrategy::Strict);
+    if (lower == "tolerant") return Result<MemoryStrategy>::ok(MemoryStrategy::Tolerant);
+    return Result<MemoryStrategy>::err(ConfigError(
+        ErrorCode::E202ParameterOutOfRange, "Invalid memory_strategy: " + str, "memory_strategy"));
 }
 
-std::string ToString(MemoryStrategy value) {
+std::string to_string(MemoryStrategy value) {
     switch (value) {
     case MemoryStrategy::Strict: return "strict";
     case MemoryStrategy::Tolerant: return "tolerant";
@@ -132,17 +132,17 @@ std::string ToString(MemoryStrategy value) {
     return "strict";
 }
 
-Result<DownloadStrategy> ParseDownloadStrategy(const std::string& str) {
+Result<DownloadStrategy> parse_download_strategy(const std::string& str) {
     auto lower = detail::ToLower(str);
-    if (lower == "force") return Result<DownloadStrategy>::Ok(DownloadStrategy::Force);
-    if (lower == "skip") return Result<DownloadStrategy>::Ok(DownloadStrategy::Skip);
-    if (lower == "auto") return Result<DownloadStrategy>::Ok(DownloadStrategy::Auto);
-    return Result<DownloadStrategy>::Err(ConfigError(ErrorCode::E202_ParameterOutOfRange,
+    if (lower == "force") return Result<DownloadStrategy>::ok(DownloadStrategy::Force);
+    if (lower == "skip") return Result<DownloadStrategy>::ok(DownloadStrategy::Skip);
+    if (lower == "auto") return Result<DownloadStrategy>::ok(DownloadStrategy::Auto);
+    return Result<DownloadStrategy>::err(ConfigError(ErrorCode::E202ParameterOutOfRange,
                                                      "Invalid download_strategy: " + str,
                                                      "download_strategy"));
 }
 
-std::string ToString(DownloadStrategy value) {
+std::string to_string(DownloadStrategy value) {
     switch (value) {
     case DownloadStrategy::Force: return "force";
     case DownloadStrategy::Skip: return "skip";
@@ -151,15 +151,15 @@ std::string ToString(DownloadStrategy value) {
     return "auto";
 }
 
-Result<ExecutionOrder> ParseExecutionOrder(const std::string& str) {
+Result<ExecutionOrder> parse_execution_order(const std::string& str) {
     auto lower = detail::ToLower(str);
-    if (lower == "sequential") return Result<ExecutionOrder>::Ok(ExecutionOrder::Sequential);
-    if (lower == "batch") return Result<ExecutionOrder>::Ok(ExecutionOrder::Batch);
-    return Result<ExecutionOrder>::Err(ConfigError(
-        ErrorCode::E202_ParameterOutOfRange, "Invalid execution_order: " + str, "execution_order"));
+    if (lower == "sequential") return Result<ExecutionOrder>::ok(ExecutionOrder::Sequential);
+    if (lower == "batch") return Result<ExecutionOrder>::ok(ExecutionOrder::Batch);
+    return Result<ExecutionOrder>::err(ConfigError(
+        ErrorCode::E202ParameterOutOfRange, "Invalid execution_order: " + str, "execution_order"));
 }
 
-std::string ToString(ExecutionOrder value) {
+std::string to_string(ExecutionOrder value) {
     switch (value) {
     case ExecutionOrder::Sequential: return "sequential";
     case ExecutionOrder::Batch: return "batch";
@@ -167,16 +167,16 @@ std::string ToString(ExecutionOrder value) {
     return "sequential";
 }
 
-Result<ConflictPolicy> ParseConflictPolicy(const std::string& str) {
+Result<ConflictPolicy> parse_conflict_policy(const std::string& str) {
     auto lower = detail::ToLower(str);
-    if (lower == "overwrite") return Result<ConflictPolicy>::Ok(ConflictPolicy::Overwrite);
-    if (lower == "rename") return Result<ConflictPolicy>::Ok(ConflictPolicy::Rename);
-    if (lower == "error") return Result<ConflictPolicy>::Ok(ConflictPolicy::Error);
-    return Result<ConflictPolicy>::Err(ConfigError(
-        ErrorCode::E202_ParameterOutOfRange, "Invalid conflict_policy: " + str, "conflict_policy"));
+    if (lower == "overwrite") return Result<ConflictPolicy>::ok(ConflictPolicy::Overwrite);
+    if (lower == "rename") return Result<ConflictPolicy>::ok(ConflictPolicy::Rename);
+    if (lower == "error") return Result<ConflictPolicy>::ok(ConflictPolicy::Error);
+    return Result<ConflictPolicy>::err(ConfigError(
+        ErrorCode::E202ParameterOutOfRange, "Invalid conflict_policy: " + str, "conflict_policy"));
 }
 
-std::string ToString(ConflictPolicy value) {
+std::string to_string(ConflictPolicy value) {
     switch (value) {
     case ConflictPolicy::Overwrite: return "overwrite";
     case ConflictPolicy::Rename: return "rename";
@@ -185,15 +185,15 @@ std::string ToString(ConflictPolicy value) {
     return "error";
 }
 
-Result<AudioPolicy> ParseAudioPolicy(const std::string& str) {
+Result<AudioPolicy> parse_audio_policy(const std::string& str) {
     auto lower = detail::ToLower(str);
-    if (lower == "copy") return Result<AudioPolicy>::Ok(AudioPolicy::Copy);
-    if (lower == "skip") return Result<AudioPolicy>::Ok(AudioPolicy::Skip);
-    return Result<AudioPolicy>::Err(ConfigError(ErrorCode::E202_ParameterOutOfRange,
+    if (lower == "copy") return Result<AudioPolicy>::ok(AudioPolicy::Copy);
+    if (lower == "skip") return Result<AudioPolicy>::ok(AudioPolicy::Skip);
+    return Result<AudioPolicy>::err(ConfigError(ErrorCode::E202ParameterOutOfRange,
                                                 "Invalid audio_policy: " + str, "audio_policy"));
 }
 
-std::string ToString(AudioPolicy value) {
+std::string to_string(AudioPolicy value) {
     switch (value) {
     case AudioPolicy::Copy: return "copy";
     case AudioPolicy::Skip: return "skip";
@@ -201,17 +201,17 @@ std::string ToString(AudioPolicy value) {
     return "copy";
 }
 
-Result<FaceSelectorMode> ParseFaceSelectorMode(const std::string& str) {
+Result<FaceSelectorMode> parse_face_selector_mode(const std::string& str) {
     auto lower = detail::ToLower(str);
-    if (lower == "reference") return Result<FaceSelectorMode>::Ok(FaceSelectorMode::Reference);
-    if (lower == "one") return Result<FaceSelectorMode>::Ok(FaceSelectorMode::One);
-    if (lower == "many") return Result<FaceSelectorMode>::Ok(FaceSelectorMode::Many);
-    return Result<FaceSelectorMode>::Err(ConfigError(ErrorCode::E202_ParameterOutOfRange,
+    if (lower == "reference") return Result<FaceSelectorMode>::ok(FaceSelectorMode::Reference);
+    if (lower == "one") return Result<FaceSelectorMode>::ok(FaceSelectorMode::One);
+    if (lower == "many") return Result<FaceSelectorMode>::ok(FaceSelectorMode::Many);
+    return Result<FaceSelectorMode>::err(ConfigError(ErrorCode::E202ParameterOutOfRange,
                                                      "Invalid face_selector_mode: " + str,
                                                      "face_selector_mode"));
 }
 
-std::string ToString(FaceSelectorMode value) {
+std::string to_string(FaceSelectorMode value) {
     switch (value) {
     case FaceSelectorMode::Reference: return "reference";
     case FaceSelectorMode::One: return "one";
@@ -220,18 +220,18 @@ std::string ToString(FaceSelectorMode value) {
     return "many";
 }
 
-Result<LogLevel> ParseLogLevel(const std::string& str) {
+Result<LogLevel> parse_log_level(const std::string& str) {
     auto lower = detail::ToLower(str);
-    if (lower == "trace") return Result<LogLevel>::Ok(LogLevel::Trace);
-    if (lower == "debug") return Result<LogLevel>::Ok(LogLevel::Debug);
-    if (lower == "info") return Result<LogLevel>::Ok(LogLevel::Info);
-    if (lower == "warn") return Result<LogLevel>::Ok(LogLevel::Warn);
-    if (lower == "error") return Result<LogLevel>::Ok(LogLevel::Error);
-    return Result<LogLevel>::Err(
-        ConfigError(ErrorCode::E202_ParameterOutOfRange, "Invalid log_level: " + str, "log_level"));
+    if (lower == "trace") return Result<LogLevel>::ok(LogLevel::Trace);
+    if (lower == "debug") return Result<LogLevel>::ok(LogLevel::Debug);
+    if (lower == "info") return Result<LogLevel>::ok(LogLevel::Info);
+    if (lower == "warn") return Result<LogLevel>::ok(LogLevel::Warn);
+    if (lower == "error") return Result<LogLevel>::ok(LogLevel::Error);
+    return Result<LogLevel>::err(
+        ConfigError(ErrorCode::E202ParameterOutOfRange, "Invalid log_level: " + str, "log_level"));
 }
 
-std::string ToString(LogLevel value) {
+std::string to_string(LogLevel value) {
     switch (value) {
     case LogLevel::Trace: return "trace";
     case LogLevel::Debug: return "debug";
@@ -242,16 +242,16 @@ std::string ToString(LogLevel value) {
     return "info";
 }
 
-Result<LogRotation> ParseLogRotation(const std::string& str) {
+Result<LogRotation> parse_log_rotation(const std::string& str) {
     auto lower = detail::ToLower(str);
-    if (lower == "daily") return Result<LogRotation>::Ok(LogRotation::Daily);
-    if (lower == "hourly") return Result<LogRotation>::Ok(LogRotation::Hourly);
-    if (lower == "size") return Result<LogRotation>::Ok(LogRotation::Size);
-    return Result<LogRotation>::Err(ConfigError(ErrorCode::E202_ParameterOutOfRange,
+    if (lower == "daily") return Result<LogRotation>::ok(LogRotation::Daily);
+    if (lower == "hourly") return Result<LogRotation>::ok(LogRotation::Hourly);
+    if (lower == "size") return Result<LogRotation>::ok(LogRotation::Size);
+    return Result<LogRotation>::err(ConfigError(ErrorCode::E202ParameterOutOfRange,
                                                 "Invalid log_rotation: " + str, "log_rotation"));
 }
 
-std::string ToString(LogRotation value) {
+std::string to_string(LogRotation value) {
     switch (value) {
     case LogRotation::Daily: return "daily";
     case LogRotation::Hourly: return "hourly";
@@ -293,22 +293,22 @@ Result<AppConfig> ParseAppConfigFromJson(const json& j) {
     // resource
     auto resource_j = detail::GetObject(j, "resource");
     auto memory_strategy_str = detail::GetString(resource_j, "memory_strategy", "strict");
-    auto memory_strategy_r = ParseMemoryStrategy(memory_strategy_str);
-    if (!memory_strategy_r) { return Result<AppConfig>::Err(memory_strategy_r.error()); }
+    auto memory_strategy_r = parse_memory_strategy(memory_strategy_str);
+    if (!memory_strategy_r) { return Result<AppConfig>::err(memory_strategy_r.error()); }
     config.resource.memory_strategy = memory_strategy_r.value();
 
     // logging
     auto logging_j = detail::GetObject(j, "logging");
     auto log_level_str = detail::GetString(logging_j, "level", "info");
-    auto log_level_r = ParseLogLevel(log_level_str);
-    if (!log_level_r) { return Result<AppConfig>::Err(log_level_r.error()); }
+    auto log_level_r = parse_log_level(log_level_str);
+    if (!log_level_r) { return Result<AppConfig>::err(log_level_r.error()); }
     config.logging.level = log_level_r.value();
 
     config.logging.directory = detail::GetString(logging_j, "directory", "./logs");
 
     auto log_rotation_str = detail::GetString(logging_j, "rotation", "daily");
-    auto log_rotation_r = ParseLogRotation(log_rotation_str);
-    if (!log_rotation_r) { return Result<AppConfig>::Err(log_rotation_r.error()); }
+    auto log_rotation_r = parse_log_rotation(log_rotation_str);
+    if (!log_rotation_r) { return Result<AppConfig>::err(log_rotation_r.error()); }
     config.logging.rotation = log_rotation_r.value();
 
     // metrics
@@ -326,8 +326,8 @@ Result<AppConfig> ParseAppConfigFromJson(const json& j) {
     config.models.path = detail::GetString(models_j, "path", "./assets/models");
 
     auto download_strategy_str = detail::GetString(models_j, "download_strategy", "auto");
-    auto download_strategy_r = ParseDownloadStrategy(download_strategy_str);
-    if (!download_strategy_r) { return Result<AppConfig>::Err(download_strategy_r.error()); }
+    auto download_strategy_r = parse_download_strategy(download_strategy_str);
+    if (!download_strategy_r) { return Result<AppConfig>::err(download_strategy_r.error()); }
     config.models.download_strategy = download_strategy_r.value();
 
     // default_models
@@ -368,14 +368,14 @@ Result<AppConfig> ParseAppConfigFromJson(const json& j) {
         detail::GetOptionalString(output_defaults_j, "image_format");
 
     if (auto conflict_str = detail::GetOptionalString(output_defaults_j, "conflict_policy")) {
-        auto conflict_r = ParseConflictPolicy(*conflict_str);
+        auto conflict_r = parse_conflict_policy(*conflict_str);
         if (conflict_r) {
             config.default_task_settings.io.output.conflict_policy = conflict_r.value();
         }
     }
 
     if (auto audio_str = detail::GetOptionalString(output_defaults_j, "audio_policy")) {
-        auto audio_r = ParseAudioPolicy(*audio_str);
+        auto audio_r = parse_audio_policy(*audio_str);
         if (audio_r) { config.default_task_settings.io.output.audio_policy = audio_r.value(); }
     }
 
@@ -387,7 +387,7 @@ Result<AppConfig> ParseAppConfigFromJson(const json& j) {
         detail::GetOptionalInt(resource_defaults_j, "max_queue_size");
 
     if (auto exec_order_str = detail::GetOptionalString(resource_defaults_j, "execution_order")) {
-        auto exec_order_r = ParseExecutionOrder(*exec_order_str);
+        auto exec_order_r = parse_execution_order(*exec_order_str);
         if (exec_order_r) {
             config.default_task_settings.resource.execution_order = exec_order_r.value();
         }
@@ -406,25 +406,25 @@ Result<AppConfig> ParseAppConfigFromJson(const json& j) {
     // temp_directory
     config.temp_directory = detail::GetString(j, "temp_directory", "./temp");
 
-    return Result<AppConfig>::Ok(std::move(config));
+    return Result<AppConfig>::ok(std::move(config));
 }
 
 } // anonymous namespace
 
-Result<AppConfig> ParseAppConfigFromString(const std::string& yaml_content) {
+Result<AppConfig> parse_app_config_from_string(const std::string& yaml_content) {
     try {
         auto j = foundation::infrastructure::core_utils::conversion::yaml_str_to_json(yaml_content);
         return ParseAppConfigFromJson(j);
     } catch (const std::exception& e) {
-        return Result<AppConfig>::Err(ConfigError(ErrorCode::E201_YamlFormatInvalid,
+        return Result<AppConfig>::err(ConfigError(ErrorCode::E201YamlFormatInvalid,
                                                   "YAML parse error: " + std::string(e.what())));
     }
 }
 
-Result<AppConfig> LoadAppConfig(const std::filesystem::path& path) {
+Result<AppConfig> load_app_config(const std::filesystem::path& path) {
     auto content_r = detail::ReadFileContent(path);
-    if (!content_r) { return Result<AppConfig>::Err(content_r.error()); }
-    return ParseAppConfigFromString(content_r.value());
+    if (!content_r) { return Result<AppConfig>::err(content_r.error()); }
+    return parse_app_config_from_string(content_r.value());
 }
 
 // ============================================================================
@@ -447,8 +447,8 @@ Result<PipelineStep> ParsePipelineStep(const json& step_j) {
         params.model = detail::GetString(params_j, "model", "");
 
         auto mode_str = detail::GetString(params_j, "face_selector_mode", "many");
-        auto mode_r = ParseFaceSelectorMode(mode_str);
-        if (!mode_r) { return Result<PipelineStep>::Err(mode_r.error()); }
+        auto mode_r = parse_face_selector_mode(mode_str);
+        if (!mode_r) { return Result<PipelineStep>::err(mode_r.error()); }
         params.face_selector_mode = mode_r.value();
 
         auto ref_path = detail::GetString(params_j, "reference_face_path", "");
@@ -461,8 +461,8 @@ Result<PipelineStep> ParsePipelineStep(const json& step_j) {
         params.blend_factor = detail::GetDouble(params_j, "blend_factor", 0.8);
 
         auto mode_str = detail::GetString(params_j, "face_selector_mode", "many");
-        auto mode_r = ParseFaceSelectorMode(mode_str);
-        if (!mode_r) { return Result<PipelineStep>::Err(mode_r.error()); }
+        auto mode_r = parse_face_selector_mode(mode_str);
+        if (!mode_r) { return Result<PipelineStep>::err(mode_r.error()); }
         params.face_selector_mode = mode_r.value();
 
         auto ref_path = detail::GetString(params_j, "reference_face_path", "");
@@ -475,8 +475,8 @@ Result<PipelineStep> ParsePipelineStep(const json& step_j) {
         params.restore_factor = detail::GetDouble(params_j, "restore_factor", 0.8);
 
         auto mode_str = detail::GetString(params_j, "face_selector_mode", "many");
-        auto mode_r = ParseFaceSelectorMode(mode_str);
-        if (!mode_r) { return Result<PipelineStep>::Err(mode_r.error()); }
+        auto mode_r = parse_face_selector_mode(mode_str);
+        if (!mode_r) { return Result<PipelineStep>::err(mode_r.error()); }
         params.face_selector_mode = mode_r.value();
 
         auto ref_path = detail::GetString(params_j, "reference_face_path", "");
@@ -489,12 +489,12 @@ Result<PipelineStep> ParsePipelineStep(const json& step_j) {
         params.enhance_factor = detail::GetDouble(params_j, "enhance_factor", 0.8);
         step.params = std::move(params);
     } else {
-        return Result<PipelineStep>::Err(ConfigError(ErrorCode::E202_ParameterOutOfRange,
+        return Result<PipelineStep>::err(ConfigError(ErrorCode::E202ParameterOutOfRange,
                                                      "Unknown pipeline step type: " + step.step,
                                                      "pipeline.step"));
     }
 
-    return Result<PipelineStep>::Ok(std::move(step));
+    return Result<PipelineStep>::ok(std::move(step));
 }
 
 Result<TaskConfig> ParseTaskConfigFromJson(const json& j) {
@@ -525,13 +525,13 @@ Result<TaskConfig> ParseTaskConfigFromJson(const json& j) {
 
     auto conflict_str = detail::GetString(output_j, "conflict_policy", "");
     if (!conflict_str.empty()) {
-        auto conflict_r = ParseConflictPolicy(conflict_str);
+        auto conflict_r = parse_conflict_policy(conflict_str);
         if (conflict_r) { config.io.output.conflict_policy = conflict_r.value(); }
     }
 
     auto audio_str = detail::GetString(output_j, "audio_policy", "");
     if (!audio_str.empty()) {
-        auto audio_r = ParseAudioPolicy(audio_str);
+        auto audio_r = parse_audio_policy(audio_str);
         if (audio_r) { config.io.output.audio_policy = audio_r.value(); }
     }
 
@@ -542,7 +542,7 @@ Result<TaskConfig> ParseTaskConfigFromJson(const json& j) {
 
     auto exec_order_str = detail::GetString(resource_j, "execution_order", "");
     if (!exec_order_str.empty()) {
-        auto exec_order_r = ParseExecutionOrder(exec_order_str);
+        auto exec_order_r = parse_execution_order(exec_order_str);
         if (exec_order_r) { config.resource.execution_order = exec_order_r.value(); }
     }
 
@@ -582,42 +582,42 @@ Result<TaskConfig> ParseTaskConfigFromJson(const json& j) {
     if (j.contains("pipeline") && j["pipeline"].is_array()) {
         for (const auto& step_j : j["pipeline"]) {
             auto step_r = ParsePipelineStep(step_j);
-            if (!step_r) { return Result<TaskConfig>::Err(step_r.error()); }
+            if (!step_r) { return Result<TaskConfig>::err(step_r.error()); }
             config.pipeline.push_back(std::move(step_r).value());
         }
     }
 
-    return Result<TaskConfig>::Ok(std::move(config));
+    return Result<TaskConfig>::ok(std::move(config));
 }
 
 } // anonymous namespace
 
-Result<TaskConfig> ParseTaskConfigFromString(const std::string& yaml_content) {
+Result<TaskConfig> parse_task_config_from_string(const std::string& yaml_content) {
     try {
         auto j = foundation::infrastructure::core_utils::conversion::yaml_str_to_json(yaml_content);
         return ParseTaskConfigFromJson(j);
     } catch (const std::exception& e) {
-        return Result<TaskConfig>::Err(ConfigError(ErrorCode::E201_YamlFormatInvalid,
+        return Result<TaskConfig>::err(ConfigError(ErrorCode::E201YamlFormatInvalid,
                                                    "YAML parse error: " + std::string(e.what())));
     }
 }
 
-Result<TaskConfig> LoadTaskConfig(const std::filesystem::path& path) {
+Result<TaskConfig> load_task_config(const std::filesystem::path& path) {
     auto content_r = detail::ReadFileContent(path);
-    if (!content_r) { return Result<TaskConfig>::Err(content_r.error()); }
-    return ParseTaskConfigFromString(content_r.value());
+    if (!content_r) { return Result<TaskConfig>::err(content_r.error()); }
+    return parse_task_config_from_string(content_r.value());
 }
 
 // ============================================================================
 // 校验实现
 // ============================================================================
 
-Result<void, ConfigError> ValidateAppConfig(const AppConfig& config) {
+Result<void, ConfigError> validate_app_config(const AppConfig& config) {
     ConfigValidator validator;
     return validator.validate_or_error(config);
 }
 
-Result<void, ConfigError> ValidateTaskConfig(const TaskConfig& config) {
+Result<void, ConfigError> validate_task_config(const TaskConfig& config) {
     ConfigValidator validator;
     return validator.validate_or_error(config);
 }

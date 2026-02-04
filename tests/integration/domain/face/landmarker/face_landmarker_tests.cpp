@@ -38,17 +38,17 @@ protected:
 };
 
 TEST_F(FaceLandmarkerTest, FactoryCreatesModels) {
-    auto _2dfan = create_landmarker(LandmarkerType::_2DFAN);
+    auto _2dfan = create_landmarker(LandmarkerType::T2dfan);
     EXPECT_NE(_2dfan, nullptr);
 
     auto peppawutz = create_landmarker(LandmarkerType::Peppawutz);
     EXPECT_NE(peppawutz, nullptr);
 
-    auto _68by5 = create_landmarker(LandmarkerType::_68By5);
+    auto _68by5 = create_landmarker(LandmarkerType::T68By5);
     EXPECT_NE(_68by5, nullptr);
 }
 
-TEST_F(FaceLandmarkerTest, _2DFAN_Inference) {
+TEST_F(FaceLandmarkerTest, T2dfan_Inference) {
     if (!fs::exists(test_image_path)) { GTEST_SKIP() << "Test image not found"; }
 
     cv::Mat test_image = cv::imread(test_image_path.string());
@@ -57,7 +57,7 @@ TEST_F(FaceLandmarkerTest, _2DFAN_Inference) {
     cv::Rect2f bbox = detect_face_bbox(test_image, model_repo);
     if (bbox.width <= 0) { GTEST_SKIP() << "No face detected for testing"; }
 
-    auto landmarker = create_landmarker(LandmarkerType::_2DFAN);
+    auto landmarker = create_landmarker(LandmarkerType::T2dfan);
     auto model_path = model_repo->ensure_model("2dfan4");
     landmarker->load_model(model_path,
                            foundation::ai::inference_session::Options::with_best_providers());
@@ -88,8 +88,8 @@ TEST_F(FaceLandmarkerTest, Peppawutz_Inference) {
     EXPECT_GT(result.score, 0.3f);
 }
 
-TEST_F(FaceLandmarkerTest, _68By5_Inference) {
-    auto landmarker = create_landmarker(LandmarkerType::_68By5);
+TEST_F(FaceLandmarkerTest, T68By5_Inference) {
+    auto landmarker = create_landmarker(LandmarkerType::T68By5);
     auto model_path = model_repo->ensure_model("68_by_5");
     landmarker->load_model(model_path,
                            foundation::ai::inference_session::Options::with_best_providers());

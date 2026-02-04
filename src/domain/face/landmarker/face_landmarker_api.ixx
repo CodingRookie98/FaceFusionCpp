@@ -36,7 +36,7 @@ public:
      * @param options Inference session options
      */
     virtual void load_model(const std::string& model_path,
-                            const foundation::ai::inference_session::Options& options = {}) = 0;
+                            const foundation::ai::inference_session::Options& options) = 0;
 
     /**
      * @brief Detect face landmarks
@@ -52,7 +52,7 @@ public:
      * @return 68-point landmarks (interpolated or predicted)
      */
     virtual domain::face::types::Landmarks expand_68_from_5(
-        const domain::face::types::Landmarks& landmarks5) {
+        const domain::face::types::Landmarks& /*landmarks5*/) {
         return {};
     }
 };

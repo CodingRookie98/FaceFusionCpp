@@ -24,7 +24,7 @@ public:
 
     cv::Mat swap_face(cv::Mat target_crop, const std::vector<float>& source_embedding) override;
 
-    cv::Size get_model_input_size() const override { return m_size; }
+    [[nodiscard]] cv::Size get_model_input_size() const override { return m_size; }
 
 private:
     void init();
@@ -32,18 +32,18 @@ private:
     std::tuple<std::vector<float>, std::vector<int64_t>, std::vector<float>, std::vector<int64_t>>
     prepare_input(const domain::face::types::Embedding& source_embedding,
                   const cv::Mat& cropped_target_frame) const;
-    cv::Mat process_output(const std::vector<Ort::Value>& output_tensors) const;
+    [[nodiscard]] cv::Mat process_output(const std::vector<Ort::Value>& output_tensors) const;
 
     // Helper to orchestrate the swap for a single face
-    cv::Mat apply_swap(const domain::face::types::Embedding& source_embedding,
+    [[nodiscard]] cv::Mat apply_swap(const domain::face::types::Embedding& source_embedding,
                        const cv::Mat& cropped_target_frame) const;
 
 private:
     cv::Size m_size{0, 0};
     int m_input_width = 0;
     int m_input_height = 0;
-    std::vector<float> m_mean = {0.0f, 0.0f, 0.0f};
-    std::vector<float> m_standard_deviation = {1.0f, 1.0f, 1.0f};
+    std::vector<float> m_mean = {0.0F, 0.0F, 0.0F};
+    std::vector<float> m_standard_deviation = {1.0F, 1.0F, 1.0F};
     std::vector<float> m_initializer_array;
     std::once_flag m_init_flag;
 };

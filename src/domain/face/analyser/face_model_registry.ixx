@@ -67,11 +67,14 @@ public:
     // Destructor must be public for std::unique_ptr
     ~FaceModelRegistry() = default;
 
-private:
-    FaceModelRegistry() = default;
-
     FaceModelRegistry(const FaceModelRegistry&) = delete;
     FaceModelRegistry& operator=(const FaceModelRegistry&) = delete;
+
+    FaceModelRegistry(FaceModelRegistry&&) = delete;
+    FaceModelRegistry& operator=(FaceModelRegistry&&) = delete;
+
+private:
+    FaceModelRegistry() = default;
 
     std::mutex m_mutex;
 

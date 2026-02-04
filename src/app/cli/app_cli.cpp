@@ -30,7 +30,7 @@ namespace app::cli {
 
 namespace {
 config::LogLevel parse_log_level(const std::string& level) {
-    auto r = config::ParseLogLevel(level);
+    auto r = config::parse_log_level(level);
     return r.is_ok() ? r.value() : config::LogLevel::Info;
 }
 
@@ -207,7 +207,7 @@ int App::run_validate(const std::string& config_path, const config::AppConfig& a
     Logger::get_instance()->info("Validating configuration: " + config_path);
 
     // 1. 加载配置
-    auto config_result = LoadTaskConfig(config_path);
+    auto config_result = load_task_config(config_path);
     if (config_result.is_err()) {
         auto err = config_result.error();
         Logger::get_instance()->error(err.formatted());
@@ -239,7 +239,7 @@ int App::run_pipeline(const std::string& config_path, const config::AppConfig& a
     using foundation::infrastructure::logger::Logger;
 
     // 1. Load Task Config
-    auto config_result = LoadTaskConfig(config_path);
+    auto config_result = load_task_config(config_path);
     if (config_result.is_err()) {
         Logger::get_instance()->error("Config Error: " + config_result.error().message);
         return static_cast<int>(config_result.error().code);
@@ -380,7 +380,7 @@ std::optional<config::AppConfig> App::load_app_config(const std::string& path,
 
     // 尝试从文件加载
     if (std::filesystem::exists(path)) {
-        auto result = LoadAppConfig(path);
+        auto result = config::load_app_config(path);
         if (result.is_ok()) {
             config = std::move(result).value();
         } else {
@@ -417,7 +417,7 @@ void App::log_config_summary(const config::AppConfig& app_config) {
                              app_config.resource.memory_strategy == config::MemoryStrategy::Strict ?
                                  "strict" :
                                  "tolerant"));
-    logger->info(std::format("  Log Level: {}", config::ToString(app_config.logging.level)));
+    logger->info(std::format("  Log Level: {}", config::to_string(app_config.logging.level)));
     logger->info(std::format("  Models Path: {}", app_config.models.path));
     logger->info(std::format("  Engine Cache: {} (Path: {}, Max: {}, TTL: {}s)",
                              app_config.inference.engine_cache.enable ? "Enabled" : "Disabled",

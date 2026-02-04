@@ -13,7 +13,7 @@ using namespace testing;
 // ============================================================================
 
 TEST(ResultTest, OkValue) {
-    auto result = Result<int>::Ok(42);
+    auto result = Result<int>::ok(42);
     EXPECT_TRUE(result.is_ok());
     EXPECT_FALSE(result.is_err());
     EXPECT_EQ(result.value(), 42);
@@ -21,7 +21,7 @@ TEST(ResultTest, OkValue) {
 }
 
 TEST(ResultTest, ErrValue) {
-    auto result = Result<int>::Err(ConfigError(ErrorCode::E200_ConfigError, "test error", "field"));
+    auto result = Result<int>::err(ConfigError(ErrorCode::E200ConfigError, "test error", "field"));
     EXPECT_FALSE(result.is_ok());
     EXPECT_TRUE(result.is_err());
     EXPECT_EQ(result.error().message, "test error");
@@ -30,10 +30,10 @@ TEST(ResultTest, ErrValue) {
 }
 
 TEST(ResultTest, VoidSpecialization) {
-    auto result = Result<void>::Ok();
+    auto result = Result<void>::ok();
     EXPECT_TRUE(result.is_ok());
 
-    auto err = Result<void>::Err(ConfigError(ErrorCode::E200_ConfigError, "void error"));
+    auto err = Result<void>::err(ConfigError(ErrorCode::E200ConfigError, "void error"));
     EXPECT_TRUE(err.is_err());
     EXPECT_EQ(err.error().message, "void error");
 }
@@ -48,7 +48,7 @@ TEST(AppConfigValidationTest, ValidConfig) {
     config.models.path = "."; // Use current dir which exists
     config.logging.directory = "./logs";
 
-    auto result = ValidateAppConfig(config);
+    auto result = validate_app_config(config);
     EXPECT_TRUE(result.is_ok()) << (result.is_err() ? result.error().formatted() : "");
 }
 
@@ -58,7 +58,7 @@ TEST(AppConfigValidationTest, EmptyModelsPath) {
     config.models.path = "non_existent_path_xyz";
     config.logging.directory = "./logs";
 
-    auto result = ValidateAppConfig(config);
+    auto result = validate_app_config(config);
     EXPECT_TRUE(result.is_err());
     EXPECT_THAT(result.error().yaml_path, Eq("models.path"));
 }
@@ -85,7 +85,7 @@ TEST(TaskConfigValidationTest, ValidConfig) {
     step.params = FaceSwapperParams{};
     config.pipeline.push_back(step);
 
-    auto result = ValidateTaskConfig(config);
+    auto result = validate_task_config(config);
     EXPECT_TRUE(result.is_ok()) << (result.is_err() ? result.error().formatted() : "");
 }
 
@@ -106,7 +106,7 @@ TEST(TaskConfigValidationTest, InvalidVideoQuality) {
     step.params = FaceSwapperParams{};
     config.pipeline.push_back(step);
 
-    auto result = ValidateTaskConfig(config);
+    auto result = validate_task_config(config);
     EXPECT_TRUE(result.is_err());
     EXPECT_THAT(result.error().yaml_path, Eq("io.output.video_quality"));
 }
@@ -120,9 +120,9 @@ TEST(TaskConfigValidationTest, VersionMismatch) {
     config.config_version = "2.0"; // Unsupported
     config.task_info.id = "test";
 
-    auto result = ValidateTaskConfig(config);
+    auto result = validate_task_config(config);
     EXPECT_TRUE(result.is_err());
-    EXPECT_EQ(result.error().code, ErrorCode::E204_ConfigVersionMismatch);
+    EXPECT_EQ(result.error().code, ErrorCode::E204ConfigVersionMismatch);
     EXPECT_EQ(result.error().yaml_path, "config_version");
 }
 
@@ -139,18 +139,18 @@ TEST(TaskConfigValidationTest, FaceAnalysisRangeValidation) {
     config.face_analysis.face_detector.score_threshold = 1.5;
     config.face_analysis.face_recognizer.similarity_threshold = 0.6;
 
-    auto result = ValidateTaskConfig(config);
+    auto result = validate_task_config(config);
     EXPECT_TRUE(result.is_err());
-    EXPECT_EQ(result.error().code, ErrorCode::E202_ParameterOutOfRange);
+    EXPECT_EQ(result.error().code, ErrorCode::E202ParameterOutOfRange);
     EXPECT_EQ(result.error().yaml_path, "face_analysis.face_detector.score_threshold");
 
     // Invalid similarity threshold
     config.face_analysis.face_detector.score_threshold = 0.5;
     config.face_analysis.face_recognizer.similarity_threshold = -0.1;
 
-    result = ValidateTaskConfig(config);
+    result = validate_task_config(config);
     EXPECT_TRUE(result.is_err());
-    EXPECT_EQ(result.error().code, ErrorCode::E202_ParameterOutOfRange);
+    EXPECT_EQ(result.error().code, ErrorCode::E202ParameterOutOfRange);
     EXPECT_EQ(result.error().yaml_path, "face_analysis.face_recognizer.similarity_threshold");
 }
 
@@ -171,17 +171,17 @@ TEST(TaskConfigValidationTest, ReferenceFacePathRequired) {
     step.params = params;
     config.pipeline.push_back(step);
 
-    auto result = ValidateTaskConfig(config);
+    auto result = validate_task_config(config);
     EXPECT_TRUE(result.is_err());
-    EXPECT_EQ(result.error().code, ErrorCode::E205_RequiredFieldMissing);
+    EXPECT_EQ(result.error().code, ErrorCode::E205RequiredFieldMissing);
     EXPECT_EQ(result.error().yaml_path, "pipeline[0].params.reference_face_path");
 
     // Test empty path
     params.reference_face_path = "";
     config.pipeline[0].params = params;
-    result = ValidateTaskConfig(config);
+    result = validate_task_config(config);
     EXPECT_TRUE(result.is_err());
-    EXPECT_EQ(result.error().code, ErrorCode::E205_RequiredFieldMissing);
+    EXPECT_EQ(result.error().code, ErrorCode::E205RequiredFieldMissing);
 }
 
 TEST(TaskConfigValidationTest, ReferenceFacePathExists) {
@@ -201,9 +201,9 @@ TEST(TaskConfigValidationTest, ReferenceFacePathExists) {
     step.params = params;
     config.pipeline.push_back(step);
 
-    auto result = ValidateTaskConfig(config);
+    auto result = validate_task_config(config);
     EXPECT_TRUE(result.is_err());
-    EXPECT_EQ(result.error().code, ErrorCode::E206_InvalidPath);
+    EXPECT_EQ(result.error().code, ErrorCode::E206InvalidPath);
     EXPECT_EQ(result.error().yaml_path, "pipeline[0].params.reference_face_path");
 }
 

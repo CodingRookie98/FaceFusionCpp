@@ -19,8 +19,8 @@ export namespace domain::face::classifier {
  * @brief Result of face classification (gender, age, race)
  */
 struct ClassificationResult {
-    domain::face::Race race;     ///< Predicted race
-    domain::face::Gender gender; ///< Predicted gender
+    domain::face::Race race = domain::face::Race::White;     ///< Predicted race
+    domain::face::Gender gender = domain::face::Gender::Male; ///< Predicted gender
     domain::face::AgeRange age;  ///< Predicted age range
 };
 
@@ -37,7 +37,7 @@ public:
      * @param options Inference session options
      */
     virtual void load_model(const std::string& model_path,
-                            const foundation::ai::inference_session::Options& options = {}) = 0;
+                            const foundation::ai::inference_session::Options& options) = 0;
 
     /**
      * @brief Classify face attributes

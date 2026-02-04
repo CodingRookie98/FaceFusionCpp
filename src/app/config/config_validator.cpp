@@ -19,10 +19,10 @@ namespace config {
 std::vector<ValidationError> ConfigValidator::validate(const TaskConfig& config) {
     std::vector<ValidationError> errors;
 
-    if (!config.config_version.empty() && config.config_version != SUPPORTED_CONFIG_VERSION) {
-        errors.push_back({ErrorCode::E204_ConfigVersionMismatch, "config_version",
+    if (!config.config_version.empty() && config.config_version != kSupportedConfigVersion) {
+        errors.push_back({ErrorCode::E204ConfigVersionMismatch, "config_version",
                           config.config_version,
-                          std::format("supported version {}", SUPPORTED_CONFIG_VERSION)});
+                          std::format("supported version {}", kSupportedConfigVersion)});
     }
 
     validate_task_info(config.task_info, errors);
@@ -36,10 +36,10 @@ std::vector<ValidationError> ConfigValidator::validate(const TaskConfig& config)
 std::vector<ValidationError> ConfigValidator::validate(const AppConfig& config) {
     std::vector<ValidationError> errors;
 
-    if (config.config_version != SUPPORTED_CONFIG_VERSION) {
-        errors.push_back({ErrorCode::E204_ConfigVersionMismatch, "config_version",
+    if (config.config_version != kSupportedConfigVersion) {
+        errors.push_back({ErrorCode::E204ConfigVersionMismatch, "config_version",
                           config.config_version,
-                          std::format("supported version {}", SUPPORTED_CONFIG_VERSION)});
+                          std::format("supported version {}", kSupportedConfigVersion)});
     }
 
     validate_path_exists(config.models.path, "models.path", errors);
@@ -50,14 +50,14 @@ std::vector<ValidationError> ConfigValidator::validate(const AppConfig& config) 
 
 Result<void, ConfigError> ConfigValidator::validate_or_error(const TaskConfig& config) {
     auto errors = validate(config);
-    if (errors.empty()) { return Result<void, ConfigError>::Ok(); }
-    return Result<void, ConfigError>::Err(errors[0].to_config_error());
+    if (errors.empty()) { return Result<void, ConfigError>::ok(); }
+    return Result<void, ConfigError>::err(errors[0].to_config_error());
 }
 
 Result<void, ConfigError> ConfigValidator::validate_or_error(const AppConfig& config) {
     auto errors = validate(config);
-    if (errors.empty()) { return Result<void, ConfigError>::Ok(); }
-    return Result<void, ConfigError>::Err(errors[0].to_config_error());
+    if (errors.empty()) { return Result<void, ConfigError>::ok(); }
+    return Result<void, ConfigError>::err(errors[0].to_config_error());
 }
 
 void ConfigValidator::validate_task_info(const TaskInfo& info,
@@ -66,19 +66,19 @@ void ConfigValidator::validate_task_info(const TaskInfo& info,
     if (!info.id.empty()) {
         std::regex id_regex("^[a-zA-Z0-9_]+$");
         if (!std::regex_match(info.id, id_regex)) {
-            errors.push_back({ErrorCode::E202_ParameterOutOfRange, "task_info.id",
+            errors.push_back({ErrorCode::E202ParameterOutOfRange, "task_info.id",
                               std::format("\"{}\"", info.id), "format [a-zA-Z0-9_]+"});
         }
     } else {
         errors.push_back(
-            {ErrorCode::E205_RequiredFieldMissing, "task_info.id", "", "non-empty task id"});
+            {ErrorCode::E205RequiredFieldMissing, "task_info.id", "", "non-empty task id"});
     }
 }
 
 void ConfigValidator::validate_io(const IOConfig& io, std::vector<ValidationError>& errors) {
     // Source paths must not be empty
     if (io.source_paths.empty()) {
-        errors.push_back({ErrorCode::E205_RequiredFieldMissing, "io.source_paths", "",
+        errors.push_back({ErrorCode::E205RequiredFieldMissing, "io.source_paths", "",
                           "at least one source path"});
     }
 
@@ -89,7 +89,7 @@ void ConfigValidator::validate_io(const IOConfig& io, std::vector<ValidationErro
 
     // Target paths must not be empty
     if (io.target_paths.empty()) {
-        errors.push_back({ErrorCode::E205_RequiredFieldMissing, "io.target_paths", "",
+        errors.push_back({ErrorCode::E205RequiredFieldMissing, "io.target_paths", "",
                           "at least one target path"});
     }
 
@@ -126,7 +126,7 @@ void ConfigValidator::validate_output(const OutputConfig& output,
     std::transform(fmt.begin(), fmt.end(), fmt.begin(),
                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     if (std::find(valid_formats.begin(), valid_formats.end(), fmt) == valid_formats.end()) {
-        errors.push_back({ErrorCode::E202_ParameterOutOfRange, "io.output.image_format",
+        errors.push_back({ErrorCode::E202ParameterOutOfRange, "io.output.image_format",
                           std::format("\"{}\"", output.image_format),
                           "one of [png, jpg, jpeg, bmp]"});
     }
@@ -136,7 +136,7 @@ void ConfigValidator::validate_pipeline(const std::vector<PipelineStep>& steps,
                                         std::vector<ValidationError>& errors) {
     if (steps.empty()) {
         errors.push_back(
-            {ErrorCode::E205_RequiredFieldMissing, "pipeline", "", "at least one pipeline step"});
+            {ErrorCode::E205RequiredFieldMissing, "pipeline", "", "at least one pipeline step"});
         return;
     }
 
@@ -154,7 +154,7 @@ void ConfigValidator::validate_pipeline(const std::vector<PipelineStep>& steps,
 
         if (std::find(valid_steps.begin(), valid_steps.end(), step_type) == valid_steps.end()) {
             errors.push_back(
-                {ErrorCode::E202_ParameterOutOfRange, path_prefix + ".step",
+                {ErrorCode::E202ParameterOutOfRange, path_prefix + ".step",
                  std::format("\"{}\"", step.step),
                  "one of [face_swapper, face_enhancer, expression_restorer, frame_enhancer]"});
         }
@@ -171,7 +171,7 @@ void ConfigValidator::validate_step_params(const StepParams& params, const std::
         if (const auto* p = std::get_if<FaceSwapperParams>(&params)) {
             if (p->face_selector_mode == FaceSelectorMode::Reference) {
                 if (!p->reference_face_path.has_value() || p->reference_face_path->empty()) {
-                    errors.push_back({ErrorCode::E205_RequiredFieldMissing,
+                    errors.push_back({ErrorCode::E205RequiredFieldMissing,
                                       path_prefix + ".params.reference_face_path", "",
                                       "required when face_selector_mode is 'reference'"});
                 } else {
@@ -185,7 +185,7 @@ void ConfigValidator::validate_step_params(const StepParams& params, const std::
             validate_range(p->blend_factor, 0.0, 1.0, path_prefix + ".params.blend_factor", errors);
             if (p->face_selector_mode == FaceSelectorMode::Reference) {
                 if (!p->reference_face_path.has_value() || p->reference_face_path->empty()) {
-                    errors.push_back({ErrorCode::E205_RequiredFieldMissing,
+                    errors.push_back({ErrorCode::E205RequiredFieldMissing,
                                       path_prefix + ".params.reference_face_path", "",
                                       "required when face_selector_mode is 'reference'"});
                 } else {
@@ -200,7 +200,7 @@ void ConfigValidator::validate_step_params(const StepParams& params, const std::
                            errors);
             if (p->face_selector_mode == FaceSelectorMode::Reference) {
                 if (!p->reference_face_path.has_value() || p->reference_face_path->empty()) {
-                    errors.push_back({ErrorCode::E205_RequiredFieldMissing,
+                    errors.push_back({ErrorCode::E205RequiredFieldMissing,
                                       path_prefix + ".params.reference_face_path", "",
                                       "required when face_selector_mode is 'reference'"});
                 } else {
@@ -221,7 +221,7 @@ template <typename T>
 void ConfigValidator::validate_range(T value, T min, T max, const std::string& yaml_path,
                                      std::vector<ValidationError>& errors) {
     if (value < min || value > max) {
-        errors.push_back({ErrorCode::E202_ParameterOutOfRange, yaml_path, std::format("{}", value),
+        errors.push_back({ErrorCode::E202ParameterOutOfRange, yaml_path, std::format("{}", value),
                           std::format("range [{}, {}]", min, max)});
     }
 }
@@ -231,7 +231,7 @@ void ConfigValidator::validate_path_exists(const std::string& path, const std::s
     if (path.empty()) return; // Handled by validate_not_empty if needed
 
     if (!std::filesystem::exists(path)) {
-        errors.push_back({ErrorCode::E206_InvalidPath, yaml_path, std::format("\"{}\"", path),
+        errors.push_back({ErrorCode::E206InvalidPath, yaml_path, std::format("\"{}\"", path),
                           "path must exist"});
     }
 }
@@ -239,7 +239,7 @@ void ConfigValidator::validate_path_exists(const std::string& path, const std::s
 void ConfigValidator::validate_not_empty(const std::string& value, const std::string& yaml_path,
                                          std::vector<ValidationError>& errors) {
     if (value.empty()) {
-        errors.push_back({ErrorCode::E205_RequiredFieldMissing, yaml_path, "", "non-empty string"});
+        errors.push_back({ErrorCode::E205RequiredFieldMissing, yaml_path, "", "non-empty string"});
     }
 }
 

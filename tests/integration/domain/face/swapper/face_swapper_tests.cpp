@@ -75,7 +75,7 @@ TEST_F(FaceSwapperIntegrationTest, SwapFaceAndVerifySimilarity) {
 
     // Manual Crop
     auto [target_crop, _] = warp_face_by_face_landmarks_5(
-        target_img, target_kps, WarpTemplateType::Arcface_128_v2, cv::Size(128, 128));
+        target_img, target_kps, WarpTemplateType::Arcface128V2, cv::Size(128, 128));
 
     // Act
     cv::Mat result_img = swapper->swap_face(target_crop, source_embedding);

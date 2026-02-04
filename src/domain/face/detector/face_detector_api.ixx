@@ -31,7 +31,7 @@ public:
      * @param options Inference session options
      */
     virtual void load_model(const std::string& model_path,
-                            const InferenceOptions& options = {}) = 0;
+                            const InferenceOptions& options) = 0;
 
     /**
      * @brief Detect faces in the given image.

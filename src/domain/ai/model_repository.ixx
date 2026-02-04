@@ -5,6 +5,7 @@
  * @date 2026-01-27
  */
 module;
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <memory>
@@ -29,7 +30,7 @@ export struct ModelInfo {
 /**
  * @brief Strategy for handling missing model files
  */
-export enum class DownloadStrategy {
+export enum class DownloadStrategy : std::uint8_t {
     Auto,  ///< Download automatically if not found locally
     Force, ///< Always re-download from remote
     Skip   ///< Never download (fail if missing)

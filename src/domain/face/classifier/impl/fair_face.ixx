@@ -19,7 +19,7 @@ public:
     ~FairFace() override = default;
 
     void load_model(const std::string& model_path,
-                    const foundation::ai::inference_session::Options& options = {}) override;
+                    const foundation::ai::inference_session::Options& options) override;
 
     ClassificationResult classify(const cv::Mat& image,
                                   const domain::face::types::Landmarks& face_landmark_5) override;
@@ -43,13 +43,13 @@ public:
 
 private:
     std::shared_ptr<foundation::ai::inference_session::InferenceSession> m_session;
-    domain::face::helper::WarpTemplateType m_WarpTemplateType =
-        domain::face::helper::WarpTemplateType::Arcface_112_v2;
+    domain::face::helper::WarpTemplateType m_warp_template_type =
+        domain::face::helper::WarpTemplateType::Arcface112V2;
     cv::Size m_size{224, 224};
     std::array<float, 3> m_mean{0.485f, 0.456f, 0.406f};
-    std::array<float, 3> m_standardDeviation{0.229f, 0.224f, 0.225f};
-    int m_inputWidth{0};
-    int m_inputHeight{0};
+    std::array<float, 3> m_standard_deviation{0.229f, 0.224f, 0.225f};
+    int m_input_width{0};
+    int m_input_height{0};
 
     std::pair<std::vector<float>, std::vector<int64_t>> prepare_input(
         const cv::Mat& image, const domain::face::types::Landmarks& face_landmark_5) const;

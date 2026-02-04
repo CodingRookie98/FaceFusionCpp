@@ -1,16 +1,11 @@
 module;
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <memory>
 #include <tuple>
 #include <opencv2/core.hpp>
 
-/**
- * @file face_analyser.ixx
- * @brief High-level face analysis and processing module
- * @author CodingRookie
- * @date 2026-01-27
- */
 export module domain.face.analyser;
 
 import domain.face;
@@ -45,8 +40,8 @@ struct ModelPaths {
  */
 struct FaceDetectorOptions {
     detector::DetectorType type = detector::DetectorType::Yolo; ///< Preferred detector type
-    float min_score = 0.5f;                                     ///< Minimum confidence score
-    float iou_threshold = 0.4f;                                 ///< NMS IOU threshold
+    float min_score = 0.5F;                                     ///< Minimum confidence score
+    float iou_threshold = 0.4F;                                 ///< NMS IOU threshold
 };
 
 /**
@@ -54,8 +49,8 @@ struct FaceDetectorOptions {
  */
 struct FaceLandmarkerOptions {
     landmarker::LandmarkerType type =
-        landmarker::LandmarkerType::_2DFAN; ///< Preferred landmarker type
-    float min_score = 0.5f;                 ///< Minimum confidence score
+        landmarker::LandmarkerType::T2dfan; ///< Preferred landmarker type
+    float min_score = 0.5F;                 ///< Minimum confidence score
 };
 
 /**
@@ -76,7 +71,7 @@ struct Options {
 /**
  * @brief Face Analysis Types (Bitmask)
  */
-enum class FaceAnalysisType : unsigned int {
+enum class FaceAnalysisType : std::uint8_t {
     None = 0,                                          ///< Perform no analysis
     Detection = 1 << 0,                                ///< Perform face detection
     Landmark = 1 << 1,                                 ///< Perform landmark detection
@@ -89,16 +84,16 @@ enum class FaceAnalysisType : unsigned int {
  * @brief Bitwise OR operator for FaceAnalysisType
  */
 constexpr FaceAnalysisType operator|(FaceAnalysisType lhs, FaceAnalysisType rhs) {
-    return static_cast<FaceAnalysisType>(static_cast<unsigned int>(lhs)
-                                         | static_cast<unsigned int>(rhs));
+    return static_cast<FaceAnalysisType>(static_cast<std::uint8_t>(lhs)
+                                         | static_cast<std::uint8_t>(rhs));
 }
 
 /**
  * @brief Bitwise AND operator for FaceAnalysisType
  */
 constexpr FaceAnalysisType operator&(FaceAnalysisType lhs, FaceAnalysisType rhs) {
-    return static_cast<FaceAnalysisType>(static_cast<unsigned int>(lhs)
-                                         & static_cast<unsigned int>(rhs));
+    return static_cast<FaceAnalysisType>(static_cast<std::uint8_t>(lhs)
+                                         & static_cast<std::uint8_t>(rhs));
 }
 
 /**
@@ -140,6 +135,9 @@ public:
 
     FaceAnalyser(const FaceAnalyser&) = delete;
     FaceAnalyser& operator=(const FaceAnalyser&) = delete;
+
+    FaceAnalyser(FaceAnalyser&&) noexcept = default;
+    FaceAnalyser& operator=(FaceAnalyser&&) noexcept = default;
 
     /**
      * @brief Update options and reload models if necessary

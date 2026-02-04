@@ -20,11 +20,11 @@ public:
     ~CodeFormer() override = default;
 
     void load_model(const std::string& model_path,
-                    const foundation::ai::inference_session::Options& options = {}) override;
+                    const foundation::ai::inference_session::Options& options) override;
 
     cv::Mat enhance_face(const cv::Mat& target_crop) override;
 
-    cv::Size get_model_input_size() const override { return m_size; }
+    [[nodiscard]] cv::Size get_model_input_size() const override { return m_size; }
 
 private:
     int m_input_height = 0;

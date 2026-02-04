@@ -5,6 +5,7 @@
  * @date 2026-01-27
  */
 module;
+#include <cstdint>
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <tuple>
@@ -20,11 +21,11 @@ export namespace domain::face::helper {
 /**
  * @brief Warp templates for different models
  */
-enum class WarpTemplateType {
-    Arcface_112_v1, ///< Template for ArcFace (112x112, v1)
-    Arcface_112_v2, ///< Template for ArcFace (112x112, v2)
-    Arcface_128_v2, ///< Template for ArcFace (128x128, v2)
-    Ffhq_512,       ///< Template for StyleGAN/FFHQ (512x512)
+enum class WarpTemplateType : std::uint8_t {
+    Arcface112V1, ///< Template for ArcFace (112x112, v1)
+    Arcface112V2, ///< Template for ArcFace (112x112, v2)
+    Arcface128V2, ///< Template for ArcFace (128x128, v2)
+    Ffhq512,       ///< Template for StyleGAN/FFHQ (512x512)
 };
 
 /**

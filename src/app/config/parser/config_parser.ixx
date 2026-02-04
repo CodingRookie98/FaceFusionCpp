@@ -29,7 +29,7 @@ export namespace config {
  * @param path YAML 配置文件路径
  * @return Result<AppConfig> 成功返回配置对象，失败返回错误
  */
-[[nodiscard]] Result<AppConfig> LoadAppConfig(const std::filesystem::path& path);
+[[nodiscard]] Result<AppConfig> load_app_config(const std::filesystem::path& path);
 
 /**
  * @brief 从 YAML 文件加载 TaskConfig
@@ -37,7 +37,7 @@ export namespace config {
  * @param path YAML 配置文件路径
  * @return Result<TaskConfig> 成功返回配置对象，失败返回错误
  */
-[[nodiscard]] Result<TaskConfig> LoadTaskConfig(const std::filesystem::path& path);
+[[nodiscard]] Result<TaskConfig> load_task_config(const std::filesystem::path& path);
 
 /**
  * @brief 从 YAML 字符串解析 AppConfig
@@ -45,7 +45,7 @@ export namespace config {
  * @param yaml_content YAML 内容字符串
  * @return Result<AppConfig> 成功返回配置对象，失败返回错误
  */
-[[nodiscard]] Result<AppConfig> ParseAppConfigFromString(const std::string& yaml_content);
+[[nodiscard]] Result<AppConfig> parse_app_config_from_string(const std::string& yaml_content);
 
 /**
  * @brief 从 YAML 字符串解析 TaskConfig
@@ -53,7 +53,7 @@ export namespace config {
  * @param yaml_content YAML 内容字符串
  * @return Result<TaskConfig> 成功返回配置对象，失败返回错误
  */
-[[nodiscard]] Result<TaskConfig> ParseTaskConfigFromString(const std::string& yaml_content);
+[[nodiscard]] Result<TaskConfig> parse_task_config_from_string(const std::string& yaml_content);
 
 // ============================================================================
 // 配置校验 API
@@ -70,7 +70,7 @@ export namespace config {
  * @param config 待校验的配置
  * @return Result<void> 成功返回 Ok，失败返回错误
  */
-[[nodiscard]] Result<void, ConfigError> ValidateAppConfig(const AppConfig& config);
+[[nodiscard]] Result<void, ConfigError> validate_app_config(const AppConfig& config);
 
 /**
  * @brief 校验 TaskConfig 有效性
@@ -85,42 +85,42 @@ export namespace config {
  * @param config 待校验的配置
  * @return Result<void> 成功返回 Ok，失败返回错误
  */
-[[nodiscard]] Result<void, ConfigError> ValidateTaskConfig(const TaskConfig& config);
+[[nodiscard]] Result<void, ConfigError> validate_task_config(const TaskConfig& config);
 
 // ============================================================================
 // 枚举字符串转换 API (用于序列化/反序列化)
 // ============================================================================
 
 /// MemoryStrategy <-> string
-[[nodiscard]] Result<MemoryStrategy> ParseMemoryStrategy(const std::string& str);
-[[nodiscard]] std::string ToString(MemoryStrategy value);
+[[nodiscard]] Result<MemoryStrategy> parse_memory_strategy(const std::string& str);
+[[nodiscard]] std::string to_string(MemoryStrategy value);
 
 /// DownloadStrategy <-> string
-[[nodiscard]] Result<DownloadStrategy> ParseDownloadStrategy(const std::string& str);
-[[nodiscard]] std::string ToString(DownloadStrategy value);
+[[nodiscard]] Result<DownloadStrategy> parse_download_strategy(const std::string& str);
+[[nodiscard]] std::string to_string(DownloadStrategy value);
 
 /// ExecutionOrder <-> string
-[[nodiscard]] Result<ExecutionOrder> ParseExecutionOrder(const std::string& str);
-[[nodiscard]] std::string ToString(ExecutionOrder value);
+[[nodiscard]] Result<ExecutionOrder> parse_execution_order(const std::string& str);
+[[nodiscard]] std::string to_string(ExecutionOrder value);
 
 /// ConflictPolicy <-> string
-[[nodiscard]] Result<ConflictPolicy> ParseConflictPolicy(const std::string& str);
-[[nodiscard]] std::string ToString(ConflictPolicy value);
+[[nodiscard]] Result<ConflictPolicy> parse_conflict_policy(const std::string& str);
+[[nodiscard]] std::string to_string(ConflictPolicy value);
 
 /// AudioPolicy <-> string
-[[nodiscard]] Result<AudioPolicy> ParseAudioPolicy(const std::string& str);
-[[nodiscard]] std::string ToString(AudioPolicy value);
+[[nodiscard]] Result<AudioPolicy> parse_audio_policy(const std::string& str);
+[[nodiscard]] std::string to_string(AudioPolicy value);
 
 /// FaceSelectorMode <-> string
-[[nodiscard]] Result<FaceSelectorMode> ParseFaceSelectorMode(const std::string& str);
-[[nodiscard]] std::string ToString(FaceSelectorMode value);
+[[nodiscard]] Result<FaceSelectorMode> parse_face_selector_mode(const std::string& str);
+[[nodiscard]] std::string to_string(FaceSelectorMode value);
 
 /// LogLevel <-> string
-[[nodiscard]] Result<LogLevel> ParseLogLevel(const std::string& str);
-[[nodiscard]] std::string ToString(LogLevel value);
+[[nodiscard]] Result<LogLevel> parse_log_level(const std::string& str);
+[[nodiscard]] std::string to_string(LogLevel value);
 
 /// LogRotation <-> string
-[[nodiscard]] Result<LogRotation> ParseLogRotation(const std::string& str);
-[[nodiscard]] std::string ToString(LogRotation value);
+[[nodiscard]] Result<LogRotation> parse_log_rotation(const std::string& str);
+[[nodiscard]] std::string to_string(LogRotation value);
 
 } // namespace config

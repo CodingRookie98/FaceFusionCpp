@@ -14,6 +14,7 @@ module;
 #include <variant>
 #include <utility>
 #include <format>
+#include <cstdint>
 
 export module config.types;
 
@@ -32,54 +33,54 @@ export namespace config {
  *          - E4xx: Runtime/Business logic errors
  * @see design.md Section 5.3.1 - Error Codes
  */
-enum class ErrorCode : int {
+enum class ErrorCode : std::uint16_t {
     // ─────────────────────────────────────────────────────────────────────────
     // E100-E199: System Level Errors (Requires restart or manual intervention)
     // ─────────────────────────────────────────────────────────────────────────
-    E100_SystemError = 100,    ///< Generic system error
-    E101_OutOfMemory = 101,    ///< RAM/VRAM exhausted
-    E102_DeviceNotFound = 102, ///< CUDA device not available
-    E103_ThreadDeadlock = 103, ///< Worker thread deadlock detected
-    E104_GPUContextLost = 104, ///< GPU context unexpectedly lost
+    E100SystemError = 100,    ///< Generic system error
+    E101OutOfMemory = 101,    ///< RAM/VRAM exhausted
+    E102DeviceNotFound = 102, ///< CUDA device not available
+    E103ThreadDeadlock = 103, ///< Worker thread deadlock detected
+    E104GpuContextLost = 104, ///< GPU context unexpectedly lost
 
     // ─────────────────────────────────────────────────────────────────────────
     // E200-E299: Configuration Errors (Fix config and restart)
     // ─────────────────────────────────────────────────────────────────────────
-    E200_ConfigError = 200,           ///< Generic configuration error
-    E201_YamlFormatInvalid = 201,     ///< YAML syntax error
-    E202_ParameterOutOfRange = 202,   ///< Parameter value outside valid range
-    E203_ConfigFileNotFound = 203,    ///< Config file does not exist
-    E204_ConfigVersionMismatch = 204, ///< Incompatible config_version
-    E205_RequiredFieldMissing = 205,  ///< Mandatory field not specified
-    E206_InvalidPath = 206,           ///< Path validation failed
+    E200ConfigError = 200,           ///< Generic configuration error
+    E201YamlFormatInvalid = 201,     ///< YAML syntax error
+    E202ParameterOutOfRange = 202,   ///< Parameter value outside valid range
+    E203ConfigFileNotFound = 203,    ///< Config file does not exist
+    E204ConfigVersionMismatch = 204, ///< Incompatible config_version
+    E205RequiredFieldMissing = 205,  ///< Mandatory field not specified
+    E206InvalidPath = 206,           ///< Path validation failed
 
     // ─────────────────────────────────────────────────────────────────────────
     // E300-E399: Model/Resource Errors (Check assets directory)
     // ─────────────────────────────────────────────────────────────────────────
-    E300_ModelError = 300,               ///< Generic model error
-    E301_ModelLoadFailed = 301,          ///< Failed to load model into memory
-    E302_ModelFileMissing = 302,         ///< Model file not found
-    E303_ModelChecksumMismatch = 303,    ///< Model file corrupted
-    E304_ModelVersionIncompatible = 304, ///< Model version not supported
+    E300ModelError = 300,               ///< Generic model error
+    E301ModelLoadFailed = 301,          ///< Failed to load model into memory
+    E302ModelFileMissing = 302,         ///< Model file not found
+    E303ModelChecksumMismatch = 303,    ///< Model file corrupted
+    E304ModelVersionIncompatible = 304, ///< Model version not supported
 
     // ─────────────────────────────────────────────────────────────────────────
     // E400-E499: Runtime/Business Logic Errors (Skip or Fail based on policy)
     // ─────────────────────────────────────────────────────────────────────────
-    E400_RuntimeError = 400,      ///< Generic runtime error
-    E401_ImageDecodeFailed = 401, ///< Failed to decode image frame
-    E402_VideoOpenFailed = 402,   ///< Failed to open video file
-    E403_NoFaceDetected = 403,    ///< No face detected in frame
-    E404_FaceNotAligned = 404,    ///< Face alignment failed
-    E405_ProcessorFailed = 405,   ///< Processor execution failed
-    E406_OutputWriteFailed = 406, ///< Failed to write output file
-    E407_TaskCancelled = 407,     ///< Task was cancelled by user
+    E400RuntimeError = 400,      ///< Generic runtime error
+    E401ImageDecodeFailed = 401, ///< Failed to decode image frame
+    E402VideoOpenFailed = 402,   ///< Failed to open video file
+    E403NoFaceDetected = 403,    ///< No face detected in frame
+    E404FaceNotAligned = 404,    ///< Face alignment failed
+    E405ProcessorFailed = 405,   ///< Processor execution failed
+    E406OutputWriteFailed = 406, ///< Failed to write output file
+    E407TaskCancelled = 407,     ///< Task was cancelled by user
 };
 
 /**
  * @brief Get error code category name
  */
 [[nodiscard]] constexpr std::string_view error_category(ErrorCode code) noexcept {
-    int value = static_cast<int>(code);
+    const auto value = static_cast<std::uint16_t>(code);
     if (value >= 100 && value < 200) return "System";
     if (value >= 200 && value < 300) return "Config";
     if (value >= 300 && value < 400) return "Model";
@@ -102,7 +103,7 @@ enum class ErrorCode : int {
  * @details Enhanced with structured error codes per design.md Section 5.3.1
  */
 struct ConfigError {
-    ErrorCode code = ErrorCode::E200_ConfigError;
+    ErrorCode code = ErrorCode::E200ConfigError;
     std::string message;   ///< Descriptive error message
     std::string yaml_path; ///< YAML path for localization (e.g., "pipeline[1].params.blend_factor")
     int line = 0;          ///< Line number in config file (if available)
@@ -125,7 +126,7 @@ struct ConfigError {
      * @return Formatted string like "[E403] No face detected in frame 123"
      */
     [[nodiscard]] std::string formatted() const {
-        std::string result = std::format("[E{}] ", static_cast<int>(code));
+        std::string result = std::format("[E{}] ", static_cast<std::uint16_t>(code));
 
         if (!yaml_path.empty()) { result += yaml_path + ": "; }
 
@@ -143,7 +144,7 @@ struct ConfigError {
      * @brief Check if this error is recoverable (E4xx errors are typically recoverable)
      */
     [[nodiscard]] bool is_recoverable() const noexcept {
-        int value = static_cast<int>(code);
+        const auto value = static_cast<std::uint16_t>(code);
         return value >= 400 && value < 500;
     }
 
@@ -158,60 +159,60 @@ struct ConfigError {
  * @tparam T Type of the success value
  * @tparam E Type of the error value (defaults to ConfigError)
  */
-template <typename T, typename E = ConfigError> class Result {
+template <typename TValue, typename TError = ConfigError> class Result {
 public:
     /**
      * @brief Create a success result
      */
-    static Result Ok(T value) {
+    static Result ok(TValue value) {
         Result r;
-        r.data_ = std::move(value);
+        r.m_data = std::move(value);
         return r;
     }
 
     /**
      * @brief Create a failure result
      */
-    static Result Err(E error) {
+    static Result err(TError error) {
         Result r;
-        r.data_ = std::move(error);
+        r.m_data = std::move(error);
         return r;
     }
 
     /**
      * @brief Check if the result is successful
      */
-    [[nodiscard]] bool is_ok() const noexcept { return std::holds_alternative<T>(data_); }
+    [[nodiscard]] bool is_ok() const noexcept { return std::holds_alternative<TValue>(m_data); }
 
     /**
      * @brief Check if the result contains an error
      */
-    [[nodiscard]] bool is_err() const noexcept { return std::holds_alternative<E>(data_); }
+    [[nodiscard]] bool is_err() const noexcept { return std::holds_alternative<TError>(m_data); }
 
     /**
      * @brief Get the success value (requires is_ok())
      */
-    [[nodiscard]] const T& value() const& { return std::get<T>(data_); }
+    [[nodiscard]] const TValue& value() const& { return std::get<TValue>(m_data); }
 
     /**
      * @brief Move out the success value (requires is_ok())
      */
-    [[nodiscard]] T&& value() && { return std::get<T>(std::move(data_)); }
+    [[nodiscard]] TValue&& value() && { return std::get<TValue>(std::move(m_data)); }
 
     /**
      * @brief Get the error value (requires is_err())
      */
-    [[nodiscard]] const E& error() const& { return std::get<E>(data_); }
+    [[nodiscard]] const TError& error() const& { return std::get<TError>(m_data); }
 
     /**
      * @brief Move out the error value (requires is_err())
      */
-    [[nodiscard]] E&& error() && { return std::get<E>(std::move(data_)); }
+    [[nodiscard]] TError&& error() && { return std::get<TError>(std::move(m_data)); }
 
     /**
      * @brief Get the value or a default if error occurred
      */
-    [[nodiscard]] T value_or(T default_value) const& {
+    [[nodiscard]] TValue value_or(TValue default_value) const& {
         return is_ok() ? value() : std::move(default_value);
     }
 
@@ -222,56 +223,56 @@ public:
 
 private:
     Result() = default;
-    std::variant<T, E> data_;
+    std::variant<TValue, TError> m_data;
 };
 
 /**
  * @brief Specialization of Result for void success type
  */
-template <typename E> class Result<void, E> {
+template <typename TError> class Result<void, TError> {
 public:
     /**
      * @brief Create a success result
      */
-    static Result Ok() {
+    static Result ok() {
         Result r;
-        r.has_error_ = false;
+        r.m_has_error = false;
         return r;
     }
 
     /**
      * @brief Create a failure result
      */
-    static Result Err(E error) {
+    static Result err(TError error) {
         Result r;
-        r.error_ = std::move(error);
-        r.has_error_ = true;
+        r.m_error = std::move(error);
+        r.m_has_error = true;
         return r;
     }
 
-    [[nodiscard]] bool is_ok() const noexcept { return !has_error_; }
-    [[nodiscard]] bool is_err() const noexcept { return has_error_; }
+    [[nodiscard]] bool is_ok() const noexcept { return !m_has_error; }
+    [[nodiscard]] bool is_err() const noexcept { return m_has_error; }
 
-    [[nodiscard]] const E& error() const& { return error_; }
-    [[nodiscard]] E&& error() && { return std::move(error_); }
+    [[nodiscard]] const TError& error() const& { return m_error; }
+    [[nodiscard]] TError&& error() && { return std::move(m_error); }
 
     explicit operator bool() const noexcept { return is_ok(); }
 
 private:
     Result() = default;
-    E error_;
-    bool has_error_ = false;
+    TError m_error;
+    bool m_has_error = false;
 };
 
 /**
  * @brief Currently supported configuration format version
  */
-inline constexpr const char* SUPPORTED_CONFIG_VERSION = "1.0";
+inline constexpr const char* kSupportedConfigVersion = "1.0";
 
 /**
  * @brief Memory usage strategy for AI processors
  */
-enum class MemoryStrategy {
+enum class MemoryStrategy : std::uint8_t {
     Strict,  ///< Load model on use, release immediately after (low VRAM usage)
     Tolerant ///< Preload model and keep in memory (higher performance)
 };
@@ -279,7 +280,7 @@ enum class MemoryStrategy {
 /**
  * @brief Policy for downloading missing model files
  */
-enum class DownloadStrategy {
+enum class DownloadStrategy : std::uint8_t {
     Force, ///< Always re-download (overwrite existing)
     Skip,  ///< Never download (fail if missing)
     Auto   ///< Download only if missing (default)
@@ -288,7 +289,7 @@ enum class DownloadStrategy {
 /**
  * @brief Order of processing for multiple target files
  */
-enum class ExecutionOrder {
+enum class ExecutionOrder : std::uint8_t {
     Sequential, ///< Process one asset completely before starting next
     Batch       ///< Process one step for all assets before moving to next step
 };
@@ -296,7 +297,7 @@ enum class ExecutionOrder {
 /**
  * @brief Policy for handling output file name collisions
  */
-enum class ConflictPolicy {
+enum class ConflictPolicy : std::uint8_t {
     Overwrite, ///< Replace existing file
     Rename,    ///< Append numeric suffix (e.g., _1)
     Error      ///< Stop and report error (default)
@@ -305,7 +306,7 @@ enum class ConflictPolicy {
 /**
  * @brief Policy for processing audio tracks in video files
  */
-enum class AudioPolicy {
+enum class AudioPolicy : std::uint8_t {
     Copy, ///< Copy original audio track to result (default)
     Skip  ///< Produce silent video without audio
 };
@@ -313,7 +314,7 @@ enum class AudioPolicy {
 /**
  * @brief Target face selection strategy
  */
-enum class FaceSelectorMode {
+enum class FaceSelectorMode : std::uint8_t {
     Reference, ///< Match faces against source embedding
     One,       ///< Process only the most prominent face
     Many       ///< Process all detected faces (default)
@@ -322,11 +323,11 @@ enum class FaceSelectorMode {
 /**
  * @brief Application logging levels
  */
-enum class LogLevel { Trace, Debug, Info, Warn, Error };
+enum class LogLevel : std::uint8_t { Trace, Debug, Info, Warn, Error };
 
 /**
  * @brief Log file rotation interval
  */
-enum class LogRotation { Daily, Hourly, Size };
+enum class LogRotation : std::uint8_t { Daily, Hourly, Size };
 
 } // namespace config

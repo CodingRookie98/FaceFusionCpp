@@ -5,6 +5,7 @@
  * @date 2026-01-27
  */
 module;
+#include <cstdint>
 #include <memory>
 
 export module domain.face.landmarker:factory;
@@ -15,10 +16,10 @@ export namespace domain::face::landmarker {
 /**
  * @brief Available types of Face Landmarkers
  */
-enum class LandmarkerType {
-    _2DFAN,    ///< 2DFAN4 model (68 points)
+enum class LandmarkerType : std::uint8_t {
+    T2dfan,    ///< 2DFAN4 model (68 points)
     Peppawutz, ///< Peppawutz model (68 points)
-    _68By5     ///< Predict 68 points from 5 facial landmarks
+    T68By5     ///< Predict 68 points from 5 facial landmarks
 };
 
 /**

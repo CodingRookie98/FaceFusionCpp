@@ -82,12 +82,12 @@ public:
 
             // Dynamic template selection based on model input size
             if (m_input_size.width == 128) {
-                m_template_type = domain::face::helper::WarpTemplateType::Arcface_128_v2;
+                m_template_type = domain::face::helper::WarpTemplateType::Arcface128V2;
             } else if (m_input_size.width == 512) {
-                m_template_type = domain::face::helper::WarpTemplateType::Ffhq_512;
+                m_template_type = domain::face::helper::WarpTemplateType::Ffhq512;
             } else {
                 // Default fallback
-                m_template_type = domain::face::helper::WarpTemplateType::Arcface_128_v2;
+                m_template_type = domain::face::helper::WarpTemplateType::Arcface128V2;
             }
         }
         m_loaded = true;
@@ -158,7 +158,7 @@ private:
 
     cv::Size m_input_size{128, 128}; // Default, updated on load
     domain::face::helper::WarpTemplateType m_template_type =
-        domain::face::helper::WarpTemplateType::Arcface_128_v2;
+        domain::face::helper::WarpTemplateType::Arcface128V2;
 };
 
 /**
@@ -203,12 +203,12 @@ public:
 
             // Dynamic template selection based on model input size
             if (m_input_size.width == 128) {
-                m_template_type = domain::face::helper::WarpTemplateType::Arcface_128_v2;
+                m_template_type = domain::face::helper::WarpTemplateType::Arcface128V2;
             } else if (m_input_size.width == 512) {
-                m_template_type = domain::face::helper::WarpTemplateType::Ffhq_512;
+                m_template_type = domain::face::helper::WarpTemplateType::Ffhq512;
             } else {
                 // Default fallback
-                m_template_type = domain::face::helper::WarpTemplateType::Ffhq_512;
+                m_template_type = domain::face::helper::WarpTemplateType::Ffhq512;
             }
         }
         m_loaded = true;
@@ -284,7 +284,7 @@ private:
 
     cv::Size m_input_size{512, 512}; // Default, updated on load
     domain::face::helper::WarpTemplateType m_template_type =
-        domain::face::helper::WarpTemplateType::Ffhq_512;
+        domain::face::helper::WarpTemplateType::Ffhq512;
 };
 
 /**
@@ -330,10 +330,10 @@ public:
 
             // Dynamic template selection
             if (m_size.width == 512) {
-                m_template_type = domain::face::helper::WarpTemplateType::Ffhq_512;
+                m_template_type = domain::face::helper::WarpTemplateType::Ffhq512;
             } else {
                 // Default fallback (includes 256x256 which LivePortrait often uses)
-                m_template_type = domain::face::helper::WarpTemplateType::Arcface_128_v2;
+                m_template_type = domain::face::helper::WarpTemplateType::Arcface128V2;
             }
         }
         m_loaded = true;
@@ -418,7 +418,7 @@ private:
 
     cv::Size m_size{512, 512};
     domain::face::helper::WarpTemplateType m_template_type =
-        domain::face::helper::WarpTemplateType::Arcface_128_v2;
+        domain::face::helper::WarpTemplateType::Arcface128V2;
 };
 
 /**

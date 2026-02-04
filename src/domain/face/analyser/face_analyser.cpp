@@ -201,9 +201,9 @@ private:
         // Landmarker
         auto get_lm_path = [](const Options& opts) {
             switch (opts.face_landmarker_options.type) {
-            case LandmarkerType::_2DFAN: return opts.model_paths.face_landmarker_2dfan;
+            case LandmarkerType::T2dfan: return opts.model_paths.face_landmarker_2dfan;
             case LandmarkerType::Peppawutz: return opts.model_paths.face_landmarker_peppawutz;
-            case LandmarkerType::_68By5: return opts.model_paths.face_landmarker_68by5;
+            case LandmarkerType::T68By5: return opts.model_paths.face_landmarker_68by5;
             default: return std::string();
             }
         };
@@ -299,7 +299,7 @@ private:
             // Landmarking
             if (has_flag(type, FaceAnalysisType::Landmark)
                 && m_options.face_landmarker_options.min_score > 0 && m_landmarker) {
-                if (m_options.face_landmarker_options.type == landmarker::LandmarkerType::_68By5) {
+                if (m_options.face_landmarker_options.type == landmarker::LandmarkerType::T68By5) {
                     auto kps68_back = m_landmarker->expand_68_from_5(kps5_back);
                     if (!kps68_back.empty()) {
                         face.set_kps(kps68_back);

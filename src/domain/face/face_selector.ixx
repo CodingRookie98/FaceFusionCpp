@@ -5,6 +5,7 @@
  * @date 2026-01-27
  */
 module;
+#include <cstdint>
 #include <vector>
 #include <unordered_set>
 #include <optional>
@@ -19,7 +20,7 @@ export namespace domain::face::selector {
 /**
  * @brief High-level strategy for face selection
  */
-enum class SelectorMode {
+enum class SelectorMode : std::uint8_t {
     Many,     ///< Process all detected faces
     One,      ///< Process only one face (based on sort order)
     Reference ///< Process faces matching a reference embedding
@@ -28,7 +29,7 @@ enum class SelectorMode {
 /**
  * @brief Sorting criteria for a list of faces
  */
-enum class Order {
+enum class Order : std::uint8_t {
     LeftRight,  ///< Sort by X coordinate (ascending)
     RightLeft,  ///< Sort by X coordinate (descending)
     TopBottom,  ///< Sort by Y coordinate (ascending)
@@ -42,13 +43,13 @@ enum class Order {
 /**
  * @brief Predefined set containing all genders
  */
-const std::unordered_set<domain::common::types::Gender> ALL_GENDERS = {
+const std::unordered_set<domain::common::types::Gender> kAllGenders = {
     domain::common::types::Gender::Male, domain::common::types::Gender::Female};
 
 /**
  * @brief Predefined set containing all races
  */
-const std::unordered_set<domain::common::types::Race> ALL_RACES = {
+const std::unordered_set<domain::common::types::Race> kAllRaces = {
     domain::common::types::Race::Black,  domain::common::types::Race::Latino,
     domain::common::types::Race::Indian, domain::common::types::Race::Asian,
     domain::common::types::Race::Arabic, domain::common::types::Race::White};
@@ -59,14 +60,14 @@ const std::unordered_set<domain::common::types::Race> ALL_RACES = {
 struct Options {
     SelectorMode mode = SelectorMode::Many;
     Order order = Order::LeftRight; ///< Primary sorting order
-    std::unordered_set<domain::common::types::Gender> genders = ALL_GENDERS; ///< Genders to keep
-    std::unordered_set<domain::common::types::Race> races = ALL_RACES;       ///< Races to keep
+    std::unordered_set<domain::common::types::Gender> genders = kAllGenders; ///< Genders to keep
+    std::unordered_set<domain::common::types::Race> races = kAllRaces;       ///< Races to keep
     unsigned int age_start = 0; ///< Minimum age (inclusive)
     unsigned int age_end = 100; ///< Maximum age (inclusive)
 
     // 相似度筛选参数
     std::optional<Face> reference_face;
-    float similarity_threshold = 0.6f;
+    float similarity_threshold = 0.6F;
 };
 
 /**

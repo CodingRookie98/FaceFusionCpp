@@ -84,10 +84,10 @@ TEST_F(LivePortraitTest, RestoreExpressionBasic) {
 
     // 4. Manual Crop
     auto [source_crop, _] = warp_face_by_face_landmarks_5(
-        source_img, source_kps, WarpTemplateType::Arcface_128_v2, cv::Size(512, 512));
+        source_img, source_kps, WarpTemplateType::Arcface128V2, cv::Size(512, 512));
 
     auto [target_crop, __] = warp_face_by_face_landmarks_5(
-        target_img, target_kps, WarpTemplateType::Arcface_128_v2, cv::Size(512, 512));
+        target_img, target_kps, WarpTemplateType::Arcface128V2, cv::Size(512, 512));
 
     // 5. Run Restoration
     cv::Mat result;

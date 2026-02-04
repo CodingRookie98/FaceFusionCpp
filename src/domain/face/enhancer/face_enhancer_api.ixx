@@ -29,7 +29,7 @@ public:
      * @param options Inference session options
      */
     virtual void load_model(const std::string& model_path,
-                            const foundation::ai::inference_session::Options& options = {}) = 0;
+                            const foundation::ai::inference_session::Options& options) = 0;
 
     /**
      * @brief Enhance/Restore a single face crop
@@ -42,7 +42,7 @@ public:
      * @brief Get the expected input size for the model
      * @return cv::Size
      */
-    virtual cv::Size get_model_input_size() const = 0;
+    [[nodiscard]] virtual cv::Size get_model_input_size() const = 0;
 };
 
 } // namespace domain::face::enhancer

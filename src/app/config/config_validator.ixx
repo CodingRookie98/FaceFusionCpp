@@ -32,8 +32,8 @@ struct ValidationError {
      * @brief Convert to ConfigError for Result types
      */
     [[nodiscard]] ConfigError to_config_error() const {
-        std::string msg = actual_value.empty() ? expected : actual_value + ", expected " + expected;
-        return ConfigError(code, msg, yaml_path, line, column);
+        const std::string msg = actual_value.empty() ? expected : actual_value + ", expected " + expected;
+        return {code, msg, yaml_path, line, column};
     }
 };
 
@@ -88,8 +88,8 @@ private:
     // Range Validators
     // ─────────────────────────────────────────────────────────────────────────
 
-    template <typename T>
-    void validate_range(T value, T min, T max, const std::string& yaml_path,
+    template <typename TValue>
+    void validate_range(TValue value, TValue min, TValue max, const std::string& yaml_path,
                         std::vector<ValidationError>& errors);
 
     void validate_path_exists(const std::string& path, const std::string& yaml_path,

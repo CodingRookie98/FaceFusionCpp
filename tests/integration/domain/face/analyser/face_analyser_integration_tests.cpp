@@ -55,7 +55,7 @@ TEST_F(FaceAnalyserIntegrationTest, RealImageE2ETest) {
     real_options.model_paths.face_classifier_fairface = model_repo->ensure_model("fairface");
 
     real_options.face_detector_options.type = DetectorType::SCRFD;
-    real_options.face_landmarker_options.type = LandmarkerType::_68By5;
+    real_options.face_landmarker_options.type = LandmarkerType::T68By5;
     real_options.inference_session_options =
         foundation::ai::inference_session::Options::with_best_providers();
 

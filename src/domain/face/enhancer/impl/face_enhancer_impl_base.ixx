@@ -17,7 +17,7 @@ public:
     virtual ~FaceEnhancerImplBase() = default;
 
     void load_model(const std::string& model_path,
-                    const foundation::ai::inference_session::Options& options = {}) override {
+                    const foundation::ai::inference_session::Options& options) override {
         m_session =
             foundation::ai::inference_session::InferenceSessionRegistry::get_instance().get_session(
                 model_path, options);
@@ -34,12 +34,12 @@ protected:
 
     [[nodiscard]] static cv::Mat blend_frame(const cv::Mat& target_frame,
                                              const cv::Mat& paste_vision_frame,
-                                             unsigned short blend) {
+                                             std::uint16_t blend) {
         if (blend > 100) { blend = 100; }
-        const float face_enhancer_blend = 1 - (static_cast<float>(blend) / 100.f);
+        const float face_enhancer_blend = 1.0F - (static_cast<float>(blend) / 100.0F);
         cv::Mat dst_image;
         cv::addWeighted(target_frame, face_enhancer_blend, paste_vision_frame,
-                        1 - face_enhancer_blend, 0, dst_image);
+                        1.0F - face_enhancer_blend, 0, dst_image);
         return dst_image;
     }
 };

@@ -18,9 +18,9 @@ void FairFace::load_model(const std::string& model_path,
         foundation::ai::inference_session::InferenceSessionRegistry::get_instance().get_session(
             model_path, options);
     auto input_dims = get_input_node_dims();
-    m_inputWidth = static_cast<int>(input_dims[0][2]);
-    m_inputHeight = static_cast<int>(input_dims[0][3]);
-    m_size = cv::Size(m_inputWidth, m_inputHeight);
+    m_input_width = static_cast<int>(input_dims[0][2]);
+    m_input_height = static_cast<int>(input_dims[0][3]);
+    m_size = cv::Size(m_input_width, m_input_height);
 }
 
 ClassificationResult FairFace::classify(const cv::Mat& image,
@@ -42,14 +42,14 @@ std::pair<std::vector<float>, std::vector<int64_t>> FairFace::prepare_input(
     const cv::Mat& image, const domain::face::types::Landmarks& face_landmark_5) const {
     cv::Mat inputImage;
     std::tie(inputImage, std::ignore) = helper::warp_face_by_face_landmarks_5(
-        image, face_landmark_5, helper::get_warp_template(m_WarpTemplateType), m_size);
+        image, face_landmark_5, helper::get_warp_template(m_warp_template_type), m_size);
 
     std::vector<cv::Mat> inputChannels(3);
     cv::split(inputImage, inputChannels);
     for (int c = 0; c < 3; c++) {
         inputChannels[c].convertTo(inputChannels[c], CV_32FC1,
-                                   1 / (255.0 * m_standardDeviation.at(c)),
-                                   -m_mean.at(c) / m_standardDeviation.at(c));
+                                   1 / (255.0 * m_standard_deviation.at(c)),
+                                   -m_mean.at(c) / m_standard_deviation.at(c));
     }
 
     const int imageArea = inputImage.cols * inputImage.rows;
@@ -62,7 +62,7 @@ std::pair<std::vector<float>, std::vector<int64_t>> FairFace::prepare_input(
     memcpy(inputData.data() + 2 * imageArea, reinterpret_cast<float*>(inputChannels[0].data),
            singleChannelSize); // B
 
-    std::vector<int64_t> inputShape{1, 3, m_inputHeight, m_inputWidth};
+    std::vector<int64_t> inputShape{1, 3, m_input_height, m_input_width};
     return {std::move(inputData), std::move(inputShape)};
 }
 

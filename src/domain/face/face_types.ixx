@@ -5,6 +5,7 @@
  * @date 2026-01-27
  */
 module;
+#include <cstdint>
 #include <vector>
 #include <array>
 #include <opencv2/opencv.hpp>
@@ -31,7 +32,7 @@ using Score = float;
 /**
  * @brief Types of masks for face processing
  */
-enum class MaskType {
+enum class MaskType : std::uint8_t {
     Box,       ///< Bounding box based mask
     Occlusion, ///< Detected occlusion based mask
     Region     ///< Semantic region based mask (Face Parsing)
@@ -40,7 +41,7 @@ enum class MaskType {
 /**
  * @brief Face regions for semantic segmentation
  */
-enum class FaceRegion {
+enum class FaceRegion : std::uint8_t {
     Background,
     Skin,
     LeftEyebrow,
@@ -71,7 +72,7 @@ struct MaskOptions {
         FaceRegion::Skin,         FaceRegion::Nose,     FaceRegion::LeftEyebrow,
         FaceRegion::RightEyebrow, FaceRegion::LeftEye,  FaceRegion::RightEye,
         FaceRegion::Mouth,        FaceRegion::UpperLip, FaceRegion::LowerLip}; ///< Active regions
-    float box_mask_blur = 0.3f; ///< Blur intensity for box mask
+    float box_mask_blur = 0.3F; ///< Blur intensity for box mask
     std::array<int, 4> box_mask_padding = {0, 0, 0,
                                            0}; ///< Padding for box mask (top, right, bottom, left)
 };

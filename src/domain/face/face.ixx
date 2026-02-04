@@ -198,15 +198,15 @@ public:
     ///@}
 
 private:
-    cv::Rect2f m_box{};
-    types::Landmarks m_kps{};
-    types::Embedding m_embedding{};
-    types::Embedding m_normed_embedding{};
-    types::Score m_detector_score{0.0f};
-    types::Score m_landmarker_score{0.0f};
+    cv::Rect2f m_box;
+    types::Landmarks m_kps;
+    types::Embedding m_embedding;
+    types::Embedding m_normed_embedding;
+    types::Score m_detector_score{0.0F};
+    types::Score m_landmarker_score{0.0F};
     Gender m_gender{Gender::Male};
-    AgeRange m_age_range{};
+    AgeRange m_age_range;
     Race m_race{Race::White};
-    cv::Mat m_mask{};
+    cv::Mat m_mask;
 };
 } // namespace domain::face

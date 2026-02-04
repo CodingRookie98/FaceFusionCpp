@@ -73,7 +73,7 @@ std::vector<Face> sort_by_order(std::vector<Face> faces, const Order& order) {
 std::vector<Face> filter_by_race(std::vector<Face> faces,
                                  const std::unordered_set<domain::common::types::Race>& races) {
     if (faces.empty()) { return faces; }
-    if (races.size() == ALL_RACES.size()) { return faces; }
+    if (races.size() == kAllRaces.size()) { return faces; }
 
     std::erase_if(faces, [&](const Face& face) { return !races.contains(face.race()); });
     return faces;
@@ -82,7 +82,7 @@ std::vector<Face> filter_by_race(std::vector<Face> faces,
 std::vector<Face> filter_by_gender(
     std::vector<Face> faces, const std::unordered_set<domain::common::types::Gender>& genders) {
     if (faces.empty()) { return faces; }
-    if (genders.size() == ALL_GENDERS.size()) { return faces; }
+    if (genders.size() == kAllGenders.size()) { return faces; }
 
     std::erase_if(faces, [&](const Face& face) { return !genders.contains(face.gender()); });
     return faces;
