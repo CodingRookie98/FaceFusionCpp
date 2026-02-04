@@ -66,9 +66,11 @@ def run_configure(cmake_exe, preset, env, project_root):
     run_command(cmd, env=env, cwd=project_root)
 
 
-def run_build(cmake_exe, preset, target, env, project_root):
+def run_build(cmake_exe, preset, target, jobs, env, project_root):
     log("\n=== Action: build ===", "info")
     cmd = [cmake_exe, "--build", "--preset", preset]
+    if jobs:
+        cmd.extend(["--parallel", str(jobs)])
     if target != "all":
         cmd.extend(["--target", target])
 
@@ -93,10 +95,10 @@ def run_test(ctest_exe, preset, regex, label, env, project_root):
     test_filter = None
     if regex:
         test_filter = regex
-    
+
     if regex:
         cmd.extend(["-R", regex])
-    
+
     if label:
         cmd.extend(["-L", label])
         if not test_filter:
@@ -165,6 +167,12 @@ def main():
         action="store_true",
         help="Skip the build step when action is test",
     )
+    parser.add_argument(
+        "-j",
+        "--jobs",
+        type=int,
+        help="Number of parallel build jobs",
+    )
 
     args = parser.parse_args()
 
@@ -176,6 +184,14 @@ def main():
     if os_name == "Windows":
         log("Detecting MSVC environment...", "info")
         env = get_msvc_env()
+
+    # Determine parallel jobs
+    jobs = args.jobs
+    if jobs is None:
+        # Default to max available cores
+        jobs = os.cpu_count() or 1
+
+    log(f"Parallel jobs: {jobs}", "info")
 
     # 2. Determine Preset
     preset = args.preset if args.preset else get_cmake_preset(args.config, os_name)
@@ -200,11 +216,11 @@ def main():
         run_configure(cmake_exe, preset, env, project_root)
 
     elif args.action == "build":
-        run_build(cmake_exe, preset, args.target, env, project_root)
+        run_build(cmake_exe, preset, args.target, jobs, env, project_root)
 
     elif args.action == "test":
         if not args.no_build:
-            run_build(cmake_exe, preset, args.target, env, project_root)
+            run_build(cmake_exe, preset, args.target, jobs, env, project_root)
         else:
             log("Skipping build step as requested.", "info")
 
