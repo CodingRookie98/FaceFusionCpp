@@ -15,11 +15,50 @@ set(ORT_DOWNLOAD_FILE "${CMAKE_BINARY_DIR}/${ORT_FILE_NAME}")
 set(ORT_EXTRACT_DIR "${THIRD_PARTY_DIR}")
 set(ORT_PATH "${ORT_EXTRACT_DIR}/${ORT_FILE_BASE_NAME}")
 
+# --- Verify Installation Integrity ---
+set(ORT_INTEGRITY_CHECK_FILE "${ORT_PATH}/include/onnxruntime_c_api.h")
+if (WIN32)
+    list(APPEND ORT_INTEGRITY_CHECK_FILE "${ORT_PATH}/lib/onnxruntime.lib")
+    list(APPEND ORT_INTEGRITY_CHECK_FILE "${ORT_PATH}/lib/onnxruntime.dll")
+elseif (APPLE)
+    list(APPEND ORT_INTEGRITY_CHECK_FILE "${ORT_PATH}/lib/libonnxruntime.dylib")
+else ()
+    list(APPEND ORT_INTEGRITY_CHECK_FILE "${ORT_PATH}/lib/libonnxruntime.so")
+endif ()
+
+set(ORT_IS_INSTALLED TRUE)
+foreach(CHECK_FILE ${ORT_INTEGRITY_CHECK_FILE})
+    if (NOT EXISTS "${CHECK_FILE}")
+        set(ORT_IS_INSTALLED FALSE)
+        message(STATUS "Missing ONNX Runtime file: ${CHECK_FILE}")
+        break()
+    endif ()
+endforeach()
+
+if (NOT ORT_IS_INSTALLED AND EXISTS "${ORT_PATH}")
+    message(WARNING "ONNX Runtime installation at ${ORT_PATH} is incomplete or corrupted. Removing and re-downloading...")
+    file(REMOVE_RECURSE "${ORT_PATH}")
+    # Also remove the downloaded archive to force a fresh download, as it might be corrupted
+    if (EXISTS "${ORT_DOWNLOAD_FILE}")
+        file(REMOVE "${ORT_DOWNLOAD_FILE}")
+    endif ()
+endif ()
+
 # --- Download and Extract ---
 if (NOT EXISTS "${ORT_PATH}")
     if (NOT EXISTS "${ORT_DOWNLOAD_FILE}")
         message(STATUS "Downloading ONNX Runtime v${ORT_VERSION_STR} from ${ORT_DOWNLOAD_URL}...")
-        file(DOWNLOAD "${ORT_DOWNLOAD_URL}" "${ORT_DOWNLOAD_FILE}" SHOW_PROGRESS)
+        message(STATUS "If download fails, you can manually download it to ${ORT_DOWNLOAD_FILE}")
+        file(DOWNLOAD "${ORT_DOWNLOAD_URL}" "${ORT_DOWNLOAD_FILE}"
+            SHOW_PROGRESS
+            STATUS ORT_DOWNLOAD_STATUS
+        )
+        list(GET ORT_DOWNLOAD_STATUS 0 ORT_DOWNLOAD_CODE)
+        list(GET ORT_DOWNLOAD_STATUS 1 ORT_DOWNLOAD_MSG)
+        if (NOT ORT_DOWNLOAD_CODE EQUAL 0)
+            file(REMOVE "${ORT_DOWNLOAD_FILE}")
+            message(FATAL_ERROR "Error downloading ONNX Runtime: ${ORT_DOWNLOAD_MSG}")
+        endif ()
     endif ()
 
     message(STATUS "Extracting ${ORT_DOWNLOAD_FILE} to ${ORT_EXTRACT_DIR}...")
