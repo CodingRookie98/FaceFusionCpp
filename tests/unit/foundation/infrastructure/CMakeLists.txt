@@ -71,3 +71,27 @@ add_facefusion_test(
         LINK_LIBRARIES
         foundation_infrastructure
 )
+
+add_facefusion_test(
+        scoped_timer_test
+        SOURCES
+        scoped_timer_test.cpp
+        LINK_LIBRARIES
+        foundation_infrastructure
+)
+
+add_facefusion_test(
+        concurrent_queue_tests
+        SOURCES
+        concurrent_queue_tests.cpp
+        LINK_LIBRARIES
+        foundation_infrastructure
+)
+
+add_facefusion_test(
+        network_test
+        SOURCES
+        network_test.cpp
+        LINK_LIBRARIES
+        foundation_infrastructure
+)

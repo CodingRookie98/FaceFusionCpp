@@ -6,6 +6,8 @@ cmake_minimum_required(VERSION 3.30)
 # 包含 GoogleTest 模块
 include(GoogleTest)
 
+find_package(ONNX CONFIG REQUIRED)
+
 # 辅助函数：创建测试可执行文件
 # 参数：
 #   TEST_NAME: 测试名称

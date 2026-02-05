@@ -2,12 +2,41 @@ add_facefusion_test(
     domain_face_tests
     SOURCES
         face_store_test.cpp
+        face_selector_test.cpp
+        face_helper_test.cpp
         face_enhancement_tests.cpp
+        masker/mask_compositor_test.cpp
+        detector/face_detector_factory_test.cpp
+        detector/yolo_detector_test.cpp
+        swapper/face_swapper_factory_test.cpp
+        swapper/inswapper_test.cpp
+        enhancer/face_enhancer_factory_test.cpp
+        enhancer/codeformer_test.cpp
+        enhancer/gfpgan_test.cpp
+        landmarker/face_landmarker_factory_test.cpp
+        landmarker/t2dfan_landmarker_test.cpp
+        recognizer/face_recognizer_factory_test.cpp
+        recognizer/arcface_recognizer_test.cpp
+        classifier/face_classifier_factory_test.cpp
+        classifier/fair_face_test.cpp
+        expression/face_expression_factory_test.cpp
+        expression/live_portrait_test.cpp
+        masker/face_masker_factory_test.cpp
+        masker/occlusion_masker_test.cpp
+        masker/region_masker_test.cpp
 
     LINK_LIBRARIES
         domain_face
+        domain_face_detector
+        domain_face_swapper
+        domain_face_masker
+        domain_face_expression
         domain_face_test_support
         foundation_infrastructure_test_support
+        tests_test_support_foundation_ai_mock_inference_session
+        ONNXRuntime::ONNXRuntime
+        ONNX::onnx
+        GTest::gmock
 )
 
 add_subdirectory(analyser)

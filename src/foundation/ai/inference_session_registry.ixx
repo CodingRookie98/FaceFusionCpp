@@ -58,6 +58,16 @@ public:
      */
     size_t cleanup_expired();
 
+    /**
+     * @brief Preload a session into the registry.
+     * @details This can be used for pre-loading models or injecting mock sessions for testing.
+     * @param model_path Path to the ONNX model file.
+     * @param options Session options (must match what will be requested later).
+     * @param session The session instance to register.
+     */
+    void preload_session(const std::string& model_path, const Options& options,
+                         std::shared_ptr<InferenceSession> session);
+
 private:
     InferenceSessionRegistry();
     ~InferenceSessionRegistry() = default;

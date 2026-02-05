@@ -1,0 +1,11 @@
+add_facefusion_test(
+    domain_pipeline_tests
+    SOURCES
+        pipeline_queue_test.cpp
+        pipeline_context_test.cpp
+        processor_factory_test.cpp
+    LINK_LIBRARIES
+        domain_pipeline
+        foundation_infrastructure_test_support
+        GTest::gmock
+)

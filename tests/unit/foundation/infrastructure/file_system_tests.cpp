@@ -112,3 +112,51 @@ TEST_F(FileSystemTest, ConcurrentRemoveFiles) {
         }
     }
 }
+
+TEST_F(FileSystemTest, ConcurrentCopyFiles) {
+    std::vector<std::string> sources;
+    std::vector<std::string> destinations;
+    
+    for (int i = 0; i < 5; ++i) {
+        std::string src_name = "src_" + std::to_string(i) + ".txt";
+        std::string dst_name = "dst_" + std::to_string(i) + ".txt";
+        create_dummy_file(src_name, "content_" + std::to_string(i));
+        
+        sources.push_back((fs::path(test_dir) / src_name).string());
+        destinations.push_back((fs::path(test_dir) / dst_name).string());
+    }
+    
+    foundation::infrastructure::concurrent_file_system::copy_files(sources, destinations);
+    
+    // Polling wait
+    auto start = std::chrono::steady_clock::now();
+    bool all_copied = false;
+    
+    while (std::chrono::steady_clock::now() - start < std::chrono::seconds(5)) {
+        bool all_exist = true;
+        for (const auto& f : destinations) {
+            if (!fs::exists(f)) {
+                all_exist = false;
+                break;
+            }
+        }
+        
+        if (all_exist) {
+            all_copied = true;
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    
+    EXPECT_TRUE(all_copied) << "Timed out waiting for files to be copied";
+    
+    if (all_copied) {
+        for (size_t i = 0; i < destinations.size(); ++i) {
+            EXPECT_TRUE(fs::exists(destinations[i]));
+            std::ifstream ifs(destinations[i]);
+            std::string content;
+            ifs >> content;
+            EXPECT_EQ(content, "content_" + std::to_string(i));
+        }
+    }
+}

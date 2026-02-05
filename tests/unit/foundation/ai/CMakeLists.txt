@@ -1,0 +1,20 @@
+add_facefusion_test(
+    session_pool_test
+    SOURCES
+        session_pool_test.cpp
+    MAIN_LIB
+        GTest::gmock_main
+    LINK_LIBRARIES
+        foundation_ai
+        foundation_infrastructure
+)
+
+add_facefusion_test(
+    inference_session_registry_test
+    SOURCES
+        inference_session_registry_test.cpp
+    MAIN_LIB
+        GTest::gtest_main
+    LINK_LIBRARIES
+        foundation_ai
+)

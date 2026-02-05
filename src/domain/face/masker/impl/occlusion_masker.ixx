@@ -7,6 +7,8 @@
 module;
 #include <opencv2/core/mat.hpp>
 #include <vector>
+#include <memory>
+#include <string>
 
 export module domain.face.masker:impl_occlusion;
 
@@ -17,13 +19,19 @@ export namespace domain::face::masker {
 
 /**
  * @brief Implementation of IFaceOccluder that detects face occlusions
- * @details Inherits from InferenceSession to handle model execution
  */
-class OcclusionMasker final : public IFaceOccluder,
-                              public foundation::ai::inference_session::InferenceSession {
+class OcclusionMasker final : public IFaceOccluder {
 public:
-    using foundation::ai::inference_session::InferenceSession::InferenceSession;
+    OcclusionMasker() = default;
     ~OcclusionMasker() override = default;
+
+    /**
+     * @brief Load the occlusion detection model
+     * @param model_path Path to the ONNX model
+     * @param options Inference options
+     */
+    void load_model(const std::string& model_path,
+                    const foundation::ai::inference_session::Options& options);
 
     /**
      * @brief Create an occlusion mask from a face crop
@@ -31,6 +39,9 @@ public:
      * @return Single channel mask (CV_8UC1), 255=Occluded, 0=Clear
      */
     cv::Mat create_occlusion_mask(const cv::Mat& crop_vision_frame) override;
+
+private:
+    std::shared_ptr<foundation::ai::inference_session::InferenceSession> m_session;
 };
 
 } // namespace domain::face::masker

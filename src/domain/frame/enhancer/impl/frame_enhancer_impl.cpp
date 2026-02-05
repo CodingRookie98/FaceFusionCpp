@@ -11,6 +11,7 @@ module domain.frame.enhancer;
 import :impl;
 import foundation.media.vision;
 import foundation.ai.inference_session;
+import foundation.ai.inference_session_registry;
 
 namespace domain::frame::enhancer {
 
@@ -18,8 +19,8 @@ FrameEnhancerImpl::FrameEnhancerImpl(const std::string& model_path,
                                      const foundation::ai::inference_session::Options& options,
                                      const std::vector<int>& tile_size, int model_scale) :
     m_tile_size(tile_size), m_model_scale(model_scale) {
-    m_session = std::make_shared<foundation::ai::inference_session::InferenceSession>();
-    m_session->load_model(model_path, options);
+    m_session = foundation::ai::inference_session::InferenceSessionRegistry::get_instance().get_session(
+        model_path, options);
 }
 
 cv::Mat FrameEnhancerImpl::enhance_frame(const FrameEnhancerInput& input) const {

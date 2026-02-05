@@ -21,3 +21,14 @@ add_facefusion_test(config_merger_tests
         config_core
         GTest::gmock
 )
+
+# Config validator tests
+add_facefusion_test(config_validator_test
+    SOURCES
+        config/config_validator_test.cpp
+    MAIN_LIB
+        GTest::gtest_main
+    LINK_LIBRARIES
+        config_core
+        GTest::gmock
+)

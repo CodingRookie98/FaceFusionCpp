@@ -108,13 +108,13 @@ public:
      * @brief Check if a model is currently loaded
      * @return true if a model is loaded, false otherwise
      */
-    [[nodiscard]] bool is_model_loaded() const;
+    [[nodiscard]] virtual bool is_model_loaded() const;
 
     /**
      * @brief Get the path of the currently loaded model
      * @return Path to the loaded model file, or empty string if no model is loaded
      */
-    [[nodiscard]] std::string get_loaded_model_path() const;
+    [[nodiscard]] virtual std::string get_loaded_model_path() const;
 
     /**
      * @brief Run inference
@@ -127,25 +127,25 @@ public:
      * @brief Get dimensions of input nodes
      * @return Vector of dimension vectors for each input node
      */
-    [[nodiscard]] std::vector<std::vector<std::int64_t>> get_input_node_dims() const;
+    [[nodiscard]] virtual std::vector<std::vector<std::int64_t>> get_input_node_dims() const;
 
     /**
      * @brief Get dimensions of output nodes
      * @return Vector of dimension vectors for each output node
      */
-    [[nodiscard]] std::vector<std::vector<std::int64_t>> get_output_node_dims() const;
+    [[nodiscard]] virtual std::vector<std::vector<std::int64_t>> get_output_node_dims() const;
 
     /**
      * @brief Get names of input nodes
      * @return Vector of input node names
      */
-    [[nodiscard]] std::vector<std::string> get_input_names() const;
+    [[nodiscard]] virtual std::vector<std::string> get_input_names() const;
 
     /**
      * @brief Get names of output nodes
      * @return Vector of output node names
      */
-    [[nodiscard]] std::vector<std::string> get_output_names() const;
+    [[nodiscard]] virtual std::vector<std::string> get_output_names() const;
 
 private:
     struct Impl;

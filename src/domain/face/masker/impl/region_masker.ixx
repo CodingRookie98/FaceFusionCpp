@@ -8,6 +8,8 @@ module;
 #include <opencv2/core/mat.hpp>
 #include <unordered_set>
 #include <vector>
+#include <memory>
+#include <string>
 
 export module domain.face.masker:impl_region;
 
@@ -18,13 +20,19 @@ export namespace domain::face::masker {
 
 /**
  * @brief Implementation of IFaceRegionMasker using semantic segmentation
- * @details Inherits from InferenceSession to handle model execution
  */
-class RegionMasker final : public IFaceRegionMasker,
-                           public foundation::ai::inference_session::InferenceSession {
+class RegionMasker final : public IFaceRegionMasker {
 public:
-    using foundation::ai::inference_session::InferenceSession::InferenceSession;
+    RegionMasker() = default;
     ~RegionMasker() override = default;
+
+    /**
+     * @brief Load the region segmentation model
+     * @param model_path Path to the ONNX model
+     * @param options Inference options
+     */
+    void load_model(const std::string& model_path,
+                    const foundation::ai::inference_session::Options& options);
 
     /**
      * @brief Create a region mask for selected regions
@@ -34,6 +42,9 @@ public:
      */
     cv::Mat create_region_mask(const cv::Mat& crop_vision_frame,
                                const std::unordered_set<FaceRegion>& regions) override;
+
+private:
+    std::shared_ptr<foundation::ai::inference_session::InferenceSession> m_session;
 };
 
 } // namespace domain::face::masker

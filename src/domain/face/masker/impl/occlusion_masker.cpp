@@ -8,6 +8,7 @@ module;
 
 module domain.face.masker;
 import :impl_occlusion;
+import foundation.ai.inference_session_registry;
 
 namespace {
 
@@ -90,13 +91,19 @@ cv::Mat process_output(std::vector<Ort::Value>& output_tensors, cv::Size origina
 
 namespace domain::face::masker {
 
+void OcclusionMasker::load_model(const std::string& model_path,
+                                 const foundation::ai::inference_session::Options& options) {
+    m_session = foundation::ai::inference_session::InferenceSessionRegistry::get_instance()
+                    .get_session(model_path, options);
+}
+
 cv::Mat OcclusionMasker::create_occlusion_mask(const cv::Mat& crop_vision_frame) {
-    if (!is_model_loaded() || crop_vision_frame.empty()) {
+    if (!m_session || !m_session->is_model_loaded() || crop_vision_frame.empty()) {
         return cv::Mat::zeros(crop_vision_frame.size(), CV_8UC1);
     }
 
     // 1. Prepare Input
-    auto [input_data, input_shape] = prepare_input(crop_vision_frame, get_input_node_dims());
+    auto [input_data, input_shape] = prepare_input(crop_vision_frame, m_session->get_input_node_dims());
     if (input_data.empty()) { return cv::Mat::zeros(crop_vision_frame.size(), CV_8UC1); }
 
     auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
@@ -105,7 +112,7 @@ cv::Mat OcclusionMasker::create_occlusion_mask(const cv::Mat& crop_vision_frame)
         memory_info, input_data.data(), input_data.size(), input_shape.data(), input_shape.size()));
 
     // 2. Run Inference
-    auto output_tensors = run(input_tensors);
+    auto output_tensors = m_session->run(input_tensors);
     if (output_tensors.empty()) return cv::Mat::zeros(crop_vision_frame.size(), CV_8UC1);
 
     // 3. Process Output
