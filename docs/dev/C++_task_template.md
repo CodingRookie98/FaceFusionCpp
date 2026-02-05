@@ -1,8 +1,9 @@
 <!-- AI_CONTEXT
 你是一名高级 C++ 工程师。
 你的目标是实施父计划中定义的模块，且不产生副作用。
-约束：必须严格遵循父计划中定义的“物理布局”和“接口设计”。
+约束：必须严格遵循父计划中定义的"物理布局"和"接口设计"。
 不要在此创造新的架构模式。专注于高效、整洁的 C++20 实现。
+⚠️ TDD 强制：所有代码必须通过 TDD 流程产生 (🔴 Red → 🟢 Green → 🔵 Refactor)。
 -->
 
 # {任务名称} 实施任务单
@@ -21,6 +22,7 @@
 *   [ ] **父计划**: 我已阅读 `docs/dev_docs/plan/...` 并理解架构。
 *   [ ] **Target 检查**: 我已检查 `src/CMakeLists.txt` (或相关) 并确认了 Target 名称。
 *   [ ] **冲突检查**: 我已验证即将创建的文件名不存在。
+*   [ ] **TDD 承诺**: 我确认将严格遵循 TDD 流程，先写失败测试，再写实现代码。
 
 ## 1. 任务概览
 
@@ -44,56 +46,113 @@
 
 ---
 
-## 2. 详细设计与实现
+## 2. TDD 实现流程 (核心)
 
-### 2.1 接口定义 (Interface / .ixx)
-> **BMI 优化**: 仅包含 `export` 声明，**严禁**包含非模板函数体。
-> **停止 & 检查**: 在编写下方代码前，请自问：“这里是否包含任何非模板函数体？”如果是，**移至 .cpp**。
+> ⚠️ **强制要求**: 本节是任务实施的核心。所有功能代码必须通过 TDD 循环产生。
+
+### 2.1 🔴 Red: 编写失败测试
+> **目标**: 先定义期望行为，测试必须能独立运行且初始状态为失败。
+
+**测试文件**: `tests/unit/{module_path}/test_{feature}.cpp`
 
 ```cpp
-// domain.order_pricing.ixx
-export module domain.order:pricing;
+// test_{feature}.cpp
+#include <gtest/gtest.h>
+import {module_name};
 
-import domain.common;
+TEST({TestSuite}, {TestName}_ExpectedBehavior) {
+    // Arrange: 准备测试数据
+    // {待填写}
+    
+    // Act: 执行被测行为
+    // {待填写}
+    
+    // Assert: 验证期望结果
+    // {待填写}
+    FAIL() << "TODO: 实现此测试";
+}
+```
 
-namespace domain::order {
-    export struct PriceInfo {
-        double amount;
-        std::string currency;
+**测试用例清单** (必须在写实现前完成):
+| # | 测试名称 | 测试场景 | 期望结果 | 状态 |
+|:--|:---------|:---------|:---------|:-----|
+| 1 | `{TestName}_HappyPath` | 正常输入 | 返回预期值 | 🔴 待实现 |
+| 2 | `{TestName}_EdgeCase` | 边界条件 | 正确处理 | 🔴 待实现 |
+| 3 | `{TestName}_ErrorCase` | 异常输入 | 抛出异常/返回错误 | 🔴 待实现 |
+
+**验证测试失败**:
+```bash
+python build.py --action test
+# 确认测试编译通过但执行失败 (红色)
+```
+
+### 2.2 🟢 Green: 最小实现
+> **目标**: 编写**最少量**代码使测试通过。不做过度设计，只满足当前测试需求。
+
+#### 2.2.1 接口定义 (Interface / .ixx)
+> **BMI 优化**: 仅包含 `export` 声明，**严禁**包含非模板函数体。
+
+```cpp
+// {module}.ixx
+export module {module_name};
+
+namespace {namespace} {
+    export struct {StructName} {
+        // 仅声明数据成员
     };
 
-    export class PricingService {
+    export class {ClassName} {
     public:
-        // 仅声明
-        PriceInfo calculate(int orderId);
+        // 仅声明，无函数体
+        {ReturnType} {method_name}({params});
     };
 }
 ```
 
-### 2.2 实现逻辑 (Implementation / .cpp)
+#### 2.2.2 实现逻辑 (Implementation / .cpp)
 > **物理隔离**: 实现细节放入 `.cpp`，修改不应触发下游重编。
 
 ```cpp
-// domain.order_pricing.cpp
-module domain.order; // 属于主模块
+// {module}.cpp
+module {module_name};
 
-import <cmath>; // 依赖标准库
-
-namespace domain::order {
-    PriceInfo PricingService::calculate(int orderId) {
-        // 具体实现...
-        return { 100.0, "USD" };
+namespace {namespace} {
+    {ReturnType} {ClassName}::{method_name}({params}) {
+        // 最小实现 - 仅满足测试需求
+        // {待填写}
     }
 }
 ```
 
-### 2.3 单元测试策略
-> **测试隔离**: 使用 `test_support` 模块或 Public API 进行测试。
+**验证测试通过**:
+```bash
+python build.py --action test
+# 确认测试全部通过 (绿色)
+```
 
-*   **测试文件**: `tests/unit/domain/order/test_pricing.cpp`
-*   **测试用例**:
-    1.  `Calculate_StandardOrder_ReturnsCorrectPrice`
-    2.  `Calculate_InvalidId_ThrowsException`
+### 2.3 🔵 Refactor: 优化重构
+> **目标**: 在测试保护下优化代码结构。确保重构后所有测试仍然通过。
+
+**重构检查清单**:
+*   [ ] 消除重复代码 (DRY)
+*   [ ] 提取公共逻辑到辅助函数
+*   [ ] 改善命名以提高可读性
+*   [ ] 确保符合项目代码规范
+*   [ ] **验证**: 重构后所有测试仍通过
+
+```bash
+python build.py --action test
+# 确认重构后测试仍全部通过
+```
+
+### 2.4 TDD 循环迭代
+> 对每个功能点重复 2.1 → 2.2 → 2.3 循环，直到所有测试用例完成。
+
+| 迭代 # | 功能点 | 🔴 测试编写 | 🟢 实现完成 | 🔵 重构完成 |
+|:-------|:-------|:-----------|:-----------|:-----------|
+| 1 | {功能1} | [ ] | [ ] | [ ] |
+| 2 | {功能2} | [ ] | [ ] | [ ] |
+| 3 | {功能3} | [ ] | [ ] | [ ] |
 
 ---
 
@@ -101,9 +160,11 @@ namespace domain::order {
 
 ### 3.1 开发者自测 (Checklist)
 
+*   [ ] **🧪 TDD 合规**: 所有功能代码均由失败测试驱动产生
 *   [ ] **编译通过**: MSVC / Ninja 构建成功，无 Error。
 *   [ ] **BMI 检查**: 确认修改 `.cpp` 后，下游模块（如 `service.trade`）**未**发生重新编译。
-*   [ ] **测试通过**: 对应的单元测试 (`test_pricing.exe`) 100% 通过。
+*   [ ] **测试通过**: 对应的单元测试 (`test_{feature}.exe`) 100% 通过。
+*   [ ] **测试质量**: 测试是行为测试（测"做什么"）而非实现测试（测"怎么做"）
 *   [ ] **静态分析**: Clang-Tidy 无高危警告。
 
 ### 3.1.1 构建与增量编译验证
