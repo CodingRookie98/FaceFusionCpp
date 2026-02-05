@@ -55,6 +55,7 @@ trigger: always_on
   - 提交文档相关文件时跳过编译测试验证。
   - 文件重命名/移动必须使用 `git mv`。
   - 提交前必须通过 `build.py test`。
+  - **测试职责划分**：智能体/AI 仅需运行单元测试；集成测试和端到端测试由用户手动验证。
 
 ## ⛔ 绝对禁令 (Violations trigger STOP)
 - **直接在主分支开发**：检测到 `git status` 为 `{os_name}/dev` 或 `master` 时修改代码。
