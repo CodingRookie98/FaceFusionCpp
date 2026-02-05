@@ -1,274 +1,202 @@
-# C++代码质量与评估标准指南
+# C++ 代码质量与工程化标准（FaceFusionCpp）
 
-本文档定义了 FaceFusionCpp 项目的 C++ 代码质量标准、评估工具使用指南以及详细的评分规则。
+本文档用于统一 FaceFusionCpp 项目的代码质量要求、工程化质量门槛，以及在评审/验收时可执行的评估维度。它不是“风格偏好合集”，而是可落地的质量合约：写代码的人按它交付，审代码的人按它验收。
 
-## 1. Doxygen 注释标准
+## 0. 总体原则
 
-> **说明**：所有 Public Module Interface (.ixx) 必须遵循以下 Doxygen 注释规范。
+- **C++20 为基线**：以 C++20（含模块）作为默认语言标准，不写“退回到头文件时代”的新代码。
+- **工程化优先于个人技巧**：优先通过构建脚本、静态分析与测试来保证质量，而不是靠经验“看着像对的”。
+- **接口稳定、实现可变**：接口（尤其是导出模块接口）要求更高的清晰度与兼容性；实现允许快速迭代，但必须被测试与工具保护。
+- **可重复构建与可诊断**：任何改动必须可复现、可定位问题；禁止引入“只在我机器上能跑”的隐性依赖。
 
-### 1.1 文件头模板
-每个 `.ixx` 文件开头必须包含：
+## 1. 质量门槛（Definition of Done）
+
+提交或交付一个变更（尤其是新增模块/公共 API）时，至少满足：
+
+- **可构建**：使用项目统一入口构建（`build.py` + CMake Presets），Debug 为开发默认配置。
+- **无新增告警**：不引入新的编译告警（必要时先降噪再开启更严格的告警级别，不接受长期“忽略”）。
+- **格式化一致**：运行项目格式化脚本后无差异（使用仓库内 `.clang-format`）。
+- **静态分析通过**：运行项目静态分析脚本（使用仓库内 `.clang-tidy`，基于 `compile_commands.json`）。
+- **测试覆盖到行为**：对新增/修改的行为补齐单元测试或集成测试；测试可稳定重复执行。
+- **文档同步**：公共模块接口的 Doxygen 注释齐全；若引入新的工程约束（构建参数、目录结构、使用方式），同步更新对应文档。
+- **提交前自检**：建议运行 `scripts/pre_commit_check.py` 作为本地质量门禁。
+
+## 2. 注释与 API 文档（Doxygen）
+
+> **范围**：对外可见的模块接口（Public Module Interface：`.ixx/.cppm` 中的 `export` 声明）必须具备可读、可维护的文档。实现文件与内部分区只需关键决策处说明“为什么”。
+
+### 2.1 模块文件头模板（推荐）
+
 ```cpp
 /**
  * @file {filename}
- * @brief {Short description}
- * @author CodingRookie
- * @date {YYYY-MM-DD}
- * @note {Optional detailed notes}
+ * @brief {一句话说明该模块职责}
+ * @details {可选：约束、线程安全、异常策略、性能特征等}
  */
 ```
 
-### 1.2 类与接口模板
-所有导出的类和公共方法必须包含：
+### 2.2 导出类型/函数模板（推荐）
+
 ```cpp
 /**
- * @brief {Brief description}
- * @details {Detailed description if needed}
- * @param {name} {description}
- * @return {description}
+ * @brief {一句话说明用途}
+ * @details {可选：边界条件、复杂度、线程安全、异常保证}
+ * @param {name} {参数语义，不要复述类型}
+ * @return {返回值语义；若用错误码/状态对象，需要说明}
+ * @throws {可选：抛出异常的条件与类型}
  */
 ```
 
-### 1.3 示例 (InferenceSession)
+### 2.3 示例（模块 + 导出类）
+
 ```cpp
 /**
  * @file inference_session.ixx
- * @brief ONNX Runtime inference session wrapper module
- * @author CodingRookie
- * @date 2024-07-12
+ * @brief ONNX Runtime inference session wrapper
+ * @details Thread-safety: not thread-safe. Exception: strong guarantee on load.
  */
 
 export module foundation.ai.inference_session;
 
-namespace foundation::ai::inference_session {
+namespace foundation::ai {
 
     /**
-     * @brief ONNX Runtime inference session wrapper class
-     * @details Provides high-level interface for loading ONNX models...
+     * @brief High-level wrapper for an ONNX Runtime inference session.
      */
     export class InferenceSession {
     public:
         /**
-         * @brief Load an ONNX model with specified options
-         * @param model_path Path to the ONNX model file
-         * @param options Session options
+         * @brief Load an ONNX model with specified options.
+         * @param model_path Path to the ONNX model file.
+         * @param options Session options.
          */
-        virtual void load_model(const std::string& model_path, const Options& options);
+        void load_model(const std::string& model_path, const Options& options);
     };
 }
 ```
 
-## 2. 评估工具使用指南
+## 3. 代码层面的现代 C++ 质量标准
 
-### 2.1 静态分析工具
-> **说明**：介绍用于代码质量评估的静态分析工具
+### 3.1 资源管理与所有权
 
-#### 2.1.1 编译器诊断工具
+- **RAII 强制**：资源（文件、句柄、GPU/ONNX 资源等）必须由对象生命周期管理，禁止“成对调用”式的手动释放约定。
+- **智能指针优先**：用 `std::unique_ptr` 表达唯一所有权；共享所有权必须有明确原因并尽量局部化。
+- **避免隐式所有权**：禁止在 API 中返回/传入“谁负责释放不清楚”的裸指针；需要借用语义时，用引用/`std::span`/迭代器表达。
 
-**MSVC 编译器诊断**:
-```bash
-# 启用所有警告
-cl /W4 /Wall /permissive- /std:c++20 /EHsc
+### 3.2 错误处理与异常安全
 
-# 启用额外警告
-cl /W4 /Wall /permissive- /std:c++20 /EHsc /external:W0
+- **异常策略必须一致**：同一层级（例如 foundation / domain / app）对错误的表达方式要统一（异常、返回值、状态对象等），不要混用导致调用方复杂化。
+- **明确异常保证**：关键 API 至少说明 basic/strong/no-throw 期望；不要随意标注 `noexcept`（会放大崩溃面）。
+- **永远不吞异常**：捕获异常必须做可诊断处理（增加上下文并重新抛出/转换），不得静默忽略。
 
-# 输出诊断信息
-cl /W4 /permissive- /std:c++20 /EHsc /diagnostics:caret
-```
+### 3.3 并发与线程安全
 
-**GCC/Clang 编译器诊断**:
-```bash
-# 启用所有警告
-g++ -Wall -Wextra -Wpedantic -std=c++20
+- **默认非线程安全**：除非文档明确声明并提供同步策略，否则类型视为非线程安全。
+- **优先使用现代并发设施**：在需要取消/停止语义时，优先使用 `std::jthread` + `std::stop_token`。
+- **数据竞争零容忍**：共享状态必须有清晰同步边界；出现竞态时优先通过设计消除共享，而不是“补锁”。
 
-# 启用额外警告
-g++ -Wall -Wextra -Wpedantic -std=c++20 -Wconversion -Wshadow
+### 3.4 API 设计与可维护性
 
-# 输出诊断信息
-g++ -Wall -Wextra -Wpedantic -std=c++20 -fdiagnostics-color=always
-```
+- **值语义优先**：能用值语义就不要暴露复杂的生命周期管理；对大对象用移动语义与 `std::span`/`std::string_view` 等视图类型。
+- **强类型优先**：对单位/语义敏感的参数（时间、尺寸、阈值等）优先使用 `std::chrono` 与强类型封装，避免“裸 int/float”满天飞。
+- **避免宏与隐式魔法**：尽量用 `constexpr`、模板与类型系统表达；宏只允许用于跨平台极少数必要场景。
 
-#### 2.1.2 静态分析工具
+## 4. 模块化（C++20 Modules）与物理依赖标准
 
-**Clang-Tidy**:
-```bash
-# 基本检查
-clang-tidy src/**/*.cpp -- -std=c++20 -I./include
+### 4.1 接口最小化
 
-# 启用所有检查
-clang-tidy src/**/*.cpp --checks='*' -- -std=c++20 -I./include
+- **`.ixx/.cppm` 只放必要导出**：接口文件中尽量只保留声明与轻量内联；避免把重依赖（大型第三方头、实现细节）暴露进 BMI。
+- **实现下沉到 `.cpp` 或内部分区**：不导出的实现细节放到 `.cpp` 或 internal partition，减少重编译与依赖扩散。
+- **导出边界清晰**：`export` 语义是对外承诺，新增导出需要同步文档与测试。
 
-# 使用 .clang-tidy 配置文件
-clang-tidy src/**/*.cpp
-```
+### 4.2 依赖规则（工程约束）
 
-**Cppcheck**:
-```bash
-# 基本检查
-cppcheck --enable=all --std=c++20 --inconclusive src/
+- **分层依赖单向**：高层只能依赖低层，禁止环依赖；模块依赖出现“绕层”需要在评审中解释并得到认可。
+- **CMake 模块文件集合必须完整且顺序正确**：`CMakeLists.txt` 中 `FILE_SET cxx_modules` 必须包含所有 `.ixx/.cppm`，并保证依赖方在后。
 
-# 详细输出
-cppcheck --enable=all --std=c++20 --inconclusive --verbose src/
+## 5. 工具链与自动化（以仓库配置为准）
 
-# 输出到文件
-cppcheck --enable=all --std=c++20 --inconclusive --xml src/ 2> report.xml
-```
+> **原则**：本项目不鼓励“手敲一堆编译器命令”。统一通过仓库脚本与预设保证一致性，可减少环境差异与排障成本。
 
-**Include-What-You-Use**:
-```bash
-# 分析头文件依赖
-include-what-you-use src/**/*.cpp -std=c++20 -I./include
+### 5.1 构建与测试入口
 
-# 输出建议
-include-what-you-use -Xiwyu --verbose=1 src/**/*.cpp -std=c++20 -I./include
-```
+- 统一入口为 `build.py`（内部使用 CMake Presets + CTest）。
+- 测试按标签组织（unit/integration/benchmark 等），便于分层执行与 CI 拆分。
+- 运行程序或测试时，遵循项目构建文档中的约定（例如从构建输出目录运行以确保相对路径资源正确加载）。
 
-#### 2.1.3 模块特定工具
+### 5.2 格式化与静态分析
 
-**模块依赖分析**:
-```bash
-# 生成 Graphviz 依赖图
-cmake --graphviz=module_deps.dot .
-dot -Tpng module_deps.dot -o module_deps.png
-```
+- **clang-format**：使用仓库根目录 `.clang-format`，通过 `scripts/format_code.py` 执行。
+- **clang-tidy**：使用仓库根目录 `.clang-tidy`，通过 `scripts/run_clang_tidy.py` 执行（依赖 `compile_commands.json`）。
 
-**BMI (.ifc) 分析**:
-```bash
-# 检查 BMI 文件大小 (PowerShell)
-Get-ChildItem -Path build -Filter *.ifc -Recurse | Select-Object Name, @{Name="MB";Expression={$_.Length / 1MB}} | Sort-Object Length -Descending
+### 5.3 动态分析（建议项）
 
-# 检查是否包含不必要的符号 (dumpbin /headers)
-dumpbin /headers build/path/to/module.ifc
-```
+- **AddressSanitizer / ThreadSanitizer**：用于定位内存与并发问题，优先在 Debug/专用配置下运行。
+- **Valgrind / perf / VS Profiler**：用于专项排障与性能回归分析，按需启用，不作为日常门槛。
 
-### 2.2 动态分析工具
-> **说明**：介绍用于运行时分析的动态分析工具
+## 6. 测试工程化标准
 
-#### 2.2.1 内存分析工具
+### 6.1 测试框架与分层
 
-**AddressSanitizer (ASan)**:
-```bash
-# 编译时启用 ASan
-g++ -fsanitize=address -fno-omit-frame-pointer -g -std=c++20 src/*.cpp
+- 本项目单元测试采用 **GoogleTest/GoogleMock**，由 `tests/` 下的 CMake 封装统一创建测试目标并接入 CTest。
+- 测试分层建议遵循“单元测试为主、集成测试覆盖边界、端到端测试用于主路径”的金字塔模型。
 
-# MSVC 启用 ASan
-cl /fsanitize=address /std:c++20 src/*.cpp
-```
+| 类型 | 目录 | CTest/CMake 标签 | 特征 | 典型耗时 |
+|------|------|------------------|------|----------|
+| 单元测试 | `tests/unit/` | `unit` | 无外部依赖，纯 Mock/Stub | 毫秒级 |
+| 集成测试 | `tests/integration/` | `integration` | 依赖真实模型/文件/组件边界 | 秒级 |
+| 性能测试 | `tests/benchmark/` | `benchmark` | 测量 FPS/延迟/内存 | 分钟级 |
+| 端到端测试 | （按需新增） | `e2e` | 完整用户流程验证（可选，仓库当前未创建目录） | 分钟级 |
 
-**Valgrind Memcheck**:
-```bash
-# 内存泄漏检测
-valgrind --leak-check=full --show-leak-kinds=all ./your_program
+### 6.2 命名与组织（保持一致即可）
 
-# 详细报告
-valgrind --leak-check=full --show-leak-kinds=all --verbose ./your_program
-```
+#### 6.2.1 文件命名规范
 
-#### 2.2.2 线程分析工具
+**推荐格式**：`<模块名>_test.cpp`
 
-**ThreadSanitizer (TSan)**:
-```bash
-# 编译时启用 TSan
-g++ -fsanitize=thread -g -std=c++20 src/*.cpp
+| 规范 | 示例 | 说明 |
+|------|------|------|
+| ✅ 推荐 | `face_store_test.cpp` | 模块名 + `_test` 后缀 |
+| ✅ 可接受 | `config_parser_tests.cpp` | 历史遗留：复数后缀 |
+| ❌ 避免 | `test_shutdown_handler.cpp` | `test_` 前缀（与其他生态命名习惯混淆） |
 
-# 运行时检测数据竞争
-./a.out
-```
+#### 6.2.2 测试用例命名规范（GTest）
 
-**Helgrind**:
-```bash
-# 线程错误检测
-valgrind --tool=helgrind ./your_program
+> ⚠️ 避免在 `TestSuiteName` 和 `TestName` 中使用下划线。GTest 使用下划线作为内部分隔符，可能导致命名冲突。
 
-# 详细报告
-valgrind --tool=helgrind --verbose ./your_program
-```
-
-#### 2.2.3 性能分析工具
-
-**perf**:
-```bash
-# CPU 性能分析
-perf record -g ./your_program
-
-# 查看报告
-perf report
-
-# 火焰图
-perf script | stackcollapse-perf.pl | flamegraph.pl > flamegraph.svg
-```
-
-**Visual Studio Profiler**:
 ```cpp
-// 使用性能分析器
-// 1. 在 Visual Studio 中打开项目
-// 2. 选择 "调试" -> "性能分析器"
-// 3. 选择分析类型（CPU 使用率、内存使用等）
-// 4. 运行分析
+TEST(FaceStoreTest, InsertValidFaceCanRetrieveByFrame)
+TEST(FaceStoreTest, InsertExceedsCapacityEvictsLRU)
+TEST(BufferTest, ResizeNegativeSizeThrowsException)
 ```
 
-### 2.3 测试工具
-> **说明**：介绍用于测试评估的工具
+### 6.3 覆盖率策略（风险驱动）
 
-#### 2.3.1 单元测试框架
+- 覆盖率是**质量下限**，不是目标本身；优先覆盖高风险逻辑（算法、边界条件、错误处理、并发）。
+- 覆盖率评估与快照结果不写进“标准”，统一放在评估文档中：`docs/dev/evaluation/`。
+- 详细评估与当前快照见：`docs/dev/evaluation/C++_evaluation_unit_test_coverage.md`
 
-**Google Test**:
-```cpp
-// 基本测试
-#include <gtest/gtest.h>
+### 6.4 测试金字塔参考
 
-TEST(TestCaseName, TestName) {
-    EXPECT_EQ(1, 1);
-    ASSERT_TRUE(true);
-}
+基于 Google Testing Blog 的 **70/20/10 法则**：
 
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
+```
+        /\
+       /  \    E2E Tests (~10%)
+      /    \   大规模测试，验证用户流程
+     /------\
+    /        \  Integration Tests (~20%)
+   /          \ 组件交互，2-3 个模块协作
+  /------------\
+ /              \ Unit Tests (~70%)
+/________________\ 小型、快速、隔离，测试单一类/函数
 ```
 
-**Catch2**:
-```cpp
-// 基本测试
-#include <catch2/catch_test_macros.hpp>
+## 7. 评估与评分标准（用于审查/验收）
 
-TEST_CASE("Test case name") {
-    REQUIRE(1 == 1);
-    CHECK(true);
-}
-```
+> **说明**：评分用于阶段性评审、专项治理与对外展示。日常开发以第 1 章“质量门槛”为准。
 
-#### 2.3.2 代码覆盖率工具
-
-**gcov/lcov**:
-```bash
-# 编译时启用覆盖率
-g++ --coverage -std=c++20 src/*.cpp
-
-# 运行程序生成覆盖率数据
-./a.out
-
-# 生成覆盖率报告
-gcov src/*.cpp
-lcov --capture --directory . --output-file coverage.info
-genhtml coverage.info --output-directory coverage_report
-```
-
-**OpenCppCoverage**:
-```bash
-# Windows 覆盖率分析
-OpenCppCoverage.exe --sources src -- -- your_program.exe
-
-# 生成 HTML 报告
-OpenCppCoverage.exe --export_type=html:coverage_report --sources src -- -- your_program.exe
-```
-
-## 3. 评分标准
-> **说明**：定义各项评估指标的评分标准
-
-### 3.1 评分等级定义
+### 7.1 评分等级定义
 
 | 评分等级 | 分数范围 | 描述 | 行动建议 |
 |---------|---------|------|---------|
@@ -278,7 +206,13 @@ OpenCppCoverage.exe --export_type=html:coverage_report --sources src -- -- your_
 | 待改进 | 60-69 | 部分不符合要求，需要改进 | 必须改进 |
 | 不合格 | 0-59 | 严重不符合要求，需要重构 | 立即重构 |
 
-### 3.2 模块化评估评分标准
+### 7.2 模块化评估评分标准
+
+术语约定（用于统一评审口径）：
+
+- **5 层模型**：从底到顶可理解为 `foundation`（基础设施/通用工具）→ `domain`（领域模型与规则）→ `services`（用例/服务编排）→ `app`（应用入口与流程）→ `tests`（测试与支撑）。
+- **2 层模型**：区分“逻辑模块”（领域/功能边界）与“物理库/构建单元”（CMake target、可执行/库），两者映射应尽量稳定清晰。
+- **Public/Internal/Test**：分别表示对外导出接口、内部实现分区/细节模块、仅用于测试的模块或支撑代码。
 
 **模块架构分析** (权重: 20%):
 - 模块分层架构符合性 (5层模型): 40分
@@ -301,7 +235,7 @@ OpenCppCoverage.exe --export_type=html:coverage_report --sources src -- -- your_
                   (模块实现评估得分 × 0.10)
 ```
 
-### 3.3 依赖分析评分标准
+### 7.3 依赖分析评分标准
 
 **模块依赖关系** (权重: 15%):
 - 依赖关系清晰度: 40分
@@ -318,7 +252,7 @@ OpenCppCoverage.exe --export_type=html:coverage_report --sources src -- -- your_
                (依赖规则检查得分 × 0.15)
 ```
 
-### 3.4 BMI 优化评估评分标准
+### 7.4 BMI 优化评估评分标准
 
 **BMI 文件分析** (权重: 10%):
 - 接口定义精简度 (只包含声明): 40分
@@ -330,7 +264,7 @@ OpenCppCoverage.exe --export_type=html:coverage_report --sources src -- -- your_
 BMI 优化评估总分 = BMI 文件分析得分 × 0.10
 ```
 
-### 3.5 测试隔离评估评分标准
+### 7.5 测试隔离评估评分标准
 
 **测试模块分析** (权重: 10%):
 - 测试模块结构合理性: 40分
@@ -348,7 +282,7 @@ BMI 优化评估总分 = BMI 文件分析得分 × 0.10
                    (测试覆盖评估得分 × 0.05)
 ```
 
-### 3.6 性能评估评分标准
+### 7.6 性能评估评分标准
 
 **编译性能评估** (权重: 5%):
 - 编译时间效率: 40分
@@ -366,7 +300,7 @@ BMI 优化评估总分 = BMI 文件分析得分 × 0.10
                (运行时性能评估得分 × 0.05)
 ```
 
-### 3.7 代码质量评估评分标准
+### 7.7 代码质量评估评分标准
 
 **内存管理与资源安全** (权重: 10%):
 - 智能指针使用: 30分
@@ -384,9 +318,8 @@ BMI 优化评估总分 = BMI 文件分析得分 × 0.10
 - 死锁检测: 30分
 
 **现代C++特性使用评估** (权重: 5%):
-- C++20 特性使用: 40分
-- C++17 特性使用: 30分
-- C++14 特性使用: 30分
+- C++20 语义与库设施使用（概念/范围/chrono/span 等）: 60分
+- 旧特性兼容性与清理策略（避免过时写法、逐步收敛）: 40分
 
 **代码规范与可维护性评估** (权重: 5%):
 - 命名规范: 30分
@@ -403,7 +336,7 @@ BMI 优化评估总分 = BMI 文件分析得分 × 0.10
                    (代码规范与可维护性评估得分 × 0.05)
 ```
 
-### 3.8 总分计算
+### 7.8 总分计算
 
 ```
 总分 = (模块化评估总分 × 0.40) +
@@ -423,3 +356,13 @@ BMI 优化评估总分 = BMI 文件分析得分 × 0.10
 - 代码质量评估: 10%
 
 **注意**: 各项评分总和为 100%，取消了风险评估作为独立项（将风险识别融入各评估环节）
+
+## 8. 参考资料
+
+| 资源 | 说明 |
+|------|------|
+| [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) | 现代 C++ 设计与工程化最佳实践 |
+| [Google C++ Style Guide - Testing](https://google.github.io/styleguide/cppguide.html#Testing) | 单元测试命名与组织建议 |
+| [GoogleTest FAQ](https://google.github.io/googletest/faq.html#why-should-test-suite-names-and-test-names-not-contain-underscore) | GTest 下划线限制解释 |
+| [Google Testing Blog](https://testing.googleblog.com/2015/04/just-say-no-to-more-end-to-end-tests.html) | 70/20/10 与测试金字塔 |
+| [Martin Fowler - TestPyramid](https://martinfowler.com/articles/practical-test-pyramid.html) | 测试层级平衡的综合指南 |
