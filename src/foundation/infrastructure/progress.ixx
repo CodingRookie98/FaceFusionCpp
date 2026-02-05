@@ -31,7 +31,11 @@ struct IProgressObserver {
  */
 class ProgressBar {
 public:
-    ProgressBar();
+    /**
+     * @brief Construct a new Progress Bar
+     * @param postfix_text Initial text to display
+     */
+    explicit ProgressBar(const std::string& postfix_text = "Processing...");
     ~ProgressBar(); // Required for PIMPL
 
     // Delete copy/move as it holds unique_ptr to external resource potentially

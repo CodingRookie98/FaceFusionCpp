@@ -6,7 +6,6 @@ module;
 #include <atomic>
 #include <thread>
 #include <memory>
-#include <indicators/progress_bar.hpp>
 #include <CLI/CLI.hpp>
 #include <format>
 #include <filesystem>
@@ -25,6 +24,7 @@ import domain.ai.model_repository;
 import domain.face.model_registry;
 import app.cli.system_check;
 import app.version;
+import foundation.infrastructure.progress;
 
 namespace app::cli {
 
@@ -327,18 +327,7 @@ int App::run_pipeline_internal(const config::TaskConfig& task_config,
         });
 
     // 3. Setup Progress Bar
-    indicators::ProgressBar bar{indicators::option::BarWidth{50},
-                                indicators::option::Start{"["},
-                                indicators::option::Fill{"="},
-                                indicators::option::Lead{">"},
-                                indicators::option::Remainder{" "},
-                                indicators::option::End{"]"},
-                                indicators::option::PostfixText{"Initializing..."},
-                                indicators::option::ForegroundColor{indicators::Color::green},
-                                indicators::option::ShowElapsedTime{true},
-                                indicators::option::ShowRemainingTime{true},
-                                indicators::option::FontStyles{std::vector<indicators::FontStyle>{
-                                    indicators::FontStyle::bold}}};
+    foundation::infrastructure::progress::ProgressBar bar{"Initializing..."};
 
     // 4. Run
     logger->info("Starting task: " + task_config.task_info.id);
@@ -351,7 +340,7 @@ int App::run_pipeline_internal(const config::TaskConfig& task_config,
 
         std::string postfix =
             std::format("Frame: {}/{} ({:.1f} FPS)", p.current_frame, p.total_frames, p.fps);
-        bar.set_option(indicators::option::PostfixText{postfix});
+        bar.set_postfix_text(postfix);
     });
 
     // Uninstall handler
@@ -365,7 +354,7 @@ int App::run_pipeline_internal(const config::TaskConfig& task_config,
         return static_cast<int>(result.error().code);
     } else {
         bar.set_progress(100.0f);
-        bar.set_option(indicators::option::PostfixText{"Completed"});
+        bar.set_postfix_text("Completed");
         logger->info("Task completed successfully.");
         return 0;
     }

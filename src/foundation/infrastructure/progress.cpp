@@ -14,22 +14,22 @@ namespace foundation::infrastructure::progress {
 struct ProgressBar::Impl {
     indicators::ProgressBar bar;
 
-    Impl() :
+    Impl(const std::string& postfix_text) :
         bar{indicators::option::BarWidth{50},
             indicators::option::Start{"["},
             indicators::option::Fill{"="},
             indicators::option::Lead{">"},
             indicators::option::Remainder{" "},
             indicators::option::End{"]"},
-            indicators::option::PostfixText{"Processing..."},
-            indicators::option::ForegroundColor{indicators::Color::white},
+            indicators::option::PostfixText{postfix_text},
+            indicators::option::ForegroundColor{indicators::Color::green},
             indicators::option::ShowElapsedTime{true},
             indicators::option::ShowRemainingTime{true},
             indicators::option::FontStyles{
                 std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}} {}
 };
 
-ProgressBar::ProgressBar() : m_impl(std::make_unique<Impl>()) {}
+ProgressBar::ProgressBar(const std::string& postfix_text) : m_impl(std::make_unique<Impl>(postfix_text)) {}
 ProgressBar::~ProgressBar() = default;
 
 ProgressBar::ProgressBar(ProgressBar&&) = default;
