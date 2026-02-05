@@ -3,6 +3,7 @@ import os
 import sys
 import subprocess
 import shutil
+import re
 from pathlib import Path
 
 # Add script directory to sys.path
@@ -23,6 +24,50 @@ def log(message, level="info"):
     if sys.platform == "win32" and not os.environ.get("WT_SESSION"):
         pass
     print(f"{colors.get(level, colors['reset'])}{message}{colors['reset']}")
+
+
+def check_test_naming_convention(files):
+    errors = []
+
+    # Regex to match file paths starting with tests/ and filename starting with test_
+    # Note: We use forward slash as git returns paths with forward slashes usually
+    file_name_pattern = re.compile(r"^tests/.*/test_[^/]+\.cpp$")
+    
+    # Regex to match TEST macros with underscores in the second argument (TestName)
+    # TEST(TestSuiteName, TestName) or TEST_F(TestSuiteName, TestName)
+    test_case_pattern = re.compile(r"TEST(?:_F)?\s*\(\s*[a-zA-Z0-9_]+\s*,\s*[a-zA-Z0-9_]+_[a-zA-Z0-9_]+\s*\)")
+
+    for f in files:
+        # Normalize path separators just in case, though git usually uses /
+        f_normalized = f.replace(os.sep, "/")
+        
+        # Check if it is a test file in tests directory
+        if not f_normalized.startswith("tests/") or not f.endswith(".cpp"):
+            continue
+
+        # Skip test_support files if they are named test_support.cpp (exception)
+        if "test_support.cpp" in f:
+            continue
+
+        # 1. Check file name convention
+        if file_name_pattern.search(f_normalized):
+            errors.append(f"File naming violation: {f} (Should not start with 'test_', use '_test.cpp' suffix)")
+
+        # 2. Check test case naming convention
+        if os.path.exists(f):
+            try:
+                with open(f, 'r', encoding='utf-8') as file_content:
+                    content = file_content.read()
+                    matches = test_case_pattern.finditer(content)
+                    for match in matches:
+                        # Double check to ensure it's not a false positive (e.g. commented out)
+                        # For simplicity, we assume code is clean.
+                        errors.append(f"Test case naming violation in {f}: '{match.group(0)}' (TestName should be PascalCase without underscores)")
+            except Exception as e:
+                # If file doesn't exist (deleted) or can't be read, skip
+                pass
+
+    return errors
 
 
 def main():
@@ -123,6 +168,16 @@ def main():
 
     if format_errors:
         log("Code formatting encountered errors.", "error")
+        sys.exit(1)
+
+    # 2.5 Test Naming Convention Check
+    log("Checking test naming conventions...", "info")
+    naming_errors = check_test_naming_convention(staged_files)
+    if naming_errors:
+        log("Found test naming convention violations:", "error")
+        for err in naming_errors:
+            print(f"  - {err}")
+        log("Please fix these violations before committing.", "error")
         sys.exit(1)
 
     # 3. Clang-Tidy (Simplified)

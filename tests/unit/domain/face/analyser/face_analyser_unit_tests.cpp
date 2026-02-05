@@ -148,7 +148,7 @@ TEST_F(FaceAnalyserUnitTest, GetManyFaces_FullPipeline) {
     EXPECT_EQ(face.embedding().size(), 512);
 }
 
-TEST_F(FaceAnalyserUnitTest, GetOneFace_ReturnsHighestScore) {
+TEST_F(FaceAnalyserUnitTest, GetOneFaceReturnsHighestScore) {
     // Setup Mock Detector returning 2 faces
     DetectionResult f1;
     f1.score = 0.6f;

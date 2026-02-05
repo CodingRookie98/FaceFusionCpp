@@ -76,7 +76,7 @@ TEST_F(FfmpegTest, ExtractFrames) {
     fs::remove_all(temp_dir);
 }
 
-TEST_F(FfmpegTest, VideoReader_Metadata) {
+TEST_F(FfmpegTest, VideoReaderMetadata) {
     auto video_path = get_test_data_path("standard_face_test_videos/slideshow_scaled.mp4");
     if (!fs::exists(video_path)) { GTEST_SKIP() << "Test video not found"; }
 
@@ -90,7 +90,7 @@ TEST_F(FfmpegTest, VideoReader_Metadata) {
     EXPECT_GT(reader.get_duration_ms(), 0);
 }
 
-TEST_F(FfmpegTest, VideoReader_SequentialRead) {
+TEST_F(FfmpegTest, VideoReaderSequentialRead) {
     auto video_path = get_test_data_path("standard_face_test_videos/slideshow_scaled.mp4");
     if (!fs::exists(video_path)) { GTEST_SKIP() << "Test video not found"; }
 
@@ -111,7 +111,7 @@ TEST_F(FfmpegTest, VideoReader_SequentialRead) {
     EXPECT_NEAR(count, reader.get_frame_count(), 5);
 }
 
-TEST_F(FfmpegTest, VideoReader_PreciseSeek) {
+TEST_F(FfmpegTest, VideoReaderPreciseSeek) {
     auto video_path = get_test_data_path("standard_face_test_videos/slideshow_scaled.mp4");
     if (!fs::exists(video_path)) { GTEST_SKIP() << "Test video not found"; }
 
@@ -204,7 +204,7 @@ TEST_F(FfmpegTest, VideoWriter_BasicWrite) {
     fs::remove_all(temp_dir);
 }
 
-TEST_F(FfmpegTest, VideoWriter_AdvancedParams) {
+TEST_F(FfmpegTest, VideoWriterAdvancedParams) {
     auto temp_dir = fs::temp_directory_path() / "facefusion_ffmpeg_test_advanced";
     if (fs::exists(temp_dir)) fs::remove_all(temp_dir);
     fs::create_directories(temp_dir);

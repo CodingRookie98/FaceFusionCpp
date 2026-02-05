@@ -93,7 +93,7 @@ TEST_F(VisionTest, ResizeFrame) {
     EXPECT_EQ(dst2.rows, 100);
 }
 
-TEST_F(VisionTest, ReadRealImage_Lenna) {
+TEST_F(VisionTest, ReadRealImageLenna) {
     try {
         auto path = get_test_data_path("standard_face_test_images/lenna.bmp");
         if (fs::exists(path)) {

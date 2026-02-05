@@ -44,7 +44,7 @@ TEST_F(FaceClassifierTest, ClassificationResultDefaultValues) {
     EXPECT_EQ(result.age.max, 100);
 }
 
-TEST(FaceClassifierIntegrationTest, ClassifyDetectedFace_Tiffany) {
+TEST(FaceClassifierIntegrationTest, ClassifyDetectedFaceTiffany) {
     try {
         // 1. Configure ModelRepository
         auto assets_path = get_assets_path();

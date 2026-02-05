@@ -28,7 +28,7 @@ add_facefusion_test(
     component_integration_tests
     MAIN_LIB GTest::gmock_main
     SOURCES
-        domain/face/detector/test_face_detector.cpp
+        domain/face/detector/face_detector_test.cpp
         domain/face/swapper/face_swapper_tests.cpp
         domain/face/enhancer/face_enhancer_tests.cpp
         domain/face/recognizer/face_recognizer_tests.cpp
@@ -48,7 +48,7 @@ add_facefusion_test(
         foundation/infrastructure/network_tests.cpp
         domain/face/face_helper_test.cpp
         domain/face/face_selector_test.cpp
-        domain/face/test_face.cpp
+        domain/face/face_test.cpp
     LINK_LIBRARIES
         domain_face
         domain_face_detector
@@ -75,7 +75,7 @@ add_facefusion_test(
     test_detector_only
     MAIN_LIB GTest::gmock_main
     SOURCES
-        domain/face/detector/test_face_detector.cpp
+        domain/face/detector/face_detector_test.cpp
     LINK_LIBRARIES
         domain_face_detector
         domain_ai
