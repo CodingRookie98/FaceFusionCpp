@@ -224,7 +224,7 @@ private:
             return this->AddProcessorsToPipeline(p, c, ctx);
         };
 
-        config::Result<void, config::ConfigError> process_result;
+        config::Result<void, config::ConfigError> process_result = config::Result<void, config::ConfigError>::ok();
 
         if (is_video) {
             process_result = VideoProcessingHelper::ProcessVideo(target_path, task_config, progress_callback,
