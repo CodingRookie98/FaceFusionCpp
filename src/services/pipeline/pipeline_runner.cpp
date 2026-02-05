@@ -224,14 +224,15 @@ private:
             return this->AddProcessorsToPipeline(p, c, ctx);
         };
 
-        config::Result<void, config::ConfigError> process_result = config::Result<void, config::ConfigError>::ok();
+        config::Result<void, config::ConfigError> process_result =
+            config::Result<void, config::ConfigError>::ok();
 
         if (is_video) {
-            process_result = VideoProcessingHelper::ProcessVideo(target_path, task_config, progress_callback,
-                                                       context, add_processors, m_cancelled);
+            process_result = VideoProcessingHelper::ProcessVideo(
+                target_path, task_config, progress_callback, context, add_processors, m_cancelled);
         } else {
-            process_result = ImageProcessingHelper::ProcessImage(target_path, task_config, progress_callback,
-                                                       context, add_processors);
+            process_result = ImageProcessingHelper::ProcessImage(
+                target_path, task_config, progress_callback, context, add_processors);
         }
 
         if (m_metrics_collector && m_app_config.metrics.enable) {
@@ -239,16 +240,16 @@ private:
             namespace fs = std::filesystem;
             fs::path report_path(m_app_config.metrics.report_path);
             fs::path target(target_path);
-            
+
             // Inject target stem before extension
             std::string stem = report_path.stem().string();
             std::string ext = report_path.extension().string();
             std::string target_stem = target.stem().string();
-            
+
             // If path already contains {timestamp}, we keep it for MetricsCollector to replace
             // We just append target name
             fs::path final_path = report_path.parent_path() / (stem + "_" + target_stem + ext);
-            
+
             m_metrics_collector->export_json(final_path);
         }
 

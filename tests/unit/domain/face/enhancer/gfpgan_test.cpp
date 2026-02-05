@@ -14,9 +14,9 @@ import tests.test_support.foundation.ai.mock_inference_session;
 using namespace domain::face::enhancer;
 using namespace foundation::ai::inference_session;
 using namespace tests::test_support::foundation::ai;
-using ::testing::Return;
 using ::testing::_;
 using ::testing::NiceMock;
+using ::testing::Return;
 
 class GfpGanTest : public ::testing::Test {
 protected:
@@ -46,29 +46,27 @@ TEST_F(GfpGanTest, LoadModelAndEnhanceFace) {
     // 2. Setup Mock for run
     // GfpGan expects 1 input: "input"
     // Output: [1, 3, 512, 512]
-    
+
     int h = 512;
     int w = 512;
     std::vector<int64_t> output_shape = {1, 3, h, w};
     size_t output_size = 1 * 3 * h * w;
-    std::vector<float> output_data(output_size, 0.0f); 
-    
-    // Set center pixel to 1.0f (so result should be 255)
-    int center_idx = (h/2)*w + (w/2);
-    output_data[0 * (h*w) + center_idx] = 1.0f; // R
-    output_data[1 * (h*w) + center_idx] = 1.0f; // G
-    output_data[2 * (h*w) + center_idx] = 1.0f; // B
+    std::vector<float> output_data(output_size, 0.0f);
 
-    EXPECT_CALL(*mock_session, run(_)).WillRepeatedly(
-        [&](const std::vector<Ort::Value>&) {
-             auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-             std::vector<Ort::Value> outputs;
-             outputs.push_back(Ort::Value::CreateTensor<float>(
-                 memory_info, const_cast<float*>(output_data.data()), output_data.size(), 
-                 const_cast<int64_t*>(output_shape.data()), output_shape.size()));
-             return outputs;
-        }
-    );
+    // Set center pixel to 1.0f (so result should be 255)
+    int center_idx = (h / 2) * w + (w / 2);
+    output_data[0 * (h * w) + center_idx] = 1.0f; // R
+    output_data[1 * (h * w) + center_idx] = 1.0f; // G
+    output_data[2 * (h * w) + center_idx] = 1.0f; // B
+
+    EXPECT_CALL(*mock_session, run(_)).WillRepeatedly([&](const std::vector<Ort::Value>&) {
+        auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+        std::vector<Ort::Value> outputs;
+        outputs.push_back(Ort::Value::CreateTensor<float>(
+            memory_info, const_cast<float*>(output_data.data()), output_data.size(),
+            const_cast<int64_t*>(output_shape.data()), output_shape.size()));
+        return outputs;
+    });
 
     // 3. Execute
     cv::Mat crop = cv::Mat::zeros(512, 512, CV_8UC3);
@@ -78,7 +76,7 @@ TEST_F(GfpGanTest, LoadModelAndEnhanceFace) {
     EXPECT_FALSE(result.empty());
     EXPECT_EQ(result.rows, 512);
     EXPECT_EQ(result.cols, 512);
-    
+
     // Check center pixel
     cv::Vec3b pixel = result.at<cv::Vec3b>(256, 256);
     EXPECT_NEAR(pixel[0], 255, 1); // B

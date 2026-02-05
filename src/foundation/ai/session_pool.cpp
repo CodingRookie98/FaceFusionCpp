@@ -85,9 +85,7 @@ void SessionPool::set_config(const PoolConfig& config) {
 
     // Immediate capacity check if max_entries is reduced
     if (m_impl->config.max_entries > 0) {
-        while (m_impl->cache.size() > m_impl->config.max_entries) {
-            m_impl->evict_lru();
-        }
+        while (m_impl->cache.size() > m_impl->config.max_entries) { m_impl->evict_lru(); }
     }
 }
 

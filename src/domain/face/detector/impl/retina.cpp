@@ -97,7 +97,7 @@ DetectionResults Retina::detect(const cv::Mat& visionFrame) {
         logger.warn("[RetinaDetector::detect] No face candidates found.");
     } else {
         logger.debug("[RetinaDetector::detect] Found " + std::to_string(results.size())
-                    + " face candidates.");
+                     + " face candidates.");
     }
 
     return results;

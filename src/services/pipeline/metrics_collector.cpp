@@ -53,8 +53,8 @@ void MetricsCollector::end_step(const std::string& step_name) {
 
     auto it_step = m_step_starts.find(step_name);
     if (it_step == m_step_starts.end()) {
-        Logger::get_instance()->warn(std::format(
-            "[MetricsCollector] end_step called for unknown step: {}", step_name));
+        Logger::get_instance()->warn(
+            std::format("[MetricsCollector] end_step called for unknown step: {}", step_name));
         return;
     }
 
@@ -63,12 +63,13 @@ void MetricsCollector::end_step(const std::string& step_name) {
         std::ostringstream ss;
         ss << tid;
         Logger::get_instance()->warn(std::format(
-            "[MetricsCollector] end_step called without matching start_step for step: {} in thread: {}", 
+            "[MetricsCollector] end_step called without matching start_step for step: {} in thread: {}",
             step_name, ss.str()));
         return;
     }
 
-    double duration_ms = std::chrono::duration<double, std::milli>(end_time - it_tid->second).count();
+    double duration_ms =
+        std::chrono::duration<double, std::milli>(end_time - it_tid->second).count();
 
     m_step_samples[step_name].push_back(duration_ms);
     it_step->second.erase(it_tid);

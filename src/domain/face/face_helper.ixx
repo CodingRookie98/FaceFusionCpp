@@ -25,7 +25,7 @@ enum class WarpTemplateType : std::uint8_t {
     Arcface112V1, ///< Template for ArcFace (112x112, v1)
     Arcface112V2, ///< Template for ArcFace (112x112, v2)
     Arcface128V2, ///< Template for ArcFace (128x128, v2)
-    Ffhq512,       ///< Template for StyleGAN/FFHQ (512x512)
+    Ffhq512,      ///< Template for StyleGAN/FFHQ (512x512)
 };
 
 /**

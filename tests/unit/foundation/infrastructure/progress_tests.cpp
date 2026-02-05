@@ -53,12 +53,12 @@ TEST(ProgressTest, Tick) {
 TEST(ProgressTest, CompletionStatus) {
     ProgressBar pb;
     EXPECT_FALSE(pb.is_completed());
-    
+
     pb.set_progress(100.0f);
-    // Note: set_progress(100.0f) does NOT automatically mark as completed in the wrapper logic 
+    // Note: set_progress(100.0f) does NOT automatically mark as completed in the wrapper logic
     // unless the underlying library does so, but our wrapper exposes mark_as_completed explicitly.
     // Let's verify explicit completion.
-    
+
     pb.mark_as_completed();
     EXPECT_TRUE(pb.is_completed());
 }
@@ -66,7 +66,7 @@ TEST(ProgressTest, CompletionStatus) {
 TEST(ProgressTest, LifecycleStress) {
     EXPECT_NO_THROW({
         ProgressBar pb("Stress Test");
-        for(int i = 0; i < 100; ++i) {
+        for (int i = 0; i < 100; ++i) {
             pb.set_progress(static_cast<float>(i));
             pb.set_postfix_text("Step " + std::to_string(i));
             pb.tick();

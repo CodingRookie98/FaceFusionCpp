@@ -30,8 +30,7 @@ public:
      * @param model_path Path to the model file
      * @param options Inference session options
      */
-    virtual void load_model(const std::string& model_path,
-                            const InferenceOptions& options) = 0;
+    virtual void load_model(const std::string& model_path, const InferenceOptions& options) = 0;
 
     /**
      * @brief Detect faces in the given image.

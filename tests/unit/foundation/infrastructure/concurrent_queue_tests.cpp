@@ -10,8 +10,7 @@ using namespace foundation::infrastructure;
 
 class ConcurrentQueueTest : public ::testing::Test {
 protected:
-    void SetUp() override {
-    }
+    void SetUp() override {}
 };
 
 TEST_F(ConcurrentQueueTest, PushAndPop) {
@@ -89,10 +88,10 @@ TEST_F(ConcurrentQueueTest, BlockingPop) {
 
 TEST_F(ConcurrentQueueTest, BlockingPush) {
     ConcurrentQueue<int> queue(1); // Size 1
-    queue.push(1); // Full now
+    queue.push(1);                 // Full now
 
     std::atomic<bool> pushed{false};
-    
+
     std::thread t([&]() {
         queue.push(2); // Should block
         pushed = true;
@@ -116,9 +115,7 @@ TEST_F(ConcurrentQueueTest, ShutdownWakesPop) {
 
     std::thread t([&]() {
         auto val = queue.pop();
-        if (!val) {
-            finished = true;
-        }
+        if (!val) { finished = true; }
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -148,5 +145,5 @@ TEST_F(ConcurrentQueueTest, ShutdownWakesPush) {
 
     EXPECT_TRUE(finished);
     // Queue should still only have the first item
-    EXPECT_EQ(queue.size(), 1); 
+    EXPECT_EQ(queue.size(), 1);
 }

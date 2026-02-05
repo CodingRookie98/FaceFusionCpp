@@ -19,9 +19,9 @@ export namespace domain::face::classifier {
  * @brief Result of face classification (gender, age, race)
  */
 struct ClassificationResult {
-    domain::face::Race race = domain::face::Race::White;     ///< Predicted race
+    domain::face::Race race = domain::face::Race::White;      ///< Predicted race
     domain::face::Gender gender = domain::face::Gender::Male; ///< Predicted gender
-    domain::face::AgeRange age;  ///< Predicted age range
+    domain::face::AgeRange age;                               ///< Predicted age range
 };
 
 /**

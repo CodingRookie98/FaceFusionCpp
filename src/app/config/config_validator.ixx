@@ -32,7 +32,8 @@ struct ValidationError {
      * @brief Convert to ConfigError for Result types
      */
     [[nodiscard]] ConfigError to_config_error() const {
-        const std::string msg = actual_value.empty() ? expected : actual_value + ", expected " + expected;
+        const std::string msg =
+            actual_value.empty() ? expected : actual_value + ", expected " + expected;
         return {code, msg, yaml_path, line, column};
     }
 };

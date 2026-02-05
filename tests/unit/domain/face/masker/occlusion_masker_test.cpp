@@ -14,9 +14,9 @@ import tests.test_support.foundation.ai.mock_inference_session;
 using namespace domain::face::masker;
 using namespace foundation::ai::inference_session;
 using namespace tests::test_support::foundation::ai;
-using ::testing::Return;
 using ::testing::_;
 using ::testing::NiceMock;
+using ::testing::Return;
 
 class OcclusionMaskerTest : public ::testing::Test {
 protected:
@@ -34,11 +34,9 @@ TEST_F(OcclusionMaskerTest, LoadModelAndCreateMask) {
 
     // 1. Setup Mock for load_model (called inside create_occlusion_masker)
     std::vector<std::vector<int64_t>> input_dims = {{1, 256, 256, 3}};
-    EXPECT_CALL(*mock_session, get_input_node_dims())
-        .WillRepeatedly(Return(input_dims));
-    
-    EXPECT_CALL(*mock_session, is_model_loaded())
-        .WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_session, get_input_node_dims()).WillRepeatedly(Return(input_dims));
+
+    EXPECT_CALL(*mock_session, is_model_loaded()).WillRepeatedly(Return(true));
 
     Options options;
     auto masker = create_occlusion_masker(model_path, options);
@@ -56,11 +54,11 @@ TEST_F(OcclusionMaskerTest, LoadModelAndCreateMask) {
     // Construct Ort::Value
     auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
     std::vector<Ort::Value> output_tensors;
-    output_tensors.push_back(Ort::Value::CreateTensor<float>(
-        memory_info, output_data.data(), output_data.size(), output_shape.data(), output_shape.size()));
+    output_tensors.push_back(
+        Ort::Value::CreateTensor<float>(memory_info, output_data.data(), output_data.size(),
+                                        output_shape.data(), output_shape.size()));
 
-    EXPECT_CALL(*mock_session, run(_))
-        .WillOnce(Return(std::move(output_tensors)));
+    EXPECT_CALL(*mock_session, run(_)).WillOnce(Return(std::move(output_tensors)));
 
     // 3. Execute
     cv::Mat mask = masker->create_occlusion_mask(frame);

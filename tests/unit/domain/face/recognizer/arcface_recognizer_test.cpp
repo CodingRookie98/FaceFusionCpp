@@ -14,9 +14,9 @@ import tests.test_support.foundation.ai.mock_inference_session;
 using namespace domain::face::recognizer;
 using namespace foundation::ai::inference_session;
 using namespace tests::test_support::foundation::ai;
-using ::testing::Return;
 using ::testing::_;
 using ::testing::NiceMock;
+using ::testing::Return;
 
 class ArcFaceRecognizerTest : public ::testing::Test {
 protected:
@@ -36,11 +36,9 @@ TEST_F(ArcFaceRecognizerTest, LoadModelAndRecognizeFace) {
 
     // 1. Setup Mock for load_model
     std::vector<std::vector<int64_t>> input_dims = {{1, 3, 112, 112}};
-    EXPECT_CALL(*mock_session, get_input_node_dims())
-        .WillRepeatedly(Return(input_dims));
-    
-    EXPECT_CALL(*mock_session, is_model_loaded())
-        .WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_session, get_input_node_dims()).WillRepeatedly(Return(input_dims));
+
+    EXPECT_CALL(*mock_session, is_model_loaded()).WillRepeatedly(Return(true));
 
     Options options;
     recognizer->load_model(model_path, options);
@@ -49,9 +47,7 @@ TEST_F(ArcFaceRecognizerTest, LoadModelAndRecognizeFace) {
     // Create dummy input frame
     cv::Mat frame = cv::Mat::zeros(512, 512, CV_8UC3);
     // Create dummy 5 landmarks
-    std::vector<cv::Point2f> kps = {
-        {100, 100}, {200, 100}, {150, 150}, {120, 200}, {180, 200}
-    };
+    std::vector<cv::Point2f> kps = {{100, 100}, {200, 100}, {150, 150}, {120, 200}, {180, 200}};
 
     // Prepare Output Tensor
     // Shape: [1, 512]
@@ -63,11 +59,11 @@ TEST_F(ArcFaceRecognizerTest, LoadModelAndRecognizeFace) {
     // Construct Ort::Value
     auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
     std::vector<Ort::Value> output_tensors;
-    output_tensors.push_back(Ort::Value::CreateTensor<float>(
-        memory_info, output_data.data(), output_data.size(), output_shape.data(), output_shape.size()));
+    output_tensors.push_back(
+        Ort::Value::CreateTensor<float>(memory_info, output_data.data(), output_data.size(),
+                                        output_shape.data(), output_shape.size()));
 
-    EXPECT_CALL(*mock_session, run(_))
-        .WillOnce(Return(std::move(output_tensors)));
+    EXPECT_CALL(*mock_session, run(_)).WillOnce(Return(std::move(output_tensors)));
 
     // 3. Execute
     auto [embedding, normed_embedding] = recognizer->recognize(frame, kps);
@@ -77,12 +73,12 @@ TEST_F(ArcFaceRecognizerTest, LoadModelAndRecognizeFace) {
     ASSERT_EQ(normed_embedding.size(), 512);
 
     // Verify normalization
-    // 512 values of 0.1f. 
+    // 512 values of 0.1f.
     // Norm L2 = sqrt(512 * 0.1^2) = sqrt(5.12) = 2.2627
     // Normed value = 0.1 / 2.2627 = 0.04419
     float expected_norm_val = 0.1f / std::sqrt(512.0f * 0.1f * 0.1f);
     EXPECT_NEAR(normed_embedding[0], expected_norm_val, 1e-4);
-    
+
     // Check L2 norm of result is 1.0
     double norm = cv::norm(normed_embedding, cv::NORM_L2);
     EXPECT_NEAR(norm, 1.0, 1e-4);

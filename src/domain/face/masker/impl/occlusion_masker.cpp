@@ -93,8 +93,9 @@ namespace domain::face::masker {
 
 void OcclusionMasker::load_model(const std::string& model_path,
                                  const foundation::ai::inference_session::Options& options) {
-    m_session = foundation::ai::inference_session::InferenceSessionRegistry::get_instance()
-                    .get_session(model_path, options);
+    m_session =
+        foundation::ai::inference_session::InferenceSessionRegistry::get_instance().get_session(
+            model_path, options);
 }
 
 cv::Mat OcclusionMasker::create_occlusion_mask(const cv::Mat& crop_vision_frame) {
@@ -103,7 +104,8 @@ cv::Mat OcclusionMasker::create_occlusion_mask(const cv::Mat& crop_vision_frame)
     }
 
     // 1. Prepare Input
-    auto [input_data, input_shape] = prepare_input(crop_vision_frame, m_session->get_input_node_dims());
+    auto [input_data, input_shape] =
+        prepare_input(crop_vision_frame, m_session->get_input_node_dims());
     if (input_data.empty()) { return cv::Mat::zeros(crop_vision_frame.size(), CV_8UC1); }
 
     auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);

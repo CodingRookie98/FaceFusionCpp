@@ -5,6 +5,8 @@ add_facefusion_test(
         app/pipeline_runner_video_test.cpp
         app/pipeline_runner_image_test.cpp
         app/pipeline_runner_metrics_test.cpp
+        app/e2e_image_swap_test.cpp
+        app/e2e_video_swap_test.cpp
     LINK_LIBRARIES
         domain_pipeline
         services_pipeline

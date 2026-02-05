@@ -48,7 +48,7 @@ TEST_F(SessionPoolTest, GetOrCreateReturnsCachedSession) {
 
     auto session1 = pool.get_or_create("key1", factory);
     auto session2 = pool.get_or_create("key1", factory);
-    
+
     ASSERT_EQ(session1, session2);
     EXPECT_EQ(factory_calls, 1);
 }
@@ -70,7 +70,7 @@ TEST_F(SessionPoolTest, LRUEviction) {
 
     // Add key3, should evict key2
     pool.get_or_create("key3", factory);
-    
+
     EXPECT_EQ(pool.size(), 2);
     auto stats = pool.get_stats();
     EXPECT_EQ(stats.evictions, 1);
@@ -78,12 +78,18 @@ TEST_F(SessionPoolTest, LRUEviction) {
     // Verify key1 is still there (factory NOT called)
     // We check key1 FIRST to avoid evicting it if we were to insert key2 first
     int key1_calls = 0;
-    pool.get_or_create("key1", [&](){ key1_calls++; return std::make_shared<MockInferenceSession>(); });
+    pool.get_or_create("key1", [&]() {
+        key1_calls++;
+        return std::make_shared<MockInferenceSession>();
+    });
     EXPECT_EQ(key1_calls, 0);
-    
+
     // Verify key2 is gone (factory called again)
     int key2_calls = 0;
-    pool.get_or_create("key2", [&](){ key2_calls++; return std::make_shared<MockInferenceSession>(); });
+    pool.get_or_create("key2", [&]() {
+        key2_calls++;
+        return std::make_shared<MockInferenceSession>();
+    });
     EXPECT_EQ(key2_calls, 1);
 }
 
@@ -104,7 +110,7 @@ TEST_F(SessionPoolTest, TTLExpiration) {
     size_t removed = pool.cleanup_expired();
     EXPECT_EQ(removed, 1);
     EXPECT_EQ(pool.size(), 0);
-    
+
     auto stats = pool.get_stats();
     EXPECT_EQ(stats.expirations, 1);
 }
@@ -137,16 +143,16 @@ TEST_F(SessionPoolTest, DisableCaching) {
     PoolConfig config;
     config.enable = false;
     SessionPool pool(config);
-    
+
     int factory_calls = 0;
     auto factory = [&]() {
         factory_calls++;
         return std::make_shared<MockInferenceSession>();
     };
-    
+
     pool.get_or_create("key1", factory);
     pool.get_or_create("key1", factory);
-    
+
     EXPECT_EQ(factory_calls, 2); // Should be called every time
     EXPECT_EQ(pool.size(), 0);
 }

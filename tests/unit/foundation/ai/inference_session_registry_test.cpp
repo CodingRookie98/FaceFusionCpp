@@ -18,9 +18,7 @@ protected:
     }
 
     void TearDown() override {
-        if (fs::exists(temp_dir)) {
-            fs::remove_all(temp_dir);
-        }
+        if (fs::exists(temp_dir)) { fs::remove_all(temp_dir); }
         // Clear registry to avoid side effects
         InferenceSessionRegistry::get_instance().clear();
     }
@@ -41,11 +39,11 @@ TEST_F(InferenceSessionRegistryTest, GetSessionThrowsIfModelNotFound) {
 TEST_F(InferenceSessionRegistryTest, GetSessionThrowsIfModelInvalid) {
     auto& registry = InferenceSessionRegistry::get_instance();
     Options opts;
-    
+
     // Create an empty file (invalid ONNX)
     std::string model_path = (fs::path(temp_dir) / "invalid.onnx").string();
     std::ofstream(model_path).close();
-    
+
     // ONNX Runtime should throw when trying to load an empty/invalid file
     // Note: The specific exception type might depend on ONNX Runtime wrapper,
     // but code says it throws std::exception derived (Ort::Exception) or runtime_error.

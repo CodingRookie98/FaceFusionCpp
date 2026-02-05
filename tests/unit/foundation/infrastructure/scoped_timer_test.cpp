@@ -34,7 +34,7 @@ TEST(ScopedTimerTest, ElapsedTimeIncreases) {
     EXPECT_GT(end, start);
     // Allow for some system jitter, but generally should be >= 10ms
     // We use a loose check to avoid flaky tests on busy systems
-    EXPECT_GE(end, std::chrono::milliseconds(5)); 
+    EXPECT_GE(end, std::chrono::milliseconds(5));
 }
 
 TEST(ScopedTimerTest, ElapsedSeconds) {

@@ -14,22 +14,22 @@ import tests.test_support.foundation.ai.mock_inference_session;
 using namespace domain::face::detector;
 using namespace foundation::ai::inference_session;
 using namespace tests::test_support::foundation::ai;
-using ::testing::Return;
 using ::testing::_;
 using ::testing::NiceMock;
+using ::testing::Return;
 
 class YoloDetectorTest : public ::testing::Test {
 protected:
     void SetUp() override {
         // Clear registry
         InferenceSessionRegistry::get_instance().clear();
-        
+
         mock_session = std::make_shared<NiceMock<MockInferenceSession>>();
-        
+
         // Register mock session for the expected model path
-        // Note: The actual path used in production might differ, but for unit tests 
+        // Note: The actual path used in production might differ, but for unit tests
         // we can assume the detector will ask for a specific name or we mock the registry
-        // to return this session regardless of path if possible, but the registry 
+        // to return this session regardless of path if possible, but the registry
         // is key-based.
         // We assume the test will pass a specific path to load_model.
     }
@@ -46,11 +46,9 @@ TEST_F(YoloDetectorTest, LoadModelAndDetectFace) {
     // 1. Setup Mock for load_model
     // Yolo calls get_input_node_dims to determine input size
     std::vector<std::vector<int64_t>> input_dims = {{1, 3, 640, 640}};
-    EXPECT_CALL(*mock_session, get_input_node_dims())
-        .WillRepeatedly(Return(input_dims));
-    
-    EXPECT_CALL(*mock_session, is_model_loaded())
-        .WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_session, get_input_node_dims()).WillRepeatedly(Return(input_dims));
+
+    EXPECT_CALL(*mock_session, is_model_loaded()).WillRepeatedly(Return(true));
 
     InferenceOptions options;
     detector->load_model(model_path, options);
@@ -72,10 +70,10 @@ TEST_F(YoloDetectorTest, LoadModelAndDetectFace) {
     // cx, cy, w, h (normalized to input size 640x640?)
     // Yolo logic:
     // xmin = (cx - 0.5*w) * ratio
-    // The model output is likely in absolute coordinates of the input tensor (640x640) 
+    // The model output is likely in absolute coordinates of the input tensor (640x640)
     // or relative? Usually YOLOv8 exports are absolute.
     // Let's assume absolute 640x640 based on typical ONNX exports.
-    
+
     // Face at center: 320, 320, size 100, 100
     // Index mapping: channel * num_boxes + box_idx
     output_data[0 * num_boxes + box_idx] = 320.0f; // cx
@@ -93,11 +91,11 @@ TEST_F(YoloDetectorTest, LoadModelAndDetectFace) {
     // Construct Ort::Value
     auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
     std::vector<Ort::Value> output_tensors;
-    output_tensors.push_back(Ort::Value::CreateTensor<float>(
-        memory_info, output_data.data(), output_data.size(), output_shape.data(), output_shape.size()));
+    output_tensors.push_back(
+        Ort::Value::CreateTensor<float>(memory_info, output_data.data(), output_data.size(),
+                                        output_shape.data(), output_shape.size()));
 
-    EXPECT_CALL(*mock_session, run(_))
-        .WillOnce(Return(std::move(output_tensors)));
+    EXPECT_CALL(*mock_session, run(_)).WillOnce(Return(std::move(output_tensors)));
 
     // 3. Execute
     auto results = detector->detect(frame);
@@ -106,9 +104,9 @@ TEST_F(YoloDetectorTest, LoadModelAndDetectFace) {
     ASSERT_EQ(results.size(), 1);
     auto& face = results[0];
     EXPECT_FLOAT_EQ(face.score, 0.9f);
-    
+
     // Ratio is 1280/640 = 2.0
-    // Expected Box: 
+    // Expected Box:
     // xmin = (320 - 50) * 2 = 540
     // ymin = (320 - 50) * 2 = 540
     // xmax = (320 + 50) * 2 = 740

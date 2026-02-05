@@ -20,7 +20,8 @@ Face create_face(float x, float y, float w, float h, float score = 0.5f) {
     return face;
 }
 
-Face create_face_with_attributes(Gender gender, Race race, std::uint16_t age_min, std::uint16_t age_max) {
+Face create_face_with_attributes(Gender gender, Race race, std::uint16_t age_min,
+                                 std::uint16_t age_max) {
     Face face;
     face.set_gender(gender);
     face.set_race(race);
@@ -66,8 +67,8 @@ TEST_F(FaceSelectorTest, SortByLeftRight) {
 
 TEST_F(FaceSelectorTest, SortByRightLeft) {
     faces = {
-        create_face(0, 0, 50, 50),   // Left
-        create_face(100, 0, 50, 50)  // Right
+        create_face(0, 0, 50, 50),  // Left
+        create_face(100, 0, 50, 50) // Right
     };
     Options opts;
     opts.order = Order::RightLeft;
@@ -96,8 +97,8 @@ TEST_F(FaceSelectorTest, SortByTopBottom) {
 
 TEST_F(FaceSelectorTest, SortByBottomTop) {
     faces = {
-        create_face(0, 0, 50, 50),    // Top
-        create_face(0, 100, 50, 50)   // Bottom
+        create_face(0, 0, 50, 50),  // Top
+        create_face(0, 100, 50, 50) // Bottom
     };
     Options opts;
     opts.order = Order::BottomTop;
@@ -126,8 +127,8 @@ TEST_F(FaceSelectorTest, SortBySmallLarge) {
 
 TEST_F(FaceSelectorTest, SortByLargeSmall) {
     faces = {
-        create_face(0, 0, 10, 10),    // Small
-        create_face(0, 0, 100, 100)   // Large
+        create_face(0, 0, 10, 10),  // Small
+        create_face(0, 0, 100, 100) // Large
     };
     Options opts;
     opts.order = Order::LargeSmall;
@@ -172,10 +173,8 @@ TEST_F(FaceSelectorTest, SortByWorstBest) {
 // --- Filtering Tests ---
 
 TEST_F(FaceSelectorTest, FilterByGender) {
-    faces = {
-        create_face_with_attributes(Gender::Male, Race::White, 25, 30),
-        create_face_with_attributes(Gender::Female, Race::White, 25, 30)
-    };
+    faces = {create_face_with_attributes(Gender::Male, Race::White, 25, 30),
+             create_face_with_attributes(Gender::Female, Race::White, 25, 30)};
     Options opts;
     opts.genders = {Gender::Female};
 
@@ -186,11 +185,9 @@ TEST_F(FaceSelectorTest, FilterByGender) {
 }
 
 TEST_F(FaceSelectorTest, FilterByRace) {
-    faces = {
-        create_face_with_attributes(Gender::Male, Race::White, 25, 30),
-        create_face_with_attributes(Gender::Male, Race::Black, 25, 30),
-        create_face_with_attributes(Gender::Male, Race::Asian, 25, 30)
-    };
+    faces = {create_face_with_attributes(Gender::Male, Race::White, 25, 30),
+             create_face_with_attributes(Gender::Male, Race::Black, 25, 30),
+             create_face_with_attributes(Gender::Male, Race::Asian, 25, 30)};
     Options opts;
     opts.races = {Race::Asian, Race::Black};
 
@@ -227,10 +224,7 @@ TEST_F(FaceSelectorTest, FilterBySimilarity) {
     std::vector<float> emb2 = {0.0f, 1.0f};
     std::vector<float> emb3 = {1.0f, 0.0f}; // Match emb1
 
-    faces = {
-        create_face_with_embedding(emb2),
-        create_face_with_embedding(emb3)
-    };
+    faces = {create_face_with_embedding(emb2), create_face_with_embedding(emb3)};
 
     Options opts;
     opts.mode = SelectorMode::Reference;
@@ -245,14 +239,15 @@ TEST_F(FaceSelectorTest, FilterBySimilarity) {
 }
 
 TEST_F(FaceSelectorTest, FilterBySimilarityNoReference) {
-    faces = { create_face_with_embedding({1.0f, 0.0f}) };
+    faces = {create_face_with_embedding({1.0f, 0.0f})};
     Options opts;
     opts.mode = SelectorMode::Reference;
     opts.reference_face = std::nullopt; // No reference
 
     auto result = select_faces(faces, opts);
 
-    // Should return all faces if no reference is provided (based on logic in cpp: "if (!opts.reference_face.has_value() ... return faces;")
+    // Should return all faces if no reference is provided (based on logic in cpp: "if
+    // (!opts.reference_face.has_value() ... return faces;")
     EXPECT_EQ(result.size(), 1);
 }
 
@@ -274,10 +269,7 @@ TEST_F(FaceSelectorTest, ModeOneReturnsFirstAfterSort) {
 }
 
 TEST_F(FaceSelectorTest, ModeManyReturnsAllAfterFilter) {
-    faces = {
-        create_face(100, 0, 50, 50),
-        create_face(0, 0, 50, 50)
-    };
+    faces = {create_face(100, 0, 50, 50), create_face(0, 0, 50, 50)};
     Options opts;
     opts.mode = SelectorMode::Many;
 

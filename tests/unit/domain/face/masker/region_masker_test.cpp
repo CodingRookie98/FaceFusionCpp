@@ -15,9 +15,9 @@ import tests.test_support.foundation.ai.mock_inference_session;
 using namespace domain::face::masker;
 using namespace foundation::ai::inference_session;
 using namespace tests::test_support::foundation::ai;
-using ::testing::Return;
 using ::testing::_;
 using ::testing::NiceMock;
+using ::testing::Return;
 
 class RegionMaskerTest : public ::testing::Test {
 protected:
@@ -54,32 +54,30 @@ TEST_F(RegionMaskerTest, LoadModelAndCreateMask) {
 
     // Set a region in the center to be Skin (Class 1)
     // We want the result at (256, 256) to be Skin.
-    // The masker flips the output horizontally. 
+    // The masker flips the output horizontally.
     // Flip(x) = Width - 1 - x = 511 - x.
     // If we want result x=256, we need source x such that 511 - x = 256 => x = 255.
     int center_y = 256;
-    int center_x = 255; 
+    int center_x = 255;
     int center_idx = center_y * w + center_x;
-    
+
     // For flat buffer: [c * pixels + pixel_idx]
     // Class 1 (Skin)
-    output_data[1 * (h*w) + center_idx] = 10.0f;
+    output_data[1 * (h * w) + center_idx] = 10.0f;
     // Class 0 (Back) stays 0.0f
-    
+
     // Set a region at top-left to be Background (Class 0)
     int tl_idx = 0;
-    output_data[0 * (h*w) + tl_idx] = 10.0f;
+    output_data[0 * (h * w) + tl_idx] = 10.0f;
 
-    EXPECT_CALL(*mock_session, run(_)).WillRepeatedly(
-        [=](const std::vector<Ort::Value>&) {
-             auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-             std::vector<Ort::Value> outputs;
-             outputs.push_back(Ort::Value::CreateTensor<float>(
-                 memory_info, const_cast<float*>(output_data.data()), output_data.size(), 
-                 const_cast<int64_t*>(output_shape.data()), output_shape.size()));
-             return outputs;
-        }
-    );
+    EXPECT_CALL(*mock_session, run(_)).WillRepeatedly([=](const std::vector<Ort::Value>&) {
+        auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+        std::vector<Ort::Value> outputs;
+        outputs.push_back(Ort::Value::CreateTensor<float>(
+            memory_info, const_cast<float*>(output_data.data()), output_data.size(),
+            const_cast<int64_t*>(output_shape.data()), output_shape.size()));
+        return outputs;
+    });
 
     // 3. Execute
     cv::Mat frame = cv::Mat::zeros(512, 512, CV_8UC3);
@@ -91,17 +89,17 @@ TEST_F(RegionMaskerTest, LoadModelAndCreateMask) {
     EXPECT_FALSE(mask.empty());
     EXPECT_EQ(mask.rows, 512);
     EXPECT_EQ(mask.cols, 512);
-    
+
     // Center should be 255 (Skin)
     // Top-Left should be 0 (Background)
-    // Note: The logic flips the mask vertically at the end! 
+    // Note: The logic flips the mask vertically at the end!
     // cv::flip(mask, mask, 1); // 1 is horizontal flip?
     // Let's check impl.
     // impl_region.cpp: cv::flip(mask, mask, 1);
     // 1 means flip around y-axis (horizontal mirror).
     // Center stays center.
     // Top-Left (0,0) becomes Top-Right (0, 511).
-    
+
     EXPECT_EQ(mask.at<uint8_t>(256, 256), 255);
     EXPECT_EQ(mask.at<uint8_t>(0, 511), 0); // Flipped TL
 }

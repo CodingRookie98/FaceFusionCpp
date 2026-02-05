@@ -29,7 +29,8 @@ struct ProgressBar::Impl {
                 std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}} {}
 };
 
-ProgressBar::ProgressBar(const std::string& postfix_text) : m_impl(std::make_unique<Impl>(postfix_text)) {}
+ProgressBar::ProgressBar(const std::string& postfix_text) :
+    m_impl(std::make_unique<Impl>(postfix_text)) {}
 ProgressBar::~ProgressBar() = default;
 
 ProgressBar::ProgressBar(ProgressBar&&) = default;

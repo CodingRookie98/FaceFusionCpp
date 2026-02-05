@@ -68,7 +68,8 @@ std::shared_ptr<InferenceSession> InferenceSessionRegistry::get_session(
     });
 }
 
-void InferenceSessionRegistry::preload_session(const std::string& model_path, const Options& options,
+void InferenceSessionRegistry::preload_session(const std::string& model_path,
+                                               const Options& options,
                                                std::shared_ptr<InferenceSession> session) {
     std::string key = generate_key(model_path, options);
     m_pool.evict(key);

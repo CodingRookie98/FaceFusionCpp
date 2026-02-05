@@ -26,13 +26,13 @@ protected:
         // Setup a valid task config as a baseline
         valid_task_config.task_info.id = "test_task_01";
         valid_task_config.task_info.description = "Test Description";
-        
+
         // Use current file as a valid existing path for source/target
         std::string current_file = __FILE__;
-        
+
         valid_task_config.io.source_paths.push_back(current_file);
         valid_task_config.io.target_paths.push_back(current_file);
-        
+
         valid_task_config.io.output.path = "/tmp"; // Assuming /tmp exists on Linux
         valid_task_config.io.output.image_format = "jpg";
         valid_task_config.io.output.video_quality = 18;
@@ -57,7 +57,8 @@ TEST_F(ConfigValidatorTest, ValidateValidConfigReturnsEmptyErrors) {
     auto errors = validator.validate(valid_task_config);
     if (!errors.empty()) {
         for (const auto& err : errors) {
-            std::cout << "Unexpected error: " << err.yaml_path << " - " << err.expected << std::endl;
+            std::cout << "Unexpected error: " << err.yaml_path << " - " << err.expected
+                      << std::endl;
         }
     }
     EXPECT_TRUE(errors.empty());
@@ -91,7 +92,8 @@ TEST_F(ConfigValidatorTest, ValidateNonExistentSourcePathReturnsError) {
     // Error could be in any order if multiple checks fail, but here we expect at least one
     bool found = false;
     for (const auto& err : errors) {
-        if (err.yaml_path.find("io.source_paths") != std::string::npos && err.code == ErrorCode::E206InvalidPath) {
+        if (err.yaml_path.find("io.source_paths") != std::string::npos
+            && err.code == ErrorCode::E206InvalidPath) {
             found = true;
             break;
         }
@@ -138,7 +140,7 @@ TEST_F(ConfigValidatorTest, ValidateReferenceModeMissingPathReturnsError) {
     auto& params = std::get<FaceSwapperParams>(valid_task_config.pipeline[0].params);
     params.face_selector_mode = FaceSelectorMode::Reference;
     params.reference_face_path = std::nullopt;
-    
+
     auto errors = validator.validate(valid_task_config);
     ASSERT_FALSE(errors.empty());
     EXPECT_EQ(errors[0].yaml_path, "pipeline[0].params.reference_face_path");

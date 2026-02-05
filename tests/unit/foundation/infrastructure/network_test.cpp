@@ -9,16 +9,16 @@ using namespace foundation::infrastructure::network;
 TEST(NetworkTest, GetFileNameFromUrl) {
     EXPECT_EQ(get_file_name_from_url("http://example.com/file.txt"), "file.txt");
     EXPECT_EQ(get_file_name_from_url("http://example.com/path/to/image.png"), "image.png");
-    
+
     // According to implementation, paths without '/' return default name
     EXPECT_EQ(get_file_name_from_url("file.zip"), "downloaded_file");
-    
+
     // Query string handling
     EXPECT_EQ(get_file_name_from_url("http://example.com/file.txt?query=1"), "file.txt");
-    
+
     // Trailing slash returns default name
     EXPECT_EQ(get_file_name_from_url("http://example.com/"), "downloaded_file");
-    
+
     // Empty throws
     EXPECT_THROW(get_file_name_from_url(""), std::invalid_argument);
 }

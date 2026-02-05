@@ -36,7 +36,7 @@ private:
 
     // Helper to orchestrate the swap for a single face
     [[nodiscard]] cv::Mat apply_swap(const domain::face::types::Embedding& source_embedding,
-                       const cv::Mat& cropped_target_frame) const;
+                                     const cv::Mat& cropped_target_frame) const;
 
 private:
     cv::Size m_size{0, 0};

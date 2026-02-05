@@ -151,8 +151,9 @@ int App::run(int argc, char** argv) {
             if (std::filesystem::exists(info_path)) {
                 model_repo->set_model_info_file_path(info_path.string());
             } else {
-                 foundation::infrastructure::logger::Logger::get_instance()->warn(
-                    "models_info.json not found in " + models_path.parent_path().string() + " or " + models_path.string());
+                foundation::infrastructure::logger::Logger::get_instance()->warn(
+                    "models_info.json not found in " + models_path.parent_path().string() + " or "
+                    + models_path.string());
             }
         }
 
@@ -173,19 +174,19 @@ int App::run(int argc, char** argv) {
         } else if (!config_path.empty()) {
             exit_code = run_pipeline(config_path, *app_config);
         } else if (!source_paths.empty() && !target_paths.empty()) {
-            exit_code =
-                run_quick_mode(source_paths, target_paths, output_path, processors_str, *app_config);
+            exit_code = run_quick_mode(source_paths, target_paths, output_path, processors_str,
+                                       *app_config);
         } else {
             std::cout << app.help() << '\n';
             exit_code = 0;
         }
-    }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // 清理资源 (重要：避免 CUDA 驱动提前关闭导致的析构崩溃)
-    // ─────────────────────────────────────────────────────────────────────────
-    domain::face::FaceModelRegistry::get_instance().clear();
-    foundation::ai::inference_session::InferenceSessionRegistry::get_instance().clear();
+        // ─────────────────────────────────────────────────────────────────────────
+        // 清理资源 (重要：避免 CUDA 驱动提前关闭导致的析构崩溃)
+        // ─────────────────────────────────────────────────────────────────────────
+        domain::face::FaceModelRegistry::get_instance().clear();
+        foundation::ai::inference_session::InferenceSessionRegistry::get_instance().clear();
+    }
 
     return exit_code;
 }

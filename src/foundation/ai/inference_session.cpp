@@ -107,13 +107,16 @@ struct InferenceSession::Impl {
 
     ~Impl() {
         // Explicit destruction order to avoid TensorRT SEH exceptions
+        // Reset session FIRST to ensure all provider resources are released
+        // before other members (like logger or static env)
+        m_ort_session.reset();
+        
         m_input_names.clear();
         m_output_names.clear();
         m_input_names_ptrs.clear();
         m_output_names_ptrs.clear();
         m_input_node_dims.clear();
         m_output_node_dims.clear();
-        m_ort_session.reset();
         m_cuda_provider_options.reset();
         m_memory_info.reset();
     }
@@ -197,8 +200,8 @@ struct InferenceSession::Impl {
         std::string enable_tensorrt_cache;
         std::string enable_tensorrt_embed_engine;
         std::string tensorrt_embed_engine_path;
-        std::string base_path = m_options.engine_cache_path.empty() ? "./trt_engine_cache"
-                                                                    : m_options.engine_cache_path;
+        std::string base_path = m_options.engine_cache_path.empty() ? "./trt_engine_cache" :
+                                                                      m_options.engine_cache_path;
 
         // Ensure base path exists
         try {
@@ -206,8 +209,8 @@ struct InferenceSession::Impl {
                 std::filesystem::create_directories(base_path);
             }
         } catch (const std::exception& e) {
-            m_logger->warn(std::format("Failed to create engine cache directory [{}]: {}", base_path,
-                                       e.what()));
+            m_logger->warn(std::format("Failed to create engine cache directory [{}]: {}",
+                                       base_path, e.what()));
         }
 
         if (m_options.enable_tensorrt_embed_engine) {
@@ -325,8 +328,7 @@ struct InferenceSession::Impl {
         Ort::AllocatorWithDefaultOptions allocator;
 
         for (size_t i = 0; i < num_input_nodes; i++) {
-            m_input_names_ptrs.push_back(
-                m_ort_session->GetInputNameAllocated(i, allocator));
+            m_input_names_ptrs.push_back(m_ort_session->GetInputNameAllocated(i, allocator));
             m_input_names.push_back(m_input_names_ptrs[i].get());
 
             auto type_info = m_ort_session->GetInputTypeInfo(i);
@@ -335,8 +337,7 @@ struct InferenceSession::Impl {
         }
 
         for (size_t i = 0; i < num_output_nodes; i++) {
-            m_output_names_ptrs.push_back(
-                m_ort_session->GetOutputNameAllocated(i, allocator));
+            m_output_names_ptrs.push_back(m_ort_session->GetOutputNameAllocated(i, allocator));
             m_output_names.push_back(m_output_names_ptrs[i].get());
 
             auto type_info = m_ort_session->GetOutputTypeInfo(i);

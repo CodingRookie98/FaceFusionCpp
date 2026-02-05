@@ -12,7 +12,9 @@ export namespace tests::test_support::foundation::ai {
 
 class MockInferenceSession : public ::foundation::ai::inference_session::InferenceSession {
 public:
-    MOCK_METHOD(void, load_model, (const std::string&, const ::foundation::ai::inference_session::Options&), (override));
+    MOCK_METHOD(void, load_model,
+                (const std::string&, const ::foundation::ai::inference_session::Options&),
+                (override));
     MOCK_METHOD(bool, is_model_loaded, (), (const, override));
     MOCK_METHOD(std::string, get_loaded_model_path, (), (const, override));
     MOCK_METHOD(std::vector<Ort::Value>, run, (const std::vector<Ort::Value>&), (override));
@@ -22,4 +24,4 @@ public:
     MOCK_METHOD(std::vector<std::string>, get_output_names, (), (const, override));
 };
 
-}
+} // namespace tests::test_support::foundation::ai
