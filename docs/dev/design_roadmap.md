@@ -3,8 +3,8 @@
 > **标准参考 & 跨文档链接**:
 > *   架构设计文档: [应用层架构设计说明书](./design.md)
 > *   质量与评估标准: [C++代码质量与评估标准指南](./C++_quality_standard.md)
-> *   最后更新: 2026-02-04
-> *   更新内容: engine_cache 配置集成完成；M3 里程碑完成；阶段二完成
+> *   最后更新: 2026-02-05
+> *   更新内容: 更新 10.4 验收标准汇总至 RTX 4060 8GB 基准；扩展 10.5 测试配置模板（新增低显存/高端配置）
 
 ## 0. 计划概述
 
@@ -553,35 +553,48 @@ graph TD
 
 ### 10.4 验收标准汇总
 
-> **硬件基准**: 以下标准基于 GTX 1650 (4GB VRAM) 测试环境
+> **当前测试环境 (Reference Baseline)**:
+> - **CPU**: Intel Core i9-14900HX (16核32线程)
+> - **内存**: 24GB DDR
+> - **GPU**: NVIDIA GeForce RTX 4060 Laptop GPU (8GB VRAM, 计算能力 8.9)
+> - **CUDA 驱动**: 591.86
+> - **操作系统**: Linux (WSL2 / Native)
 >
 > **⚠️ 构建模式要求**:
 > - **性能测试 (Task 10.1/10.2/10.4)**: **必须使用 Release 模式**，Debug 模式数据无参考价值
 > - **功能正确性测试**: Debug 或 Release 均可
 > - **内存泄漏检测 (Task 10.6)**: 使用 Debug 模式 + ASan，或 Release + Valgrind
 
+**性能验收基准 (RTX 4060 8GB)**:
+
 | 测试类别 | 测试项 | 阈值 (Release) | 说明 |
 | :------- | :----- | :------------- | :--- |
-| **图片 - 512px** | 处理耗时 | < 3s | 基线小图 |
-| **图片 - 720p** | 处理耗时 | < 5s | 标准分辨率 |
-| **图片 - 2K** | 处理耗时 | < 10s | 压力测试 |
-| **视频 - 720p** | 处理 FPS | ≥ 5 FPS | 491帧测试视频 |
-| **视频 - 720p** | 总耗时 | < 120s | 允许 20% 余量 |
-| **显存峰值** | 所有测试 | < 3.5 GB | 留 500MB 安全余量 |
+| **图片 - 512px** | 处理耗时 | < 1s | 基线小图 |
+| **图片 - 720p** | 处理耗时 | < 2s | 标准分辨率 |
+| **图片 - 2K** | 处理耗时 | < 3s | 压力测试 |
+| **视频 - 720p** | 处理 FPS | > 15 FPS | 491帧测试视频 |
+| **视频 - 720p** | 总耗时 | < 40s | 允许 20% 余量 |
+| **显存峰值** | 所有测试 | < 6.5 GB | 留 1.5GB 安全余量 |
 | **内存泄漏** | 处理前后 | Δ < 50MB | Valgrind/ASan 验证 |
 
-> **高端硬件参考**: RTX 3090 标准见 [design.md A.3.3](./design.md#a33-硬件适配验收标准)
+> **多硬件档位参考**: 完整性能基准表见 [design.md A.3.3](./design.md#a33-硬件适配验收标准)
+> - **RTX 4090 (24GB)**: 旗舰级性能基准
+> - **RTX 3060 (12GB)**: 中端性能参考
+> - **GTX 1650 (4GB)**: 低端适配标准
 
 ### 10.5 测试配置模板
 
+#### 10.5.1 标准测试配置 (RTX 4060 8GB 主流配置)
+
 ```yaml
-# test_config_baseline.yaml - 基线测试配置
+# test_config_baseline.yaml - 基线测试配置 (RTX 4060 8GB)
 config_version: "1.0"
 
 task_info:
   id: "m11_e2e_baseline"
-  description: "M11 End-to-End Baseline Test"
+  description: "M11 End-to-End Baseline Test (RTX 4060 8GB)"
   enable_logging: true
+  enable_resume: false
 
 io:
   source_paths:
@@ -592,10 +605,12 @@ io:
     path: "./test_output/"
     prefix: "m11_test_"
     conflict_policy: "overwrite"
+    audio_policy: "copy"
 
 resource:
-  max_queue_size: 10  # 低显存适配
-  execution_order: "sequential"
+  thread_count: 0  # Auto (16核 → 8线程)
+  max_queue_size: 20  # 主流级 (8-12GB) 推荐值
+  execution_order: "sequential"  # 顺序模式，低延迟
 
 pipeline:
   - step: "face_swapper"
@@ -603,6 +618,83 @@ pipeline:
     params:
       model: "inswapper_128_fp16"
       face_selector_mode: "many"
+```
+
+#### 10.5.2 低显存适配配置 (GTX 1650 4GB)
+
+```yaml
+# test_config_low_vram.yaml - 低显存适配配置 (≤ 4GB)
+config_version: "1.0"
+
+task_info:
+  id: "m11_e2e_low_vram"
+  description: "M11 Low VRAM Adaptation Test (GTX 1650 4GB)"
+  enable_logging: true
+
+io:
+  source_paths:
+    - "./assets/standard_face_test_images/lenna.bmp"
+  target_paths:
+    - "./assets/standard_face_test_videos/slideshow_scaled.mp4"
+  output:
+    path: "./test_output/"
+    prefix: "m11_lowvram_"
+    conflict_policy: "overwrite"
+
+resource:
+  max_queue_size: 10  # 低显存适配
+  execution_order: "batch"  # 批处理模式降低峰值显存
+  batch_buffer_mode: "disk"  # 磁盘缓存避免 OOM
+  segment_duration_seconds: 5  # 强制分段处理
+
+pipeline:
+  - step: "face_swapper"
+    enabled: true
+    params:
+      model: "inswapper_128_fp16"
+      face_selector_mode: "many"
+```
+
+#### 10.5.3 高端压力测试配置 (RTX 4090 24GB)
+
+```yaml
+# test_config_high_end.yaml - 高端压力测试配置 (≥ 12GB)
+config_version: "1.0"
+
+task_info:
+  id: "m11_e2e_high_end"
+  description: "M11 High-End Stress Test (RTX 4090 24GB)"
+  enable_logging: true
+
+io:
+  source_paths:
+    - "./assets/standard_face_test_images/lenna.bmp"
+  target_paths:
+    - "./assets/standard_face_test_images/woman.jpg"  # 2K 压力测试
+  output:
+    path: "./test_output/"
+    prefix: "m11_highend_"
+    conflict_policy: "overwrite"
+
+resource:
+  max_queue_size: 30  # 旗舰级配置
+  execution_order: "sequential"
+
+pipeline:
+  - step: "face_swapper"
+    enabled: true
+    params:
+      model: "inswapper_128_fp16"
+  - step: "face_enhancer"
+    enabled: true
+    params:
+      model: "codeformer"
+      blend_factor: 0.8
+  - step: "frame_enhancer"
+    enabled: true
+    params:
+      model: "real_esrgan_x4"  # 4K 超分辨率
+      enhance_factor: 1.0
 ```
 
 ---

@@ -3,7 +3,7 @@
 > **文档标识**: FACE-FUSION-APP-ARCH
 > **密级**: 内部公开 (Internal Public)
 > **状态**: 正式 (Official)
-> **最后更新**: 2026-02-02
+> **最后更新**: 2026-02-05
 
 ## 版本历史 (Version History)
 
@@ -16,6 +16,7 @@
 | V2.5 | 2026-01-29 | ArchTeam | 优化构建规范、路径解析、日志标准及 FlatBuffers 依赖说明                                                                           |
 | V2.6 | 2026-01-30 | ArchTeam | 添加目录导航; 完善资源管理参数 (LRU/TTL/背压); 增强日志轮转配置; 新增 CLI --validate 模式; 规范 Metrics JSON Schema; 修正拼写错误 |
 | V2.7 | 2026-02-02 | ArchTeam | 新增 A.3 标准测试素材规范; 定义硬件适配验收标准; 补充边界情况测试要求                                                             |
+| V2.8 | 2026-02-05 | ArchTeam | 更新 A.3.3 硬件适配验收标准; 添加当前测试环境基准 (RTX 4060 8GB); 优化性能基准表; 新增硬件适配策略分级指南                        |
 
 ---
 
@@ -884,23 +885,48 @@ graph LR
 
 #### A.3.3 硬件适配验收标准
 
+**当前测试环境 (Reference Baseline)**:
+- **CPU**: Intel Core i9-14900HX (16核32线程)
+- **内存**: 24GB DDR
+- **GPU**: NVIDIA GeForce RTX 4060 Laptop GPU
+  - VRAM: 8GB GDDR6
+  - CUDA 驱动: 591.86
+  - 计算能力: 8.9 (Ada Lovelace 架构)
+- **操作系统**: Linux (WSL2 / Native)
+
 根据不同 GPU 配置，验收标准应进行相应调整：
 
 > **⚠️ 构建模式**: 以下性能指标均基于 **Release 模式** 测试，Debug 模式数据不具参考价值。
 
-| 测试项 | RTX 3090 (24GB) | RTX 3060 (12GB) | GTX 1650 (4GB) | 说明 |
-| :----- | :-------------- | :-------------- | :------------- | :--- |
-| **图片处理 (512px)** | < 1s | < 2s | < 3s | 基线小图 |
-| **图片处理 (720p)** | < 2s | < 3s | < 5s | 标准分辨率 |
-| **图片处理 (2K)** | < 3s | < 5s | < 10s | 压力测试 |
-| **视频 FPS (720p)** | > 20 FPS | > 10 FPS | ≥ 5 FPS | 491帧测试视频 |
-| **视频总耗时** | < 30s | < 60s | < 120s | 允许 20% 余量 |
-| **显存峰值** | < 16 GB | < 10 GB | < 3.5 GB | 留安全余量 |
+**性能基准表 (Performance Benchmarks)**:
 
-> **低显存适配 (≤ 4GB)**:
-> - 建议使用 `memory_strategy: strict`
-> - 建议降低 `max_queue_size` 至 10
-> - 建议测试分辨率不超过 720p
+| 测试项 | RTX 4090 (24GB) | RTX 4060 (8GB)* | RTX 3060 (12GB) | GTX 1650 (4GB) | 说明 |
+| :----- | :-------------- | :-------------- | :-------------- | :------------- | :--- |
+| **图片处理 (512px)** | < 0.5s | < 1s | < 1.5s | < 3s | 基线小图 |
+| **图片处理 (720p)** | < 1s | < 2s | < 2.5s | < 5s | 标准分辨率 |
+| **图片处理 (2K)** | < 2s | < 3s | < 4s | < 10s | 压力测试 |
+| **视频 FPS (720p)** | > 30 FPS | > 15 FPS | > 12 FPS | ≥ 5 FPS | 491帧测试视频 |
+| **视频总耗时** | < 20s | < 40s | < 50s | < 120s | 允许 20% 余量 |
+| **显存峰值** | < 18 GB | < 6.5 GB | < 10 GB | < 3.5 GB | 留安全余量 |
+
+> **\*** 当前测试环境基准配置
+
+**硬件适配策略**:
+
+| 显存分级 | 推荐配置 | 适用场景 |
+| :------- | :------- | :------- |
+| **≥ 12GB** (旗舰级) | `memory_strategy: tolerant`<br>`max_queue_size: 30`<br>`execution_order: sequential` | 高分辨率 (4K) 实时处理<br>复杂流水线 (4+ Processors) |
+| **8-12GB** (主流级) | `memory_strategy: strict`<br>`max_queue_size: 20`<br>`execution_order: sequential` | 2K 及以下标准处理<br>3 Processors 以内流水线 |
+| **4-8GB** (入门级) | `memory_strategy: strict`<br>`max_queue_size: 15`<br>`execution_order: batch`<br>`batch_buffer_mode: disk` | 1080p 及以下<br>建议启用分段处理 |
+| **< 4GB** (低端) | `memory_strategy: strict`<br>`max_queue_size: 10`<br>`execution_order: batch`<br>`segment_duration_seconds: 5` | 仅支持 720p 以下<br>强制分段 + 磁盘缓存 |
+
+> **低显存适配建议 (≤ 4GB)**:
+> - ✅ 必须使用 `memory_strategy: strict` (按需加载模型)
+> - ✅ 降低 `max_queue_size` 至 10 (减少帧缓冲)
+> - ✅ 启用 `execution_order: batch` + `batch_buffer_mode: disk` (降低峰值显存)
+> - ✅ 设置 `segment_duration_seconds: 5` (强制分段处理长视频)
+> - ⚠️ 测试分辨率不超过 720p
+> - ⚠️ 避免同时启用超过 2 个 Processors
 
 #### A.3.4 边界情况测试
 
