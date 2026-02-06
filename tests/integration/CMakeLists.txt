@@ -8,6 +8,8 @@ add_facefusion_test(
         app/pipeline_runner_metrics_test.cpp
         app/e2e_image_swap_test.cpp
         app/e2e_video_swap_test.cpp
+        app/checkpoint_resume_test.cpp
+        app/edge_cases_test.cpp
     LINK_LIBRARIES
         domain_pipeline
         services_pipeline

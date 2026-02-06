@@ -8,6 +8,23 @@ include(GoogleTest)
 
 find_package(ONNX CONFIG REQUIRED)
 
+# 添加 ASan 构建选项
+option(ENABLE_ASAN "Enable AddressSanitizer for memory leak detection" OFF)
+
+if(ENABLE_ASAN)
+    message(STATUS "AddressSanitizer enabled")
+    
+    if(MSVC)
+        # MSVC ASan
+        add_compile_options(/fsanitize=address)
+        add_link_options(/fsanitize=address)
+    else()
+        # GCC/Clang ASan
+        add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+        add_link_options(-fsanitize=address)
+    endif()
+endif()
+
 # 辅助函数：创建测试可执行文件
 # 参数：
 #   TEST_NAME: 测试名称
@@ -79,3 +96,10 @@ option(BUILD_BENCHMARK_TESTS "Build benchmark tests" OFF)
 if(BUILD_BENCHMARK_TESTS)
     add_subdirectory(benchmark)
 endif()
+
+# 创建专用的内存泄漏测试目标
+add_custom_target(memory_leak_test
+    COMMAND ${CMAKE_CTEST_COMMAND} -L integration --output-on-failure
+    COMMENT "Running integration tests with memory leak detection"
+)
+
