@@ -3,8 +3,8 @@
 > **标准参考 & 跨文档链接**:
 > *   架构设计文档: [应用层架构设计说明书](./design.md)
 > *   质量与评估标准: [C++代码质量与评估标准指南](./C++_quality_standard.md)
-> *   最后更新: 2026-02-06
-> *   更新内容: Task 10.3 断点续传测试完成；Task 10.7 边界情况测试完成
+> *   最后更新: 2026-02-07
+> *   更新内容: Task 10.6 内存/显存监控完成；所有 M11 任务完成
 
 ## 0. 计划概述
 
@@ -50,7 +50,7 @@ graph TD
 | **M8**  | Services Layer             | Pipeline Runner 服务 (Image/Video 处理调度)                    |  ✅ 已完成  | M2, M6, M7 |
 | **M9**  | Application Layer - Config | 配置管理 (AppConfig/TaskConfig 解析与校验/ConfigMerger)        |  ✅ 已完成  |     M1     |
 | **M10** | Application Layer - CLI    | 命令行接口 (参数解析/系统检查/--validate/任务执行)             |  ✅ 已完成  |   M8, M9   |
-| **M11** | Integration & Verification | 端到端集成测试/性能验证/Metrics JSON Schema                    |  🔄 进行中  |    M10     |
+| **M11** | Integration & Verification | 端到端集成测试/性能验证/Metrics JSON Schema                    |  ✅ 已完成  |    M10     |
 
 ---
 
@@ -458,7 +458,7 @@ graph TD
 
 ---
 
-## 阶段十: Integration & Verification (M11) ⏳ 未开始
+## 阶段十: Integration & Verification (M11) ✅ 已完成
 
 ### 10.1 目标
 
@@ -523,7 +523,7 @@ graph TD
     - 每个 Pipeline Step 的延迟分布
   - 输出: 性能基准报告 (Markdown 格式)
 
-- [ ] **Task 10.6**: 内存/显存峰值监控
+- [x] **Task 10.6**: 内存/显存峰值监控
   - 任务文档: [C++_task_M11_memory_vram_monitoring.md](./plan/integration/C++_task_M11_memory_vram_monitoring.md)
   - 监控方式:
     - 显存: NVML API 或 `nvidia-smi` 采样
@@ -531,6 +531,7 @@ graph TD
   - 验收标准:
     - RTX 4060 (8GB): 显存峰值 < 6.5 GB
     - 无内存泄漏 (处理前后 RSS 差异 < 50MB)
+  - 实现: `tests/integration/app/memory_monitoring_test.cpp` (5 测试用例全部通过)
 
 #### 10.3.3 P2 - 边界与增强功能
 
@@ -728,7 +729,7 @@ pipeline:
 | ~~**EngineCacheConfig 扩展**~~ | M3 | ✅ 已完成 (Task 2.2.6) | [评估报告](./evaluation/C++_evaluation_engine_cache.md) |
 | ~~**配置集成**~~ | M3 | ✅ 已完成 (Task 2.2.7) | [评估报告](./evaluation/C++_evaluation_engine_cache.md) |
 | ~~**边界情况测试**~~ | M11 | ✅ 已完成 (Task 10.7) | [C++_task_M11_checkpoint_and_edge_cases.md](./plan/integration/C++_task_M11_checkpoint_and_edge_cases.md) |
-| **内存/显存监控** | M11 | ⏳ 待实现 (Task 10.6) | [C++_task_M11_memory_vram_monitoring.md](./plan/integration/C++_task_M11_memory_vram_monitoring.md) |
+| ~~**内存/显存监控**~~ | M11 | ✅ 已完成 (Task 10.6) | [C++_task_M11_memory_vram_monitoring.md](./plan/integration/C++_task_M11_memory_vram_monitoring.md) |
 
 ---
 
