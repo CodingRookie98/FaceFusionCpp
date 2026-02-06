@@ -3,8 +3,8 @@
 > **标准参考 & 跨文档链接**:
 > *   架构设计文档: [应用层架构设计说明书](./design.md)
 > *   质量与评估标准: [C++代码质量与评估标准指南](./C++_quality_standard.md)
-> *   最后更新: 2026-02-05
-> *   更新内容: 更新 10.4 验收标准汇总至 RTX 4060 8GB 基准；扩展 10.5 测试配置模板（新增低显存/高端配置）
+> *   最后更新: 2026-02-06
+> *   更新内容: Task 10.3 断点续传测试完成；Task 10.7 边界情况测试完成
 
 ## 0. 计划概述
 
@@ -524,16 +524,17 @@ graph TD
   - 输出: 性能基准报告 (Markdown 格式)
 
 - [ ] **Task 10.6**: 内存/显存峰值监控
+  - 任务文档: [C++_task_M11_memory_vram_monitoring.md](./plan/integration/C++_task_M11_memory_vram_monitoring.md)
   - 监控方式:
     - 显存: NVML API 或 `nvidia-smi` 采样
     - 内存: 平台 API (`GetProcessMemoryInfo` / `/proc/self/status`)
   - 验收标准:
-    - GTX 1650 (4GB): 显存峰值 < 3.5 GB
+    - RTX 4060 (8GB): 显存峰值 < 6.5 GB
     - 无内存泄漏 (处理前后 RSS 差异 < 50MB)
 
 #### 10.3.3 P2 - 边界与增强功能
 
-- [ ] **Task 10.3**: 断点续传测试 (Checkpointing)
+- [x] **Task 10.3**: 断点续传测试 (Checkpointing)
   - 前置依赖: [design.md 5.9 断点续传](./design.md#59-断点续传-checkpointing) 机制实现
   - 测试场景:
     1. 正常中断恢复 (SIGINT 后重启)
@@ -543,22 +544,25 @@ graph TD
     - `checkpoints/{task_id}.ckpt` 正确生成
     - 恢复后继续处理，无重复帧
     - 任务完成后自动清理 checkpoint
+  - 实现: `tests/integration/app/checkpoint_resume_test.cpp` (5 测试用例全部通过)
 
-- [ ] **Task 10.7**: 边界情况测试
+- [x] **Task 10.7**: 边界情况测试
   - 测试用例: `img_palette_edge` (调色板图片)
   - 验证点:
     - 调色板格式 (pal8) 自动转换为 RGB24
     - WebP 伪装文件 (`woman.jpg`) 正确解码
     - 无人脸帧透传处理，生成 WARN 日志
+    - 竖屏视频纵横比保持正确
+  - 实现: `tests/integration/app/edge_cases_test.cpp` (4 测试用例全部通过)
 
 ### 10.4 验收标准汇总
 
 > **当前测试环境 (Reference Baseline)**:
 > - **CPU**: Intel Core i9-14900HX (16核32线程)
-> - **内存**: 24GB DDR
+> - **内存**: 23GB DDR
 > - **GPU**: NVIDIA GeForce RTX 4060 Laptop GPU (8GB VRAM, 计算能力 8.9)
 > - **CUDA 驱动**: 591.86
-> - **操作系统**: Linux (WSL2 / Native)
+> - **操作系统**: Ubuntu 24.04.3 LTS (WSL2)
 >
 > **⚠️ 构建模式要求**:
 > - **性能测试 (Task 10.1/10.2/10.4)**: **必须使用 Release 模式**，Debug 模式数据无参考价值
@@ -719,10 +723,12 @@ pipeline:
 
 | 任务              | 所属阶段 | 描述                                                      | 任务文档 |
 | :---------------- | :------: | :-------------------------------------------------------- | :------- |
-| **Checkpointing** |   M11    | 断点续传                                                  | - |
+| ~~**Checkpointing**~~ |   M11    | ✅ 已完成 (Task 10.3)                                      | [C++_task_M11_checkpoint_and_edge_cases.md](./plan/integration/C++_task_M11_checkpoint_and_edge_cases.md) |
 | **Metrics JSON**  |   M11    | 性能指标输出 (schema_version/step_latency/gpu_memory)     | - |
 | ~~**EngineCacheConfig 扩展**~~ | M3 | ✅ 已完成 (Task 2.2.6) | [评估报告](./evaluation/C++_evaluation_engine_cache.md) |
 | ~~**配置集成**~~ | M3 | ✅ 已完成 (Task 2.2.7) | [评估报告](./evaluation/C++_evaluation_engine_cache.md) |
+| ~~**边界情况测试**~~ | M11 | ✅ 已完成 (Task 10.7) | [C++_task_M11_checkpoint_and_edge_cases.md](./plan/integration/C++_task_M11_checkpoint_and_edge_cases.md) |
+| **内存/显存监控** | M11 | ⏳ 待实现 (Task 10.6) | [C++_task_M11_memory_vram_monitoring.md](./plan/integration/C++_task_M11_memory_vram_monitoring.md) |
 
 ---
 

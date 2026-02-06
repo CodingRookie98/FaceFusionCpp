@@ -10,6 +10,7 @@ add_facefusion_test(
         app/e2e_video_swap_test.cpp
         app/checkpoint_resume_test.cpp
         app/edge_cases_test.cpp
+        app/memory_monitoring_test.cpp
     LINK_LIBRARIES
         domain_pipeline
         services_pipeline
@@ -29,6 +30,13 @@ add_facefusion_test(
 )
 
 copy_onnxruntime_libs(app_test_pipeline)
+
+if(HAVE_NVML)
+    target_link_libraries(app_test_pipeline PRIVATE ${NVML_LIBRARY})
+    target_compile_definitions(app_test_pipeline PRIVATE HAVE_NVML)
+endif()
+
+target_include_directories(app_test_pipeline PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../tests)
 
 add_facefusion_test(
     component_integration_tests

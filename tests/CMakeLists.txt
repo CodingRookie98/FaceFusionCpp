@@ -8,6 +8,22 @@ include(GoogleTest)
 
 find_package(ONNX CONFIG REQUIRED)
 
+# Add NVML support
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    find_library(NVML_LIBRARY NAMES nvidia-ml libnvidia-ml.so.1 PATHS /usr/lib/x86_64-linux-gnu /usr/lib/wsl/lib /usr/local/cuda/lib64/stubs)
+    find_path(NVML_INCLUDE_DIR nvml.h PATHS /usr/local/cuda/include /usr/include /usr/local/cuda-12.8/targets/x86_64-linux/include)
+    
+    if(NVML_LIBRARY AND NVML_INCLUDE_DIR)
+        message(STATUS "Found NVML: ${NVML_LIBRARY}")
+        message(STATUS "Found NVML Header: ${NVML_INCLUDE_DIR}")
+        set(HAVE_NVML TRUE)
+        include_directories(${NVML_INCLUDE_DIR})
+    else()
+        message(WARNING "NVML not found (Lib: ${NVML_LIBRARY}, Inc: ${NVML_INCLUDE_DIR}), GPU memory monitoring will be disabled")
+        set(HAVE_NVML FALSE)
+    endif()
+endif()
+
 # 添加 ASan 构建选项
 option(ENABLE_ASAN "Enable AddressSanitizer for memory leak detection" OFF)
 
