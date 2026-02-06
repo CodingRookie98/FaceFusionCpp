@@ -56,6 +56,8 @@ public:
 
     std::unordered_map<std::string, std::string>
         extraOptions; ///< Additional codec-specific options
+
+    int64_t frameCount = 0; ///< Total number of frames (if available)
 };
 
 /**

@@ -209,6 +209,7 @@ VideoParams::VideoParams(const std::string& videoPath) {
                     else fps_val = 30.0;
                 }
                 frameRate = fps_val;
+                frameCount = stream->nb_frames;
                 break;
             }
         }

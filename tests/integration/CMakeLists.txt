@@ -1,6 +1,7 @@
 add_facefusion_test(
     app_test_pipeline
     SOURCES
+        common/global_test_environment.cpp
         app/pipeline_integration_test.cpp
         app/pipeline_runner_video_test.cpp
         app/pipeline_runner_image_test.cpp

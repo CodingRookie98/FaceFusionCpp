@@ -110,7 +110,7 @@ struct InferenceSession::Impl {
         // Reset session FIRST to ensure all provider resources are released
         // before other members (like logger or static env)
         m_ort_session.reset();
-        
+
         m_input_names.clear();
         m_output_names.clear();
         m_input_names_ptrs.clear();

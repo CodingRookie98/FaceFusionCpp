@@ -13,26 +13,10 @@ import domain.ai.model_repository;
 import foundation.infrastructure.test_support;
 import domain.face.analyser;
 import domain.face.test_support;
-import domain.face.model_registry;
-import foundation.ai.inference_session_registry;
 
 using namespace services::pipeline;
 using namespace foundation::infrastructure::test;
 using namespace std::chrono;
-
-// 全局清理环境，防止 CUDA 驱动关闭后的析构崩溃
-class GlobalCleanupEnvironment : public ::testing::Environment {
-public:
-    void TearDown() override {
-        // 显式清理单例资源，确保在 main 返回前释放 CUDA 资源
-        domain::face::FaceModelRegistry::get_instance().clear();
-        foundation::ai::inference_session::InferenceSessionRegistry::get_instance().clear();
-    }
-};
-
-// 注册全局环境
-::testing::Environment* const cleanup_env =
-    ::testing::AddGlobalTestEnvironment(new GlobalCleanupEnvironment);
 
 class E2EImageSwapTest : public ::testing::Test {
 protected:
