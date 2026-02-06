@@ -119,8 +119,8 @@ TEST_F(E2EVideoSwapTest, Video720pVertical_ProcessesWithCorrectFrameCount) {
     auto start = steady_clock::now();
     auto runner = CreatePipelineRunner(app_config);
     auto merged_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_config, [](const services::pipeline::TaskProgress& p) {});
-    auto duration = duration_cast<seconds>(steady_clock::now() - start);
+    auto result = runner->Run(merged_config, [](const services::pipeline::TaskProgress& /*p*/) {});
+    [[maybe_unused]] auto duration = duration_cast<seconds>(steady_clock::now() - start);
 
     // Assert
     ASSERT_TRUE(result.is_ok()) << "Pipeline failed: " << result.error().message;
@@ -164,7 +164,7 @@ TEST_F(E2EVideoSwapTest, Video720pVertical_AchievesMinimumFPS) {
     auto start = steady_clock::now();
     auto runner = CreatePipelineRunner(app_config);
     auto merged_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_config, [](const services::pipeline::TaskProgress& p) {});
+    auto result = runner->Run(merged_config, [](const services::pipeline::TaskProgress& /*p*/) {});
     auto duration_ms = duration_cast<milliseconds>(steady_clock::now() - start).count();
 
     // Assert
@@ -217,7 +217,7 @@ TEST_F(E2EVideoSwapTest, Video720pVertical_CompletesWithinTimeLimit) {
     auto start = steady_clock::now();
     auto runner = CreatePipelineRunner(app_config);
     auto merged_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_config, [](const services::pipeline::TaskProgress& p) {});
+    auto result = runner->Run(merged_config, [](const services::pipeline::TaskProgress& /*p*/) {});
     auto duration_s = duration_cast<seconds>(steady_clock::now() - start).count();
 
     // Assert

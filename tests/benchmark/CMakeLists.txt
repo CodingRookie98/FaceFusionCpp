@@ -1,7 +1,7 @@
 add_facefusion_test(
     app_benchmark_pipeline
     SOURCES
-        app/pipeline_benchmark_test.cpp
+        app/pipeline_benchmark.cpp
     LINK_LIBRARIES
         domain_pipeline
         services_pipeline
