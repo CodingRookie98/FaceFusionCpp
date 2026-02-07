@@ -19,9 +19,12 @@ import domain.face.analyser;
 import domain.face;
 import domain.face.test_support;
 
+#include "test_support/test_constants.hpp"
+
 using namespace services::pipeline;
 using namespace foundation::infrastructure::test;
 using namespace domain::face::analyser;
+using namespace std::chrono;
 
 class PipelineRunnerImageTest : public ::testing::Test {
 protected:
@@ -38,13 +41,48 @@ protected:
         target_image_path_babara = get_test_data_path("standard_face_test_images/barbara.bmp");
 
         // Output will be generated in tests_output
-        std::filesystem::create_directories("tests_output");
+        output_dir = std::filesystem::temp_directory_path() / "facefusion_tests" / "pipeline_runner_image";
+        std::filesystem::create_directories(output_dir);
     }
 
     std::shared_ptr<domain::ai::model_repository::ModelRepository> repo;
     std::filesystem::path source_path;
     std::filesystem::path target_image_path_woman;
     std::filesystem::path target_image_path_babara;
+    std::filesystem::path output_dir;
+
+    // Helper to verify face swap result
+    void verify_face_swap(const std::filesystem::path& output_image,
+                          const std::filesystem::path& source_face,
+                          float distance_threshold = test_constants::FACE_SIMILARITY_THRESHOLD) {
+        ASSERT_TRUE(std::filesystem::exists(output_image))
+            << "Output image does not exist: " << output_image;
+
+        auto analyser = domain::face::test_support::create_face_analyser(repo);
+
+        cv::Mat output_img = cv::imread(output_image.string());
+        cv::Mat source_img = cv::imread(source_face.string());
+
+        ASSERT_FALSE(output_img.empty()) << "Failed to load output image";
+        ASSERT_FALSE(source_img.empty()) << "Failed to load source image";
+
+        auto output_faces = analyser->get_many_faces(
+            output_img, domain::face::analyser::FaceAnalysisType::Detection
+                            | domain::face::analyser::FaceAnalysisType::Embedding);
+        auto source_faces = analyser->get_many_faces(
+            source_img, domain::face::analyser::FaceAnalysisType::Detection
+                            | domain::face::analyser::FaceAnalysisType::Embedding);
+
+        ASSERT_FALSE(output_faces.empty()) << "No face detected in output image";
+        ASSERT_FALSE(source_faces.empty()) << "No face detected in source image";
+
+        // Calculate distance (smaller is more similar)
+        float distance = domain::face::analyser::FaceAnalyser::calculate_face_distance(
+            output_faces[0], source_faces[0]);
+
+        EXPECT_LT(distance, distance_threshold) << "Face distance too high: " << distance
+                                                << " (threshold: " << distance_threshold << ")";
+    }
 };
 
 TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
@@ -64,7 +102,7 @@ TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
     // The image to be processed (Target Media)
     task_config.io.target_paths.push_back(target_image_path_woman.string());
 
-    task_config.io.output.path = "tests_output";
+    task_config.io.output.path = output_dir.string();
     task_config.io.output.prefix = "pipeline_runner_image_single_output_";
     task_config.io.output.image_format = "jpg";
 
@@ -85,40 +123,11 @@ TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
     }
     ASSERT_TRUE(result.is_ok());
 
-    // Expected output: tests_output/pipeline_runner_image_single_output_woman.jpg
-    std::filesystem::path output_path =
-        std::filesystem::path("tests_output") / "pipeline_runner_image_single_output_woman.jpg";
+    // Expected output: output_dir/pipeline_runner_image_single_output_woman.jpg
+    std::filesystem::path output_path = output_dir / "pipeline_runner_image_single_output_woman.jpg";
     EXPECT_TRUE(std::filesystem::exists(output_path));
 
-    // Verify it is a valid image
-    cv::Mat img = cv::imread(output_path.string());
-    EXPECT_FALSE(img.empty());
-    EXPECT_GT(img.cols, 0);
-    EXPECT_GT(img.rows, 0);
-
-    // Resolution check
-    cv::Mat source_img = cv::imread(source_path.string());
-    cv::Mat target_img = cv::imread(target_image_path_woman.string());
-    EXPECT_EQ(img.cols, target_img.cols);
-    EXPECT_EQ(img.rows, target_img.rows);
-
-    // Similarity check
-    auto analyser = domain::face::test_support::create_face_analyser(repo);
-    auto source_faces = analyser->get_many_faces(
-        source_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
-
-    auto output_faces =
-        analyser->get_many_faces(img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
-
-    if (!source_faces.empty() && !output_faces.empty()) {
-        float distance = FaceAnalyser::calculate_face_distance(source_faces[0], output_faces[0]);
-        // Expect similarity (distance < 0.6 is a common threshold for ArcFace)
-        // Since we swapped Lenna onto Woman, the result face should look like Lenna.
-        EXPECT_LT(distance, 0.65f) << "Swapped face should resemble source face";
-    } else {
-        FAIL()
-            << "Face detection failed for similarity check in SingleImage test. Output image might be corrupted or face not found.";
-    }
+    verify_face_swap(output_path, source_path);
 }
 
 TEST_F(PipelineRunnerImageTest, ProcessImageBatch) {
@@ -141,7 +150,7 @@ TEST_F(PipelineRunnerImageTest, ProcessImageBatch) {
     // Use source as target too just for variety (Lenna swapping onto Lenna)
     task_config.io.target_paths.push_back(target_image_path_babara.string());
 
-    task_config.io.output.path = "tests_output";
+    task_config.io.output.path = output_dir.string();
     task_config.io.output.prefix = "pipeline_runner_image_batch_output_";
     task_config.io.output.image_format = "jpg";
 
@@ -161,38 +170,14 @@ TEST_F(PipelineRunnerImageTest, ProcessImageBatch) {
 
     ASSERT_TRUE(result.is_ok());
 
-    std::filesystem::path output_1 =
-        std::filesystem::path("tests_output") / "pipeline_runner_image_batch_output_woman.jpg";
-    std::filesystem::path output_2 =
-        std::filesystem::path("tests_output") / "pipeline_runner_image_batch_output_barbara.jpg";
+    std::filesystem::path output_1 = output_dir / "pipeline_runner_image_batch_output_woman.jpg";
+    std::filesystem::path output_2 = output_dir / "pipeline_runner_image_batch_output_barbara.jpg";
 
     EXPECT_TRUE(std::filesystem::exists(output_1));
     EXPECT_TRUE(std::filesystem::exists(output_2));
 
-    // Similarity check for output_1 (Lenna -> Woman)
-    auto analyser = domain::face::test_support::create_face_analyser(repo);
-    cv::Mat source_img = cv::imread(source_path.string());
-    auto source_faces = analyser->get_many_faces(
-        source_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
-
-    if (!source_faces.empty()) {
-        cv::Mat out1_img = cv::imread(output_1.string());
-        auto out1_faces = analyser->get_many_faces(
-            out1_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
-        if (!out1_faces.empty()) {
-            float distance1 = FaceAnalyser::calculate_face_distance(source_faces[0], out1_faces[0]);
-            EXPECT_LT(distance1, 0.65f) << "Batch Output 1 should resemble source face";
-        }
-
-        // Similarity check for output_2 (Lenna -> Barbara)
-        cv::Mat out2_img = cv::imread(output_2.string());
-        auto out2_faces = analyser->get_many_faces(
-            out2_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
-        if (!out2_faces.empty()) {
-            float distance2 = FaceAnalyser::calculate_face_distance(source_faces[0], out2_faces[0]);
-            EXPECT_LT(distance2, 0.65f) << "Batch Output 2 should resemble source face";
-        }
-    }
+    verify_face_swap(output_1, source_path);
+    verify_face_swap(output_2, source_path);
 }
 
 TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
@@ -211,7 +196,7 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
 
     task_config.io.target_paths.push_back(target_image_path_woman.string());
 
-    task_config.io.output.path = "tests_output";
+    task_config.io.output.path = output_dir.string();
     task_config.io.output.prefix = "pipeline_runner_image_multi_output_";
     task_config.io.output.image_format = "jpg";
 
@@ -254,7 +239,7 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
     ASSERT_TRUE(result.is_ok());
 
     std::filesystem::path output_path =
-        std::filesystem::path("tests_output") / "pipeline_runner_image_multi_output_woman.jpg";
+        output_dir / "pipeline_runner_image_multi_output_woman.jpg";
     EXPECT_TRUE(std::filesystem::exists(output_path));
 
     // Resolution check (Upscaled 2x)
@@ -263,19 +248,87 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
     EXPECT_EQ(out_img.cols, target_img.cols * 2);
     EXPECT_EQ(out_img.rows, target_img.rows * 2);
 
-    // Similarity check
-    auto analyser = domain::face::test_support::create_face_analyser(repo);
-    cv::Mat source_img = cv::imread(source_path.string());
-    auto source_faces = analyser->get_many_faces(
-        source_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
+    verify_face_swap(output_path, source_path);
+}
 
-    if (!source_faces.empty()) {
-        // We need to find face in upscaled image
-        auto out_faces = analyser->get_many_faces(
-            out_img, FaceAnalysisType::Detection | FaceAnalysisType::Embedding);
-        if (!out_faces.empty()) {
-            float distance = FaceAnalyser::calculate_face_distance(source_faces[0], out_faces[0]);
-            EXPECT_LT(distance, 0.65f) << "Multi-step output should resemble source face";
-        }
+// ============================================================================
+// Performance & Stress Tests (Merged from E2E)
+// ============================================================================
+
+TEST_F(PipelineRunnerImageTest, Process720pImage_CompletesWithinTimeLimit) {
+    auto target_path = get_assets_path() / "standard_face_test_images" / "girl.bmp";
+    if (!std::filesystem::exists(target_path)) {
+        GTEST_SKIP() << "Test assets not found.";
     }
+    
+    auto output_path = output_dir / "result_girl.bmp";
+
+    config::TaskConfig task_config;
+    task_config.task_info.id = "img_720p_standard";
+    task_config.io.source_paths = {source_path.string()};
+    task_config.io.target_paths = {target_path.string()};
+    task_config.io.output.path = output_dir.string();
+    task_config.io.output.prefix = "result_";
+    task_config.io.output.image_format = "bmp";
+
+    config::PipelineStep swap_step;
+    swap_step.step = "face_swapper";
+    swap_step.enabled = true;
+    config::FaceSwapperParams params;
+    params.model = "inswapper_128_fp16";
+    swap_step.params = params;
+    task_config.pipeline.push_back(swap_step);
+
+    config::AppConfig app_config;
+
+    auto start = steady_clock::now();
+    auto runner = CreatePipelineRunner(app_config);
+    auto merged_config = config::MergeConfigs(task_config, app_config);
+    auto result = runner->Run(merged_config, [](const services::pipeline::TaskProgress& p) {});
+    auto duration = duration_cast<milliseconds>(steady_clock::now() - start);
+
+    ASSERT_TRUE(result.is_ok());
+
+    EXPECT_LT(duration.count(), test_constants::TIMEOUT_IMAGE_720P_MS)
+        << "Processing time exceeded threshold: " << duration.count() << "ms";
+
+    verify_face_swap(output_path, source_path);
+}
+
+TEST_F(PipelineRunnerImageTest, Process2KImage_CompletesWithinTimeLimit) {
+    auto target_path = get_assets_path() / "standard_face_test_images" / "woman.jpg";
+    if (!std::filesystem::exists(target_path)) {
+        GTEST_SKIP() << "Test assets not found.";
+    }
+    
+    auto output_path = output_dir / "result_woman.png"; // WebP input, PNG output
+
+    config::TaskConfig task_config;
+    task_config.task_info.id = "img_2k_stress";
+    task_config.io.source_paths = {source_path.string()};
+    task_config.io.target_paths = {target_path.string()};
+    task_config.io.output.path = output_dir.string();
+    task_config.io.output.prefix = "result_";
+    task_config.io.output.image_format = "png";
+
+    config::PipelineStep swap_step;
+    swap_step.step = "face_swapper";
+    swap_step.enabled = true;
+    config::FaceSwapperParams params;
+    params.model = "inswapper_128_fp16";
+    swap_step.params = params;
+    task_config.pipeline.push_back(swap_step);
+
+    config::AppConfig app_config;
+
+    auto start = steady_clock::now();
+    auto runner = CreatePipelineRunner(app_config);
+    auto merged_config = config::MergeConfigs(task_config, app_config);
+    auto result = runner->Run(merged_config, [](const services::pipeline::TaskProgress& p) {});
+    auto duration = duration_cast<milliseconds>(steady_clock::now() - start);
+
+    ASSERT_TRUE(result.is_ok());
+
+    EXPECT_LT(duration.count(), test_constants::TIMEOUT_IMAGE_2K_MS)
+        << "Processing time exceeded threshold: " << duration.count() << "ms";
 }

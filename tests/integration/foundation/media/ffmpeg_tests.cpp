@@ -1,6 +1,6 @@
 /**
  * @file ffmpeg_tests.cpp
- * @brief Unit tests for FFmpeg media utilities.
+ * @brief Integration tests for FFmpeg media utilities.
  * @author
  * CodingRookie
  * @date 2026-01-27

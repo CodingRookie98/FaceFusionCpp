@@ -2,12 +2,9 @@ add_facefusion_test(
     app_test_pipeline
     SOURCES
         common/global_test_environment.cpp
-        app/pipeline_integration_test.cpp
         app/pipeline_runner_video_test.cpp
         app/pipeline_runner_image_test.cpp
         app/pipeline_runner_metrics_test.cpp
-        app/e2e_image_swap_test.cpp
-        app/e2e_video_swap_test.cpp
         app/checkpoint_resume_test.cpp
         app/edge_cases_test.cpp
         app/memory_monitoring_test.cpp
@@ -84,19 +81,3 @@ add_facefusion_test(
 )
 
 copy_onnxruntime_libs(component_integration_tests)
-
-add_facefusion_test(
-    test_detector_only
-    MAIN_LIB GTest::gmock_main
-    SOURCES
-        domain/face/detector/face_detector_test.cpp
-    LINK_LIBRARIES
-        domain_face_detector
-        domain_ai
-        foundation_infrastructure
-        foundation_infrastructure_test_support
-        ${OpenCV_LIBS}
-        GTest::gmock
-)
-
-copy_onnxruntime_libs(test_detector_only)

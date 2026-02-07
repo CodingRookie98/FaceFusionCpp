@@ -1,6 +1,6 @@
 /**
  * @file face_recognizer_tests.cpp
- * @brief Unit tests for FaceRecognizer.
+ * @brief Integration tests for FaceRecognizer.
  * @author
  * CodingRookie
  * @date 2026-01-27
@@ -37,13 +37,13 @@ protected:
     fs::path test_image_path;
 };
 
-TEST_F(FaceRecognizerTest, FactoryCreatesArcFace) {
+TEST_F(FaceRecognizerTest, CreateRecognizer_ArcFaceType_ReturnsValidInstance) {
     auto recognizer = domain::face::recognizer::create_face_recognizer(
         domain::face::recognizer::FaceRecognizerType::ArcFace_w600k_r50);
     EXPECT_NE(recognizer, nullptr);
 }
 
-TEST_F(FaceRecognizerTest, ArcFaceInference) {
+TEST_F(FaceRecognizerTest, RecognizeFace_ValidInput_ReturnsNormalizedEmbedding) {
     if (!fs::exists(test_image_path)) {
         GTEST_SKIP() << "Test image not found: " << test_image_path;
     }

@@ -1,8 +1,7 @@
 /**
  * @file face_enhancer_tests.cpp
- * @brief Unit tests for FaceEnhancer.
+ * @brief Integration tests for FaceEnhancer.
  * @author CodingRookie
-
  * * @date 2026-01-27
  */
 
@@ -32,13 +31,16 @@ protected:
         auto assets_path = get_assets_path();
         repo = setup_model_repository(assets_path);
         target_path = get_test_data_path("standard_face_test_images/lenna.bmp");
+        output_dir = fs::temp_directory_path() / "facefusion_tests" / "face_enhancer";
+        fs::create_directories(output_dir);
     }
 
     std::shared_ptr<domain::ai::model_repository::ModelRepository> repo;
     fs::path target_path;
+    fs::path output_dir;
 };
 
-TEST_F(FaceEnhancerIntegrationTest, EnhanceFaceWithCodeFormer) {
+TEST_F(FaceEnhancerIntegrationTest, EnhanceFace_CodeFormerModel_ProducesValidOutput) {
     if (!fs::exists(target_path)) { GTEST_SKIP() << "Test image not found: " << target_path; }
 
     cv::Mat target_img = cv::imread(target_path.string());
@@ -69,11 +71,10 @@ TEST_F(FaceEnhancerIntegrationTest, EnhanceFaceWithCodeFormer) {
     EXPECT_EQ(result_img.type(), target_img.type());
 
     // Save result for visual inspection
-    fs::create_directories("tests_output");
-    cv::imwrite("tests_output/enhance_codeformer_result.jpg", result_img);
+    cv::imwrite((output_dir / "enhance_codeformer_result.jpg").string(), result_img);
 }
 
-TEST_F(FaceEnhancerIntegrationTest, EnhanceFaceWithGfpGan) {
+TEST_F(FaceEnhancerIntegrationTest, EnhanceFace_GfpGanModel_ProducesValidOutput) {
     if (!fs::exists(target_path)) { GTEST_SKIP() << "Test image not found: " << target_path; }
 
     cv::Mat target_img = cv::imread(target_path.string());
@@ -104,6 +105,7 @@ TEST_F(FaceEnhancerIntegrationTest, EnhanceFaceWithGfpGan) {
     EXPECT_FALSE(result_img.empty());
 
     // Save result for visual inspection
-    fs::create_directories("tests_output");
-    cv::imwrite("tests_output/enhance_gfpgan_result.jpg", result_img);
+    cv::imwrite((output_dir / "enhance_gfpgan_result.jpg").string(), result_img);
 }
+
+

@@ -27,11 +27,16 @@ protected:
 
         source_path_ = assets_path / "standard_face_test_images" / "lenna.bmp";
 
-        output_dir_ = std::filesystem::temp_directory_path() / "edge_cases_output";
+        output_dir_ = std::filesystem::temp_directory_path() / "facefusion_tests" / "edge_cases";
         std::filesystem::create_directories(output_dir_);
     }
 
-    void TearDown() override {}
+    void TearDown() override {
+        if (std::filesystem::exists(output_dir_)) {
+            std::error_code ec;
+            std::filesystem::remove_all(output_dir_, ec);
+        }
+    }
 
     std::filesystem::path source_path_;
     std::filesystem::path output_dir_;

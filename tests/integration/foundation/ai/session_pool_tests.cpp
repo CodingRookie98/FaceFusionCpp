@@ -1,6 +1,6 @@
 /**
  * @file session_pool_tests.cpp
- * @brief Unit tests for SessionPool
+ * @brief Integration tests for SessionPool
  */
 
 #include <gtest/gtest.h>

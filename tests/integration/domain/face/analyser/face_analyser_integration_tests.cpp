@@ -19,6 +19,7 @@ import domain.face.classifier;
 import domain.face.store;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
+import foundation.infrastructure.test_support;
 
 using namespace domain::face;
 using namespace domain::face::analyser;
@@ -28,16 +29,21 @@ using namespace domain::face::recognizer;
 using namespace domain::face::classifier;
 using namespace domain::face::store;
 using namespace domain::ai::model_repository;
+using namespace foundation::infrastructure::test;
 
 class FaceAnalyserIntegrationTest : public ::testing::Test {
 protected:
     void SetUp() override {
         FaceStore::get_instance()->clear_faces();
         model_repo = ModelRepository::get_instance();
-        model_repo->set_model_info_file_path("./assets/models_info.json");
+        
+        auto assets_path = get_assets_path();
+        model_repo->set_model_info_file_path((assets_path / "models_info.json").string());
 
-        std::string image_path = "./assets/standard_face_test_images/lenna.bmp";
-        if (std::filesystem::exists(image_path)) { test_image = cv::imread(image_path); }
+        auto image_path = get_test_data_path("standard_face_test_images/lenna.bmp");
+        if (std::filesystem::exists(image_path)) { 
+            test_image = cv::imread(image_path.string()); 
+        }
     }
 
     std::shared_ptr<ModelRepository> model_repo;

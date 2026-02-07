@@ -19,10 +19,14 @@ import foundation.infrastructure.test_support;
 import domain.face;
 import domain.face.analyser;
 import domain.face.test_support;
+import foundation.media.ffmpeg;
+
+#include "test_support/test_constants.hpp"
 
 using namespace services::pipeline;
 using namespace foundation::infrastructure::test;
 using namespace domain::face::analyser;
+using namespace std::chrono;
 
 class PipelineRunnerVideoTest : public ::testing::Test {
 protected:
@@ -36,16 +40,63 @@ protected:
 
         source_path = get_test_data_path("standard_face_test_images/lenna.bmp");
         video_path = get_test_data_path("standard_face_test_videos/slideshow_scaled.mp4");
-        output_path = "tests_output/pipeline_runner_video_output.mp4";
-
-        std::filesystem::create_directories("tests_output");
-        if (std::filesystem::exists(output_path)) { std::filesystem::remove(output_path); }
+        
+        output_dir = std::filesystem::temp_directory_path() / "facefusion_tests" / "pipeline_runner_video";
+        std::filesystem::create_directories(output_dir);
     }
 
     std::shared_ptr<domain::ai::model_repository::ModelRepository> repo;
     std::filesystem::path source_path;
     std::filesystem::path video_path;
-    std::filesystem::path output_path;
+    std::filesystem::path output_dir;
+
+    struct VideoInfo {
+        int frame_count;
+        double fps;
+        int width;
+        int height;
+        bool has_audio;
+    };
+
+    VideoInfo get_video_info(const std::filesystem::path& video_path) {
+        if (!std::filesystem::exists(video_path)) {
+            std::cerr << "[ERROR] Video file does not exist: "
+                      << std::filesystem::absolute(video_path) << std::endl;
+            return {0, 0.0, 0, 0, false};
+        }
+
+        try {
+            foundation::media::ffmpeg::VideoParams params(video_path.string());
+            if (params.width == 0 || params.height == 0) {
+                std::cerr << "[ERROR] Failed to read video info using ffmpeg module: " << video_path
+                          << std::endl;
+                return {0, 0.0, 0, 0, false};
+            }
+
+            VideoInfo info;
+            info.frame_count = static_cast<int>(params.frameCount);
+            info.fps = params.frameRate;
+            info.width = static_cast<int>(params.width);
+            info.height = static_cast<int>(params.height);
+            info.has_audio = false;
+
+            if (info.frame_count <= 0) {
+                std::cerr << "[WARN] FFmpeg returned 0 frames, trying OpenCV fallback..."
+                          << std::endl;
+                cv::VideoCapture cap(video_path.string(), cv::CAP_FFMPEG);
+                if (!cap.isOpened()) cap.open(video_path.string(), cv::CAP_ANY);
+                if (cap.isOpened()) {
+                    info.frame_count = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
+                }
+            }
+
+            return info;
+
+        } catch (const std::exception& e) {
+            std::cerr << "[ERROR] Exception reading video info: " << e.what() << std::endl;
+            return {0, 0.0, 0, 0, false};
+        }
+    }
 
     void VerifyVideoContent(const std::filesystem::path& video_file,
                             const std::filesystem::path& source_face_img, float expected_scale) {
@@ -128,7 +179,7 @@ protected:
 
         if (valid_frames > 0) {
             double pass_rate = static_cast<double>(passed_frames) / valid_frames;
-            EXPECT_GE(pass_rate, 0.9) << "Less than 90% of valid frames passed similarity check";
+            EXPECT_GE(pass_rate, test_constants::FRAME_PASS_RATE) << "Less than 90% of valid frames passed similarity check";
         } else {
             std::cout << "Warning: No faces detected in any sampled frame." << std::endl;
         }
@@ -149,7 +200,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemoryOneStep) {
     task_config.io.source_paths.push_back(source_path.string());
     task_config.io.target_paths.push_back(video_path.string());
 
-    task_config.io.output.path = "tests_output";
+    task_config.io.output.path = output_dir.string();
     task_config.io.output.prefix = "pipeline_video_strict_memory_";
     task_config.io.output.suffix = ""; // pipeline_video_strict_memory_slideshow_scaled.mp4
 
@@ -165,7 +216,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemoryOneStep) {
     step1.params = params1;
     task_config.pipeline.push_back(step1);
 
-    std::string expected_output = "tests_output/pipeline_video_strict_memory_slideshow_scaled.mp4";
+    std::string expected_output = (output_dir / "pipeline_video_strict_memory_slideshow_scaled.mp4").string();
     if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
 
     auto merged_task_config = config::MergeConfigs(task_config, app_config);
@@ -177,7 +228,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemoryOneStep) {
     ASSERT_TRUE(result.is_ok());
     EXPECT_TRUE(std::filesystem::exists(expected_output));
 
-    EXPECT_FALSE(std::filesystem::exists("tests_output/temp_step_0.mp4"));
+    EXPECT_FALSE(std::filesystem::exists((output_dir / "temp_step_0.mp4").string()));
 }
 
 TEST_F(PipelineRunnerVideoTest, ProcessVideoTolerantMemoryOneStep) {
@@ -194,7 +245,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoTolerantMemoryOneStep) {
     task_config.io.source_paths.push_back(source_path.string());
     task_config.io.target_paths.push_back(video_path.string());
 
-    task_config.io.output.path = "tests_output";
+    task_config.io.output.path = output_dir.string();
     task_config.io.output.prefix = "pipeline_video_tolerant_memory_";
     task_config.io.output.suffix = ""; // pipeline_video_tolerant_memory_slideshow_scaled.mp4
 
@@ -211,7 +262,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoTolerantMemoryOneStep) {
     task_config.pipeline.push_back(step1);
 
     std::string expected_output =
-        "tests_output/pipeline_video_tolerant_memory_slideshow_scaled.mp4";
+        (output_dir / "pipeline_video_tolerant_memory_slideshow_scaled.mp4").string();
     if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
 
     auto merged_task_config = config::MergeConfigs(task_config, app_config);
@@ -223,7 +274,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoTolerantMemoryOneStep) {
     ASSERT_TRUE(result.is_ok());
     EXPECT_TRUE(std::filesystem::exists(expected_output));
 
-    EXPECT_FALSE(std::filesystem::exists("tests_output/temp_step_0.mp4"));
+    EXPECT_FALSE(std::filesystem::exists((output_dir / "temp_step_0.mp4").string()));
 }
 
 TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialMultiStep) {
@@ -240,7 +291,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialMultiStep) {
     task_config.io.source_paths.push_back(source_path.string());
     task_config.io.target_paths.push_back(video_path.string());
 
-    task_config.io.output.path = "tests_output";
+    task_config.io.output.path = output_dir.string();
     task_config.io.output.prefix = "pipeline_video_sequential_multi_step_";
     task_config.io.output.suffix = "";
 
@@ -282,7 +333,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialMultiStep) {
     task_config.pipeline.push_back(step4);
 
     std::string expected_output =
-        "tests_output/pipeline_video_sequential_multi_step_slideshow_scaled.mp4";
+        (output_dir / "pipeline_video_sequential_multi_step_slideshow_scaled.mp4").string();
     if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
 
     auto merged_task_config = config::MergeConfigs(task_config, app_config);
@@ -314,12 +365,12 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMutiStep) {
     // Add two targets to verify batch iteration (even if implementation is currently sequential)
     task_config.io.target_paths.push_back(video_path.string());
     // Create copy for batch test
-    std::filesystem::path video_path_2 = "tests_output/slideshow_copy.mp4";
+    std::filesystem::path video_path_2 = output_dir / "slideshow_copy.mp4";
     std::filesystem::copy_file(video_path, video_path_2,
                                std::filesystem::copy_options::overwrite_existing);
     task_config.io.target_paths.push_back(video_path_2.string());
 
-    task_config.io.output.path = "tests_output";
+    task_config.io.output.path = output_dir.string();
     task_config.io.output.prefix = "pipeline_video_batch_multi_step_";
     task_config.io.output.suffix = "";
 
@@ -361,9 +412,9 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMutiStep) {
     task_config.pipeline.push_back(step4);
 
     std::string expected_output_1 =
-        "tests_output/pipeline_video_batch_multi_step_slideshow_scaled.mp4";
+        (output_dir / "pipeline_video_batch_multi_step_slideshow_scaled.mp4").string();
     std::string expected_output_2 =
-        "tests_output/pipeline_video_batch_multi_step_slideshow_copy.mp4";
+        (output_dir / "pipeline_video_batch_multi_step_slideshow_copy.mp4").string();
 
     if (std::filesystem::exists(expected_output_1)) std::filesystem::remove(expected_output_1);
     if (std::filesystem::exists(expected_output_2)) std::filesystem::remove(expected_output_2);
@@ -381,4 +432,85 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMutiStep) {
     // Verify Content (Expected 2x upscale)
     VerifyVideoContent(expected_output_1, source_path, 2.0f);
     // Optionally verify second output too, but one is usually enough for pipeline logic check
+}
+
+// ============================================================================
+// Performance Tests (Merged from E2E)
+// ============================================================================
+
+TEST_F(PipelineRunnerVideoTest, ProcessVideo_AchievesMinimumFPS) {
+    auto input_info = get_video_info(video_path);
+    auto output_path = output_dir / "result_slideshow_fps.mp4";
+
+    config::TaskConfig task_config;
+    task_config.task_info.id = "video_720p_fps_test";
+    task_config.io.source_paths = {source_path.string()};
+    task_config.io.target_paths = {video_path.string()};
+    task_config.io.output.path = output_dir.string();
+    task_config.io.output.prefix = "result_";
+
+    config::PipelineStep swap_step;
+    swap_step.step = "face_swapper";
+    swap_step.enabled = true;
+    config::FaceSwapperParams params;
+    params.model = "inswapper_128_fp16";
+    swap_step.params = params;
+    task_config.pipeline.push_back(swap_step);
+
+    config::AppConfig app_config;
+
+    auto start = steady_clock::now();
+    auto runner = CreatePipelineRunner(app_config);
+    auto merged_config = config::MergeConfigs(task_config, app_config);
+    auto result = runner->Run(merged_config, [](const services::pipeline::TaskProgress& /*p*/) {});
+    auto duration_ms = duration_cast<milliseconds>(steady_clock::now() - start).count();
+
+    ASSERT_TRUE(result.is_ok());
+
+    // Calculate actual FPS
+    double actual_fps = (input_info.frame_count * 1000.0) / duration_ms;
+
+    std::cout << "=== Performance Summary ===" << std::endl;
+    std::cout << "Total frames: " << input_info.frame_count << std::endl;
+    std::cout << "Duration: " << duration_ms << " ms" << std::endl;
+    std::cout << "Actual FPS: " << actual_fps << std::endl;
+
+#ifdef NDEBUG
+    EXPECT_GE(actual_fps, test_constants::MIN_FPS_RTX4060)
+        << "FPS below threshold: " << actual_fps << " (min: " << test_constants::MIN_FPS_RTX4060 << ")";
+#else
+    std::cout << "[WARN] Running in DEBUG mode. FPS requirement ignored. Got: " << actual_fps
+              << std::endl;
+#endif
+}
+
+TEST_F(PipelineRunnerVideoTest, ProcessVideo_CompletesWithinTimeLimit) {
+    config::TaskConfig task_config;
+    task_config.task_info.id = "video_720p_time_test";
+    task_config.io.source_paths = {source_path.string()};
+    task_config.io.target_paths = {video_path.string()};
+    task_config.io.output.path = output_dir.string();
+    task_config.io.output.prefix = "result_";
+
+    config::PipelineStep swap_step;
+    swap_step.step = "face_swapper";
+    swap_step.enabled = true;
+    config::FaceSwapperParams params;
+    params.model = "inswapper_128_fp16";
+    swap_step.params = params;
+    task_config.pipeline.push_back(swap_step);
+
+    config::AppConfig app_config;
+
+    auto start = steady_clock::now();
+    auto runner = CreatePipelineRunner(app_config);
+    auto merged_config = config::MergeConfigs(task_config, app_config);
+    auto result = runner->Run(merged_config, [](const services::pipeline::TaskProgress& /*p*/) {});
+    auto duration_s = duration_cast<seconds>(steady_clock::now() - start).count();
+
+    ASSERT_TRUE(result.is_ok());
+
+    int64_t max_duration_s = test_constants::TIMEOUT_VIDEO_40S_MS / 1000;
+    EXPECT_LT(duration_s, max_duration_s)
+        << "Processing time exceeded: " << duration_s << "s (max: " << max_duration_s << "s)";
 }

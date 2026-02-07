@@ -1,7 +1,7 @@
 
 /**
  * @file inference_session_tests.cpp
- * @brief Unit tests for InferenceSession.
+ * @brief Integration tests for InferenceSession.
  * @author
  * CodingRookie
  * @date 2026-01-27

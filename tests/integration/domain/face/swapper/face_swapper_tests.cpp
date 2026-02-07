@@ -1,6 +1,6 @@
 /**
  * @file face_swapper_tests.cpp
- * @brief Unit tests for FaceSwapper.
+ * @brief Integration tests for FaceSwapper.
  * @author CodingRookie
  *
  * @date 2026-01-27
@@ -35,14 +35,17 @@ protected:
         repo = setup_model_repository(assets_path);
         source_path = get_test_data_path("standard_face_test_images/lenna.bmp");
         target_path = get_test_data_path("standard_face_test_images/tiffany.bmp");
+        output_dir = fs::temp_directory_path() / "facefusion_tests" / "face_swapper";
+        fs::create_directories(output_dir);
     }
 
     std::shared_ptr<domain::ai::model_repository::ModelRepository> repo;
     fs::path source_path;
     fs::path target_path;
+    fs::path output_dir;
 };
 
-TEST_F(FaceSwapperIntegrationTest, SwapFaceAndVerifySimilarity) {
+TEST_F(FaceSwapperIntegrationTest, SwapFace_ValidInput_ResultResemblesSource) {
     if (!fs::exists(source_path) || !fs::exists(target_path)) {
         GTEST_SKIP() << "Test images not found";
     }
@@ -101,6 +104,5 @@ TEST_F(FaceSwapperIntegrationTest, SwapFaceAndVerifySimilarity) {
     EXPECT_GT(similarity, 0.3) << "Swapped face should resemble source face";
 
     // Save result for visual inspection
-    fs::create_directories("tests_output");
-    cv::imwrite("tests_output/swap_test_result.jpg", result_img);
+    cv::imwrite((output_dir / "swap_test_result.jpg").string(), result_img);
 }

@@ -1,6 +1,6 @@
 /**
  * @file face_masker_tests.cpp
- * @brief Unit tests for FaceMasker.
+ * @brief Integration tests for FaceMasker.
  * @author CodingRookie
  *
  * @date 2026-01-27
@@ -31,29 +31,32 @@ protected:
         auto assets_path = get_assets_path();
         repo = setup_model_repository(assets_path);
         test_image_path = get_test_data_path("standard_face_test_images/lenna.bmp");
+        output_dir = fs::temp_directory_path() / "facefusion_tests" / "face_masker";
+        fs::create_directories(output_dir);
     }
 
     std::shared_ptr<domain::ai::model_repository::ModelRepository> repo;
     fs::path test_image_path;
+    fs::path output_dir;
 };
 
 // ============================================================================
 // Factory Exception Tests
 // ============================================================================
 
-TEST_F(FaceMaskerTest, CreateOcclusionMaskerThrowsOnEmptyPath) {
+TEST_F(FaceMaskerTest, CreateOcclusionMasker_EmptyPath_ThrowsException) {
     EXPECT_ANY_THROW(create_occlusion_masker(""));
 }
 
-TEST_F(FaceMaskerTest, CreateRegionMaskerThrowsOnEmptyPath) {
+TEST_F(FaceMaskerTest, CreateRegionMasker_EmptyPath_ThrowsException) {
     EXPECT_ANY_THROW(create_region_masker(""));
 }
 
-TEST_F(FaceMaskerTest, CreateOcclusionMaskerThrowsOnInvalidPath) {
+TEST_F(FaceMaskerTest, CreateOcclusionMasker_InvalidPath_ThrowsException) {
     EXPECT_ANY_THROW(create_occlusion_masker("invalid_path.onnx"));
 }
 
-TEST_F(FaceMaskerTest, CreateRegionMaskerThrowsOnInvalidPath) {
+TEST_F(FaceMaskerTest, CreateRegionMasker_InvalidPath_ThrowsException) {
     EXPECT_ANY_THROW(create_region_masker("invalid_path.onnx"));
 }
 
@@ -61,7 +64,7 @@ TEST_F(FaceMaskerTest, CreateRegionMaskerThrowsOnInvalidPath) {
 // Occlusion Masker Integration Tests
 // ============================================================================
 
-TEST_F(FaceMaskerTest, OcclusionMaskerInference) {
+TEST_F(FaceMaskerTest, CreateOcclusionMask_ValidInput_ReturnsValidMask) {
     // Get model path
     std::string model_path = repo->ensure_model("xseg_1");
     if (model_path.empty()) { GTEST_SKIP() << "face_occluder model not available"; }
@@ -103,15 +106,14 @@ TEST_F(FaceMaskerTest, OcclusionMaskerInference) {
     EXPECT_EQ(mask.cols, 256) << "Mask width should match input";
 
     // Save for visual inspection
-    fs::create_directories("tests_output");
-    cv::imwrite("tests_output/occlusion_mask_result.png", mask);
+    cv::imwrite((output_dir / "occlusion_mask_result.png").string(), mask);
 }
 
 // ============================================================================
 // Region Masker Integration Tests
 // ============================================================================
 
-TEST_F(FaceMaskerTest, RegionMaskerInference) {
+TEST_F(FaceMaskerTest, CreateRegionMask_ValidInput_ReturnsValidMask) {
     // Get model path
     std::string model_path = repo->ensure_model("bisenet_resnet_18");
     if (model_path.empty()) { GTEST_SKIP() << "face_parser model not available"; }
@@ -158,11 +160,10 @@ TEST_F(FaceMaskerTest, RegionMaskerInference) {
     EXPECT_GT(non_zero, 0) << "Mask should have some selected regions";
 
     // Save for visual inspection
-    fs::create_directories("tests_output");
-    cv::imwrite("tests_output/region_mask_result.png", mask);
+    cv::imwrite((output_dir / "region_mask_result.png").string(), mask);
 }
 
-TEST_F(FaceMaskerTest, RegionMaskerMultipleRegions) {
+TEST_F(FaceMaskerTest, CreateRegionMask_MultipleRegions_ReturnsCombinedMask) {
     std::string model_path = repo->ensure_model("bisenet_resnet_18");
     if (model_path.empty()) { GTEST_SKIP() << "face_parser model not available"; }
 

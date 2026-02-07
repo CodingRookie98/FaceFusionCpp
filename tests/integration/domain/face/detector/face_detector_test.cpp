@@ -1,8 +1,7 @@
 /**
  * @file test_face_detector.cpp
- * @brief Unit tests for FaceDetector.
+ * @brief Integration tests for FaceDetector.
  * @author CodingRookie
-
  * * @date 2026-01-27
  */
 
@@ -34,7 +33,7 @@ protected:
     }
 };
 
-TEST_F(FaceDetectorTest, DetectFacesTiffany) {
+TEST_F(FaceDetectorTest, DetectFaces_TiffanyImage_FindsAtLeastOneFace) {
     try {
         auto model_repository = domain::ai::model_repository::ModelRepository::get_instance();
         auto img_path = get_test_data_path("standard_face_test_images/tiffany.bmp");
