@@ -41,7 +41,8 @@ protected:
         target_image_path_babara = get_test_data_path("standard_face_test_images/barbara.bmp");
 
         // Output will be generated in tests_output
-        output_dir = std::filesystem::temp_directory_path() / "facefusion_tests" / "pipeline_runner_image";
+        output_dir =
+            std::filesystem::temp_directory_path() / "facefusion_tests" / "pipeline_runner_image";
         std::filesystem::create_directories(output_dir);
     }
 
@@ -92,7 +93,7 @@ TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
     }
 
     config::AppConfig app_config;
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
     task_config.config_version = "1.0";
@@ -116,7 +117,7 @@ TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
     task_config.pipeline.push_back(step1);
 
     auto merged_task_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
+    auto result = runner->run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
 
     if (result.is_err()) {
         std::cerr << "Image Runner Error: " << result.error().message << std::endl;
@@ -124,7 +125,8 @@ TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
     ASSERT_TRUE(result.is_ok());
 
     // Expected output: output_dir/pipeline_runner_image_single_output_woman.jpg
-    std::filesystem::path output_path = output_dir / "pipeline_runner_image_single_output_woman.jpg";
+    std::filesystem::path output_path =
+        output_dir / "pipeline_runner_image_single_output_woman.jpg";
     EXPECT_TRUE(std::filesystem::exists(output_path));
 
     verify_face_swap(output_path, source_path);
@@ -137,7 +139,7 @@ TEST_F(PipelineRunnerImageTest, ProcessImageBatch) {
     }
 
     config::AppConfig app_config;
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
     task_config.config_version = "1.0";
@@ -166,7 +168,7 @@ TEST_F(PipelineRunnerImageTest, ProcessImageBatch) {
     task_config.pipeline.push_back(step1);
 
     auto merged_task_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
+    auto result = runner->run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
 
     ASSERT_TRUE(result.is_ok());
 
@@ -187,7 +189,7 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
     }
 
     config::AppConfig app_config;
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
     task_config.config_version = "1.0";
@@ -234,12 +236,11 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
     task_config.pipeline.push_back(step4);
 
     auto merged_task_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
+    auto result = runner->run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
 
     ASSERT_TRUE(result.is_ok());
 
-    std::filesystem::path output_path =
-        output_dir / "pipeline_runner_image_multi_output_woman.jpg";
+    std::filesystem::path output_path = output_dir / "pipeline_runner_image_multi_output_woman.jpg";
     EXPECT_TRUE(std::filesystem::exists(output_path));
 
     // Resolution check (Upscaled 2x)
@@ -257,10 +258,8 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
 
 TEST_F(PipelineRunnerImageTest, Process720pImage_CompletesWithinTimeLimit) {
     auto target_path = get_assets_path() / "standard_face_test_images" / "girl.bmp";
-    if (!std::filesystem::exists(target_path)) {
-        GTEST_SKIP() << "Test assets not found.";
-    }
-    
+    if (!std::filesystem::exists(target_path)) { GTEST_SKIP() << "Test assets not found."; }
+
     auto output_path = output_dir / "result_girl.bmp";
 
     config::TaskConfig task_config;
@@ -282,9 +281,9 @@ TEST_F(PipelineRunnerImageTest, Process720pImage_CompletesWithinTimeLimit) {
     config::AppConfig app_config;
 
     auto start = steady_clock::now();
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
     auto merged_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_config, [](const services::pipeline::TaskProgress& p) {});
+    auto result = runner->run(merged_config, [](const services::pipeline::TaskProgress& p) {});
     auto duration = duration_cast<milliseconds>(steady_clock::now() - start);
 
     ASSERT_TRUE(result.is_ok());
@@ -297,10 +296,8 @@ TEST_F(PipelineRunnerImageTest, Process720pImage_CompletesWithinTimeLimit) {
 
 TEST_F(PipelineRunnerImageTest, Process2KImage_CompletesWithinTimeLimit) {
     auto target_path = get_assets_path() / "standard_face_test_images" / "woman.jpg";
-    if (!std::filesystem::exists(target_path)) {
-        GTEST_SKIP() << "Test assets not found.";
-    }
-    
+    if (!std::filesystem::exists(target_path)) { GTEST_SKIP() << "Test assets not found."; }
+
     auto output_path = output_dir / "result_woman.png"; // WebP input, PNG output
 
     config::TaskConfig task_config;
@@ -322,9 +319,9 @@ TEST_F(PipelineRunnerImageTest, Process2KImage_CompletesWithinTimeLimit) {
     config::AppConfig app_config;
 
     auto start = steady_clock::now();
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
     auto merged_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_config, [](const services::pipeline::TaskProgress& p) {});
+    auto result = runner->run(merged_config, [](const services::pipeline::TaskProgress& p) {});
     auto duration = duration_cast<milliseconds>(steady_clock::now() - start);
 
     ASSERT_TRUE(result.is_ok());

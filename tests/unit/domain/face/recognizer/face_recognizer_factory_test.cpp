@@ -6,6 +6,6 @@ import domain.face.recognizer;
 using namespace domain::face::recognizer;
 
 TEST(FaceRecognizerFactoryTest, CreateArcFace) {
-    auto recognizer = create_face_recognizer(FaceRecognizerType::ArcFace_w600k_r50);
+    auto recognizer = create_face_recognizer(FaceRecognizerType::ArcFaceW600kR50);
     EXPECT_NE(recognizer, nullptr);
 }

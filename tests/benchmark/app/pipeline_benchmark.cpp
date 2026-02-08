@@ -51,7 +51,7 @@ TEST_F(PipelineBenchmarkTest, BenchmarkVideoProcessing) {
     config::AppConfig app_config;
     // Optional: Configure app_config for performance (e.g., enable TensorRT if available)
 
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
     task_config.config_version = "1.0";
@@ -97,7 +97,7 @@ TEST_F(PipelineBenchmarkTest, BenchmarkVideoProcessing) {
     // --- TIMING START ---
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    auto result = runner->Run(task_config, [](const services::pipeline::TaskProgress& p) {
+    auto result = runner->run(task_config, [](const services::pipeline::TaskProgress& p) {
         // Optional: Print progress sparingly
         // if (static_cast<int>(p.progress * 100) % 20 == 0) {
         //     std::cout << "." << std::flush;

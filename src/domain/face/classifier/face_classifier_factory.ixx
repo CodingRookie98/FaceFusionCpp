@@ -7,7 +7,7 @@ import :api;
 
 export namespace domain::face::classifier {
 
-enum class ClassifierType {
+enum class ClassifierType : std::uint8_t {
     FairFace,
 };
 

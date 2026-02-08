@@ -68,12 +68,14 @@ public:
     void preload_session(const std::string& model_path, const Options& options,
                          std::shared_ptr<InferenceSession> session);
 
+    InferenceSessionRegistry(const InferenceSessionRegistry&) = delete;
+    InferenceSessionRegistry& operator=(const InferenceSessionRegistry&) = delete;
+    InferenceSessionRegistry(InferenceSessionRegistry&&) = delete;
+    InferenceSessionRegistry& operator=(InferenceSessionRegistry&&) = delete;
+
 private:
     InferenceSessionRegistry();
     ~InferenceSessionRegistry() = default;
-
-    InferenceSessionRegistry(const InferenceSessionRegistry&) = delete;
-    InferenceSessionRegistry& operator=(const InferenceSessionRegistry&) = delete;
 
     session_pool::SessionPool m_pool;
     std::string m_cache_path = "./.cache/tensorrt"; ///< Cache path for TensorRT engines

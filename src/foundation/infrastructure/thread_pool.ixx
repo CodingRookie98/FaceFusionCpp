@@ -35,6 +35,8 @@ public:
 
     ThreadPool(const ThreadPool&) = delete;
     ThreadPool& operator=(const ThreadPool&) = delete;
+    ThreadPool(ThreadPool&&) = delete;
+    ThreadPool& operator=(ThreadPool&&) = delete;
 
     /**
      * @brief Enqueue a task to be executed by the thread pool
@@ -44,14 +46,14 @@ public:
      * @param args Arguments to pass to the function
      * @return std::future holding the result of the task
      */
-    template <class F, class... Args>
-    auto enqueue(F&& f, Args&&... args) -> std::future<std::invoke_result_t<F, Args...>> {
-        using return_type = std::invoke_result_t<F, Args...>;
+    template <class TF, class... TArgs>
+    auto enqueue(TF&& f, TArgs&&... args) -> std::future<std::invoke_result_t<TF, TArgs...>> {
+        using return_type = std::invoke_result_t<TF, TArgs...>;
 
         auto promise = std::make_shared<std::promise<return_type>>();
         std::future<return_type> res = promise->get_future();
 
-        auto task = [f = std::forward<F>(f), args = std::make_tuple(std::forward<Args>(args)...),
+        auto task = [f = std::forward<TF>(f), args = std::make_tuple(std::forward<TArgs>(args)...),
                      promise]() mutable {
             try {
                 if constexpr (std::is_void_v<return_type>) {

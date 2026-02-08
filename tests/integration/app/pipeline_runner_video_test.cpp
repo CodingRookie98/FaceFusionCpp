@@ -41,7 +41,8 @@ protected:
         source_path = get_test_data_path("standard_face_test_images/lenna.bmp");
         video_path = get_test_data_path("standard_face_test_videos/slideshow_scaled.mp4");
 
-        output_dir = std::filesystem::temp_directory_path() / "facefusion_tests" / "pipeline_runner_video";
+        output_dir =
+            std::filesystem::temp_directory_path() / "facefusion_tests" / "pipeline_runner_video";
         std::filesystem::create_directories(output_dir);
     }
 
@@ -83,10 +84,8 @@ protected:
             if (info.frame_count <= 0) {
                 std::cerr << "[WARN] FFmpeg returned 0 frames, checking via VideoReader..."
                           << std::endl;
-                 foundation::media::ffmpeg::VideoReader reader(video_path.string());
-                 if (reader.open()) {
-                     info.frame_count = reader.get_frame_count();
-                 }
+                foundation::media::ffmpeg::VideoReader reader(video_path.string());
+                if (reader.open()) { info.frame_count = reader.get_frame_count(); }
             }
 
             return info;
@@ -177,7 +176,8 @@ protected:
 
         if (valid_frames > 0) {
             double pass_rate = static_cast<double>(passed_frames) / valid_frames;
-            EXPECT_GE(pass_rate, test_constants::FRAME_PASS_RATE) << "Less than 90% of valid frames passed similarity check";
+            EXPECT_GE(pass_rate, test_constants::FRAME_PASS_RATE)
+                << "Less than 90% of valid frames passed similarity check";
         } else {
             std::cout << "Warning: No faces detected in any sampled frame." << std::endl;
         }
@@ -190,7 +190,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemoryOneStep) {
     }
 
     config::AppConfig app_config;
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
     task_config.config_version = "1.0";
@@ -214,11 +214,12 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemoryOneStep) {
     step1.params = params1;
     task_config.pipeline.push_back(step1);
 
-    std::string expected_output = (output_dir / "pipeline_video_strict_memory_slideshow_scaled.mp4").string();
+    std::string expected_output =
+        (output_dir / "pipeline_video_strict_memory_slideshow_scaled.mp4").string();
     if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
 
     auto merged_task_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
+    auto result = runner->run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
 
     if (result.is_err()) {
         std::cerr << "Strict Runner Error: " << result.error().message << std::endl;
@@ -235,7 +236,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoTolerantMemoryOneStep) {
     }
 
     config::AppConfig app_config;
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
     task_config.config_version = "1.0";
@@ -264,7 +265,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoTolerantMemoryOneStep) {
     if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
 
     auto merged_task_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
+    auto result = runner->run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
 
     if (result.is_err()) {
         std::cerr << "Tolerant Runner Error: " << result.error().message << std::endl;
@@ -281,7 +282,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialMultiStep) {
     }
 
     config::AppConfig app_config;
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
     task_config.config_version = "1.0";
@@ -335,7 +336,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialMultiStep) {
     if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
 
     auto merged_task_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
+    auto result = runner->run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
 
     if (result.is_err()) {
         std::cerr << "Sequential MultiStep Runner Error: " << result.error().message << std::endl;
@@ -353,7 +354,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMutiStep) {
     }
 
     config::AppConfig app_config;
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
     task_config.config_version = "1.0";
@@ -418,7 +419,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMutiStep) {
     if (std::filesystem::exists(expected_output_2)) std::filesystem::remove(expected_output_2);
 
     auto merged_task_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
+    auto result = runner->run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
 
     if (result.is_err()) {
         std::cerr << "Batch MultiStep Runner Error: " << result.error().message << std::endl;
@@ -458,9 +459,9 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideo_AchievesMinimumFPS) {
     config::AppConfig app_config;
 
     auto start = steady_clock::now();
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
     auto merged_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_config, [](const services::pipeline::TaskProgress& /*p*/) {});
+    auto result = runner->run(merged_config, [](const services::pipeline::TaskProgress& /*p*/) {});
     auto duration_ms = duration_cast<milliseconds>(steady_clock::now() - start).count();
 
     ASSERT_TRUE(result.is_ok());
@@ -475,7 +476,8 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideo_AchievesMinimumFPS) {
 
 #ifdef NDEBUG
     EXPECT_GE(actual_fps, test_constants::MIN_FPS_RTX4060)
-        << "FPS below threshold: " << actual_fps << " (min: " << test_constants::MIN_FPS_RTX4060 << ")";
+        << "FPS below threshold: " << actual_fps << " (min: " << test_constants::MIN_FPS_RTX4060
+        << ")";
 #else
     std::cout << "[WARN] Running in DEBUG mode. FPS requirement ignored. Got: " << actual_fps
               << std::endl;
@@ -501,9 +503,9 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideo_CompletesWithinTimeLimit) {
     config::AppConfig app_config;
 
     auto start = steady_clock::now();
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
     auto merged_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_config, [](const services::pipeline::TaskProgress& /*p*/) {});
+    auto result = runner->run(merged_config, [](const services::pipeline::TaskProgress& /*p*/) {});
     auto duration_s = duration_cast<seconds>(steady_clock::now() - start).count();
 
     ASSERT_TRUE(result.is_ok());

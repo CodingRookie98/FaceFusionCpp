@@ -36,9 +36,11 @@ public:
     explicit SessionPool(const PoolConfig& config = {});
     ~SessionPool();
 
-    // No copy
+    // No copy or move
     SessionPool(const SessionPool&) = delete;
     SessionPool& operator=(const SessionPool&) = delete;
+    SessionPool(SessionPool&&) = delete;
+    SessionPool& operator=(SessionPool&&) = delete;
 
     /**
      * @brief Update pool configuration

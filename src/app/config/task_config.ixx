@@ -70,9 +70,9 @@ struct TaskResourceConfig {
      */
     [[nodiscard]] int get_effective_thread_count() const {
         if (thread_count > 0) return thread_count;
-        const unsigned int hw = std::thread::hardware_concurrency();
-        if (hw == 0) return 2; // Fallback
-        return std::max(1, static_cast<int>(hw / 2));
+        const unsigned int kHw = std::thread::hardware_concurrency();
+        if (kHw == 0) return 2; // Fallback
+        return std::max(1, static_cast<int>(kHw / 2));
     }
 };
 

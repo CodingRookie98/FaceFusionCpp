@@ -18,11 +18,11 @@ struct RestoreExpressionInput {
     std::vector<domain::face::types::Landmarks> source_landmarks;
     // target_frame removed, handled by pipeline
     std::vector<domain::face::types::Landmarks> target_landmarks;
-    float restore_factor{0.96f};
+    float restore_factor{0.96F};
 
     // Masking options
     std::unordered_set<MaskType> mask_types{MaskType::Box};
-    float box_mask_blur{0.5f};
+    float box_mask_blur{0.5F};
     std::array<int, 4> box_mask_padding{0, 0, 0, 0};
 };
 

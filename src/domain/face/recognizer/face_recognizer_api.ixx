@@ -77,7 +77,7 @@ public:
      * @param input_tensors Vector of input tensors
      * @return Vector of output tensors
      */
-    std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors) {
+    std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors) const {
         if (!m_session) return {};
         return m_session->run(input_tensors);
     }

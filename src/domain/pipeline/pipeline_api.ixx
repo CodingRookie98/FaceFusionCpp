@@ -73,7 +73,7 @@ public:
     /**
      * @brief Check if the pipeline is currently running
      */
-    virtual bool is_active() const = 0;
+    [[nodiscard]] virtual bool is_active() const = 0;
 };
 
 } // namespace domain::pipeline

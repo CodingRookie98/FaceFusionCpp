@@ -80,11 +80,11 @@ enum class ErrorCode : std::uint16_t {
  * @brief Get error code category name
  */
 [[nodiscard]] constexpr std::string_view error_category(ErrorCode code) noexcept {
-    const auto value = static_cast<std::uint16_t>(code);
-    if (value >= 100 && value < 200) return "System";
-    if (value >= 200 && value < 300) return "Config";
-    if (value >= 300 && value < 400) return "Model";
-    if (value >= 400 && value < 500) return "Runtime";
+    const auto kValue = static_cast<std::uint16_t>(code);
+    if (kValue >= 100 && kValue < 200) return "System";
+    if (kValue >= 200 && kValue < 300) return "Config";
+    if (kValue >= 300 && kValue < 400) return "Model";
+    if (kValue >= 400 && kValue < 500) return "Runtime";
     return "Unknown";
 }
 
@@ -144,8 +144,8 @@ struct ConfigError {
      * @brief Check if this error is recoverable (E4xx errors are typically recoverable)
      */
     [[nodiscard]] bool is_recoverable() const noexcept {
-        const auto value = static_cast<std::uint16_t>(code);
-        return value >= 400 && value < 500;
+        const auto kValue = static_cast<std::uint16_t>(code);
+        return kValue >= 400 && kValue < 500;
     }
 
     /**

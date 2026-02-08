@@ -42,7 +42,7 @@ static domain::pipeline::ProcessorRegistrar register_frame_enhancer(
 
 namespace domain::pipeline {
 
-void RegisterBuiltinAdapters() {
+void register_builtin_adapters() {
     // This function doesn't need to do anything, but calling it forces linkage
     // of this translation unit, ensuring static variables are initialized.
     (void)register_swapper;

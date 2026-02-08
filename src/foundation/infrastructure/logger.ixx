@@ -46,6 +46,8 @@ public:
     Logger(Logger&&) = delete;
     Logger& operator=(Logger&&) = delete;
 
+    ~Logger() = default;
+
     /**
      * @brief Log a message with trace level
      * @param msg The message to log
@@ -118,7 +120,7 @@ public:
      * @param name Name of the operation to time
      * @param level Log level to use for the output
      */
-    ScopedTimer(std::string name, LogLevel level = LogLevel::Debug);
+    explicit ScopedTimer(std::string name, LogLevel level = LogLevel::Debug);
 
     /**
      * @brief Destroy the Scoped Timer and log the duration

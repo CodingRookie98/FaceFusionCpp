@@ -23,14 +23,14 @@ public:
     }
 
     void register_processor(const std::string& type, ProcessorCreator creator) {
-        creators_[type] = creator;
+        m_creators[type] = creator;
         foundation::infrastructure::logger::Logger::get_instance()->debug(
             "ProcessorFactory: Registered processor type '" + type + "'");
     }
 
     std::shared_ptr<IFrameProcessor> create(const std::string& type, const void* context_ptr) {
-        auto it = creators_.find(type);
-        if (it != creators_.end()) { return it->second(context_ptr); }
+        auto it = m_creators.find(type);
+        if (it != m_creators.end()) { return it->second(context_ptr); }
         foundation::infrastructure::logger::Logger::get_instance()->error(
             "ProcessorFactory: Unknown processor type '" + type + "'");
         return nullptr;
@@ -38,7 +38,7 @@ public:
 
 private:
     ProcessorFactory() = default;
-    std::map<std::string, ProcessorCreator> creators_;
+    std::map<std::string, ProcessorCreator> m_creators;
 };
 
 export struct ProcessorRegistrar {

@@ -144,7 +144,7 @@ inline types::Embedding get_face_embedding(
     if (image.empty() || landmarks.empty()) return {};
 
     auto recognizer_ptr =
-        recognizer::create_face_recognizer(recognizer::FaceRecognizerType::ArcFace_w600k_r50);
+        recognizer::create_face_recognizer(recognizer::FaceRecognizerType::ArcFaceW600kR50);
 
     std::string model_path = repo->ensure_model("arcface_w600k_r50");
     if (model_path.empty()) return {};
@@ -175,7 +175,7 @@ inline std::shared_ptr<domain::face::analyser::FaceAnalyser> create_face_analyse
     // We only need detection and embedding for similarity check
 
     opts.face_detector_options.type = domain::face::detector::DetectorType::Yolo;
-    opts.face_recognizer_type = domain::face::recognizer::FaceRecognizerType::ArcFace_w600k_r50;
+    opts.face_recognizer_type = domain::face::recognizer::FaceRecognizerType::ArcFaceW600kR50;
 
     return std::make_shared<FaceAnalyser>(opts);
 }

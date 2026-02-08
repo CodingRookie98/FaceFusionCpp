@@ -86,15 +86,15 @@ struct PipelineRunner::Impl {
         m_inference_options = Options::with_best_providers();
 
         // Ensure builtin adapters are registered
-        domain::pipeline::RegisterBuiltinAdapters();
+        domain::pipeline::register_builtin_adapters();
     }
 
-    config::Result<void, config::ConfigError> Run(const config::TaskConfig& task_config,
+    config::Result<void, config::ConfigError> run(const config::TaskConfig& task_config,
                                                   ProgressCallback progress_callback) {
         using foundation::infrastructure::ScopedTimer;
         namespace logger = foundation::infrastructure::logger;
 
-        ScopedTimer timer("PipelineRunner::Run",
+        ScopedTimer timer("PipelineRunner::run",
                           std::format("task_id={}", task_config.task_info.id),
                           logger::LogLevel::Info);
 
@@ -119,9 +119,9 @@ struct PipelineRunner::Impl {
         return result;
     }
 
-    void Cancel() { m_cancelled = true; }
+    void cancel() { m_cancelled = true; }
 
-    bool WaitForCompletion(std::chrono::seconds timeout) {
+    bool wait_for_completion(std::chrono::seconds timeout) {
         Logger::get_instance()->info(
             "[PipelineRunner] Waiting for in-flight frames to complete...");
 
@@ -132,7 +132,7 @@ struct PipelineRunner::Impl {
         }
 
         if (m_running.load()) {
-            Logger::get_instance()->warn("[PipelineRunner] WaitForCompletion timed out");
+            Logger::get_instance()->warn("[PipelineRunner] wait_for_completion timed out");
             return false;
         }
 
@@ -140,7 +140,7 @@ struct PipelineRunner::Impl {
         return true;
     }
 
-    bool IsRunning() const { return m_running; }
+    bool is_running() const { return m_running; }
 
 private:
     config::AppConfig m_app_config;
@@ -161,7 +161,7 @@ private:
                 m_model_repo->ensure_model(m_app_config.default_models.face_recognizer);
             opts.face_detector_options.type = domain::face::detector::DetectorType::Yolo;
             opts.face_recognizer_type =
-                domain::face::recognizer::FaceRecognizerType::ArcFace_w600k_r50;
+                domain::face::recognizer::FaceRecognizerType::ArcFaceW600kR50;
 
             m_face_analyser = std::make_shared<domain::face::analyser::FaceAnalyser>(opts);
         }
@@ -460,24 +460,24 @@ PipelineRunner::~PipelineRunner() = default;
 PipelineRunner::PipelineRunner(PipelineRunner&&) noexcept = default;
 PipelineRunner& PipelineRunner::operator=(PipelineRunner&&) noexcept = default;
 
-config::Result<void, config::ConfigError> PipelineRunner::Run(const config::TaskConfig& task_config,
-                                                              ProgressCallback progress_callback) {
-    return m_impl->Run(task_config, progress_callback);
+config::Result<void, config::ConfigError> PipelineRunner::run(const config::TaskConfig& task_config,
+                                                               ProgressCallback progress_callback) {
+    return m_impl->run(task_config, progress_callback);
 }
 
-void PipelineRunner::Cancel() {
-    m_impl->Cancel();
+void PipelineRunner::cancel() {
+    m_impl->cancel();
 }
 
-bool PipelineRunner::WaitForCompletion(std::chrono::seconds timeout) {
-    return m_impl->WaitForCompletion(timeout);
+bool PipelineRunner::wait_for_completion(std::chrono::seconds timeout) {
+    return m_impl->wait_for_completion(timeout);
 }
 
-bool PipelineRunner::IsRunning() const {
-    return m_impl->IsRunning();
+bool PipelineRunner::is_running() const {
+    return m_impl->is_running();
 }
 
-std::unique_ptr<PipelineRunner> CreatePipelineRunner(const config::AppConfig& app_config) {
+std::unique_ptr<PipelineRunner> create_pipeline_runner(const config::AppConfig& app_config) {
     return std::make_unique<PipelineRunner>(app_config);
 }
 

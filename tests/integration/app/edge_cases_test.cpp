@@ -71,9 +71,9 @@ TEST_F(EdgeCasesTest, PaletteImage_AutoConvertsToRGB24) {
 
     config::AppConfig app_config;
 
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
     auto merged_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_config);
+    auto result = runner->run(merged_config);
 
     if (!result.is_ok()) {
         std::cout << "Pipeline failed with error: " << result.error().message << std::endl;
@@ -119,9 +119,9 @@ TEST_F(EdgeCasesTest, FormatDisguise_WebPWithJpgExtension_DecodesCorrectly) {
 
     config::AppConfig app_config;
 
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
     auto merged_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_config);
+    auto result = runner->run(merged_config);
 
     if (!result.is_ok()) {
         std::cout << "Pipeline failed with error: " << result.error().message << std::endl;
@@ -171,9 +171,9 @@ TEST_F(NoFaceFrameTest, NoFaceDetected_PassthroughWithWarning) {
 
     config::AppConfig app_config;
 
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
     auto merged_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_config);
+    auto result = runner->run(merged_config);
 
     EXPECT_TRUE(result.is_ok()) << "Pipeline should not fail on no-face images";
     EXPECT_TRUE(std::filesystem::exists(output_path)) << "Output should exist (passthrough)";
@@ -217,9 +217,9 @@ TEST_F(EdgeCasesTest, VerticalVideo_PreservesAspectRatio) {
 
     config::AppConfig app_config;
 
-    auto runner = CreatePipelineRunner(app_config);
+    auto runner = create_pipeline_runner(app_config);
     auto merged_config = config::MergeConfigs(task_config, app_config);
-    auto result = runner->Run(merged_config);
+    auto result = runner->run(merged_config);
 
     ASSERT_TRUE(result.is_ok());
     ASSERT_TRUE(std::filesystem::exists(output_path));

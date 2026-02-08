@@ -32,7 +32,7 @@ TEST_F(ArcFaceRecognizerTest, LoadModelAndRecognizeFace) {
     std::string model_path = "arcface_w600k_r50.onnx";
     InferenceSessionRegistry::get_instance().preload_session(model_path, Options(), mock_session);
 
-    auto recognizer = create_face_recognizer(FaceRecognizerType::ArcFace_w600k_r50);
+    auto recognizer = create_face_recognizer(FaceRecognizerType::ArcFaceW600kR50);
 
     // 1. Setup Mock for load_model
     std::vector<std::vector<int64_t>> input_dims = {{1, 3, 112, 112}};

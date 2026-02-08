@@ -12,12 +12,12 @@ export namespace foundation::infrastructure::logger {
 /**
  * @brief Log levels supported by the logger
  */
-enum class LogLevel { Trace, Debug, Info, Warn, Error, Critical, Off };
+enum class LogLevel : std::uint8_t { Trace, Debug, Info, Warn, Error, Critical, Off };
 
 /**
  * @brief Log rotation policy
  */
-enum class RotationPolicy {
+enum class RotationPolicy : std::uint8_t {
     Daily,  // Rotate daily at 00:00
     Hourly, // Rotate every hour
     Size    // Rotate by file size

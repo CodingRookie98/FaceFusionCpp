@@ -61,7 +61,7 @@ struct Options {
     FaceDetectorOptions face_detector_options;     ///< Configuration for detection
     FaceLandmarkerOptions face_landmarker_options; ///< Configuration for landmarking
     recognizer::FaceRecognizerType face_recognizer_type =
-        recognizer::FaceRecognizerType::ArcFace_w600k_r50; ///< Preferred recognizer model
+        recognizer::FaceRecognizerType::ArcFaceW600kR50; ///< Preferred recognizer model
     classifier::ClassifierType face_classifier_type =
         classifier::ClassifierType::FairFace; ///< Preferred classifier model
     selector::Options face_selector_options;  ///< Configuration for face selection

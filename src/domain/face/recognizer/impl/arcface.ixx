@@ -20,7 +20,7 @@ public:
     ~ArcFace() override = default;
 
     void load_model(const std::string& model_path,
-                    const foundation::ai::inference_session::Options& options);
+                    const foundation::ai::inference_session::Options& options) override;
 
     std::pair<types::Embedding, types::Embedding> recognize(
         const cv::Mat& vision_frame, const types::Landmarks& face_landmark_5) override;
@@ -29,9 +29,9 @@ private:
     int m_input_width = 112;
     int m_input_height = 112;
 
-    std::tuple<std::vector<float>, std::vector<int64_t>> prepare_input(
+    [[nodiscard]] std::tuple<std::vector<float>, std::vector<int64_t>> prepare_input(
         const cv::Mat& vision_frame, const types::Landmarks& face_landmark_5) const;
-    std::pair<types::Embedding, types::Embedding> process_output(
+    [[nodiscard]] std::pair<types::Embedding, types::Embedding> process_output(
         const std::vector<Ort::Value>& output_tensors) const;
 };
 

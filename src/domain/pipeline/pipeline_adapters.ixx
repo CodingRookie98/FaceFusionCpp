@@ -33,7 +33,7 @@ import foundation.infrastructure.logger;
 export namespace domain::pipeline {
 
 // Forward declaration
-void RegisterBuiltinAdapters();
+void register_builtin_adapters();
 
 /**
  * @brief Adapter for Face Swapper
@@ -64,16 +64,19 @@ private:
         m_region_masker(std::move(region_masker)) {}
 
 public:
-    ~SwapperAdapter() override {
-        // Explicit destructor helps with stability across module boundaries
-    }
+    ~SwapperAdapter() override = default;
+
+    SwapperAdapter(const SwapperAdapter&) = delete;
+    SwapperAdapter& operator=(const SwapperAdapter&) = delete;
+    SwapperAdapter(SwapperAdapter&&) = delete;
+    SwapperAdapter& operator=(SwapperAdapter&&) = delete;
 
     /**
      * @brief Ensures the swapper model is loaded into memory
      */
     void ensure_loaded() override {
         if (m_loaded) return;
-        std::lock_guard<std::mutex> lock(m_load_mutex);
+        const std::scoped_lock lock(m_load_mutex);
         if (m_loaded) return;
 
         if (m_swapper && !m_model_path.empty()) {
@@ -99,7 +102,7 @@ public:
      * data to be processed and updated
      */
     void process(FrameData& frame) override {
-        foundation::infrastructure::logger::ScopedTimer timer("SwapperAdapter::process");
+        const foundation::infrastructure::logger::ScopedTimer timer("SwapperAdapter::process");
         ensure_loaded();
         if (!m_swapper) return;
 
@@ -116,26 +119,26 @@ public:
                         working_frame, landmarks, m_template_type, m_input_size);
 
                     // 2. Inference
-                    cv::Mat swapped_crop =
+                    const cv::Mat swapped_crop =
                         m_swapper->swap_face(crop_frame, *input.source_embedding);
 
                     // 3. Color Match (Task 3.3)
-                    cv::Mat matched_crop =
+                    const cv::Mat matched_crop =
                         face::helper::apply_color_match(crop_frame, swapped_crop);
 
                     // 4. Compose Mask
-                    face::masker::MaskCompositor::CompositionInput maskInput;
-                    maskInput.size = m_input_size;
-                    maskInput.options = input.mask_options;
-                    maskInput.crop_frame = crop_frame;
-                    maskInput.occluder = m_occluder.get();
-                    maskInput.region_masker = m_region_masker.get();
+                    face::masker::MaskCompositor::CompositionInput mask_input;
+                    mask_input.size = m_input_size;
+                    mask_input.options = input.mask_options;
+                    mask_input.crop_frame = crop_frame;
+                    mask_input.occluder = m_occluder.get();
+                    mask_input.region_masker = m_region_masker.get();
 
-                    cv::Mat composedMask = face::masker::MaskCompositor::compose(maskInput);
+                    const cv::Mat composed_mask = face::masker::MaskCompositor::compose(mask_input);
 
                     // 5. Paste back
                     working_frame = face::helper::paste_back(working_frame, matched_crop,
-                                                             composedMask, affine_matrix);
+                                                             composed_mask, affine_matrix);
                 }
                 frame.image = working_frame;
 
@@ -168,6 +171,11 @@ private:
  */
 class FaceEnhancerAdapter : public IFrameProcessor {
 public:
+    FaceEnhancerAdapter(const FaceEnhancerAdapter&) = delete;
+    FaceEnhancerAdapter& operator=(const FaceEnhancerAdapter&) = delete;
+    FaceEnhancerAdapter(FaceEnhancerAdapter&&) = delete;
+    FaceEnhancerAdapter& operator=(FaceEnhancerAdapter&&) = delete;
+
     /**
      * @brief Construct a new Face Enhancer Adapter
      * @param context_ptr Pointer to
@@ -194,7 +202,7 @@ public:
      */
     void ensure_loaded() override {
         if (m_loaded) return;
-        std::lock_guard<std::mutex> lock(m_load_mutex);
+        const std::scoped_lock lock(m_load_mutex);
         if (m_loaded) return;
 
         if (m_enhancer && !m_model_path.empty()) {
@@ -219,7 +227,7 @@ public:
      * @param frame The frame data to be processed and updated
      */
     void process(FrameData& frame) override {
-        foundation::infrastructure::logger::ScopedTimer timer("FaceEnhancerAdapter::process");
+        const foundation::infrastructure::logger::ScopedTimer timer("FaceEnhancerAdapter::process");
         ensure_loaded();
         if (!m_enhancer) return;
 
@@ -236,30 +244,30 @@ public:
                         frame.image, landmarks, m_template_type, m_input_size);
 
                     // 2. Inference
-                    cv::Mat enhanced_crop = m_enhancer->enhance_face(crop_frame);
+                    const cv::Mat enhanced_crop = m_enhancer->enhance_face(crop_frame);
 
                     if (enhanced_crop.empty()) continue;
 
                     // 3. Compose Mask
-                    face::masker::MaskCompositor::CompositionInput maskInput;
-                    maskInput.size = m_input_size;
-                    maskInput.options = input.mask_options;
-                    maskInput.crop_frame = crop_frame;
-                    maskInput.occluder = m_occluder.get();
-                    maskInput.region_masker = m_region_masker.get();
+                    face::masker::MaskCompositor::CompositionInput mask_input;
+                    mask_input.size = m_input_size;
+                    mask_input.options = input.mask_options;
+                    mask_input.crop_frame = crop_frame;
+                    mask_input.occluder = m_occluder.get();
+                    mask_input.region_masker = m_region_masker.get();
 
-                    cv::Mat composedMask = face::masker::MaskCompositor::compose(maskInput);
+                    const cv::Mat composed_mask = face::masker::MaskCompositor::compose(mask_input);
 
                     // 4. Paste back
                     working_frame = face::helper::paste_back(working_frame, enhanced_crop,
-                                                             composedMask, affine_matrix);
+                                                             composed_mask, affine_matrix);
                 }
 
                 // Global Face Blend
                 if (input.face_blend >= 100) {
                     frame.image = working_frame;
                 } else if (input.face_blend > 0) {
-                    double alpha = input.face_blend / 100.0;
+                    const double alpha = input.face_blend / 100.0;
                     cv::addWeighted(working_frame, alpha, frame.image, 1.0 - alpha, 0.0,
                                     frame.image);
                 }
@@ -293,6 +301,11 @@ private:
  */
 class ExpressionAdapter : public IFrameProcessor {
 public:
+    ExpressionAdapter(const ExpressionAdapter&) = delete;
+    ExpressionAdapter& operator=(const ExpressionAdapter&) = delete;
+    ExpressionAdapter(ExpressionAdapter&&) = delete;
+    ExpressionAdapter& operator=(ExpressionAdapter&&) = delete;
+
     /**
      * @brief Construct a new Expression Adapter
      * @param context_ptr Pointer to
@@ -321,7 +334,7 @@ public:
      */
     void ensure_loaded() override {
         if (m_loaded) return;
-        std::lock_guard<std::mutex> lock(m_load_mutex);
+        const std::scoped_lock lock(m_load_mutex);
         if (m_loaded) return;
 
         if (m_restorer && !m_feature_path.empty()) {
@@ -344,7 +357,7 @@ public:
      * @param frame The frame data to be processed and updated
      */
     void process(FrameData& frame) override {
-        foundation::infrastructure::logger::ScopedTimer timer("ExpressionAdapter::process");
+        const foundation::infrastructure::logger::ScopedTimer timer("ExpressionAdapter::process");
         ensure_loaded();
         if (!m_restorer) return;
 
@@ -356,7 +369,7 @@ public:
                 if (input.target_landmarks.empty() || input.source_landmarks.empty()) return;
 
                 cv::Mat working_frame = frame.image;
-                size_t count =
+                const size_t count =
                     std::min(input.target_landmarks.size(), input.source_landmarks.size());
 
                 for (size_t i = 0; i < count; ++i) {
@@ -369,14 +382,14 @@ public:
                         working_frame, input.target_landmarks[i], m_template_type, m_size);
 
                     // 3. Inference
-                    cv::Mat restored_crop = m_restorer->restore_expression(source_crop, target_crop,
-                                                                           input.restore_factor);
+                    const cv::Mat restored_crop = m_restorer->restore_expression(source_crop, target_crop,
+                                                                            input.restore_factor);
 
                     if (restored_crop.empty()) continue;
 
                     // 4. Compose Mask
-                    face::masker::MaskCompositor::CompositionInput maskInput;
-                    maskInput.size = m_size;
+                    face::masker::MaskCompositor::CompositionInput mask_input;
+                    mask_input.size = m_size;
 
                     // Construct options from input fields
                     domain::face::types::MaskOptions opts;
@@ -384,16 +397,16 @@ public:
                     opts.box_mask_blur = input.box_mask_blur;
                     opts.box_mask_padding = input.box_mask_padding;
 
-                    maskInput.options = opts;
-                    maskInput.crop_frame = target_crop;
-                    maskInput.occluder = m_occluder.get();
-                    maskInput.region_masker = m_region_masker.get();
+                    mask_input.options = opts;
+                    mask_input.crop_frame = target_crop;
+                    mask_input.occluder = m_occluder.get();
+                    mask_input.region_masker = m_region_masker.get();
 
-                    cv::Mat composedMask = face::masker::MaskCompositor::compose(maskInput);
+                    const cv::Mat composed_mask = face::masker::MaskCompositor::compose(mask_input);
 
                     // 5. Paste back
                     working_frame = face::helper::paste_back(working_frame, restored_crop,
-                                                             composedMask, target_affine);
+                                                             composed_mask, target_affine);
                 }
                 frame.image = working_frame;
 
@@ -427,6 +440,11 @@ private:
  */
 class FrameEnhancerAdapter : public IFrameProcessor {
 public:
+    FrameEnhancerAdapter(const FrameEnhancerAdapter&) = delete;
+    FrameEnhancerAdapter& operator=(const FrameEnhancerAdapter&) = delete;
+    FrameEnhancerAdapter(FrameEnhancerAdapter&&) = delete;
+    FrameEnhancerAdapter& operator=(FrameEnhancerAdapter&&) = delete;
+
     /**
      * @brief Construct a new Frame Enhancer Adapter
      * @param context_ptr Pointer to
@@ -448,7 +466,7 @@ public:
      */
     void ensure_loaded() override {
         if (m_loaded) return;
-        std::lock_guard<std::mutex> lock(m_load_mutex);
+        const std::scoped_lock lock(m_load_mutex);
         if (m_loaded) return;
 
         if (m_factory_func) { m_enhancer = m_factory_func(); }
@@ -463,7 +481,7 @@ public:
      * @param frame The frame data to be processed and updated
      */
     void process(FrameData& frame) override {
-        foundation::infrastructure::logger::ScopedTimer timer("FrameEnhancerAdapter::process");
+        const foundation::infrastructure::logger::ScopedTimer timer("FrameEnhancerAdapter::process");
         ensure_loaded();
         if (!m_enhancer) return;
 
@@ -473,7 +491,7 @@ public:
         if (frame.metadata.contains("frame_enhancer_blend")) {
             try {
                 input.blend =
-                    std::any_cast<unsigned short>(frame.metadata.at("frame_enhancer_blend"));
+                    std::any_cast<std::uint16_t>(frame.metadata.at("frame_enhancer_blend"));
             } catch (const std::bad_any_cast& e) {
                 foundation::infrastructure::logger::Logger::get_instance()->error(std::format(
                     "FrameEnhancerAdapter: Bad any cast for frame_enhancer_blend: {}", e.what()));

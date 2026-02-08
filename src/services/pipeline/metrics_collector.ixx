@@ -98,6 +98,11 @@ public:
 
     ~MetricsCollector() = default;
 
+    MetricsCollector(const MetricsCollector&) = delete;
+    MetricsCollector& operator=(const MetricsCollector&) = delete;
+    MetricsCollector(MetricsCollector&&) = delete;
+    MetricsCollector& operator=(MetricsCollector&&) = delete;
+
     // ─────────────────────────────────────────────────────────────────────────
     // Configuration
     // ─────────────────────────────────────────────────────────────────────────
@@ -233,6 +238,8 @@ public:
 
     ScopedStepTimer(const ScopedStepTimer&) = delete;
     ScopedStepTimer& operator=(const ScopedStepTimer&) = delete;
+    ScopedStepTimer(ScopedStepTimer&&) = delete;
+    ScopedStepTimer& operator=(ScopedStepTimer&&) = delete;
 
 private:
     MetricsCollector& m_collector;

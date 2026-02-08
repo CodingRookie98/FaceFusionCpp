@@ -37,6 +37,11 @@ public:
 
     ~Pipeline() override { stop(); }
 
+    Pipeline(const Pipeline&) = delete;
+    Pipeline& operator=(const Pipeline&) = delete;
+    Pipeline(Pipeline&&) = delete;
+    Pipeline& operator=(Pipeline&&) = delete;
+
     /**
      * @brief Add a processor to the pipeline (must be called before start())
      */
@@ -112,7 +117,7 @@ private:
     }
 
     void push_to_output_ordered(FrameData frame) {
-        std::lock_guard<std::mutex> lock(m_reorder_mutex);
+        const std::scoped_lock lock(m_reorder_mutex);
 
         if (frame.sequence_id == m_next_sequence_id) {
             m_output_queue.push(std::move(frame));
@@ -143,8 +148,8 @@ private:
     std::atomic<bool> m_active{false};
 
     std::mutex m_reorder_mutex;
-    long long m_next_sequence_id = 0;
-    std::map<long long, FrameData> m_reorder_buffer;
+    std::int64_t m_next_sequence_id = 0;
+    std::map<std::int64_t, FrameData> m_reorder_buffer;
 };
 
 } // namespace domain::pipeline

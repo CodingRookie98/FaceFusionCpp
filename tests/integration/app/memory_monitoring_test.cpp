@@ -70,7 +70,7 @@ protected:
         auto merged_config = config::MergeConfigs(task_config, app_config);
         
         services::pipeline::PipelineRunner runner(app_config);
-        auto result = runner.Run(merged_config);
+        auto result = runner.run(merged_config);
         if (!result.is_ok()) {
             FAIL() << "Pipeline failed: " << result.error().message;
         }

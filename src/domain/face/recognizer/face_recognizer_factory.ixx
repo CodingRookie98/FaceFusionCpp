@@ -16,8 +16,8 @@ namespace domain::face::recognizer {
 /**
  * @brief Available types of Face Recognizers
  */
-export enum class FaceRecognizerType {
-    ArcFace_w600k_r50 ///< ArcFace model trained on MS1MV3 (600k identities, ResNet-50)
+export enum class FaceRecognizerType : std::uint8_t {
+    ArcFaceW600kR50 ///< ArcFace model trained on MS1MV3 (600k identities, ResNet-50)
 };
 
 /**

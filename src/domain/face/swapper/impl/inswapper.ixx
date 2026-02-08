@@ -29,7 +29,7 @@ public:
 private:
     void init();
 
-    std::tuple<std::vector<float>, std::vector<int64_t>, std::vector<float>, std::vector<int64_t>>
+    [[nodiscard]] std::tuple<std::vector<float>, std::vector<int64_t>, std::vector<float>, std::vector<int64_t>>
     prepare_input(const domain::face::types::Embedding& source_embedding,
                   const cv::Mat& cropped_target_frame) const;
     [[nodiscard]] cv::Mat process_output(const std::vector<Ort::Value>& output_tensors) const;

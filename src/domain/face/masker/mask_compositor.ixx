@@ -55,7 +55,7 @@ public:
 
         if (occlusion_mask_enabled && input.occluder != nullptr && !input.crop_frame.empty()) {
             futures.emplace_back(pool.enqueue([&]() -> cv::Mat {
-                cv::Mat occ = input.occluder->create_occlusion_mask(input.crop_frame);
+                const cv::Mat occ = input.occluder->create_occlusion_mask(input.crop_frame);
                 // Invert: 255 (occluded) -> 0 (keep original), 0 (clear) -> 255 (swap)
                 // Use OpenCV subtraction to ensure result is cv::Mat not MatExpr
                 cv::Mat inverted;
@@ -73,14 +73,15 @@ public:
         if (region_mask_enabled && input.region_masker != nullptr && !input.crop_frame.empty()) {
             futures.emplace_back(pool.enqueue([&]() {
                 using FaceRegion = domain::face::types::FaceRegion;
-                std::unordered_set<FaceRegion> active_regions(opts.regions.begin(),
-                                                              opts.regions.end());
+                const std::unordered_set<FaceRegion> active_regions(opts.regions.begin(),
+                                                                    opts.regions.end());
                 return input.region_masker->create_region_mask(input.crop_frame, active_regions);
             }));
         }
 
         // Collect results
         std::vector<cv::Mat> masks;
+        masks.reserve(futures.size());
         for (auto& f : futures) { masks.emplace_back(f.get()); }
 
         if (masks.empty()) {
@@ -113,7 +114,7 @@ public:
 
         // Final Blur for Edge Blending (Task 3.3)
         // Smooth transitions between combined masks
-        int kernel_size = std::max(3, static_cast<int>(input.size.width * 0.025F)); // 2.5% of width
+        int kernel_size = std::max(3, static_cast<int>(static_cast<float>(input.size.width) * 0.025F)); // 2.5% of width
         if (kernel_size % 2 == 0) { kernel_size++; }
         cv::GaussianBlur(final_mask, final_mask, cv::Size(kernel_size, kernel_size), 0);
 
@@ -123,15 +124,15 @@ public:
 private:
     static cv::Mat create_box_mask(const cv::Size& size, float blur,
                                    const std::array<int, 4>& padding) {
-        int blur_amount = static_cast<int>(size.width * 0.5F * blur);
-        int blur_area = std::max(blur_amount / 2, 1);
+        int blur_amount = static_cast<int>(static_cast<float>(size.width) * 0.5F * blur);
+        const int blur_area = std::max(blur_amount / 2, 1);
 
         cv::Mat mask = cv::Mat::ones(size, CV_32FC1);
 
-        int pad_top = std::max(blur_area, static_cast<int>(size.height * padding[0] / 100.0F));
-        int pad_right = std::max(blur_area, static_cast<int>(size.width * padding[1] / 100.0F));
-        int pad_bot = std::max(blur_area, static_cast<int>(size.height * padding[2] / 100.0F));
-        int pad_left = std::max(blur_area, static_cast<int>(size.width * padding[3] / 100.0F));
+        const int pad_top = std::max(blur_area, static_cast<int>(static_cast<float>(size.height) * static_cast<float>(padding[0]) / 100.0F));
+        const int pad_right = std::max(blur_area, static_cast<int>(static_cast<float>(size.width) * static_cast<float>(padding[1]) / 100.0F));
+        const int pad_bot = std::max(blur_area, static_cast<int>(static_cast<float>(size.height) * static_cast<float>(padding[2]) / 100.0F));
+        const int pad_left = std::max(blur_area, static_cast<int>(static_cast<float>(size.width) * static_cast<float>(padding[3]) / 100.0F));
 
         // Set borders to 0
         if (pad_top > 0) { mask(cv::Rect(0, 0, size.width, pad_top)) = 0; }

@@ -39,7 +39,7 @@ protected:
 
 TEST_F(FaceRecognizerTest, CreateRecognizer_ArcFaceType_ReturnsValidInstance) {
     auto recognizer = domain::face::recognizer::create_face_recognizer(
-        domain::face::recognizer::FaceRecognizerType::ArcFace_w600k_r50);
+        domain::face::recognizer::FaceRecognizerType::ArcFaceW600kR50);
     EXPECT_NE(recognizer, nullptr);
 }
 
@@ -55,7 +55,7 @@ TEST_F(FaceRecognizerTest, RecognizeFace_ValidInput_ReturnsNormalizedEmbedding) 
     if (landmarks.empty()) GTEST_SKIP() << "Could not detect face for testing";
 
     auto recognizer = domain::face::recognizer::create_face_recognizer(
-        domain::face::recognizer::FaceRecognizerType::ArcFace_w600k_r50);
+        domain::face::recognizer::FaceRecognizerType::ArcFaceW600kR50);
 
     auto model_path = model_repo->ensure_model("arcface_w600k_r50");
     ASSERT_FALSE(model_path.empty()) << "Model not found";

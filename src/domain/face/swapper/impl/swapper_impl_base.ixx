@@ -15,7 +15,7 @@ export namespace domain::face::swapper {
 
 class FaceSwapperImplBase : public IFaceSwapper {
 public:
-    virtual ~FaceSwapperImplBase() = default;
+    ~FaceSwapperImplBase() override = default;
 
     void load_model(const std::string& model_path,
                     const foundation::ai::inference_session::Options& options) override {
@@ -36,7 +36,7 @@ public:
         return m_session->get_loaded_model_path();
     }
 
-    std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors) {
+    std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors) const {
         if (!m_session) return {};
         return m_session->run(input_tensors);
     }

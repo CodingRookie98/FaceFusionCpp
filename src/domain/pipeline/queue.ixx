@@ -20,7 +20,7 @@ namespace domain::pipeline {
  * @brief Thread-safe queue with blocking push/pop and shutdown capability
  * @tparam T Type of elements in the queue
  */
-export template <typename T> class ThreadSafeQueue {
+export template <typename T_> class ThreadSafeQueue {
 public:
     /**
      * @brief Construct a new Thread Safe Queue
@@ -36,7 +36,7 @@ public:
      * @details Blocks until there is space or the queue is shut down
      * @param value The value to push
      */
-    void push(T value) {
+    void push(T_ value) {
         std::unique_lock<std::mutex> lock(m_mutex);
         m_not_full.wait(lock, [this] { return m_queue.size() < m_max_size || m_shutdown; });
 
@@ -49,9 +49,9 @@ public:
     /**
      * @brief Pop a value from the queue (blocking)
      * @details Blocks until there is data or the queue is shut down
-     * @return std::optional<T> The value, or std::nullopt if queue is shutdown and empty
+     * @return std::optional<T_> The value, or std::nullopt if queue is shutdown and empty
      */
-    std::optional<T> pop() {
+    std::optional<T_> pop() {
         std::unique_lock<std::mutex> lock(m_mutex);
         m_not_empty.wait(lock, [this] { return !m_queue.empty() || m_shutdown; });
 
@@ -59,7 +59,7 @@ public:
 
         if (m_queue.empty()) return std::nullopt;
 
-        T val = std::move(m_queue.front());
+        T_ val = std::move(m_queue.front());
         m_queue.pop();
         m_not_full.notify_one();
         return val;
@@ -70,11 +70,11 @@ public:
      * @param max_items Maximum number of items to retrieve
      * @return Vector of items (empty if queue was empty or stopped)
      */
-    std::vector<T> pop_batch(size_t max_items) {
+    std::vector<T_> pop_batch(size_t max_items) {
         std::unique_lock<std::mutex> lock(m_mutex);
         m_not_empty.wait(lock, [this] { return !m_queue.empty() || m_shutdown; });
 
-        std::vector<T> batch;
+        std::vector<T_> batch;
         if (m_shutdown && m_queue.empty()) return batch;
 
         size_t count = std::min(max_items, m_queue.size());
@@ -95,7 +95,7 @@ public:
      * @brief Check if the queue is active (not shut down)
      */
     bool is_active() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        const std::scoped_lock lock(m_mutex);
         return !m_shutdown;
     }
 
@@ -105,7 +105,7 @@ public:
      */
     void shutdown() {
         {
-            std::lock_guard<std::mutex> lock(m_mutex);
+            const std::scoped_lock lock(m_mutex);
             m_shutdown = true;
         }
         m_not_empty.notify_all();
@@ -117,7 +117,7 @@ public:
      * @return True if empty
      */
     bool empty() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        const std::scoped_lock lock(m_mutex);
         return m_queue.empty();
     }
 
@@ -126,13 +126,13 @@ public:
      * @return Number of elements
      */
     size_t size() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        const std::scoped_lock lock(m_mutex);
         return m_queue.size();
     }
 
 private:
     size_t m_max_size;
-    std::queue<T> m_queue;
+    std::queue<T_> m_queue;
     mutable std::mutex m_mutex;
     std::condition_variable m_not_empty;
     std::condition_variable m_not_full;

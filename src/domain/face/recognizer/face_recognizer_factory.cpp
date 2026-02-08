@@ -9,7 +9,7 @@ namespace domain::face::recognizer {
 
 std::unique_ptr<FaceRecognizer> create_face_recognizer(FaceRecognizerType type) {
     switch (type) {
-    case FaceRecognizerType::ArcFace_w600k_r50: return std::make_unique<ArcFace>();
+    case FaceRecognizerType::ArcFaceW600kR50: return std::make_unique<ArcFace>();
     default: return nullptr;
     }
 }

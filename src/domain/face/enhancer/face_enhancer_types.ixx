@@ -15,7 +15,7 @@ export namespace domain::face::enhancer {
  */
 struct EnhanceInput {
     std::vector<domain::face::types::Landmarks> target_faces_landmarks;
-    unsigned short face_blend = 80;
+    std::uint16_t face_blend = 80;
     domain::face::types::MaskOptions mask_options;
 };
 

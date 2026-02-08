@@ -144,7 +144,7 @@ inline types::Embedding get_face_embedding(
     if (image.empty() || landmarks.empty()) return {};
 
     auto recognizer_ptr =
-        recognizer::create_face_recognizer(recognizer::FaceRecognizerType::ArcFace_w600k_r50);
+        recognizer::create_face_recognizer(recognizer::FaceRecognizerType::ArcFaceW600kR50);
 
     std::string model_path = repo->ensure_model("arcface_w600k_r50");
     if (model_path.empty()) return {};

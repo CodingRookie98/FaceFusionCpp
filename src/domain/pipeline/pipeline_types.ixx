@@ -27,7 +27,7 @@ export namespace domain::pipeline {
  * @details This structure is passed through the pipeline processors.
  */
 struct FrameData {
-    long long sequence_id = 0; ///< Sequential frame number (0-based)
+    std::int64_t sequence_id = 0; ///< Sequential frame number (0-based)
     double timestamp_ms = 0.0; ///< Presentation timestamp in milliseconds
     cv::Mat image;             ///< Current frame image data (BGR)
 

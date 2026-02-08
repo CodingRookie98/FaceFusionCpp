@@ -7,7 +7,7 @@ import :api;
 
 export namespace domain::face::detector {
 
-enum class DetectorType { Yolo, SCRFD, RetinaFace };
+enum class DetectorType : std::uint8_t { Yolo, SCRFD, RetinaFace };
 
 class FaceDetectorFactory {
 public:

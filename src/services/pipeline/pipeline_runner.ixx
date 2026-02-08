@@ -20,7 +20,7 @@ export import config.task;
 import config.parser;
 export import :types;
 import domain.pipeline.context;
-export import domain.pipeline; // Import domain.pipeline to access RegisterBuiltinAdapters (it's
+export import domain.pipeline; // Import domain.pipeline to access register_builtin_adapters (it's
                                // part of the module interface now)
 import processor_factory;
 
@@ -51,25 +51,25 @@ public:
      * @param progress_callback Function to receive completion status updates
      * @return Success or a ConfigError
      */
-    [[nodiscard]] config::Result<void, config::ConfigError> Run(
+    [[nodiscard]] config::Result<void, config::ConfigError> run(
         const config::TaskConfig& task_config, ProgressCallback progress_callback = nullptr);
 
     /**
      * @brief Abort the currently running task
      */
-    void Cancel();
+    void cancel();
 
     /**
      * @brief Wait for all in-flight frames to complete processing
      * @param timeout Maximum wait time
      * @return true if all frames completed, false if timed out
      */
-    [[nodiscard]] bool WaitForCompletion(std::chrono::seconds timeout = std::chrono::seconds{10});
+    [[nodiscard]] bool wait_for_completion(std::chrono::seconds timeout = std::chrono::seconds{10});
 
     /**
      * @brief Check if a task is actively processing
      */
-    [[nodiscard]] bool IsRunning() const;
+    [[nodiscard]] bool is_running() const;
 
 private:
     struct Impl;
@@ -81,7 +81,7 @@ private:
  * @param app_config Application configuration (model paths, inference settings, etc.)
  * @return std::unique_ptr<PipelineRunner> The created runner instance
  */
-[[nodiscard]] std::unique_ptr<PipelineRunner> CreatePipelineRunner(
+[[nodiscard]] std::unique_ptr<PipelineRunner> create_pipeline_runner(
     const config::AppConfig& app_config);
 
 } // namespace services::pipeline

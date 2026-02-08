@@ -312,13 +312,13 @@ int App::run_pipeline_internal(const config::TaskConfig& task_config,
     auto logger = Logger::get_instance();
 
     // 1. Create Runner
-    std::shared_ptr<PipelineRunner> runner = CreatePipelineRunner(app_config);
+    std::shared_ptr<PipelineRunner> runner = create_pipeline_runner(app_config);
 
     // 2. Install shutdown handler
     ShutdownHandler::install(
         [runner]() {
-            runner->Cancel();
-            (void)runner->WaitForCompletion(std::chrono::seconds{10});
+            runner->cancel();
+            (void)runner->wait_for_completion(std::chrono::seconds{10});
             ShutdownHandler::mark_completed();
         },
         std::chrono::seconds{5}, // timeout
@@ -333,7 +333,7 @@ int App::run_pipeline_internal(const config::TaskConfig& task_config,
     // 4. Run
     logger->info("Starting task: " + task_config.task_info.id);
 
-    auto result = runner->Run(task_config, [&](const TaskProgress& p) {
+    auto result = runner->run(task_config, [&](const TaskProgress& p) {
         float progress = 0.0f;
         if (p.total_frames > 0) { progress = (float)p.current_frame / p.total_frames * 100.0f; }
 
