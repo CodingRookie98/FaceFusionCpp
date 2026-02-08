@@ -60,9 +60,11 @@ def get_cmake_preset(config, os_name):
         return f"default-{config}"
 
 
-def run_configure(cmake_exe, preset, env, project_root):
+def run_configure(cmake_exe, preset, env, project_root, extra_args=None):
     log("\n=== Action: configure ===", "info")
     cmd = [cmake_exe, "--preset", preset]
+    if extra_args:
+        cmd.extend(extra_args)
     run_command(cmd, env=env, cwd=project_root)
 
 
@@ -173,6 +175,11 @@ def main():
         type=int,
         help="Number of parallel build jobs",
     )
+    parser.add_argument(
+        "--enable-tests",
+        action="store_true",
+        help="Enable building tests (activates 'test' feature in vcpkg and BUILD_TESTING=ON)",
+    )
 
     args = parser.parse_args()
 
@@ -211,9 +218,16 @@ def main():
     ctest_exe = "ctest"
     cpack_exe = "cpack"
 
+    # Determine CMake arguments
+    extra_cmake_args = []
+    if args.enable_tests or args.action == "test":
+        extra_cmake_args.extend(["-DVCPKG_MANIFEST_FEATURES=test", "-DBUILD_TESTING=ON"])
+    else:
+        extra_cmake_args.append("-DBUILD_TESTING=OFF")
+
     # Action Dispatcher
     if args.action == "configure":
-        run_configure(cmake_exe, preset, env, project_root)
+        run_configure(cmake_exe, preset, env, project_root, extra_cmake_args)
 
     elif args.action == "build":
         run_build(cmake_exe, preset, args.target, jobs, env, project_root)

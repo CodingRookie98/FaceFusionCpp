@@ -14,7 +14,16 @@ endif()
 
 # --- GTest (Test Only) ---
 if(BUILD_TESTING)
-    find_package(GTest CONFIG REQUIRED)
+    find_package(GTest CONFIG)
+    if(NOT GTest_FOUND)
+        message(FATAL_ERROR
+            "GTest not found but BUILD_TESTING is ON.\n"
+            "If you are using vcpkg in Manifest Mode, please enable the 'test' feature:\n"
+            "  cmake -B build -DVCPKG_MANIFEST_FEATURES=test\n"
+            "Or disable testing:\n"
+            "  cmake -B build -DBUILD_TESTING=OFF"
+        )
+    endif()
     message(STATUS "Found GTest: ${GTest_VERSION}")
 endif()
 

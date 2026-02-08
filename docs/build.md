@@ -7,8 +7,11 @@
 在终端中执行以下命令即可开始构建：
 
 ```bash
-# 1. 首次构建前进行配置 (若未配置过)
+# 1. 首次构建前进行配置
 python build.py --action configure
+
+# (可选) 若计划运行测试，需开启测试支持
+# python build.py --action configure --enable-tests
 
 # 2. 构建 Debug 版本 (默认动作)
 python build.py
@@ -20,7 +23,10 @@ python build.py
 # 仅构建 Release 版本
 python build.py --config Release --action build
 
-# 使用正则筛选测试 (推荐方式，不影响构建目标)
+# 测试准备：必须先开启测试支持
+python build.py --action configure --enable-tests
+
+# 使用正则筛选测试
 python build.py --action test --test-regex "domain_face.*"
 
 # 使用标签筛选测试 (对应 unit, integration, benchmark)
@@ -59,8 +65,9 @@ python build.py --action build
 | `--no-build` | 跳过构建步骤(仅测试时有效) | `[flag]` | `False` |
 | `--preset` | 手动指定 CMake Preset | CMakePresets.json 中定义的名称 | 自动检测 |
 | `--clean` | 清理构建目录 | `[flag]` | `False` |
+| `--enable-tests` | 启用测试构建 (自动开启 vcpkg feature) | `[flag]` | `False` |
 
-> **提示**: 当执行 `--action test` 时，脚本默认会先触发 `build` 动作以确保测试代码是最新的。若您确定无需重新构建，可使用 `--no-build` 参数跳过。
+> **提示**: 当执行 `--action test` 时，脚本默认会先触发 `build` 动作。请确保您已通过 `--action configure --enable-tests` 开启了测试支持。
 
 > **注意**: 脚本会自动利用系统所有可用核心进行并行构建，无需手动指定 `-j` 参数。
 
@@ -68,8 +75,8 @@ python build.py --action build
 
 ### 开发流程
 ```bash
-# 1. 首次配置
-python build.py --action configure
+# 1. 首次配置 (包含测试支持)
+python build.py --action configure --enable-tests
 
 # 2. 构建并开发
 python build.py
@@ -81,8 +88,8 @@ python build.py --action test --test-label integration  # 运行集成测试 (�
 
 ### 发布流程
 ```bash
-# 1. 配置 Release 环境
-python build.py --config Release --action configure
+# 1. 配置 Release 环境 (开启测试)
+python build.py --config Release --action configure --enable-tests
 
 # 2. 构建 Release 版本
 python build.py --config Release --action build
@@ -161,6 +168,8 @@ python scripts/install_hooks.py
 项目利用 `CMakePresets.json` 预定义了常用的构建配置。
 
 ### 配置 (Configure)
+
+> **注意**: 默认 Preset 已关闭测试构建。若需构建测试，需在配置时指定 `-DVCPKG_MANIFEST_FEATURES=test` 和 `-DBUILD_TESTING=ON`。
 
 ```bash
 # 查看所有可用预设
