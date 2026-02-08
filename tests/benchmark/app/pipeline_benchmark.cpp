@@ -16,6 +16,7 @@ import services.pipeline.runner;
 import config.task;
 import domain.ai.model_repository;
 import foundation.infrastructure.test_support;
+import foundation.media.ffmpeg;
 
 using namespace services::pipeline;
 using namespace foundation::infrastructure::test;
@@ -112,9 +113,9 @@ TEST_F(PipelineBenchmarkTest, BenchmarkVideoProcessing) {
         std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
 
     // Get video info to calculate FPS
-    cv::VideoCapture cap(video_path.string());
+    foundation::media::ffmpeg::VideoReader reader(video_path.string());
     int total_frames = 0;
-    if (cap.isOpened()) { total_frames = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_COUNT)); }
+    if (reader.open()) { total_frames = reader.get_frame_count(); }
 
     double fps = 0.0;
     if (total_frames > 0 && duration_ms > 0) {

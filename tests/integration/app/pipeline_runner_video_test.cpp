@@ -40,7 +40,7 @@ protected:
 
         source_path = get_test_data_path("standard_face_test_images/lenna.bmp");
         video_path = get_test_data_path("standard_face_test_videos/slideshow_scaled.mp4");
-        
+
         output_dir = std::filesystem::temp_directory_path() / "facefusion_tests" / "pipeline_runner_video";
         std::filesystem::create_directories(output_dir);
     }
@@ -81,13 +81,12 @@ protected:
             info.has_audio = false;
 
             if (info.frame_count <= 0) {
-                std::cerr << "[WARN] FFmpeg returned 0 frames, trying OpenCV fallback..."
+                std::cerr << "[WARN] FFmpeg returned 0 frames, checking via VideoReader..."
                           << std::endl;
-                cv::VideoCapture cap(video_path.string(), cv::CAP_FFMPEG);
-                if (!cap.isOpened()) cap.open(video_path.string(), cv::CAP_ANY);
-                if (cap.isOpened()) {
-                    info.frame_count = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
-                }
+                 foundation::media::ffmpeg::VideoReader reader(video_path.string());
+                 if (reader.open()) {
+                     info.frame_count = reader.get_frame_count();
+                 }
             }
 
             return info;
@@ -104,22 +103,22 @@ protected:
             FAIL() << "Output video file does not exist: " << video_file;
         }
 
-        cv::VideoCapture cap(video_file.string());
-        ASSERT_TRUE(cap.isOpened()) << "Failed to open output video";
+        foundation::media::ffmpeg::VideoReader reader(video_file.string());
+        ASSERT_TRUE(reader.open()) << "Failed to open output video";
 
-        double fps = cap.get(cv::CAP_PROP_FPS);
-        int total_frames = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
-        int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
-        int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
+        double fps = reader.get_fps();
+        int total_frames = reader.get_frame_count();
+        int width = reader.get_width();
+        int height = reader.get_height();
 
         std::cout << "Verifying video: " << video_file << " [Frames: " << total_frames
                   << ", Size: " << width << "x" << height << ", FPS: " << fps << "]" << std::endl;
 
         // 1. Resolution Check
-        cv::VideoCapture cap_orig(video_path.string());
-        ASSERT_TRUE(cap_orig.isOpened());
-        int orig_width = static_cast<int>(cap_orig.get(cv::CAP_PROP_FRAME_WIDTH));
-        int orig_height = static_cast<int>(cap_orig.get(cv::CAP_PROP_FRAME_HEIGHT));
+        foundation::media::ffmpeg::VideoReader reader_orig(video_path.string());
+        ASSERT_TRUE(reader_orig.open());
+        int orig_width = reader_orig.get_width();
+        int orig_height = reader_orig.get_height();
 
         EXPECT_NEAR(width, orig_width * expected_scale, 2.0); // Allow slight rounding diff
         EXPECT_NEAR(height, orig_height * expected_scale, 2.0);
@@ -148,9 +147,8 @@ protected:
         int step = std::max(1, total_frames / frames_to_check);
 
         for (int i = 0; i < total_frames; i += step) {
-            cap.set(cv::CAP_PROP_POS_FRAMES, i);
-            cv::Mat frame;
-            cap >> frame;
+            if (!reader.seek(i)) continue;
+            cv::Mat frame = reader.read_frame();
             if (frame.empty()) break;
 
             auto frame_faces = analyser->get_many_faces(
