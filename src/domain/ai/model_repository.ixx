@@ -9,6 +9,7 @@ module;
 #include <string>
 #include <unordered_map>
 #include <memory>
+#include <mutex>
 #include <nlohmann/json.hpp>
 
 export module domain.ai.model_repository;
@@ -113,10 +114,12 @@ public:
 
 private:
     ModelRepository();
+    [[nodiscard]] std::string get_model_path_internal(const std::string& model_name) const;
     std::string m_json_file_path;
     std::string m_base_path;
     DownloadStrategy m_download_strategy{DownloadStrategy::Auto};
     std::unordered_map<std::string, ModelInfo> m_models_info_map;
+    mutable std::mutex m_mutex;
 };
 
 /**

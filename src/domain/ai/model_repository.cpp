@@ -96,14 +96,24 @@ void ModelRepository::set_model_info_file_path(const std::string& path) {
 
 bool ModelRepository::download_model(const std::string& model_name) const {
     if (model_name.empty()) { return true; }
-    if (!m_models_info_map.contains(model_name)) {
-        logger::Logger::get_instance()->warn("Model not found in configuration: " + model_name);
-        return false;
+
+    std::string url;
+    std::string final_path_str;
+
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!m_models_info_map.contains(model_name)) {
+            logger::Logger::get_instance()->warn("Model not found in configuration: " + model_name);
+            return false;
+        }
+        const ModelInfo& model_info = m_models_info_map.at(model_name);
+        url = model_info.url;
+        // Calculate path while holding lock
+        final_path_str = get_model_path_internal(model_name);
     }
-    const ModelInfo& model_info = m_models_info_map.at(model_name);
 
     // Get the target path using our resolution logic
-    std::string final_path_str = get_model_path(model_name);
+    // path already calculated above
     if (file_system::file_exists(final_path_str)
         && m_download_strategy != DownloadStrategy::Force) {
         return true;
@@ -117,31 +127,39 @@ bool ModelRepository::download_model(const std::string& model_name) const {
     // Ensure directory exists
     if (!file_system::dir_exists(output_dir)) { file_system::create_directories(output_dir); }
 
-    return network::download(model_info.url, output_dir);
+    return network::download(url, output_dir);
 }
 
 bool ModelRepository::is_downloaded(const std::string& model_name) const {
     if (model_name.empty()) { return true; }
+    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_models_info_map.contains(model_name)) { return false; }
 
-    std::string final_path = get_model_path(model_name);
+    std::string final_path = get_model_path_internal(model_name);
     return file_system::file_exists(final_path);
 }
 
 ModelInfo ModelRepository::get_model_info(const std::string& model_name) const {
+    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_models_info_map.contains(model_name)) { return ModelInfo{}; }
     ModelInfo info = m_models_info_map.at(model_name);
     // Update path in the returned info to match the resolved path
-    info.path = get_model_path(model_name);
+    info.path = get_model_path_internal(model_name);
     return info;
 }
 
 std::string ModelRepository::get_model_url(const std::string& model_name) const {
+    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_models_info_map.contains(model_name)) { return {}; }
     return m_models_info_map.at(model_name).url;
 }
 
 std::string ModelRepository::get_model_path(const std::string& model_name) const {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return get_model_path_internal(model_name);
+}
+
+std::string ModelRepository::get_model_path_internal(const std::string& model_name) const {
     if (!m_models_info_map.contains(model_name)) { return {}; }
     const auto& raw_path = m_models_info_map.at(model_name).path;
 
@@ -155,20 +173,26 @@ std::string ModelRepository::get_model_path(const std::string& model_name) const
 
 std::string ModelRepository::ensure_model(const std::string& model_name) const {
     if (model_name.empty()) { return {}; }
-    if (!m_models_info_map.contains(model_name)) {
-        logger::Logger::get_instance()->warn("Model not found in configuration: " + model_name);
-        return {};
+    std::string final_path;
+    DownloadStrategy strategy;
+
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!m_models_info_map.contains(model_name)) {
+            logger::Logger::get_instance()->warn("Model not found in configuration: " + model_name);
+            return {};
+        }
+        final_path = get_model_path_internal(model_name);
+        strategy = m_download_strategy;
     }
 
-    std::string final_path = get_model_path(model_name);
-
     // If already exists and not force download, return path directly
-    if (file_system::file_exists(final_path) && m_download_strategy != DownloadStrategy::Force) {
+    if (file_system::file_exists(final_path) && strategy != DownloadStrategy::Force) {
         return final_path;
     }
 
     // Check skip strategy
-    if (m_download_strategy == DownloadStrategy::Skip) {
+    if (strategy == DownloadStrategy::Skip) {
         if (file_system::file_exists(final_path)) { return final_path; }
         logger::Logger::get_instance()->warn("Model missing and download strategy is Skip: "
                                              + model_name);
@@ -187,6 +211,7 @@ std::string ModelRepository::ensure_model(const std::string& model_name) const {
 }
 
 bool ModelRepository::has_model(const std::string& model_name) const {
+    std::lock_guard<std::mutex> lock(m_mutex);
     return m_models_info_map.contains(model_name);
 }
 
