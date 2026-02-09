@@ -1,4 +1,4 @@
-set(ORT_VERSION_STR "1.20.1")
+set(ORT_VERSION_STR "1.24.1")
 set(THIRD_PARTY_DIR "${CMAKE_BINARY_DIR}/third_party")
 
 # --- Download Configuration ---
