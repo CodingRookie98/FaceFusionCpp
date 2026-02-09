@@ -1,0 +1,10 @@
+add_facefusion_test(
+    common_unit_tests
+    SOURCES
+        fixtures_test.cpp
+        matchers_test.cpp
+    LINK_LIBRARIES
+        test_common
+        GTest::gtest
+        ${OpenCV_LIBS}
+)
