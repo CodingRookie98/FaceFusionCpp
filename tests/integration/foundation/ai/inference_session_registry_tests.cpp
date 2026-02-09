@@ -19,8 +19,12 @@ using namespace foundation::ai::inference_session;
 using namespace foundation::infrastructure::test;
 namespace fs = std::filesystem;
 
+extern void LinkGlobalTestEnvironment();
+
 class InferenceSessionRegistryTest : public ::testing::Test {
 protected:
+    static void SetUpTestSuite() { LinkGlobalTestEnvironment(); }
+
     void SetUp() override {
         // Ensure registry is clean
         InferenceSessionRegistry::get_instance()->clear();

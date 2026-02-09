@@ -18,8 +18,12 @@ using namespace domain::face;
 using namespace domain::face::selector;
 using namespace domain::common::types;
 
+extern void LinkGlobalTestEnvironment();
+
 class FaceSelectorTest : public ::testing::Test {
 protected:
+    static void SetUpTestSuite() { LinkGlobalTestEnvironment(); }
+
     void SetUp() override {
         // Create a set of diverse faces
 

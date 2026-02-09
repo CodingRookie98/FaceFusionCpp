@@ -31,19 +31,21 @@ using namespace domain::face::store;
 using namespace domain::ai::model_repository;
 using namespace foundation::infrastructure::test;
 
+extern void LinkGlobalTestEnvironment();
+
 class FaceAnalyserIntegrationTest : public ::testing::Test {
 protected:
+    static void SetUpTestSuite() { LinkGlobalTestEnvironment(); }
+
     void SetUp() override {
         FaceStore::get_instance()->clear_faces();
         model_repo = ModelRepository::get_instance();
-        
+
         auto assets_path = get_assets_path();
         model_repo->set_model_info_file_path((assets_path / "models_info.json").string());
 
         auto image_path = get_test_data_path("standard_face_test_images/lenna.bmp");
-        if (std::filesystem::exists(image_path)) { 
-            test_image = cv::imread(image_path.string()); 
-        }
+        if (std::filesystem::exists(image_path)) { test_image = cv::imread(image_path.string()); }
     }
 
     std::shared_ptr<ModelRepository> model_repo;

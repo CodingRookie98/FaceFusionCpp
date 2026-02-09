@@ -19,8 +19,12 @@ using namespace foundation::infrastructure::test;
 using namespace foundation::ai::inference_session;
 namespace fs = std::filesystem;
 
+extern void LinkGlobalTestEnvironment();
+
 class FaceDetectorTest : public ::testing::Test {
 protected:
+    static void SetUpTestSuite() { LinkGlobalTestEnvironment(); }
+
     void SetUp() override {
         // 1. Configure ModelRepository to find models
         auto assets_path = get_assets_path();

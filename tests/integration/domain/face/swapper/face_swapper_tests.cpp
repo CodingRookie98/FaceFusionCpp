@@ -28,8 +28,12 @@ using namespace domain::face::helper;
 using namespace foundation::infrastructure::test;
 namespace fs = std::filesystem;
 
+extern void LinkGlobalTestEnvironment();
+
 class FaceSwapperIntegrationTest : public ::testing::Test {
 protected:
+    static void SetUpTestSuite() { LinkGlobalTestEnvironment(); }
+
     void SetUp() override {
         auto assets_path = get_assets_path();
         repo = setup_model_repository(assets_path);

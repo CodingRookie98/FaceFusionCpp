@@ -26,8 +26,12 @@ using namespace foundation::infrastructure::test;
 using namespace domain::face::analyser;
 using namespace std::chrono;
 
+extern void LinkGlobalTestEnvironment();
+
 class PipelineRunnerImageTest : public ::testing::Test {
 protected:
+    static void SetUpTestSuite() { LinkGlobalTestEnvironment(); }
+
     void SetUp() override {
         repo = domain::ai::model_repository::ModelRepository::get_instance();
         auto assets_path = get_assets_path();

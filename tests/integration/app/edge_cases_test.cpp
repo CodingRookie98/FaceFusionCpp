@@ -18,8 +18,12 @@ import domain.ai.model_repository;
 using namespace services::pipeline;
 using namespace foundation::infrastructure::test;
 
+extern void LinkGlobalTestEnvironment();
+
 class EdgeCasesTest : public ::testing::Test {
 protected:
+    static void SetUpTestSuite() { LinkGlobalTestEnvironment(); }
+
     void SetUp() override {
         repo_ = domain::ai::model_repository::ModelRepository::get_instance();
         auto assets_path = get_assets_path();

@@ -26,8 +26,12 @@ using namespace foundation::infrastructure::test;
 using namespace foundation::ai::inference_session;
 namespace fs = std::filesystem;
 
+extern void LinkGlobalTestEnvironment();
+
 class FaceClassifierTest : public ::testing::Test {
 protected:
+    static void SetUpTestSuite() { LinkGlobalTestEnvironment(); }
+
     void SetUp() override {}
 };
 
@@ -44,7 +48,7 @@ TEST_F(FaceClassifierTest, ClassificationResultDefaultValues) {
     EXPECT_EQ(result.age.max, 100);
 }
 
-TEST(FaceClassifierIntegrationTest, ClassifyDetectedFaceTiffany) {
+TEST_F(FaceClassifierTest, ClassifyDetectedFaceTiffany) {
     try {
         // 1. Configure ModelRepository
         auto assets_path = get_assets_path();

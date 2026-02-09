@@ -21,8 +21,12 @@ using namespace domain::face::detector;
 using namespace domain::ai::model_repository;
 using namespace foundation::ai::inference_session;
 
+extern void LinkGlobalTestEnvironment();
+
 class FaceModelRegistryTest : public ::testing::Test {
 protected:
+    static void SetUpTestSuite() { LinkGlobalTestEnvironment(); }
+
     void SetUp() override {
         model_repo = ModelRepository::get_instance();
         model_repo->set_model_info_file_path("./assets/models_info.json");

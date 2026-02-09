@@ -20,8 +20,12 @@ import foundation.infrastructure.test_support;
 namespace fs = std::filesystem;
 using namespace domain::ai::model_repository;
 
+extern void LinkGlobalTestEnvironment();
+
 class ModelRepositoryTest : public ::testing::Test {
 protected:
+    static void SetUpTestSuite() { LinkGlobalTestEnvironment(); }
+
     void SetUp() override {
         test_json_path = "test_models_info.json";
         std::ofstream file(test_json_path);

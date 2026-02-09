@@ -25,8 +25,12 @@ using namespace foundation::infrastructure::test;
 using namespace domain::face::helper;
 namespace fs = std::filesystem;
 
+extern void LinkGlobalTestEnvironment();
+
 class FaceEnhancerIntegrationTest : public ::testing::Test {
 protected:
+    static void SetUpTestSuite() { LinkGlobalTestEnvironment(); }
+
     void SetUp() override {
         auto assets_path = get_assets_path();
         repo = setup_model_repository(assets_path);
@@ -107,5 +111,3 @@ TEST_F(FaceEnhancerIntegrationTest, EnhanceFace_GfpGanModel_ProducesValidOutput)
     // Save result for visual inspection
     cv::imwrite((output_dir / "enhance_gfpgan_result.jpg").string(), result_img);
 }
-
-

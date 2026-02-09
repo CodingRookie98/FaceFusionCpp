@@ -17,7 +17,14 @@ import domain.face.helper;
 using namespace domain::face;
 using namespace domain::face::helper;
 
-TEST(FaceHelperTest, GetIoU) {
+extern void LinkGlobalTestEnvironment();
+
+class FaceHelperTest : public ::testing::Test {
+protected:
+    static void SetUpTestSuite() { LinkGlobalTestEnvironment(); }
+};
+
+TEST_F(FaceHelperTest, GetIoU) {
     // Overlapping boxes
     cv::Rect2f box1(0, 0, 10, 10);
     cv::Rect2f box2(5, 0, 10, 10);
@@ -36,7 +43,7 @@ TEST(FaceHelperTest, GetIoU) {
     EXPECT_FLOAT_EQ(get_iou(box1, box1), 1.0f);
 }
 
-TEST(FaceHelperTest, ApplyNMS) {
+TEST_F(FaceHelperTest, ApplyNMS) {
     std::vector<cv::Rect2f> boxes = {
         {0, 0, 10, 10},   // Box A
         {1, 1, 10, 10},   // Box B (High overlap with A)
@@ -55,7 +62,7 @@ TEST(FaceHelperTest, ApplyNMS) {
     EXPECT_EQ(kept[1], 2);
 }
 
-TEST(FaceHelperTest, ConvertLandmark68To5) {
+TEST_F(FaceHelperTest, ConvertLandmark68To5) {
     types::Landmarks kps68(68);
     // Fill with dummy data
     for (int i = 0; i < 68; ++i) {
@@ -90,7 +97,7 @@ TEST(FaceHelperTest, ConvertLandmark68To5) {
     EXPECT_EQ(kps5[4], expectedRightMouth);
 }
 
-TEST(FaceHelperTest, CreateStaticAnchors) {
+TEST_F(FaceHelperTest, CreateStaticAnchors) {
     // featureStride=8, anchorTotal=2, strideHeight=2, strideWidth=2
     // Grid: (0,0), (0,8), (8,0), (8,8)
     // Each grid point generates 2 anchors
@@ -107,7 +114,7 @@ TEST(FaceHelperTest, CreateStaticAnchors) {
     EXPECT_EQ(anchors[2][1], 8); // (0,8) anchor 1
 }
 
-TEST(FaceHelperTest, CalcAverageEmbedding) {
+TEST_F(FaceHelperTest, CalcAverageEmbedding) {
     std::vector<std::vector<float>> embeddings = {{1.0f, 2.0f, 3.0f}, {3.0f, 2.0f, 1.0f}};
 
     auto avg = calc_average_embedding(embeddings);
@@ -117,7 +124,7 @@ TEST(FaceHelperTest, CalcAverageEmbedding) {
     EXPECT_FLOAT_EQ(avg[2], 2.0f);
 }
 
-TEST(FaceHelperTest, RotatePointBack) {
+TEST_F(FaceHelperTest, RotatePointBack) {
     cv::Size original_size(100, 50); // W=100, H=50
     cv::Point2f pt(10, 20);          // Point on "rotated" or processed frame
 
@@ -137,7 +144,7 @@ TEST(FaceHelperTest, RotatePointBack) {
     EXPECT_EQ(rotate_point_back(pt, 270, original_size), cv::Point2f(20, 40));
 }
 
-TEST(FaceHelperTest, RotateBoxBack) {
+TEST_F(FaceHelperTest, RotateBoxBack) {
     cv::Size original_size(100, 50);
     cv::Rect2f box(10, 10, 20, 20);
 

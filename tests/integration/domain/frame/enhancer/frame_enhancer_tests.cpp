@@ -21,8 +21,12 @@ import foundation.infrastructure.test_support;
 using namespace domain::frame::enhancer;
 using namespace foundation::infrastructure::test;
 
+extern void LinkGlobalTestEnvironment();
+
 class FrameEnhancerTest : public ::testing::Test {
 protected:
+    static void SetUpTestSuite() { LinkGlobalTestEnvironment(); }
+
     void SetUp() override {
         auto assets_path = get_assets_path();
         auto models_info_path = assets_path / "models_info.json";

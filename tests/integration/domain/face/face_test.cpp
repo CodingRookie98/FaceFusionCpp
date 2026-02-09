@@ -14,14 +14,21 @@ import domain.face.test_support;
 
 using namespace domain::face;
 
-TEST(FaceTest, DefaultConstruction) {
+extern void LinkGlobalTestEnvironment();
+
+class FaceTest : public ::testing::Test {
+protected:
+    static void SetUpTestSuite() { LinkGlobalTestEnvironment(); }
+};
+
+TEST_F(FaceTest, DefaultConstruction) {
     Face face;
     EXPECT_TRUE(face.is_empty());
     EXPECT_LE(face.box().area(), 0.0f);
     EXPECT_TRUE(face.kps().empty());
 }
 
-TEST(FaceTest, SetAndGetBox) {
+TEST_F(FaceTest, SetAndGetBox) {
     Face face;
     cv::Rect2f box(10.0f, 20.0f, 100.0f, 120.0f);
     face.set_box(box);
@@ -34,7 +41,7 @@ TEST(FaceTest, SetAndGetBox) {
     EXPECT_TRUE(face.is_empty());
 }
 
-TEST(FaceTest, SetAndGetKps) {
+TEST_F(FaceTest, SetAndGetKps) {
     using domain::face::types::Landmarks;
     Face face;
     face.set_box({0, 0, 100, 100});
@@ -47,7 +54,7 @@ TEST(FaceTest, SetAndGetKps) {
     EXPECT_FALSE(face.is_empty()); // box有效且kps非空
 }
 
-TEST(FaceTest, GetLandmark5) {
+TEST_F(FaceTest, GetLandmark5) {
     // 1. 测试 5 点的情况
     auto face5 = test_support::create_test_face(); // helper 创建的是 5 点 face
     EXPECT_EQ(face5.kps().size(), 5);
@@ -63,7 +70,7 @@ TEST(FaceTest, GetLandmark5) {
     EXPECT_EQ(l5_from_68.size(), 5);
 }
 
-TEST(AgeRangeTest, Logic) {
+TEST_F(FaceTest, AgeRangeLogic) {
     domain::face::AgeRange range;
     EXPECT_EQ(range.min, 0);
     EXPECT_EQ(range.max, 100);

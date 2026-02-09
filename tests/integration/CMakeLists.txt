@@ -80,3 +80,8 @@ add_facefusion_test(
 )
 
 copy_onnxruntime_libs(component_integration_tests)
+
+if(HAVE_NVML)
+    target_link_libraries(component_integration_tests PRIVATE ${NVML_LIBRARY})
+    target_compile_definitions(component_integration_tests PRIVATE HAVE_NVML)
+endif()

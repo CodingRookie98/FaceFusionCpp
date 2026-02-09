@@ -21,8 +21,12 @@ using namespace foundation::ai::inference_session;
 using namespace foundation::infrastructure::test;
 namespace fs = std::filesystem;
 
+extern void LinkGlobalTestEnvironment();
+
 class InferenceSessionTest : public ::testing::Test {
 protected:
+    static void SetUpTestSuite() { LinkGlobalTestEnvironment(); }
+
     void SetUp() override {
         assets_path = get_assets_path();
         // Use yoloface_8n.onnx as a lightweight test model if available
