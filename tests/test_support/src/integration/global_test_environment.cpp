@@ -10,15 +10,17 @@ class GlobalCleanupEnvironment : public ::testing::Environment {
 public:
     void TearDown() override {
         // 显式清理单例资源，确保在 main 返回前释放 CUDA 资源
-        // 必须遵循特定的清理顺序，否则可能导致 Heap Corruption
+        // 必须遵循 "依赖者先释放" 原则，否则可能导致 Heap Corruption
+        //
+        // 依赖链: FaceModelRegistry -> FaceModel -> InferenceSession <- SessionRegistry (cache)
 
-        // 1. 先清理 SessionRegistry (释放 cache 中的引用)
-        // SessionRegistry 持有 InferenceSession 的 shared_ptr
-        foundation::ai::inference_session::InferenceSessionRegistry::get_instance().clear();
-
-        // 2. 再清理 FaceModelRegistry (释放 model 中的 session 引用 -> 触发 session 析构)
-        // ModelRegistry 持有 FaceModel，FaceModel 持有 InferenceSession
+        // 1. 先清理 FaceModelRegistry (释放 FaceModel 对 InferenceSession 的引用)
+        // ModelRegistry 持有 FaceModel，FaceModel 持有 InferenceSession 的 shared_ptr
         domain::face::FaceModelRegistry::get_instance().clear();
+
+        // 2. 再清理 SessionRegistry (此时 session 引用计数已降低，仅剩 cache 引用)
+        // SessionRegistry 持有 InferenceSession 的 shared_ptr cache
+        foundation::ai::inference_session::InferenceSessionRegistry::get_instance().clear();
     }
 };
 
