@@ -2,7 +2,6 @@ add_facefusion_test(
     app_test_pipeline
     SOURCES
         app/pipeline_runner_video_test.cpp
-
         app/pipeline_runner_image_test.cpp
         app/pipeline_runner_metrics_test.cpp
         app/checkpoint_resume_test.cpp
@@ -11,7 +10,6 @@ add_facefusion_test(
     LINK_LIBRARIES
         integration_test_support
         domain_pipeline
-
         services_pipeline
         domain_face
         domain_face_detector
@@ -63,7 +61,6 @@ add_facefusion_test(
     LINK_LIBRARIES
         integration_test_support
         domain_face
-
         domain_face_detector
         domain_face_swapper
         domain_face_recognizer

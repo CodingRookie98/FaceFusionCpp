@@ -160,7 +160,7 @@ This should speed up the test by ~4x.
 
 ---
 
-## Issue: TensorRT Myelin 进程退出崩溃 (未解决)
+## Issue: TensorRT Myelin 进程退出崩溃 (已解决)
 
 ### 问题描述
 - **日期**: 2026-02-09
