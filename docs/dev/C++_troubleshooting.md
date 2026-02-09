@@ -175,11 +175,11 @@ This should speed up the test by ~4x.
 ### 错误日志示例
 ```
 [  PASSED  ] 26 tests.
-Unexpected Internal Error: Unexpected exception Assertion gUsedAllocators.find(alloc) != gUsedAllocators.end() failed. 
-Myelin free callback called with invalid MyelinAllocator 
+Unexpected Internal Error: Unexpected exception Assertion gUsedAllocators.find(alloc) != gUsedAllocators.end() failed.
+Myelin free callback called with invalid MyelinAllocator
 In myelinFreeAsyncCb at /_src/runtime/myelin/myelinAllocator.cpp:228
 
-[ERROR] [graphContext.cpp::~MyelinGraphContext::101] Error Code 1: Myelin 
+[ERROR] [graphContext.cpp::~MyelinGraphContext::101] Error Code 1: Myelin
 ([impl.cpp:650: unload_cuda] Error 4 destroying event '0x...')
 
 pure virtual method called
@@ -189,7 +189,7 @@ Segmentation fault (core dumped)
 
 ### 时序分析
 ```
-[测试执行] → [所有测试 PASSED] → [Global test environment tear-down] 
+[测试执行] → [所有测试 PASSED] → [Global test environment tear-down]
 → [TearDown() 完成] → [main() 返回] → 💥 静态对象析构阶段崩溃
 ```
 
@@ -208,9 +208,9 @@ TensorRT Myelin 引擎使用**异步回调**释放 GPU 内存。当进程退出�
 **思路**: 遵循"依赖者先释放"原则
 ```cpp
 // 1. 先清理 FaceModelRegistry (持有 FaceModel → InferenceSession)
-domain::face::FaceModelRegistry::get_instance().clear();
+domain::face::FaceModelRegistry::get_instance()->clear();
 // 2. 再清理 SessionRegistry (持有 InferenceSession cache)
-foundation::ai::inference_session::InferenceSessionRegistry::get_instance().clear();
+foundation::ai::inference_session::InferenceSessionRegistry::get_instance()->clear();
 ```
 **结果**: 解决了之前的 "corrupted double-linked list" 错误，但 Myelin 崩溃仍存在
 
@@ -230,28 +230,18 @@ std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 ```
 **结果**: 无效。问题发生在 `TearDown()` 之后，不是之内
 
-#### 方案 4: 强制退出 `_exit(0)` (备用)
+#### 方案 4: 强制退出 `_exit(0)` (备用) ✅ 有效
 **思路**: 跳过静态对象析构
 ```cpp
 _exit(0);  // 跳过 atexit handlers 和静态析构
 ```
-**状态**: 已记录为备用方案，见 `docs/dev/plan/teardown-stability/backup_plan_force_exit.md`
-**优点**: 100% 有效
-**缺点**: 跳过所有静态析构，可能导致资源泄漏（进程即将终止，影响有限）
+**状态**: 已实施
+**关键发现**: 之前的方案无效是因为 `GlobalCleanupEnvironment` 所在的静态库未被正确链接，导致 `TearDown` 根本没有执行！
+**最终方案**:
+1. 强制链接 `global_test_environment.o` (通过引用符号 `LinkGlobalTestEnvironment`)。
+2. 在 `TearDown` 中按顺序执行: `clear()` -> `cudaDeviceSynchronize()` -> `_exit(0)`。
+3. 即使禁用 `_exit(0)` (TEARDOWN_FORCE_EXIT=0)，由于单例使用了 `shared_ptr` 且正确执行了清理顺序，崩溃问题也已消失。保留 `_exit(0)` 作为安全网。
 
 ### 当前状态
-- **待验证**: 升级 ONNX Runtime 从 1.20.1 到 1.24.1，测试是否能解决问题
-- **代码状态**: `global_test_environment.cpp` 已简化，移除了无效的 cudaDeviceSynchronize 和延迟逻辑
+- **已解决**: TensorRT Myelin 退出崩溃问题已修复。
 - **分支**: `fix/teardown-cuda-sync`
-
-### 相关文件
-- `tests/test_support/src/integration/global_test_environment.cpp` - 全局清理环境
-- `docs/dev/plan/teardown-stability/C++_plan_teardown_stability.md` - 计划文档
-- `docs/dev/plan/teardown-stability/backup_plan_force_exit.md` - 备用方案文档
-- `docs/dev/test_analysis_cleanup_order.md` - 测试分析报告
-
-### 后续行动
-1. 升级 ORT 到 1.24.1 并测试
-2. 如果问题解决 → 记录版本升级为解决方案
-3. 如果问题仍存在 → 评估是否启用备用方案 C (`_exit`)
-4. 或接受现状（CI 使用 ctest 隔离，不受影响）
