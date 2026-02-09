@@ -35,8 +35,6 @@ if(HAVE_NVML)
     target_compile_definitions(app_test_pipeline PRIVATE HAVE_NVML)
 endif()
 
-target_include_directories(app_test_pipeline PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../tests)
-
 add_facefusion_test(
     component_integration_tests
     MAIN_LIB GTest::gmock_main
