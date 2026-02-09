@@ -31,28 +31,28 @@ protected:
 };
 
 TEST_F(FaceModelRegistryTest, SingletonInstance) {
-    auto& instance1 = FaceModelRegistry::get_instance();
-    auto& instance2 = FaceModelRegistry::get_instance();
-    EXPECT_EQ(&instance1, &instance2);
+    auto instance1 = FaceModelRegistry::get_instance();
+    auto instance2 = FaceModelRegistry::get_instance();
+    EXPECT_EQ(instance1, instance2);
 }
 
 TEST_F(FaceModelRegistryTest, GetDetectorReuse) {
-    auto& registry = FaceModelRegistry::get_instance();
-    registry.clear();
+    auto registry = FaceModelRegistry::get_instance();
+    registry->clear();
 
     std::string path = model_repo->ensure_model("scrfd");
     ASSERT_FALSE(path.empty());
 
     Options opts;
 
-    auto det1 = registry.get_detector(DetectorType::SCRFD, path, opts);
+    auto det1 = registry->get_detector(DetectorType::SCRFD, path, opts);
     ASSERT_NE(det1, nullptr);
 
-    auto det2 = registry.get_detector(DetectorType::SCRFD, path, opts);
+    auto det2 = registry->get_detector(DetectorType::SCRFD, path, opts);
     EXPECT_EQ(det1, det2); // Should be the same instance
 
     // Change options (non-device ID to avoid errors on single-GPU systems)
     opts.trt_max_workspace_size = 1;
-    auto det3 = registry.get_detector(DetectorType::SCRFD, path, opts);
+    auto det3 = registry->get_detector(DetectorType::SCRFD, path, opts);
     EXPECT_NE(det1, det3); // Should be a different instance
 }

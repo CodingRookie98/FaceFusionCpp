@@ -21,7 +21,7 @@ using ::testing::Return;
 class OcclusionMaskerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        InferenceSessionRegistry::get_instance().clear();
+        InferenceSessionRegistry::get_instance()->clear();
         mock_session = std::make_shared<NiceMock<MockInferenceSession>>();
     }
 
@@ -30,7 +30,7 @@ protected:
 
 TEST_F(OcclusionMaskerTest, LoadModelAndCreateMask) {
     std::string model_path = "face_occluder.onnx";
-    InferenceSessionRegistry::get_instance().preload_session(model_path, Options(), mock_session);
+    InferenceSessionRegistry::get_instance()->preload_session(model_path, Options(), mock_session);
 
     // 1. Setup Mock for load_model (called inside create_occlusion_masker)
     std::vector<std::vector<int64_t>> input_dims = {{1, 256, 256, 3}};

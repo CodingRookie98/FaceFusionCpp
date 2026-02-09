@@ -17,13 +17,13 @@ import foundation.ai.inference_session;
 
 namespace domain::face {
 
-static std::unique_ptr<FaceModelRegistry> s_instance;
+static std::shared_ptr<FaceModelRegistry> s_instance;
 static std::mutex s_instance_mutex;
 
-FaceModelRegistry& FaceModelRegistry::get_instance() {
+std::shared_ptr<FaceModelRegistry> FaceModelRegistry::get_instance() {
     std::lock_guard<std::mutex> lock(s_instance_mutex);
-    if (!s_instance) { s_instance.reset(new FaceModelRegistry()); }
-    return *s_instance;
+    if (!s_instance) { s_instance = std::make_shared<FaceModelRegistry>(); }
+    return s_instance;
 }
 
 void FaceModelRegistry::set_instance_for_testing(std::unique_ptr<FaceModelRegistry> instance) {

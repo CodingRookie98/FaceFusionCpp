@@ -21,7 +21,7 @@ using ::testing::Return;
 class LivePortraitTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        InferenceSessionRegistry::get_instance().clear();
+        InferenceSessionRegistry::get_instance()->clear();
         feature_mock = std::make_shared<NiceMock<MockInferenceSession>>();
         motion_mock = std::make_shared<NiceMock<MockInferenceSession>>();
         generator_mock = std::make_shared<NiceMock<MockInferenceSession>>();
@@ -37,9 +37,9 @@ TEST_F(LivePortraitTest, LoadModelAndRestoreExpression) {
     std::string motion_path = "motion_extractor.onnx";
     std::string generator_path = "generator.onnx";
 
-    InferenceSessionRegistry::get_instance().preload_session(feature_path, Options(), feature_mock);
-    InferenceSessionRegistry::get_instance().preload_session(motion_path, Options(), motion_mock);
-    InferenceSessionRegistry::get_instance().preload_session(generator_path, Options(),
+    InferenceSessionRegistry::get_instance()->preload_session(feature_path, Options(), feature_mock);
+    InferenceSessionRegistry::get_instance()->preload_session(motion_path, Options(), motion_mock);
+    InferenceSessionRegistry::get_instance()->preload_session(generator_path, Options(),
                                                              generator_mock);
 
     auto restorer = create_live_portrait_restorer();

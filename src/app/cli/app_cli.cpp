@@ -184,8 +184,8 @@ int App::run(int argc, char** argv) {
         // ─────────────────────────────────────────────────────────────────────────
         // 清理资源 (重要：避免 CUDA 驱动提前关闭导致的析构崩溃)
         // ─────────────────────────────────────────────────────────────────────────
-        domain::face::FaceModelRegistry::get_instance().clear();
-        foundation::ai::inference_session::InferenceSessionRegistry::get_instance().clear();
+        domain::face::FaceModelRegistry::get_instance()->clear();
+        foundation::ai::inference_session::InferenceSessionRegistry::get_instance()->clear();
     }
 
     return exit_code;

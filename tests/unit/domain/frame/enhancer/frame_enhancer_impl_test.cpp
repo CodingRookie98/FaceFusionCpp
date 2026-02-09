@@ -21,9 +21,9 @@ protected:
     std::shared_ptr<NiceMock<MockInferenceSession>> mock_session;
 
     void SetUp() override {
-        InferenceSessionRegistry::get_instance().clear();
+        InferenceSessionRegistry::get_instance()->clear();
         mock_session = std::make_shared<NiceMock<MockInferenceSession>>();
-        InferenceSessionRegistry::get_instance().preload_session(model_path, Options(),
+        InferenceSessionRegistry::get_instance()->preload_session(model_path, Options(),
                                                                  mock_session);
 
         // Default expectations
@@ -32,7 +32,7 @@ protected:
             .WillRepeatedly(Return(std::vector<std::vector<int64_t>>{{1, 3, -1, -1}}));
     }
 
-    void TearDown() override { InferenceSessionRegistry::get_instance().clear(); }
+    void TearDown() override { InferenceSessionRegistry::get_instance()->clear(); }
 };
 
 TEST_F(FrameEnhancerImplTest, EnhanceFrameSimple1x) {

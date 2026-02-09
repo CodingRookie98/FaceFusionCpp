@@ -21,7 +21,7 @@ using ::testing::Return;
 class ArcFaceRecognizerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        InferenceSessionRegistry::get_instance().clear();
+        InferenceSessionRegistry::get_instance()->clear();
         mock_session = std::make_shared<NiceMock<MockInferenceSession>>();
     }
 
@@ -30,7 +30,7 @@ protected:
 
 TEST_F(ArcFaceRecognizerTest, LoadModelAndRecognizeFace) {
     std::string model_path = "arcface_w600k_r50.onnx";
-    InferenceSessionRegistry::get_instance().preload_session(model_path, Options(), mock_session);
+    InferenceSessionRegistry::get_instance()->preload_session(model_path, Options(), mock_session);
 
     auto recognizer = create_face_recognizer(FaceRecognizerType::ArcFaceW600kR50);
 

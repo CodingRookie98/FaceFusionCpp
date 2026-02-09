@@ -23,7 +23,7 @@ using ::testing::Return;
 class FairFaceTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        InferenceSessionRegistry::get_instance().clear();
+        InferenceSessionRegistry::get_instance()->clear();
         mock_session = std::make_shared<NiceMock<MockInferenceSession>>();
     }
 
@@ -32,7 +32,7 @@ protected:
 
 TEST_F(FairFaceTest, LoadModelAndClassify) {
     std::string model_path = "fairface.onnx";
-    InferenceSessionRegistry::get_instance().preload_session(model_path, Options(), mock_session);
+    InferenceSessionRegistry::get_instance()->preload_session(model_path, Options(), mock_session);
 
     auto classifier = create_classifier(ClassifierType::FairFace);
 

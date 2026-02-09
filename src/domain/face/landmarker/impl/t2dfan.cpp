@@ -61,7 +61,7 @@ T2dfan::~T2dfan() = default;
 void T2dfan::load_model(const std::string& model_path,
                         const foundation::ai::inference_session::Options& options) {
     p_impl->session =
-        foundation::ai::inference_session::InferenceSessionRegistry::get_instance().get_session(
+        foundation::ai::inference_session::InferenceSessionRegistry::get_instance()->get_session(
             model_path, options);
     auto input_dims = p_impl->session->get_input_node_dims();
     if (!input_dims.empty() && input_dims[0].size() >= 4) {

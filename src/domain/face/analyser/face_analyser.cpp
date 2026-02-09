@@ -176,7 +176,7 @@ public:
 
 private:
     void apply_options(const Options& options) {
-        auto& registry = FaceModelRegistry::get_instance();
+        auto registry = FaceModelRegistry::get_instance();
 
         // Detector
         auto get_det_path = [](const Options& opts) {
@@ -194,8 +194,8 @@ private:
             || options.face_detector_options.type != m_options.face_detector_options.type
             || det_path != old_det_path
             || options.inference_session_options != m_options.inference_session_options) {
-            m_detector = registry.get_detector(options.face_detector_options.type, det_path,
-                                               options.inference_session_options);
+            m_detector = registry->get_detector(options.face_detector_options.type, det_path,
+                                                options.inference_session_options);
         }
 
         // Landmarker
@@ -214,8 +214,8 @@ private:
             || options.face_landmarker_options.type != m_options.face_landmarker_options.type
             || lm_path != old_lm_path
             || options.inference_session_options != m_options.inference_session_options) {
-            m_landmarker = registry.get_landmarker(options.face_landmarker_options.type, lm_path,
-                                                   options.inference_session_options);
+            m_landmarker = registry->get_landmarker(options.face_landmarker_options.type, lm_path,
+                                                    options.inference_session_options);
         }
 
         // Recognizer
@@ -223,9 +223,9 @@ private:
             || options.model_paths.face_recognizer_arcface
                    != m_options.model_paths.face_recognizer_arcface
             || options.inference_session_options != m_options.inference_session_options) {
-            m_recognizer = registry.get_recognizer(options.face_recognizer_type,
-                                                   options.model_paths.face_recognizer_arcface,
-                                                   options.inference_session_options);
+            m_recognizer = registry->get_recognizer(options.face_recognizer_type,
+                                                    options.model_paths.face_recognizer_arcface,
+                                                    options.inference_session_options);
         }
 
         // Classifier
@@ -233,9 +233,9 @@ private:
             || options.model_paths.face_classifier_fairface
                    != m_options.model_paths.face_classifier_fairface
             || options.inference_session_options != m_options.inference_session_options) {
-            m_classifier = registry.get_classifier(options.face_classifier_type,
-                                                   options.model_paths.face_classifier_fairface,
-                                                   options.inference_session_options);
+            m_classifier = registry->get_classifier(options.face_classifier_type,
+                                                    options.model_paths.face_classifier_fairface,
+                                                    options.inference_session_options);
         }
 
         m_options = options;

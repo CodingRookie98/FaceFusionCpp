@@ -16,11 +16,14 @@ public:
 
         // 1. 先清理 FaceModelRegistry (释放 FaceModel 对 InferenceSession 的引用)
         // ModelRegistry 持有 FaceModel，FaceModel 持有 InferenceSession 的 shared_ptr
-        domain::face::FaceModelRegistry::get_instance().clear();
+        domain::face::FaceModelRegistry::get_instance()->clear();
 
         // 2. 再清理 SessionRegistry (此时 session 引用计数已降低，仅剩 cache 引用)
         // SessionRegistry 持有 InferenceSession 的 shared_ptr cache
-        foundation::ai::inference_session::InferenceSessionRegistry::get_instance().clear();
+        foundation::ai::inference_session::InferenceSessionRegistry::get_instance()->clear();
+
+        // NOTE: 步骤 3-4 已注释，用于测试 ORT 1.24.1 升级是否能解决 Myelin 崩溃问题
+        // 如果升级后问题仍存在，参考 backup_plan_force_exit.md
     }
 };
 

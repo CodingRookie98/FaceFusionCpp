@@ -27,9 +27,9 @@ export class InferenceSessionRegistry {
 public:
     /**
      * @brief Get the singleton instance of the registry.
-     * @return Reference to the singleton instance
+     * @return Shared pointer to the singleton instance
      */
-    static InferenceSessionRegistry& get_instance();
+    static std::shared_ptr<InferenceSessionRegistry> get_instance();
 
     /**
      * @brief Configure the registry and internal session pool.
@@ -73,10 +73,10 @@ public:
     InferenceSessionRegistry(InferenceSessionRegistry&&) = delete;
     InferenceSessionRegistry& operator=(InferenceSessionRegistry&&) = delete;
 
-private:
     InferenceSessionRegistry();
     ~InferenceSessionRegistry() = default;
 
+private:
     session_pool::SessionPool m_pool;
     std::string m_cache_path = "./.cache/tensorrt"; ///< Cache path for TensorRT engines
 

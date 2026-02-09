@@ -44,12 +44,12 @@ protected:
         output.close();
 
         mock_session = std::make_shared<NiceMock<MockInferenceSession>>();
-        InferenceSessionRegistry::get_instance().preload_session(model_path, Options(),
+        InferenceSessionRegistry::get_instance()->preload_session(model_path, Options(),
                                                                  mock_session);
     }
 
     void TearDown() override {
-        InferenceSessionRegistry::get_instance().clear();
+        InferenceSessionRegistry::get_instance()->clear();
         if (std::filesystem::exists(model_path)) { std::filesystem::remove(model_path); }
     }
 };

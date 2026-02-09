@@ -22,7 +22,7 @@ using ::testing::Return;
 class RegionMaskerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        InferenceSessionRegistry::get_instance().clear();
+        InferenceSessionRegistry::get_instance()->clear();
         mock_session = std::make_shared<NiceMock<MockInferenceSession>>();
     }
 
@@ -31,7 +31,7 @@ protected:
 
 TEST_F(RegionMaskerTest, LoadModelAndCreateMask) {
     std::string model_path = "face_parser.onnx";
-    InferenceSessionRegistry::get_instance().preload_session(model_path, Options(), mock_session);
+    InferenceSessionRegistry::get_instance()->preload_session(model_path, Options(), mock_session);
 
     Options options;
     auto masker = create_region_masker(model_path, options);

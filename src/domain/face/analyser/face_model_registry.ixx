@@ -25,7 +25,7 @@ public:
     /**
      * @brief Get the singleton instance of the registry.
      */
-    static FaceModelRegistry& get_instance();
+    static std::shared_ptr<FaceModelRegistry> get_instance();
 
     // Testing support
     static void set_instance_for_testing(std::unique_ptr<FaceModelRegistry> instance);
@@ -73,9 +73,9 @@ public:
     FaceModelRegistry(FaceModelRegistry&&) = delete;
     FaceModelRegistry& operator=(FaceModelRegistry&&) = delete;
 
-private:
     FaceModelRegistry() = default;
 
+private:
     std::mutex m_mutex;
 
     // We use a simple string key: "TypeID:Path:OptionsHash"

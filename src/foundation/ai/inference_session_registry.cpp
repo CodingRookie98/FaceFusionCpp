@@ -28,8 +28,12 @@ void InferenceSessionRegistry::configure(const session_pool::PoolConfig& config,
     m_cache_path = cache_path;
 }
 
-InferenceSessionRegistry& InferenceSessionRegistry::get_instance() {
-    static InferenceSessionRegistry instance;
+std::shared_ptr<InferenceSessionRegistry> InferenceSessionRegistry::get_instance() {
+    static std::once_flag flag;
+    static std::shared_ptr<InferenceSessionRegistry> instance;
+    std::call_once(flag, [&]() {
+        instance = std::shared_ptr<InferenceSessionRegistry>(new InferenceSessionRegistry());
+    });
     return instance;
 }
 

@@ -19,3 +19,11 @@ target_include_directories(integration_test_support PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
+# CUDA 同步支持 (用于 TearDown 时等待 GPU 操作完成)
+find_package(CUDAToolkit QUIET)
+if(CUDAToolkit_FOUND)
+    target_compile_definitions(integration_test_support PRIVATE CUDA_SYNC_AVAILABLE)
+    target_link_libraries(integration_test_support PRIVATE CUDA::cudart)
+    message(STATUS "integration_test_support: CUDA sync enabled")
+endif()
+

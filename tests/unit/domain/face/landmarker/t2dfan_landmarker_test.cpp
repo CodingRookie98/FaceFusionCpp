@@ -21,7 +21,7 @@ using ::testing::Return;
 class T2dfanLandmarkerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        InferenceSessionRegistry::get_instance().clear();
+        InferenceSessionRegistry::get_instance()->clear();
         mock_session = std::make_shared<NiceMock<MockInferenceSession>>();
     }
 
@@ -30,7 +30,7 @@ protected:
 
 TEST_F(T2dfanLandmarkerTest, LoadModelAndDetectLandmarks) {
     std::string model_path = "2dfan4.onnx";
-    InferenceSessionRegistry::get_instance().preload_session(model_path, Options(), mock_session);
+    InferenceSessionRegistry::get_instance()->preload_session(model_path, Options(), mock_session);
 
     auto landmarker = create_landmarker(LandmarkerType::T2dfan);
 

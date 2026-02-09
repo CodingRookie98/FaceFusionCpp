@@ -19,7 +19,7 @@ public:
     void load_model(const std::string& model_path,
                     const foundation::ai::inference_session::Options& options) override {
         m_session =
-            foundation::ai::inference_session::InferenceSessionRegistry::get_instance().get_session(
+            foundation::ai::inference_session::InferenceSessionRegistry::get_instance()->get_session(
                 model_path, options);
     }
 

@@ -44,7 +44,7 @@ T68By5::~T68By5() = default;
 void T68By5::load_model(const std::string& model_path,
                         const foundation::ai::inference_session::Options& options) {
     p_impl->session =
-        foundation::ai::inference_session::InferenceSessionRegistry::get_instance().get_session(
+        foundation::ai::inference_session::InferenceSessionRegistry::get_instance()->get_session(
             model_path, options);
     auto input_dims = p_impl->session->get_input_node_dims();
     if (!input_dims.empty()) {

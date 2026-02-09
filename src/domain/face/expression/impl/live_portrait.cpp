@@ -21,7 +21,7 @@ using namespace foundation::ai::inference_session;
 // FeatureExtractor Implementation
 void LivePortrait::FeatureExtractor::load_model(const std::string& path,
                                                 const inference_session::Options& options) {
-    m_session = InferenceSessionRegistry::get_instance().get_session(path, options);
+    m_session = InferenceSessionRegistry::get_instance()->get_session(path, options);
 }
 
 bool LivePortrait::FeatureExtractor::is_model_loaded() const {
@@ -80,7 +80,7 @@ std::vector<float> LivePortrait::FeatureExtractor::extract_feature(const cv::Mat
 // MotionExtractor Implementation
 void LivePortrait::MotionExtractor::load_model(const std::string& path,
                                                const inference_session::Options& options) {
-    m_session = InferenceSessionRegistry::get_instance().get_session(path, options);
+    m_session = InferenceSessionRegistry::get_instance()->get_session(path, options);
 }
 
 bool LivePortrait::MotionExtractor::is_model_loaded() const {
@@ -144,7 +144,7 @@ std::vector<std::vector<float>> LivePortrait::MotionExtractor::extract_motion(
 // Generator Implementation
 void LivePortrait::Generator::load_model(const std::string& path,
                                          const inference_session::Options& options) {
-    m_session = InferenceSessionRegistry::get_instance().get_session(path, options);
+    m_session = InferenceSessionRegistry::get_instance()->get_session(path, options);
 }
 
 bool LivePortrait::Generator::is_model_loaded() const {

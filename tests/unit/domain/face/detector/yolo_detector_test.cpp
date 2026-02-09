@@ -22,7 +22,7 @@ class YoloDetectorTest : public ::testing::Test {
 protected:
     void SetUp() override {
         // Clear registry
-        InferenceSessionRegistry::get_instance().clear();
+        InferenceSessionRegistry::get_instance()->clear();
 
         mock_session = std::make_shared<NiceMock<MockInferenceSession>>();
 
@@ -39,7 +39,7 @@ protected:
 
 TEST_F(YoloDetectorTest, LoadModelAndDetectFace) {
     std::string model_path = "yoloface_8n.onnx";
-    InferenceSessionRegistry::get_instance().preload_session(model_path, Options(), mock_session);
+    InferenceSessionRegistry::get_instance()->preload_session(model_path, Options(), mock_session);
 
     auto detector = FaceDetectorFactory::create(DetectorType::Yolo);
 

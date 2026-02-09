@@ -20,7 +20,7 @@ FrameEnhancerImpl::FrameEnhancerImpl(const std::string& model_path,
                                      const std::vector<int>& tile_size, int model_scale) :
     m_tile_size(tile_size), m_model_scale(model_scale) {
     m_session =
-        foundation::ai::inference_session::InferenceSessionRegistry::get_instance().get_session(
+        foundation::ai::inference_session::InferenceSessionRegistry::get_instance()->get_session(
             model_path, options);
 }
 

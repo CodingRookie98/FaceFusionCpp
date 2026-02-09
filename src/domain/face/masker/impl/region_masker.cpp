@@ -133,7 +133,7 @@ cv::Mat process_region_output(std::vector<Ort::Value>& output_tensors, cv::Size 
 void RegionMasker::load_model(const std::string& model_path,
                               const foundation::ai::inference_session::Options& options) {
     m_session =
-        foundation::ai::inference_session::InferenceSessionRegistry::get_instance().get_session(
+        foundation::ai::inference_session::InferenceSessionRegistry::get_instance()->get_session(
             model_path, options);
 }
 
