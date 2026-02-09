@@ -1,0 +1,10 @@
+add_facefusion_test(
+    mock_usage_test
+    SOURCES
+        mock_usage_test.cpp
+    LINK_LIBRARIES
+        test_common
+        test_mocks
+        GTest::gtest
+        GTest::gmock
+)

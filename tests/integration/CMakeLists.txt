@@ -16,6 +16,7 @@ add_facefusion_test(
         domain_face_masker
         domain_face_swapper
         domain_face_expression
+        domain_face_enhancer
         domain_face_test_support
         domain_face_analyser
         domain_ai
@@ -67,6 +68,7 @@ add_facefusion_test(
         domain_face_masker
         domain_face_classifier
         domain_face_expression
+        domain_face_enhancer
         domain_face_analyser
         domain_frame
         domain_ai

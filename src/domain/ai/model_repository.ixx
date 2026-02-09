@@ -59,61 +59,63 @@ public:
     /**
      * @brief Retrieve metadata for a named model
      */
-    [[nodiscard]] ModelInfo get_model_info(const std::string& model_name) const;
+    [[nodiscard]] virtual ModelInfo get_model_info(const std::string& model_name) const;
 
     /**
      * @brief Get the configured path for a model (may not exist)
      */
-    [[nodiscard]] std::string get_model_path(const std::string& model_name) const;
+    [[nodiscard]] virtual std::string get_model_path(const std::string& model_name) const;
 
     /**
      * @brief Ensure a model is available locally (downloads if necessary)
      * @return Path to the verified model file, or empty string on failure
      */
-    [[nodiscard]] std::string ensure_model(const std::string& model_name) const;
+    [[nodiscard]] virtual std::string ensure_model(const std::string& model_name) const;
 
     /**
      * @brief Get the download URL for a model
      */
-    [[nodiscard]] std::string get_model_url(const std::string& model_name) const;
+    [[nodiscard]] virtual std::string get_model_url(const std::string& model_name) const;
 
     /**
      * @brief Manually trigger a model download
      */
-    [[nodiscard]] bool download_model(const std::string& model_name) const;
+    [[nodiscard]] virtual bool download_model(const std::string& model_name) const;
 
     /**
      * @brief Check if a model file exists on disk
      */
-    [[nodiscard]] bool is_downloaded(const std::string& model_name) const;
+    [[nodiscard]] virtual bool is_downloaded(const std::string& model_name) const;
 
     /**
      * @brief Get the path to the models registry JSON file
      */
-    [[nodiscard]] std::string get_model_json_file_path() const { return m_json_file_path; }
+    [[nodiscard]] virtual std::string get_model_json_file_path() const { return m_json_file_path; }
 
     /**
      * @brief Check if a model is defined in the repository
      */
-    [[nodiscard]] bool has_model(const std::string& model_name) const;
+    [[nodiscard]] virtual bool has_model(const std::string& model_name) const;
 
     /**
      * @brief Set the path to the model info registry file
      */
-    void set_model_info_file_path(const std::string& path = "./assets/models_info.json");
+    virtual void set_model_info_file_path(const std::string& path = "./assets/models_info.json");
 
     /**
      * @brief Set the root directory for model storage
      */
-    void set_base_path(const std::string& path);
+    virtual void set_base_path(const std::string& path);
 
     /**
      * @brief Set the current download strategy
      */
-    void set_download_strategy(DownloadStrategy strategy);
+    virtual void set_download_strategy(DownloadStrategy strategy);
+
+protected:
+    ModelRepository();
 
 private:
-    ModelRepository();
     [[nodiscard]] std::string get_model_path_internal(const std::string& model_name) const;
     std::string m_json_file_path;
     std::string m_base_path;

@@ -40,6 +40,7 @@ target_link_libraries(services_pipeline
         domain_face_masker
         domain_face_swapper
         domain_face_expression
+        domain_face_enhancer
         domain_frame
         domain_ai
         foundation_ai
