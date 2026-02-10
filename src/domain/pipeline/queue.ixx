@@ -27,6 +27,7 @@ public:
      * @param max_size Maximum number of elements in the queue
      */
     explicit ThreadSafeQueue(size_t max_size) : m_max_size(max_size) {}
+    ~ThreadSafeQueue() = default;
 
     ThreadSafeQueue(const ThreadSafeQueue&) = delete;
     ThreadSafeQueue& operator=(const ThreadSafeQueue&) = delete;
@@ -37,8 +38,8 @@ public:
      * @param value The value to push
      */
     void push(T_ value) {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        m_not_full.wait(lock, [this] { return m_queue.size() < m_max_size || m_shutdown; });
+        std::unique_lock<std::mutex> kLock(m_mutex);
+        m_not_full.wait(kLock, [this] { return m_queue.size() < m_max_size || m_shutdown; });
 
         if (m_shutdown) return;
 
@@ -52,8 +53,8 @@ public:
      * @return std::optional<T_> The value, or std::nullopt if queue is shutdown and empty
      */
     std::optional<T_> pop() {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        m_not_empty.wait(lock, [this] { return !m_queue.empty() || m_shutdown; });
+        std::unique_lock<std::mutex> kLock(m_mutex);
+        m_not_empty.wait(kLock, [this] { return !m_queue.empty() || m_shutdown; });
 
         if (m_queue.empty() && m_shutdown) { return std::nullopt; }
 
@@ -71,21 +72,21 @@ public:
      * @return Vector of items (empty if queue was empty or stopped)
      */
     std::vector<T_> pop_batch(size_t max_items) {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        m_not_empty.wait(lock, [this] { return !m_queue.empty() || m_shutdown; });
+        std::unique_lock<std::mutex> kLock(m_mutex);
+        m_not_empty.wait(kLock, [this] { return !m_queue.empty() || m_shutdown; });
 
         std::vector<T_> batch;
         if (m_shutdown && m_queue.empty()) return batch;
 
-        size_t count = std::min(max_items, m_queue.size());
-        batch.reserve(count);
+        const size_t kCount = std::min(max_items, m_queue.size());
+        batch.reserve(kCount);
 
-        for (size_t i = 0; i < count; ++i) {
+        for (size_t i = 0; i < kCount; ++i) {
             batch.push_back(std::move(m_queue.front()));
             m_queue.pop();
         }
 
-        if (count > 0) {
+        if (kCount > 0) {
             m_not_full.notify_all(); // Notify producers potentially multiple times or just all
         }
         return batch;
@@ -95,7 +96,7 @@ public:
      * @brief Check if the queue is active (not shut down)
      */
     bool is_active() const {
-        const std::scoped_lock lock(m_mutex);
+        const std::scoped_lock kLock(m_mutex);
         return !m_shutdown;
     }
 
@@ -105,7 +106,7 @@ public:
      */
     void shutdown() {
         {
-            const std::scoped_lock lock(m_mutex);
+            const std::scoped_lock kLock(m_mutex);
             m_shutdown = true;
         }
         m_not_empty.notify_all();
@@ -117,7 +118,7 @@ public:
      * @return True if empty
      */
     bool empty() const {
-        const std::scoped_lock lock(m_mutex);
+        const std::scoped_lock kLock(m_mutex);
         return m_queue.empty();
     }
 
@@ -126,7 +127,7 @@ public:
      * @return Number of elements
      */
     size_t size() const {
-        const std::scoped_lock lock(m_mutex);
+        const std::scoped_lock kLock(m_mutex);
         return m_queue.size();
     }
 

@@ -100,7 +100,7 @@ public:
     /**
      * @brief Set the path to the model info registry file
      */
-    virtual void set_model_info_file_path(const std::string& path = "./assets/models_info.json");
+    virtual void set_model_info_file_path(const std::string& path);
 
     /**
      * @brief Set the root directory for model storage

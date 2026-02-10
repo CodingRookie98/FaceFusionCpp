@@ -203,7 +203,7 @@ cv::Mat InSwapper::apply_swap(const Embedding& source_embedding,
     std::vector<Ort::Value> inputTensors;
 
     auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-    auto input_names = m_session->get_input_names();
+    auto input_names = this->session()->get_input_names();
 
     // Map inputs. We have two.
     for (const auto& inputName : input_names) {
@@ -218,7 +218,7 @@ cv::Mat InSwapper::apply_swap(const Embedding& source_embedding,
         }
     }
 
-    auto outputTensors = m_session->run(inputTensors);
+    auto outputTensors = this->run(inputTensors);
 
     return process_output(outputTensors);
 }

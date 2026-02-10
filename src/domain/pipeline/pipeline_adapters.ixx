@@ -76,7 +76,7 @@ public:
      */
     void ensure_loaded() override {
         if (m_loaded) return;
-        const std::scoped_lock lock(m_load_mutex);
+        const std::scoped_lock kLock(m_load_mutex);
         if (m_loaded) return;
 
         if (m_swapper && !m_model_path.empty()) {
@@ -102,7 +102,7 @@ public:
      * data to be processed and updated
      */
     void process(FrameData& frame) override {
-        const foundation::infrastructure::logger::ScopedTimer timer("SwapperAdapter::process");
+        const foundation::infrastructure::logger::ScopedTimer kTimer("SwapperAdapter::process");
         ensure_loaded();
         if (!m_swapper) return;
 
@@ -119,12 +119,12 @@ public:
                         working_frame, landmarks, m_template_type, m_input_size);
 
                     // 2. Inference
-                    const cv::Mat swapped_crop =
+                    const cv::Mat kSwappedCrop =
                         m_swapper->swap_face(crop_frame, *input.source_embedding);
 
                     // 3. Color Match (Task 3.3)
-                    const cv::Mat matched_crop =
-                        face::helper::apply_color_match(crop_frame, swapped_crop);
+                    const cv::Mat kMatchedCrop =
+                        face::helper::apply_color_match(crop_frame, kSwappedCrop);
 
                     // 4. Compose Mask
                     face::masker::MaskCompositor::CompositionInput mask_input;
@@ -134,11 +134,11 @@ public:
                     mask_input.occluder = m_occluder.get();
                     mask_input.region_masker = m_region_masker.get();
 
-                    const cv::Mat composed_mask = face::masker::MaskCompositor::compose(mask_input);
+                    const cv::Mat kComposedMask = face::masker::MaskCompositor::compose(mask_input);
 
                     // 5. Paste back
-                    working_frame = face::helper::paste_back(working_frame, matched_crop,
-                                                             composed_mask, affine_matrix);
+                    working_frame = face::helper::paste_back(working_frame, kMatchedCrop,
+                                                             kComposedMask, affine_matrix);
                 }
                 frame.image = working_frame;
 
@@ -197,12 +197,14 @@ private:
         m_region_masker(std::move(region_masker)) {}
 
 public:
+    ~FaceEnhancerAdapter() override = default;
+
     /**
      * @brief Ensures the enhancer model is loaded into memory
      */
     void ensure_loaded() override {
         if (m_loaded) return;
-        const std::scoped_lock lock(m_load_mutex);
+        const std::scoped_lock kLock(m_load_mutex);
         if (m_loaded) return;
 
         if (m_enhancer && !m_model_path.empty()) {
@@ -227,7 +229,7 @@ public:
      * @param frame The frame data to be processed and updated
      */
     void process(FrameData& frame) override {
-        const foundation::infrastructure::logger::ScopedTimer timer("FaceEnhancerAdapter::process");
+        const foundation::infrastructure::logger::ScopedTimer kTimer("FaceEnhancerAdapter::process");
         ensure_loaded();
         if (!m_enhancer) return;
 
@@ -244,9 +246,9 @@ public:
                         frame.image, landmarks, m_template_type, m_input_size);
 
                     // 2. Inference
-                    const cv::Mat enhanced_crop = m_enhancer->enhance_face(crop_frame);
+                    const cv::Mat kEnhancedCrop = m_enhancer->enhance_face(crop_frame);
 
-                    if (enhanced_crop.empty()) continue;
+                    if (kEnhancedCrop.empty()) continue;
 
                     // 3. Compose Mask
                     face::masker::MaskCompositor::CompositionInput mask_input;
@@ -256,19 +258,19 @@ public:
                     mask_input.occluder = m_occluder.get();
                     mask_input.region_masker = m_region_masker.get();
 
-                    const cv::Mat composed_mask = face::masker::MaskCompositor::compose(mask_input);
+                    const cv::Mat kComposedMask = face::masker::MaskCompositor::compose(mask_input);
 
                     // 4. Paste back
-                    working_frame = face::helper::paste_back(working_frame, enhanced_crop,
-                                                             composed_mask, affine_matrix);
+                    working_frame = face::helper::paste_back(working_frame, kEnhancedCrop,
+                                                             kComposedMask, affine_matrix);
                 }
 
                 // Global Face Blend
                 if (input.face_blend >= 100) {
                     frame.image = working_frame;
                 } else if (input.face_blend > 0) {
-                    const double alpha = input.face_blend / 100.0;
-                    cv::addWeighted(working_frame, alpha, frame.image, 1.0 - alpha, 0.0,
+                    const double kAlpha = input.face_blend / 100.0;
+                    cv::addWeighted(working_frame, kAlpha, frame.image, 1.0 - kAlpha, 0.0,
                                     frame.image);
                 }
                 // if 0, do nothing
@@ -322,19 +324,21 @@ private:
         std::string feature_path, std::string motion_path, std::string generator_path,
         foundation::ai::inference_session::Options options,
         std::shared_ptr<face::masker::IFaceOccluder> occluder = nullptr,
-        std::shared_ptr<face::masker::IFaceRegionMasker> region_masker = nullptr) :
+        std::shared_ptr<face::masker::IFaceRegionMasker> region_masker = nullptr) : // NOLINT(google-readability-function-size)
         m_restorer(std::move(restorer)), m_feature_path(std::move(feature_path)),
         m_motion_path(std::move(motion_path)), m_generator_path(std::move(generator_path)),
         m_options(std::move(options)), m_occluder(std::move(occluder)),
         m_region_masker(std::move(region_masker)) {}
 
 public:
+    ~ExpressionAdapter() override = default;
+
     /**
      * @brief Ensures the expression restorer models are loaded into memory
      */
     void ensure_loaded() override {
         if (m_loaded) return;
-        const std::scoped_lock lock(m_load_mutex);
+        const std::scoped_lock kLock(m_load_mutex);
         if (m_loaded) return;
 
         if (m_restorer && !m_feature_path.empty()) {
@@ -357,7 +361,7 @@ public:
      * @param frame The frame data to be processed and updated
      */
     void process(FrameData& frame) override {
-        const foundation::infrastructure::logger::ScopedTimer timer("ExpressionAdapter::process");
+        const foundation::infrastructure::logger::ScopedTimer kTimer("ExpressionAdapter::process");
         ensure_loaded();
         if (!m_restorer) return;
 
@@ -369,10 +373,10 @@ public:
                 if (input.target_landmarks.empty() || input.source_landmarks.empty()) return;
 
                 cv::Mat working_frame = frame.image;
-                const size_t count =
+                const size_t kCount =
                     std::min(input.target_landmarks.size(), input.source_landmarks.size());
 
-                for (size_t i = 0; i < count; ++i) {
+                for (size_t i = 0; i < kCount; ++i) {
                     // 1. Warp Source
                     auto [source_crop, source_affine] = face::helper::warp_face_by_face_landmarks_5(
                         input.source_frame, input.source_landmarks[i], m_template_type, m_size);
@@ -382,10 +386,10 @@ public:
                         working_frame, input.target_landmarks[i], m_template_type, m_size);
 
                     // 3. Inference
-                    const cv::Mat restored_crop = m_restorer->restore_expression(source_crop, target_crop,
+                    const cv::Mat kRestoredCrop = m_restorer->restore_expression(source_crop, target_crop,
                                                                             input.restore_factor);
 
-                    if (restored_crop.empty()) continue;
+                    if (kRestoredCrop.empty()) continue;
 
                     // 4. Compose Mask
                     face::masker::MaskCompositor::CompositionInput mask_input;
@@ -402,11 +406,11 @@ public:
                     mask_input.occluder = m_occluder.get();
                     mask_input.region_masker = m_region_masker.get();
 
-                    const cv::Mat composed_mask = face::masker::MaskCompositor::compose(mask_input);
+                    const cv::Mat kComposedMask = face::masker::MaskCompositor::compose(mask_input);
 
                     // 5. Paste back
-                    working_frame = face::helper::paste_back(working_frame, restored_crop,
-                                                             composed_mask, target_affine);
+                    working_frame = face::helper::paste_back(working_frame, kRestoredCrop,
+                                                             kComposedMask, target_affine);
                 }
                 frame.image = working_frame;
 
@@ -461,12 +465,14 @@ private:
         m_factory_func(std::move(factory_func)) {}
 
 public:
+    ~FrameEnhancerAdapter() override = default;
+
     /**
      * @brief Ensures the frame enhancer is created and loaded
      */
     void ensure_loaded() override {
         if (m_loaded) return;
-        const std::scoped_lock lock(m_load_mutex);
+        const std::scoped_lock kLock(m_load_mutex);
         if (m_loaded) return;
 
         if (m_factory_func) { m_enhancer = m_factory_func(); }
@@ -481,7 +487,7 @@ public:
      * @param frame The frame data to be processed and updated
      */
     void process(FrameData& frame) override {
-        const foundation::infrastructure::logger::ScopedTimer timer("FrameEnhancerAdapter::process");
+        const foundation::infrastructure::logger::ScopedTimer kTimer("FrameEnhancerAdapter::process");
         ensure_loaded();
         if (!m_enhancer) return;
 

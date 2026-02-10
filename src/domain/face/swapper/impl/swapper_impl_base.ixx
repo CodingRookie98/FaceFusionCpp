@@ -36,12 +36,17 @@ public:
         return m_session->get_loaded_model_path();
     }
 
-    std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors) const {
+    [[nodiscard]] std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors) const {
         if (!m_session) return {};
         return m_session->run(input_tensors);
     }
 
 protected:
+    [[nodiscard]] std::shared_ptr<foundation::ai::inference_session::InferenceSession> session() const {
+        return m_session;
+    }
+
+private:
     std::shared_ptr<foundation::ai::inference_session::InferenceSession> m_session;
     std::vector<const char*> m_input_names;
     std::vector<const char*> m_output_names;

@@ -77,12 +77,17 @@ public:
      * @param input_tensors Vector of input tensors
      * @return Vector of output tensors
      */
-    std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors) const {
+    [[nodiscard]] std::vector<Ort::Value> run(const std::vector<Ort::Value>& input_tensors) const {
         if (!m_session) return {};
         return m_session->run(input_tensors);
     }
 
 protected:
+    [[nodiscard]] std::shared_ptr<foundation::ai::inference_session::InferenceSession> session() const {
+        return m_session;
+    }
+
+private:
     std::shared_ptr<foundation::ai::inference_session::InferenceSession> m_session;
 };
 

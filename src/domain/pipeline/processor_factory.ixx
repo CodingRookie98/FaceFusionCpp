@@ -23,7 +23,7 @@ public:
     }
 
     void register_processor(const std::string& type, ProcessorCreator creator) {
-        m_creators[type] = creator;
+        m_creators[type] = std::move(creator);
         foundation::infrastructure::logger::Logger::get_instance()->debug(
             "ProcessorFactory: Registered processor type '" + type + "'");
     }
@@ -43,7 +43,7 @@ private:
 
 export struct ProcessorRegistrar {
     ProcessorRegistrar(const std::string& type, ProcessorCreator creator) {
-        ProcessorFactory::instance().register_processor(type, creator);
+        ProcessorFactory::instance().register_processor(type, std::move(creator));
     }
 };
 } // namespace domain::pipeline

@@ -55,11 +55,11 @@ public:
 
         if (occlusion_mask_enabled && input.occluder != nullptr && !input.crop_frame.empty()) {
             futures.emplace_back(pool.enqueue([&]() -> cv::Mat {
-                const cv::Mat occ = input.occluder->create_occlusion_mask(input.crop_frame);
+                const cv::Mat kOcc = input.occluder->create_occlusion_mask(input.crop_frame);
                 // Invert: 255 (occluded) -> 0 (keep original), 0 (clear) -> 255 (swap)
                 // Use OpenCV subtraction to ensure result is cv::Mat not MatExpr
                 cv::Mat inverted;
-                cv::subtract(cv::Scalar(255), occ, inverted);
+                cv::subtract(cv::Scalar(255), kOcc, inverted);
                 return inverted;
             }));
         }
@@ -73,9 +73,9 @@ public:
         if (region_mask_enabled && input.region_masker != nullptr && !input.crop_frame.empty()) {
             futures.emplace_back(pool.enqueue([&]() {
                 using FaceRegion = domain::face::types::FaceRegion;
-                const std::unordered_set<FaceRegion> active_regions(opts.regions.begin(),
+                const std::unordered_set<FaceRegion> kActiveRegions(opts.regions.begin(),
                                                                     opts.regions.end());
-                return input.region_masker->create_region_mask(input.crop_frame, active_regions);
+                return input.region_masker->create_region_mask(input.crop_frame, kActiveRegions);
             }));
         }
 
@@ -125,21 +125,21 @@ private:
     static cv::Mat create_box_mask(const cv::Size& size, float blur,
                                    const std::array<int, 4>& padding) {
         int blur_amount = static_cast<int>(static_cast<float>(size.width) * 0.5F * blur);
-        const int blur_area = std::max(blur_amount / 2, 1);
+        const int kBlurArea = std::max(blur_amount / 2, 1);
 
         cv::Mat mask = cv::Mat::ones(size, CV_32FC1);
 
-        const int pad_top = std::max(blur_area, static_cast<int>(static_cast<float>(size.height) * static_cast<float>(padding[0]) / 100.0F));
-        const int pad_right = std::max(blur_area, static_cast<int>(static_cast<float>(size.width) * static_cast<float>(padding[1]) / 100.0F));
-        const int pad_bot = std::max(blur_area, static_cast<int>(static_cast<float>(size.height) * static_cast<float>(padding[2]) / 100.0F));
-        const int pad_left = std::max(blur_area, static_cast<int>(static_cast<float>(size.width) * static_cast<float>(padding[3]) / 100.0F));
+        const int kPadTop = std::max(kBlurArea, static_cast<int>(static_cast<float>(size.height) * static_cast<float>(padding[0]) / 100.0F));
+        const int kPadRight = std::max(kBlurArea, static_cast<int>(static_cast<float>(size.width) * static_cast<float>(padding[1]) / 100.0F));
+        const int kPadBot = std::max(kBlurArea, static_cast<int>(static_cast<float>(size.height) * static_cast<float>(padding[2]) / 100.0F));
+        const int kPadLeft = std::max(kBlurArea, static_cast<int>(static_cast<float>(size.width) * static_cast<float>(padding[3]) / 100.0F));
 
         // Set borders to 0
-        if (pad_top > 0) { mask(cv::Rect(0, 0, size.width, pad_top)) = 0; }
-        if (pad_bot > 0) { mask(cv::Rect(0, size.height - pad_bot, size.width, pad_bot)) = 0; }
-        if (pad_left > 0) { mask(cv::Rect(0, 0, pad_left, size.height)) = 0; }
-        if (pad_right > 0) {
-            mask(cv::Rect(size.width - pad_right, 0, pad_right, size.height)) = 0;
+        if (kPadTop > 0) { mask(cv::Rect(0, 0, size.width, kPadTop)) = 0; }
+        if (kPadBot > 0) { mask(cv::Rect(0, size.height - kPadBot, size.width, kPadBot)) = 0; }
+        if (kPadLeft > 0) { mask(cv::Rect(0, 0, kPadLeft, size.height)) = 0; }
+        if (kPadRight > 0) {
+            mask(cv::Rect(size.width - kPadRight, 0, kPadRight, size.height)) = 0;
         }
 
         // Blur
