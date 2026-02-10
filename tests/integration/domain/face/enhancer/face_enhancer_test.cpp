@@ -13,15 +13,15 @@
 #include <iostream>
 
 import domain.face.enhancer;
-import domain.face.test_support;
+import tests.helpers.domain.face_test_helpers;
 import domain.face.helper;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 
 using namespace domain::face::enhancer;
-using namespace domain::face::test_support;
-using namespace foundation::infrastructure::test;
+using namespace tests::helpers::domain;
+using namespace tests::helpers::foundation;
 using namespace domain::face::helper;
 namespace fs = std::filesystem;
 
@@ -33,7 +33,7 @@ protected:
 
     void SetUp() override {
         auto assets_path = get_assets_path();
-        repo = setup_model_repository(assets_path);
+        repo = tests::helpers::domain::setup_model_repository(assets_path);
         target_path = get_test_data_path("standard_face_test_images/lenna.bmp");
         output_dir = fs::temp_directory_path() / "facefusion_tests" / "face_enhancer";
         fs::create_directories(output_dir);
@@ -51,7 +51,7 @@ TEST_F(FaceEnhancerIntegrationTest, EnhanceFace_CodeFormerModel_ProducesValidOut
     ASSERT_FALSE(target_img.empty());
 
     // 1. Prepare Input
-    auto target_kps = detect_face_landmarks(target_img, repo);
+    auto target_kps = tests::helpers::domain::detect_face_landmarks(target_img, repo);
     if (target_kps.empty()) { GTEST_SKIP() << "No face detected in target image"; }
 
     // 2. Create Enhancer
@@ -85,7 +85,7 @@ TEST_F(FaceEnhancerIntegrationTest, EnhanceFace_GfpGanModel_ProducesValidOutput)
     ASSERT_FALSE(target_img.empty());
 
     // 1. Prepare Input
-    auto target_kps = detect_face_landmarks(target_img, repo);
+    auto target_kps = tests::helpers::domain::detect_face_landmarks(target_img, repo);
     if (target_kps.empty()) { GTEST_SKIP() << "No face detected in target image"; }
 
     // 2. Create Enhancer

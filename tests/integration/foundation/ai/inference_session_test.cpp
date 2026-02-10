@@ -15,10 +15,10 @@
 #include <filesystem>
 
 import foundation.ai.inference_session;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 
 using namespace foundation::ai::inference_session;
-using namespace foundation::infrastructure::test;
+using namespace tests::helpers::foundation;
 namespace fs = std::filesystem;
 
 extern void LinkGlobalTestEnvironment();

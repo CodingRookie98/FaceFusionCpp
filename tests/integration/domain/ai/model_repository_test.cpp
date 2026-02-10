@@ -15,7 +15,7 @@
 
 import domain.ai.model_repository;
 import foundation.infrastructure.file_system;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 
 namespace fs = std::filesystem;
 using namespace domain::ai::model_repository;
@@ -174,7 +174,7 @@ TEST_F(ModelRepositoryTest, FileNameSupport) {
 TEST_F(ModelRepositoryTest, LoadRealAssetsModelInfo) {
     try {
         std::string real_path =
-            (foundation::infrastructure::test::get_assets_path() / "models_info.json").string();
+            (tests::helpers::foundation::get_assets_path() / "models_info.json").string();
 
         if (fs::exists(real_path)) {
             auto instance = ModelRepository::get_instance();

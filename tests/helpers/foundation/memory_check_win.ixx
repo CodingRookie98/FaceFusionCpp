@@ -1,13 +1,16 @@
-#pragma once
-
+module;
+#include <cstdint>
 #ifdef _WIN32
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
-#include <cstdint>
+#endif
 
-namespace test_support {
+export module tests.helpers.foundation.memory_check_win;
 
+export namespace tests::helpers::foundation {
+
+#ifdef _WIN32
 /**
  * @brief RAII Memory Leak Detector (Windows Debug only)
  */
@@ -24,7 +27,6 @@ public:
         
         if (_CrtMemDifference(&diff, &start_state_, &end_state)) {
             _CrtMemDumpStatistics(&diff);
-            // Note: Do not throw exceptions in destructor
         }
     }
     
@@ -37,6 +39,12 @@ public:
 private:
     _CrtMemState start_state_;
 };
-
-} // namespace test_support
+#else
+class MemoryLeakChecker {
+public:
+    MemoryLeakChecker() = default;
+    int64_t get_current_allocation_bytes() { return 0; }
+};
 #endif
+
+} // namespace tests::helpers::foundation

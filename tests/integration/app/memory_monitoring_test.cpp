@@ -4,18 +4,18 @@
 #include <chrono>
 #include <iostream>
 
-#include "test_support/nvml_monitor.hpp"
-#include "test_support/memory_monitor.hpp"
+import tests.helpers.foundation.nvml_monitor;
+import tests.helpers.foundation.memory_monitor;
 
 import services.pipeline.runner;
 import config.app;
 import config.task;
 import config.merger;
 import config.types;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 import domain.ai.model_repository;
 
-using namespace foundation::infrastructure::test;
+using namespace tests::helpers::foundation;
 
 extern void LinkGlobalTestEnvironment();
 
@@ -85,7 +85,7 @@ TEST_F(MemoryMonitoringTest, VRAMPeak_BelowThreshold_DuringVideoProcessing) {
     GTEST_SKIP() << "NVML not available, skipping VRAM test";
 #endif
 
-    test_support::NvmlMonitor nvml_monitor;
+    tests::helpers::foundation::NvmlMonitor nvml_monitor;
     nvml_monitor.start();
 
     if (!std::filesystem::exists(video_path_)) {
@@ -106,7 +106,7 @@ TEST_F(MemoryMonitoringTest, VRAMPeak_BelowThreshold_DuringVideoProcessing) {
 TEST_F(MemoryMonitoringTest, MemoryLeak_DeltaBelowThreshold_AfterProcessing) {
     RunTask("warmup", image_path_.string(), "warmup_");
 
-    test_support::MemoryDeltaChecker ram_checker;
+    tests::helpers::foundation::MemoryDeltaChecker ram_checker;
 
     // Run multiple times to amplify leak if any
     for (int i = 0; i < 5; ++i) {

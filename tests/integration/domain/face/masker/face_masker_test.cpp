@@ -15,14 +15,14 @@
 #include <iostream>
 
 import domain.face.masker;
-import domain.face.test_support;
+import tests.helpers.domain.face_test_helpers;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 
 using namespace domain::face::masker;
-using namespace domain::face::test_support;
-using namespace foundation::infrastructure::test;
+using namespace tests::helpers::domain;
+using namespace tests::helpers::foundation;
 namespace fs = std::filesystem;
 
 extern void LinkGlobalTestEnvironment();
@@ -33,7 +33,7 @@ protected:
 
     void SetUp() override {
         auto assets_path = get_assets_path();
-        repo = setup_model_repository(assets_path);
+        repo = tests::helpers::domain::setup_model_repository(assets_path);
         test_image_path = get_test_data_path("standard_face_test_images/lenna.bmp");
         output_dir = fs::temp_directory_path() / "facefusion_tests" / "face_masker";
         fs::create_directories(output_dir);
@@ -81,7 +81,7 @@ TEST_F(FaceMaskerTest, CreateOcclusionMask_ValidInput_ReturnsValidMask) {
     ASSERT_FALSE(image.empty()) << "Failed to load test image";
 
     // Detect face and get landmarks
-    auto landmarks = detect_face_landmarks(image, repo);
+    auto landmarks = tests::helpers::domain::detect_face_landmarks(image, repo);
     if (landmarks.empty()) { GTEST_SKIP() << "No face detected in test image"; }
 
     // Create a face crop (simplified - using center crop for testing)
@@ -130,7 +130,7 @@ TEST_F(FaceMaskerTest, CreateRegionMask_ValidInput_ReturnsValidMask) {
     ASSERT_FALSE(image.empty()) << "Failed to load test image";
 
     // Detect face and get landmarks
-    auto landmarks = detect_face_landmarks(image, repo);
+    auto landmarks = tests::helpers::domain::detect_face_landmarks(image, repo);
     if (landmarks.empty()) { GTEST_SKIP() << "No face detected in test image"; }
 
     // Create a face crop
@@ -176,7 +176,7 @@ TEST_F(FaceMaskerTest, CreateRegionMask_MultipleRegions_ReturnsCombinedMask) {
     cv::Mat image = cv::imread(test_image_path.string());
     ASSERT_FALSE(image.empty());
 
-    auto landmarks = detect_face_landmarks(image, repo);
+    auto landmarks = tests::helpers::domain::detect_face_landmarks(image, repo);
     if (landmarks.empty()) { GTEST_SKIP() << "No face detected"; }
 
     // Create crop

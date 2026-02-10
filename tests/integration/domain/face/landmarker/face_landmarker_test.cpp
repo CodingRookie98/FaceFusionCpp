@@ -14,15 +14,15 @@
 
 import domain.face;
 import domain.face.landmarker;
-import domain.face.test_support;
+import tests.helpers.domain.face_test_helpers;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 
 using namespace domain::face;
 using namespace domain::face::landmarker;
-using namespace domain::face::test_support;
-using namespace foundation::infrastructure::test;
+using namespace tests::helpers::domain;
+using namespace tests::helpers::foundation;
 namespace fs = std::filesystem;
 
 extern void LinkGlobalTestEnvironment();
@@ -33,7 +33,7 @@ protected:
 
     void SetUp() override {
         auto assets_path = get_assets_path();
-        model_repo = setup_model_repository(assets_path);
+        model_repo = tests::helpers::domain::setup_model_repository(assets_path);
         test_image_path = get_test_data_path("standard_face_test_images/lenna.bmp");
     }
 
@@ -58,7 +58,7 @@ TEST_F(FaceLandmarkerTest, T2dfanInference) {
     cv::Mat test_image = cv::imread(test_image_path.string());
     if (test_image.empty()) GTEST_SKIP() << "Failed to load test image";
 
-    cv::Rect2f bbox = detect_face_bbox(test_image, model_repo);
+    cv::Rect2f bbox = tests::helpers::domain::detect_face_bbox(test_image, model_repo);
     if (bbox.width <= 0) { GTEST_SKIP() << "No face detected for testing"; }
 
     auto landmarker = create_landmarker(LandmarkerType::T2dfan);
@@ -78,7 +78,7 @@ TEST_F(FaceLandmarkerTest, PeppawutzInference) {
     cv::Mat test_image = cv::imread(test_image_path.string());
     if (test_image.empty()) GTEST_SKIP() << "Failed to load test image";
 
-    cv::Rect2f bbox = detect_face_bbox(test_image, model_repo);
+    cv::Rect2f bbox = tests::helpers::domain::detect_face_bbox(test_image, model_repo);
     if (bbox.width <= 0) { GTEST_SKIP() << "No face detected for testing"; }
 
     auto landmarker = create_landmarker(LandmarkerType::Peppawutz);

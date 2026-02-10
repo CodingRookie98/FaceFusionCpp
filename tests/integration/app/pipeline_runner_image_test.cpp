@@ -14,15 +14,15 @@ import services.pipeline.runner;
 import config.task;
 import config.merger;
 import domain.ai.model_repository;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 import domain.face.analyser;
 import domain.face;
-import domain.face.test_support;
+import tests.helpers.domain.face_test_helpers;
 
-#include "test_support/test_constants.hpp"
+import tests.helpers.foundation.test_constants;
 
 using namespace services::pipeline;
-using namespace foundation::infrastructure::test;
+using namespace tests::helpers::foundation;
 using namespace domain::face::analyser;
 using namespace std::chrono;
 
@@ -59,11 +59,11 @@ protected:
     // Helper to verify face swap result
     void verify_face_swap(const std::filesystem::path& output_image,
                           const std::filesystem::path& source_face,
-                          float distance_threshold = test_constants::FACE_SIMILARITY_THRESHOLD) {
+                          float distance_threshold = tests::helpers::foundation::constants::FACE_SIMILARITY_THRESHOLD) {
         ASSERT_TRUE(std::filesystem::exists(output_image))
             << "Output image does not exist: " << output_image;
 
-        auto analyser = domain::face::test_support::create_face_analyser(repo);
+        auto analyser = tests::helpers::domain::create_face_analyser(repo);
 
         cv::Mat output_img = cv::imread(output_image.string());
         cv::Mat source_img = cv::imread(source_face.string());
@@ -292,7 +292,7 @@ TEST_F(PipelineRunnerImageTest, Process720pImage_CompletesWithinTimeLimit) {
 
     ASSERT_TRUE(result.is_ok());
 
-    EXPECT_LT(duration.count(), test_constants::TIMEOUT_IMAGE_720P_MS)
+    EXPECT_LT(duration.count(), tests::helpers::foundation::constants::TIMEOUT_IMAGE_720P_MS)
         << "Processing time exceeded threshold: " << duration.count() << "ms";
 
     verify_face_swap(output_path, source_path);
@@ -330,6 +330,6 @@ TEST_F(PipelineRunnerImageTest, Process2KImage_CompletesWithinTimeLimit) {
 
     ASSERT_TRUE(result.is_ok());
 
-    EXPECT_LT(duration.count(), test_constants::TIMEOUT_IMAGE_2K_MS)
+    EXPECT_LT(duration.count(), tests::helpers::foundation::constants::TIMEOUT_IMAGE_2K_MS)
         << "Processing time exceeded threshold: " << duration.count() << "ms";
 }

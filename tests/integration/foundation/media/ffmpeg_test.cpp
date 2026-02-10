@@ -17,11 +17,11 @@
 
 import foundation.media.ffmpeg;
 import foundation.infrastructure.file_system;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 
 namespace fs = std::filesystem;
 using namespace foundation::media::ffmpeg;
-using namespace foundation::infrastructure::test;
+using namespace tests::helpers::foundation;
 
 class FfmpegTest : public ::testing::Test {
 protected:

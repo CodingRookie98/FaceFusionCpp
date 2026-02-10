@@ -1,12 +1,12 @@
-// tests/test_support/performance_validator.hpp
-
-#pragma once
-
+module;
 #include <chrono>
 #include <string>
 #include <functional>
+#include <stdexcept>
 
-namespace test_support {
+export module tests.helpers.foundation.performance_validator;
+
+export namespace tests::helpers::foundation {
 
 /**
  * @brief 硬件配置级别 (基于 GPU VRAM)
@@ -125,4 +125,4 @@ PerformanceResult measure_and_validate(Func&& operation,
     return result;
 }
 
-} // namespace test_support
+} // namespace tests::helpers::foundation

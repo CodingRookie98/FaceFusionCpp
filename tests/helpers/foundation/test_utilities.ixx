@@ -4,11 +4,11 @@ module;
 #include <stdexcept>
 #include <string>
 #include <iostream>
-export module foundation.infrastructure.test_support;
+export module tests.helpers.foundation.test_utilities;
 
 namespace fs = std::filesystem;
 
-export namespace foundation::infrastructure::test {
+export namespace tests::helpers::foundation {
 void reset_environment() {
     // Example: cleanup temp files used in tests
     if (std::filesystem::exists("test_temp")) { std::filesystem::remove_all("test_temp"); }
@@ -48,4 +48,4 @@ std::filesystem::path get_test_data_path(const std::string& relative_path) {
     return get_assets_path() / relative_path;
 }
 
-} // namespace foundation::infrastructure::test
+} // namespace tests::helpers::foundation

@@ -19,7 +19,7 @@ import domain.face.classifier;
 import domain.face.store;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 
 using namespace domain::face;
 using namespace domain::face::analyser;
@@ -29,7 +29,7 @@ using namespace domain::face::recognizer;
 using namespace domain::face::classifier;
 using namespace domain::face::store;
 using namespace domain::ai::model_repository;
-using namespace foundation::infrastructure::test;
+using namespace tests::helpers::foundation;
 
 extern void LinkGlobalTestEnvironment();
 

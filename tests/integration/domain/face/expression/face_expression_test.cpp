@@ -14,16 +14,16 @@
 #include <iostream>
 
 import domain.face.expression;
-import domain.face.test_support;
+import tests.helpers.domain.face_test_helpers;
 import domain.face.helper;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 
 using namespace domain::face::expression;
-using namespace domain::face::test_support;
+using namespace tests::helpers::domain;
 using namespace domain::face::helper;
-using namespace foundation::infrastructure::test;
+using namespace tests::helpers::foundation;
 namespace fs = std::filesystem;
 
 extern void LinkGlobalTestEnvironment();
@@ -34,7 +34,7 @@ protected:
 
     void SetUp() override {
         auto assets_path = get_assets_path();
-        repo = setup_model_repository(assets_path);
+        repo = tests::helpers::domain::setup_model_repository(assets_path);
         source_path = get_test_data_path("standard_face_test_images/lenna.bmp");
         target_path = get_test_data_path("standard_face_test_images/tiffany.bmp");
     }
@@ -63,8 +63,8 @@ TEST_F(LivePortraitTest, RestoreExpressionBasic) {
     ASSERT_FALSE(target_img.empty());
 
     // 1. Detect Landmarks
-    auto source_kps = detect_face_landmarks(source_img, repo);
-    auto target_kps = detect_face_landmarks(target_img, repo);
+    auto source_kps = tests::helpers::domain::detect_face_landmarks(source_img, repo);
+    auto target_kps = tests::helpers::domain::detect_face_landmarks(target_img, repo);
 
     if (source_kps.empty() || target_kps.empty()) {
         GTEST_SKIP() << "Face detection failed for test images";

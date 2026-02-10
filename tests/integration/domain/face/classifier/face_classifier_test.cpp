@@ -15,14 +15,14 @@ import domain.face.classifier;
 import domain.face;
 import domain.face.detector;
 import domain.face.helper;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
 
 using namespace domain::face::classifier;
 using namespace domain::face;
 using namespace domain::face::detector;
-using namespace foundation::infrastructure::test;
+using namespace tests::helpers::foundation;
 using namespace foundation::ai::inference_session;
 namespace fs = std::filesystem;
 

@@ -4,5 +4,6 @@ add_subdirectory(foundation)
 add_subdirectory(platform)
 add_subdirectory(services)
 add_subdirectory(common)
+add_subdirectory(helpers)
 add_subdirectory(mocks)
 

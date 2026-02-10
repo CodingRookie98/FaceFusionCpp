@@ -16,10 +16,10 @@
 import domain.frame.enhancer;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 
 using namespace domain::frame::enhancer;
-using namespace foundation::infrastructure::test;
+using namespace tests::helpers::foundation;
 
 extern void LinkGlobalTestEnvironment();
 

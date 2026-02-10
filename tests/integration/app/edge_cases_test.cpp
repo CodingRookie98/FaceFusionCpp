@@ -9,14 +9,14 @@ import services.pipeline.runner;
 import config.task;
 import config.app;
 import config.merger;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 import foundation.infrastructure.logger;
 import foundation.media.vision;
 import foundation.media.ffmpeg;
 import domain.ai.model_repository;
 
 using namespace services::pipeline;
-using namespace foundation::infrastructure::test;
+using namespace tests::helpers::foundation;
 
 extern void LinkGlobalTestEnvironment();
 

@@ -7,6 +7,8 @@ target_sources(test_common
             fixtures/unit_test_fixture.ixx
             fixtures/integration_test_fixture.ixx
             matchers/opencv_matchers.ixx
+            generators/image_generator.ixx
+            generators/face_generator.ixx
     PRIVATE
         fixtures/base_test_fixture.cpp
         fixtures/unit_test_fixture.cpp
@@ -19,8 +21,8 @@ target_link_libraries(test_common
         GTest::gtest
         GTest::gmock
         ${OpenCV_LIBS}
+        domain_face
     PRIVATE
-        integration_test_support  # For LinkGlobalTestEnvironment
 )
 
 target_compile_features(test_common PUBLIC cxx_std_20)

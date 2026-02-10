@@ -15,16 +15,16 @@ import services.pipeline.runner;
 import config.task;
 import config.merger;
 import domain.ai.model_repository;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 import domain.face;
 import domain.face.analyser;
-import domain.face.test_support;
+import tests.helpers.domain.face_test_helpers;
 import foundation.media.ffmpeg;
 
-#include "test_support/test_constants.hpp"
+import tests.helpers.foundation.test_constants;
 
 using namespace services::pipeline;
-using namespace foundation::infrastructure::test;
+using namespace tests::helpers::foundation;
 using namespace domain::face::analyser;
 using namespace std::chrono;
 
@@ -127,7 +127,7 @@ protected:
         EXPECT_NEAR(height, orig_height * expected_scale, 2.0);
 
         // 2. Similarity Check (Uniform Sampling)
-        auto analyser = domain::face::test_support::create_face_analyser(repo);
+        auto analyser = tests::helpers::domain::create_face_analyser(repo);
         cv::Mat src_img = cv::imread(source_face_img.string());
         if (src_img.empty()) {
             std::cout << "Warning: Failed to load source image: " << source_face_img << std::endl;
@@ -180,7 +180,7 @@ protected:
 
         if (valid_frames > 0) {
             double pass_rate = static_cast<double>(passed_frames) / valid_frames;
-            EXPECT_GE(pass_rate, test_constants::FRAME_PASS_RATE)
+            EXPECT_GE(pass_rate, tests::helpers::foundation::constants::FRAME_PASS_RATE)
                 << "Less than 90% of valid frames passed similarity check";
         } else {
             std::cout << "Warning: No faces detected in any sampled frame." << std::endl;
@@ -479,8 +479,8 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideo_AchievesMinimumFPS) {
     std::cout << "Actual FPS: " << actual_fps << std::endl;
 
 #ifdef NDEBUG
-    EXPECT_GE(actual_fps, test_constants::MIN_FPS_RTX4060)
-        << "FPS below threshold: " << actual_fps << " (min: " << test_constants::MIN_FPS_RTX4060
+    EXPECT_GE(actual_fps, tests::helpers::foundation::constants::MIN_FPS_RTX4060)
+        << "FPS below threshold: " << actual_fps << " (min: " << tests::helpers::foundation::constants::MIN_FPS_RTX4060
         << ")";
 #else
     std::cout << "[WARN] Running in DEBUG mode. FPS requirement ignored. Got: " << actual_fps
@@ -514,7 +514,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideo_CompletesWithinTimeLimit) {
 
     ASSERT_TRUE(result.is_ok());
 
-    int64_t max_duration_s = test_constants::TIMEOUT_VIDEO_40S_MS / 1000;
+    int64_t max_duration_s = tests::helpers::foundation::constants::TIMEOUT_VIDEO_40S_MS / 1000;
     EXPECT_LT(duration_s, max_duration_s)
         << "Processing time exceeded: " << duration_s << "s (max: " << max_duration_s << "s)";
 }

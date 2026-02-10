@@ -1,8 +1,9 @@
-#pragma once
-
+module;
 #include <cstdint>
 
-namespace test_constants {
+export module tests.helpers.foundation.test_constants;
+
+export namespace tests::helpers::foundation::constants {
 
 // ============================================================================
 // Face Verification Thresholds
@@ -36,4 +37,4 @@ constexpr int64_t TIMEOUT_IMAGE_2K_MS = 20000;
 constexpr int64_t TIMEOUT_VIDEO_40S_MS = 120000; // Increased for debug overhead
 #endif
 
-}  // namespace test_constants
+}  // namespace tests::helpers::foundation::constants

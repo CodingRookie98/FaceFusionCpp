@@ -6,6 +6,6 @@ add_facefusion_test(
         processor_factory_test.cpp
     LINK_LIBRARIES
         domain_pipeline
-        foundation_infrastructure_test_support
+        test_helpers
         GTest::gmock
 )

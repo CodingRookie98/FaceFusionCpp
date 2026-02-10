@@ -1,7 +1,7 @@
-#pragma once
-
+module;
 #ifdef HAVE_NVML
 #include <nvml.h>
+#endif
 #include <stdexcept>
 #include <cstdint>
 #include <thread>
@@ -10,7 +10,9 @@
 #include <iostream>
 #include <string>
 
-namespace test_support {
+export module tests.helpers.foundation.nvml_monitor;
+
+export namespace tests::helpers::foundation {
 
 /**
  * @brief RAII NVML GPU Memory Monitor
@@ -21,6 +23,7 @@ class NvmlMonitor {
 public:
     NvmlMonitor(unsigned int device_index = 0, 
                 std::chrono::milliseconds sample_interval = std::chrono::milliseconds(100))
+#ifdef HAVE_NVML
         : device_index_(device_index), 
           sample_interval_(sample_interval),
           running_(false),
@@ -30,9 +33,6 @@ public:
         nvmlReturn_t result = nvmlInit();
         if (result != NVML_SUCCESS) {
             std::cerr << "NVML Init failed: " << nvmlErrorString(result) << std::endl;
-            // Don't throw here to allow fallback/graceful failure in tests if NVML is flaky
-            // But strict requirement says we need it. 
-            // Let's stick to the plan which throws.
             throw std::runtime_error("Failed to initialize NVML: " + 
                                      std::string(nvmlErrorString(result)));
         }
@@ -44,40 +44,58 @@ public:
                                      std::string(nvmlErrorString(result)));
         }
     }
+#else
+    {}
+#endif
     
     ~NvmlMonitor() {
+#ifdef HAVE_NVML
         stop();
         nvmlShutdown();
+#endif
     }
     
     void start() {
+#ifdef HAVE_NVML
         if (running_) return;
         running_ = true;
         peak_used_bytes_ = 0;
         sample_thread_ = std::thread(&NvmlMonitor::sample_loop, this);
+#endif
     }
     
     void stop() {
+#ifdef HAVE_NVML
         if (!running_) return;
         running_ = false;
         if (sample_thread_.joinable()) {
             sample_thread_.join();
         }
+#endif
     }
     
-    uint64_t get_peak_used_bytes() const { return peak_used_bytes_; }
-    double get_peak_used_mb() const { return peak_used_bytes_ / (1024.0 * 1024.0); }
-    double get_peak_used_gb() const { return peak_used_bytes_ / (1024.0 * 1024.0 * 1024.0); }
+    uint64_t get_peak_used_bytes() const { 
+#ifdef HAVE_NVML
+        return peak_used_bytes_; 
+#else
+        return 0;
+#endif
+    }
+    double get_peak_used_mb() const { return get_peak_used_bytes() / (1024.0 * 1024.0); }
+    double get_peak_used_gb() const { return get_peak_used_bytes() / (1024.0 * 1024.0 * 1024.0); }
     
     uint64_t get_current_used_bytes() const {
+#ifdef HAVE_NVML
         nvmlMemory_t memory;
         if (nvmlDeviceGetMemoryInfo(device_, &memory) == NVML_SUCCESS) {
             return memory.used;
         }
+#endif
         return 0;
     }
 
 private:
+#ifdef HAVE_NVML
     void sample_loop() {
         while (running_) {
             nvmlMemory_t memory;
@@ -99,27 +117,7 @@ private:
     std::atomic<uint64_t> peak_used_bytes_;
     nvmlDevice_t device_;
     std::thread sample_thread_;
-};
-
-} // namespace test_support
-
-#else
-// Stub for systems without NVML
-#include <cstdint>
-#include <chrono>
-
-namespace test_support {
-
-class NvmlMonitor {
-public:
-    NvmlMonitor(unsigned int = 0, std::chrono::milliseconds = std::chrono::milliseconds(100)) {}
-    void start() {}
-    void stop() {}
-    uint64_t get_peak_used_bytes() const { return 0; }
-    double get_peak_used_mb() const { return 0; }
-    double get_peak_used_gb() const { return 0; }
-    uint64_t get_current_used_bytes() const { return 0; }
-};
-
-} // namespace test_support
 #endif
+};
+
+} // namespace tests::helpers::foundation

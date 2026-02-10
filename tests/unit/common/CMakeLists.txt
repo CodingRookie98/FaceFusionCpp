@@ -5,6 +5,7 @@ add_facefusion_test(
         matchers_test.cpp
     LINK_LIBRARIES
         test_common
+        test_helpers
         GTest::gtest
         ${OpenCV_LIBS}
 )

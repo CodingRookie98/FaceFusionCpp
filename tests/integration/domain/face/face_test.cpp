@@ -10,7 +10,7 @@
 #include <opencv2/opencv.hpp>
 
 import domain.face;
-import domain.face.test_support;
+import tests.helpers.domain.face_test_helpers;
 
 using namespace domain::face;
 
@@ -56,14 +56,14 @@ TEST_F(FaceTest, SetAndGetKps) {
 
 TEST_F(FaceTest, GetLandmark5) {
     // 1. 测试 5 点的情况
-    auto face5 = test_support::create_test_face(); // helper 创建的是 5 点 face
+    auto face5 = tests::helpers::domain::create_test_face(); // helper 创建的是 5 点 face
     EXPECT_EQ(face5.kps().size(), 5);
     auto l5 = face5.get_landmark5();
     EXPECT_EQ(l5.size(), 5);
     EXPECT_EQ(l5[0], face5.kps()[0]);
 
     // 2. 测试 68 点的情况
-    auto face68 = test_support::create_face_with_68_kps();
+    auto face68 = tests::helpers::domain::create_face_with_68_kps();
     EXPECT_EQ(face68.kps().size(), 68);
     auto l5_from_68 = face68.get_landmark5();
     // 现在实现了算法，不应为空

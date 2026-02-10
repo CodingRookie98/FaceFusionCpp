@@ -6,6 +6,10 @@ target_sources(test_helpers
             domain/face_test_helpers.ixx
             foundation/test_utilities.ixx
             foundation/memory_monitor.ixx
+            foundation/nvml_monitor.ixx
+            foundation/performance_validator.ixx
+            foundation/test_constants.ixx
+            foundation/memory_check_win.ixx
     PRIVATE
         environment/global_test_environment.cpp
 )
@@ -19,6 +23,11 @@ target_link_libraries(test_helpers
         foundation_infrastructure
         ${OpenCV_LIBS}
 )
+
+if(HAVE_NVML)
+    target_link_libraries(test_helpers PRIVATE ${NVML_LIBRARY})
+    target_compile_definitions(test_helpers PUBLIC HAVE_NVML)
+endif()
 
 if(CUDA_SYNC_AVAILABLE)
     target_compile_definitions(test_helpers PRIVATE CUDA_SYNC_AVAILABLE)

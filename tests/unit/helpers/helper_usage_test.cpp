@@ -6,7 +6,7 @@ import tests.helpers.foundation.memory_monitor;
 
 TEST(HelperUsageTest, CreateTestFace) {
     auto face = tests::helpers::domain::create_test_face();
-    EXPECT_FALSE(face.kps.empty());
+    EXPECT_FALSE(face.kps().empty());
 }
 
 TEST(HelperUsageTest, GetAssetsPath) {

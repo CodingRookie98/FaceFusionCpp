@@ -10,11 +10,11 @@ import services.pipeline.runner;
 import services.pipeline.checkpoint;
 import config.task;
 import config.app;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 import foundation.infrastructure.crypto;
 
 using namespace services::pipeline;
-using namespace foundation::infrastructure::test;
+using namespace tests::helpers::foundation;
 using namespace std::chrono;
 
 extern void LinkGlobalTestEnvironment();

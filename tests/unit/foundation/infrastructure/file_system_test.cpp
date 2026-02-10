@@ -18,7 +18,7 @@
 
 import foundation.infrastructure.file_system;
 import foundation.infrastructure.concurrent_file_system;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 
 namespace fs = std::filesystem;
 

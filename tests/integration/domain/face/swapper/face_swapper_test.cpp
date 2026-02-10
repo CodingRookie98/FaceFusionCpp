@@ -15,17 +15,17 @@
 
 import domain.face.swapper;
 import domain.face.masker;
-import domain.face.test_support;
+import tests.helpers.domain.face_test_helpers;
 import domain.face.helper;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
-import foundation.infrastructure.test_support;
+import tests.helpers.foundation.test_utilities;
 
 using namespace domain::face::swapper;
 using namespace domain::face::masker;
-using namespace domain::face::test_support;
+using namespace tests::helpers::domain;
 using namespace domain::face::helper;
-using namespace foundation::infrastructure::test;
+using namespace tests::helpers::foundation;
 namespace fs = std::filesystem;
 
 extern void LinkGlobalTestEnvironment();
@@ -36,7 +36,7 @@ protected:
 
     void SetUp() override {
         auto assets_path = get_assets_path();
-        repo = setup_model_repository(assets_path);
+        repo = tests::helpers::domain::setup_model_repository(assets_path);
         source_path = get_test_data_path("standard_face_test_images/lenna.bmp");
         target_path = get_test_data_path("standard_face_test_images/tiffany.bmp");
         output_dir = fs::temp_directory_path() / "facefusion_tests" / "face_swapper";
@@ -61,14 +61,14 @@ TEST_F(FaceSwapperIntegrationTest, SwapFace_ValidInput_ResultResemblesSource) {
     ASSERT_FALSE(target_img.empty());
 
     // 1. Extract Source Embedding
-    auto source_kps = detect_face_landmarks(source_img, repo);
+    auto source_kps = tests::helpers::domain::detect_face_landmarks(source_img, repo);
     if (source_kps.empty()) { GTEST_SKIP() << "No face detected in source image"; }
 
     auto source_embedding = get_face_embedding(source_img, source_kps, repo);
     ASSERT_FALSE(source_embedding.empty()) << "Failed to extract source embedding";
 
     // 2. Prepare Target
-    auto target_kps = detect_face_landmarks(target_img, repo);
+    auto target_kps = tests::helpers::domain::detect_face_landmarks(target_img, repo);
     if (target_kps.empty()) { GTEST_SKIP() << "No face detected in target image"; }
 
     // 3. Run Swapper
@@ -92,7 +92,7 @@ TEST_F(FaceSwapperIntegrationTest, SwapFace_ValidInput_ResultResemblesSource) {
 
     // 4. Verify Result
     // Extract embedding from result face
-    auto result_kps = detect_face_landmarks(result_img, repo);
+    auto result_kps = tests::helpers::domain::detect_face_landmarks(result_img, repo);
     ASSERT_FALSE(result_kps.empty()) << "No face detected in result image";
     auto result_embedding = get_face_embedding(result_img, result_kps, repo);
 
