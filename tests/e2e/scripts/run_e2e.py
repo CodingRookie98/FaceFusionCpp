@@ -12,7 +12,9 @@ def find_configs(config_dir: Path) -> List[Path]:
     return sorted(list(config_dir.glob("*.yaml")))
 
 def run_test(executable: Path, config: Path, dry_run: bool = False) -> bool:
+    print(f"\n{'='*60}")
     print(f"[TEST] Running {config.name}...")
+    print(f"{'='*60}")
     
     cmd = [str(executable.absolute()), "--config", str(config.absolute())]
     
@@ -22,32 +24,25 @@ def run_test(executable: Path, config: Path, dry_run: bool = False) -> bool:
 
     start_time = time.time()
     try:
-        # Capture output to prevent cluttering console unless verbose
         result = subprocess.run(
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
             text=True,
-            timeout=300 # 5 min timeout
+            timeout=600
         )
         duration = time.time() - start_time
         
         if result.returncode == 0:
-            print(f"[PASS] {config.name} (Duration: {duration:.2f}s)")
+            print(f"\n[PASS] {config.name} (Duration: {duration:.2f}s)")
             return True
         else:
-            print(f"[FAIL] {config.name} (Exit Code: {result.returncode})")
-            print("--- STDOUT ---")
-            print(result.stdout)
-            print("--- STDERR ---")
-            print(result.stderr)
+            print(f"\n[FAIL] {config.name} (Exit Code: {result.returncode})")
             return False
             
     except subprocess.TimeoutExpired:
-        print(f"[FAIL] {config.name} (Timeout after 300s)")
+        print(f"\n[FAIL] {config.name} (Timeout after 600s)")
         return False
     except Exception as e:
-        print(f"[FAIL] {config.name} (Exception: {e})")
+        print(f"\n[FAIL] {config.name} (Exception: {e})")
         return False
 
 def main():

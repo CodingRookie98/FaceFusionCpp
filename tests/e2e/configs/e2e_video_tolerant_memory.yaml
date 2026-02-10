@@ -1,0 +1,31 @@
+config_version: "1.0"
+
+task_info:
+  id: "e2e_video_tolerant_memory"
+  description: "Process Video Tolerant Memory (Lenna to Slideshow)"
+  enable_logging: true
+
+io:
+  source_paths:
+    - "../../../assets/standard_face_test_images/lenna.bmp"
+  target_paths:
+    - "../../../assets/standard_face_test_videos/slideshow_scaled.mp4"
+  output:
+    path: "./tests_output/video_tolerant/"
+    prefix: "pipeline_video_tolerant_memory_"
+    suffix: ""
+    conflict_policy: "overwrite"
+    audio_policy: "copy"
+
+resource:
+  thread_count: 0
+  max_queue_size: 20
+  execution_order: "sequential"
+  memory_strategy: "tolerant"
+
+pipeline:
+  - step: "face_swapper"
+    enabled: true
+    params:
+      model: "inswapper_128_fp16"
+      face_selector_mode: "many"

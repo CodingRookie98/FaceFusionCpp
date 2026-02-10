@@ -1,0 +1,31 @@
+config_version: "1.0"
+
+task_info:
+  id: "e2e_image_batch"
+  description: "Process Image Batch (Lenna to Woman and Barbara)"
+  enable_logging: true
+
+io:
+  source_paths:
+    - "../../../assets/standard_face_test_images/lenna.bmp"
+  target_paths:
+    - "../../../assets/standard_face_test_images/woman.jpg"
+    - "../../../assets/standard_face_test_images/barbara.bmp"
+  output:
+    path: "./tests_output/image_batch/"
+    prefix: "pipeline_runner_image_batch_output_"
+    suffix: ""
+    image_format: "jpg"
+    conflict_policy: "overwrite"
+
+resource:
+  thread_count: 0
+  max_queue_size: 20
+  execution_order: "batch"
+
+pipeline:
+  - step: "face_swapper"
+    enabled: true
+    params:
+      model: "inswapper_128_fp16"
+      face_selector_mode: "many"

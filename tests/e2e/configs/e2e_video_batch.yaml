@@ -1,24 +1,27 @@
 config_version: "1.0"
 
 task_info:
-  id: "e2e_image_multi"
-  description: "Image Multi-Processor Pipeline"
+  id: "e2e_video_batch"
+  description: "Process Video Batch (Two Targets)"
   enable_logging: true
 
 io:
   source_paths:
     - "../../../assets/standard_face_test_images/lenna.bmp"
   target_paths:
-    - "../../../assets/standard_face_test_images/girl.bmp"
+    - "../../../assets/standard_face_test_videos/slideshow_scaled.mp4"
+    - "../../../assets/standard_face_test_videos/slideshow_scaled.mp4" 
   output:
-    path: "./tests_output/image_multi/"
-    prefix: "test_multi_"
+    path: "./tests_output/video_batch/"
+    prefix: "pipeline_video_batch_multi_step_"
+    suffix: ""
     conflict_policy: "overwrite"
+    audio_policy: "copy"
 
 resource:
   thread_count: 0
   max_queue_size: 20
-  execution_order: "sequential"
+  execution_order: "batch"
 
 pipeline:
   - step: "face_swapper"
@@ -26,11 +29,18 @@ pipeline:
     params:
       model: "inswapper_128_fp16"
       face_selector_mode: "many"
+
   - step: "face_enhancer"
     enabled: true
     params:
       model: "gfpgan_1.4"
       blend_percentage: 100
+
+  - step: "expression_restorer"
+    enabled: true
+    params:
+      model: "live_portrait"
+
   - step: "frame_enhancer"
     enabled: true
     params:

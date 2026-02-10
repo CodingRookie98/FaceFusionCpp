@@ -1,18 +1,20 @@
 config_version: "1.0"
 
 task_info:
-  id: "e2e_image_multi"
-  description: "Image Multi-Processor Pipeline"
+  id: "e2e_image_multi_step"
+  description: "Process Image Multi Step (Swapper -> Expression -> Enhancer -> Frame)"
   enable_logging: true
 
 io:
   source_paths:
     - "../../../assets/standard_face_test_images/lenna.bmp"
   target_paths:
-    - "../../../assets/standard_face_test_images/girl.bmp"
+    - "../../../assets/standard_face_test_images/woman.jpg"
   output:
     path: "./tests_output/image_multi/"
-    prefix: "test_multi_"
+    prefix: "pipeline_runner_image_multi_output_"
+    suffix: ""
+    image_format: "jpg"
     conflict_policy: "overwrite"
 
 resource:
@@ -26,11 +28,18 @@ pipeline:
     params:
       model: "inswapper_128_fp16"
       face_selector_mode: "many"
+
+  - step: "expression_restorer"
+    enabled: true
+    params:
+      model: "live_portrait"
+
   - step: "face_enhancer"
     enabled: true
     params:
       model: "gfpgan_1.4"
       blend_percentage: 100
+
   - step: "frame_enhancer"
     enabled: true
     params:
