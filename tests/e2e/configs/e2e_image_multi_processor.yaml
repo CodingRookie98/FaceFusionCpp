@@ -1,0 +1,38 @@
+config_version: "1.0"
+
+task_info:
+  id: "e2e_image_multi"
+  description: "Image Multi-Processor Pipeline"
+  enable_logging: true
+
+io:
+  source_paths:
+    - "../../../assets/standard_face_test_images/lenna.bmp"
+  target_paths:
+    - "../../../assets/standard_face_test_images/girl.bmp"
+  output:
+    path: "./tests_output/image_multi/"
+    prefix: "test_multi_"
+    conflict_policy: "overwrite"
+
+resource:
+  thread_count: 0
+  max_queue_size: 20
+  execution_order: "sequential"
+
+pipeline:
+  - step: "face_swapper"
+    enabled: true
+    params:
+      model: "inswapper_128_fp16"
+      face_selector_mode: "many"
+  - step: "face_enhancer"
+    enabled: true
+    params:
+      model: "gfpgan_1.4"
+      blend_percentage: 100
+  - step: "frame_enhancer"
+    enabled: true
+    params:
+      model: "real_esrgan_x2plus"
+      background_enhance_mode: "none"

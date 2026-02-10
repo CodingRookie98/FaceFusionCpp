@@ -1,0 +1,28 @@
+config_version: "1.0"
+
+task_info:
+  id: "e2e_image_palette"
+  description: "Image Palette (PAL8) Edge Case"
+  enable_logging: true
+
+io:
+  source_paths:
+    - "../../../assets/standard_face_test_images/lenna.bmp"
+  target_paths:
+    - "../../../assets/standard_face_test_images/man.bmp"
+  output:
+    path: "./tests_output/image_palette/"
+    prefix: "test_pal8_"
+    conflict_policy: "overwrite"
+
+resource:
+  thread_count: 0
+  max_queue_size: 20
+  execution_order: "sequential"
+
+pipeline:
+  - step: "face_swapper"
+    enabled: true
+    params:
+      model: "inswapper_128_fp16"
+      face_selector_mode: "many"

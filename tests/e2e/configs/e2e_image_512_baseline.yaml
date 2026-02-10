@@ -1,0 +1,31 @@
+config_version: "1.0"
+
+task_info:
+  id: "e2e_image_512"
+  description: "Image 512x512 Baseline Face Swap"
+  enable_logging: true
+  enable_resume: false
+
+io:
+  source_paths:
+    - "../../../assets/standard_face_test_images/lenna.bmp"
+  target_paths:
+    - "../../../assets/standard_face_test_images/tiffany.bmp"
+  output:
+    path: "./tests_output/image_512/"
+    prefix: "test_512_"
+    conflict_policy: "overwrite"
+    image_quality: 90
+    image_format: "png"
+
+resource:
+  thread_count: 0
+  max_queue_size: 20
+  execution_order: "sequential"
+
+pipeline:
+  - step: "face_swapper"
+    enabled: true
+    params:
+      model: "inswapper_128_fp16"
+      face_selector_mode: "many"
