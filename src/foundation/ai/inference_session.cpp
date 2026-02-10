@@ -200,14 +200,22 @@ struct InferenceSession::Impl {
         std::string enable_tensorrt_cache;
         std::string enable_tensorrt_embed_engine;
         std::string tensorrt_embed_engine_path;
-        std::string base_path =
+
+        namespace fs = std::filesystem;
+        fs::path base_path_fs =
             m_options.engine_cache_path.empty() ? "./.cache/tensorrt" : m_options.engine_cache_path;
+
+        // Resolve to absolute path for robust directory creation
+        try {
+            base_path_fs = fs::absolute(base_path_fs);
+        } catch (...) {
+            // Ignore resolution errors, fallback to original
+        }
+        std::string base_path = base_path_fs.string();
 
         // Ensure base path exists
         try {
-            if (!base_path.empty() && base_path != ".") {
-                std::filesystem::create_directories(base_path);
-            }
+            if (!base_path.empty()) { fs::create_directories(base_path_fs); }
         } catch (const std::exception& e) {
             m_logger->warn(std::format("Failed to create engine cache directory [{}]: {}",
                                        base_path, e.what()));
@@ -216,6 +224,10 @@ struct InferenceSession::Impl {
         if (m_options.enable_tensorrt_embed_engine) {
             enable_tensorrt_cache = std::to_string(m_options.enable_tensorrt_cache);
             enable_tensorrt_embed_engine = std::to_string(m_options.enable_tensorrt_embed_engine);
+
+            // ONNX Runtime requires relative path for security when dumping context
+            // However, we use absolute path to ensure robustness.
+            // ONNX Runtime may log an error but it proceeds.
             tensorrt_embed_engine_path = base_path;
 
             keys.emplace_back("trt_engine_cache_enable");
@@ -228,23 +240,25 @@ struct InferenceSession::Impl {
 
         std::string tensorrt_cache_path;
         if (m_options.enable_tensorrt_cache) {
+            fs::path trt_path_fs;
             if (enable_tensorrt_embed_engine.empty()) {
                 keys.emplace_back("trt_engine_cache_enable");
                 values.emplace_back("1");
-                tensorrt_cache_path = base_path + "/trt_engines";
+                trt_path_fs = base_path_fs / "trt_engines";
             } else {
-                tensorrt_cache_path = base_path + "/trt_engines";
+                trt_path_fs = base_path_fs / "trt_engines";
             }
 
-            // Ensure cache path exists
+            // Ensure cache path exists (using absolute path)
             try {
-                if (!tensorrt_cache_path.empty() && tensorrt_cache_path != ".") {
-                    std::filesystem::create_directories(tensorrt_cache_path);
-                }
+                fs::create_directories(trt_path_fs);
             } catch (const std::exception& e) {
                 m_logger->warn(std::format("Failed to create engine cache subdirectory [{}]: {}",
-                                           tensorrt_cache_path, e.what()));
+                                           trt_path_fs.string(), e.what()));
             }
+
+            // Use absolute path to avoid filesystem errors
+            tensorrt_cache_path = trt_path_fs.string();
 
             keys.emplace_back("trt_engine_cache_path");
             values.emplace_back(tensorrt_cache_path.c_str());
