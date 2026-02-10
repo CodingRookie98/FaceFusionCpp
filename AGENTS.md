@@ -45,7 +45,7 @@ trigger: always_on
   - **开发阶段必须使用 Debug 模式**：`python build.py` (默认配置为 Debug)
   - Release 模式仅用于最终发布验证
   - 二进制输出路径 (Debug): `build/<preset>/bin` (例如 Windows 下为 `build/msvc-x64-debug/bin`，Linux 下为 `build/linux-x64-debug/bin`)
-  - **运行要求**：禁止在项目根目录直接运行程序。**必须**先 `cd` 切换至可执行文件输出目录后再运行，以确保相对路径资源加载正确。开发中直接运行可执行程序时，工作目录需要在程序所在目录，防止重复下载资源。
+  - **运行要求**：禁止在项目根目录直接运行程序。**必须**先 `cd` 切换至可执行文件输出目录后再运行，以确保相对路径资源加载正确。开发中直接运行可执行程序时，工作目录需要在程序所在目录，防止重复下载资源以及 TensorRT 引擎重新构建。
   - 🚨 **详细用法 (必读)**：@docs/build.md —— **请务必阅读以避免环境配置错误**
 - **质量控制**：
   - 格式化：`python scripts/format_code.py`
