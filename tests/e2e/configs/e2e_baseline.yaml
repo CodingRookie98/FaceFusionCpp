@@ -10,9 +10,9 @@ task_info:
 
 io:
   source_paths:
-    - "./assets/standard_face_test_images/lenna.bmp"
+    - "../../../assets/standard_face_test_images/lenna.bmp"
   target_paths:
-    - "./assets/standard_face_test_videos/slideshow_scaled.mp4"
+    - "../../../assets/standard_face_test_videos/slideshow_scaled.mp4"
   output:
     path: "./tests_output/"
     prefix: "m11_test_"
