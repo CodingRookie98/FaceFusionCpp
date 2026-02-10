@@ -65,7 +65,7 @@ public:
             } catch (...) {
                 try {
                     promise->set_exception(std::current_exception());
-                } catch (...) {
+                } catch (...) { // NOLINT(bugprone-empty-catch)
                     // Ignore exception during set_exception, as we can't do anything about it.
                 }
             }

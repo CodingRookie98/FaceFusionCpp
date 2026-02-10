@@ -117,7 +117,7 @@ private:
     }
 
     void push_to_output_ordered(FrameData frame) {
-        const std::scoped_lock lock(m_reorder_mutex);
+        const std::scoped_lock kLock(m_reorder_mutex);
 
         if (frame.sequence_id == m_next_sequence_id) {
             m_output_queue.push(std::move(frame));

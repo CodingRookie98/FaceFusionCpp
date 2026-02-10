@@ -31,6 +31,8 @@ public:
 
     ThreadSafeQueue(const ThreadSafeQueue&) = delete;
     ThreadSafeQueue& operator=(const ThreadSafeQueue&) = delete;
+    ThreadSafeQueue(ThreadSafeQueue&&) = delete;
+    ThreadSafeQueue& operator=(ThreadSafeQueue&&) = delete;
 
     /**
      * @brief Push a value into the queue (blocking)
@@ -38,8 +40,8 @@ public:
      * @param value The value to push
      */
     void push(T_ value) {
-        std::unique_lock<std::mutex> kLock(m_mutex);
-        m_not_full.wait(kLock, [this] { return m_queue.size() < m_max_size || m_shutdown; });
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_not_full.wait(lock, [this] { return m_queue.size() < m_max_size || m_shutdown; });
 
         if (m_shutdown) return;
 
@@ -53,8 +55,8 @@ public:
      * @return std::optional<T_> The value, or std::nullopt if queue is shutdown and empty
      */
     std::optional<T_> pop() {
-        std::unique_lock<std::mutex> kLock(m_mutex);
-        m_not_empty.wait(kLock, [this] { return !m_queue.empty() || m_shutdown; });
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_not_empty.wait(lock, [this] { return !m_queue.empty() || m_shutdown; });
 
         if (m_queue.empty() && m_shutdown) { return std::nullopt; }
 
@@ -72,8 +74,8 @@ public:
      * @return Vector of items (empty if queue was empty or stopped)
      */
     std::vector<T_> pop_batch(size_t max_items) {
-        std::unique_lock<std::mutex> kLock(m_mutex);
-        m_not_empty.wait(kLock, [this] { return !m_queue.empty() || m_shutdown; });
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_not_empty.wait(lock, [this] { return !m_queue.empty() || m_shutdown; });
 
         std::vector<T_> batch;
         if (m_shutdown && m_queue.empty()) return batch;

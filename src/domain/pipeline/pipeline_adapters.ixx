@@ -319,12 +319,12 @@ private:
     /**
      * @brief Internal constructor
      */
-    explicit ExpressionAdapter(
+    explicit ExpressionAdapter( // NOLINT(google-readability-function-size)
         std::shared_ptr<face::expression::IFaceExpressionRestorer> restorer,
         std::string feature_path, std::string motion_path, std::string generator_path,
         foundation::ai::inference_session::Options options,
         std::shared_ptr<face::masker::IFaceOccluder> occluder = nullptr,
-        std::shared_ptr<face::masker::IFaceRegionMasker> region_masker = nullptr) : // NOLINT(google-readability-function-size)
+        std::shared_ptr<face::masker::IFaceRegionMasker> region_masker = nullptr) :
         m_restorer(std::move(restorer)), m_feature_path(std::move(feature_path)),
         m_motion_path(std::move(motion_path)), m_generator_path(std::move(generator_path)),
         m_options(std::move(options)), m_occluder(std::move(occluder)),
