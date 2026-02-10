@@ -200,8 +200,8 @@ struct InferenceSession::Impl {
         std::string enable_tensorrt_cache;
         std::string enable_tensorrt_embed_engine;
         std::string tensorrt_embed_engine_path;
-        std::string base_path = m_options.engine_cache_path.empty() ? "./trt_engine_cache" :
-                                                                      m_options.engine_cache_path;
+        std::string base_path =
+            m_options.engine_cache_path.empty() ? "./.cache/tensorrt" : m_options.engine_cache_path;
 
         // Ensure base path exists
         try {
@@ -233,7 +233,7 @@ struct InferenceSession::Impl {
                 values.emplace_back("1");
                 tensorrt_cache_path = base_path + "/trt_engines";
             } else {
-                tensorrt_cache_path = "trt_engines";
+                tensorrt_cache_path = base_path + "/trt_engines";
             }
 
             // Ensure cache path exists
