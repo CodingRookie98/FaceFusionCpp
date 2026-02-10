@@ -1,15 +1,14 @@
-
 module;
 #include <filesystem>
 #include <cstdlib>
 #include <stdexcept>
 #include <string>
 #include <iostream>
-module foundation.infrastructure.test_support;
+export module foundation.infrastructure.test_support;
 
 namespace fs = std::filesystem;
 
-namespace foundation::infrastructure::test {
+export namespace foundation::infrastructure::test {
 void reset_environment() {
     // Example: cleanup temp files used in tests
     if (std::filesystem::exists("test_temp")) { std::filesystem::remove_all("test_temp"); }

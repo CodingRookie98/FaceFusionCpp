@@ -4,7 +4,7 @@ add_facefusion_test(
         face_store_test.cpp
         face_selector_test.cpp
         face_helper_test.cpp
-        face_enhancement_tests.cpp
+        face_enhancement_test.cpp
         masker/mask_compositor_test.cpp
         detector/face_detector_factory_test.cpp
         detector/yolo_detector_test.cpp

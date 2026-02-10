@@ -39,23 +39,23 @@ add_facefusion_test(
     MAIN_LIB GTest::gmock_main
     SOURCES
         domain/face/detector/face_detector_test.cpp
-        domain/face/swapper/face_swapper_tests.cpp
-        domain/face/enhancer/face_enhancer_tests.cpp
-        domain/face/recognizer/face_recognizer_tests.cpp
-        domain/face/masker/face_masker_tests.cpp
-        domain/face/landmarker/face_landmarker_tests.cpp
-        domain/face/classifier/face_classifier_tests.cpp
-        domain/face/expression/face_expression_tests.cpp
-        domain/face/analyser/face_analyser_integration_tests.cpp
-        domain/face/analyser/model_registry_tests.cpp
-        domain/ai/model_repository_tests.cpp
-        domain/frame/enhancer/frame_enhancer_tests.cpp
-        foundation/ai/inference_session_tests.cpp
-        foundation/ai/session_pool_tests.cpp
-        foundation/ai/inference_session_registry_tests.cpp
-        foundation/media/ffmpeg_tests.cpp
-        foundation/media/vision_tests.cpp
-        foundation/infrastructure/network_tests.cpp
+        domain/face/swapper/face_swapper_test.cpp
+        domain/face/enhancer/face_enhancer_test.cpp
+        domain/face/recognizer/face_recognizer_test.cpp
+        domain/face/masker/face_masker_test.cpp
+        domain/face/landmarker/face_landmarker_test.cpp
+        domain/face/classifier/face_classifier_test.cpp
+        domain/face/expression/face_expression_test.cpp
+        domain/face/analyser/face_analyser_integration_test.cpp
+        domain/face/analyser/model_registry_test.cpp
+        domain/ai/model_repository_test.cpp
+        domain/frame/enhancer/frame_enhancer_test.cpp
+        foundation/ai/inference_session_test.cpp
+        foundation/ai/session_pool_test.cpp
+        foundation/ai/inference_session_registry_test.cpp
+        foundation/media/ffmpeg_test.cpp
+        foundation/media/vision_test.cpp
+        foundation/infrastructure/network_test.cpp
         domain/face/face_helper_test.cpp
         domain/face/face_selector_test.cpp
         domain/face/face_test.cpp

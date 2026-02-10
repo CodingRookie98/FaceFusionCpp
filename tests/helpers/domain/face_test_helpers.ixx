@@ -24,6 +24,8 @@ import foundation.ai.inference_session;
 
 export namespace tests::helpers::domain {
 
+using namespace ::domain::face;
+
 /**
  * @brief Create an empty face object for testing
  * @return Empty Face instance
@@ -73,9 +75,9 @@ Face create_face_with_68_kps() {
  * @param assets_path Path to assets directory containing models_info.json
  * @return Configured ModelRepository instance
  */
-inline std::shared_ptr<domain::ai::model_repository::ModelRepository> setup_model_repository(
+inline std::shared_ptr<::domain::ai::model_repository::ModelRepository> setup_model_repository(
     const std::filesystem::path& assets_path) {
-    auto repo = domain::ai::model_repository::ModelRepository::get_instance();
+    auto repo = ::domain::ai::model_repository::ModelRepository::get_instance();
     auto models_info_path = assets_path / "models_info.json";
     if (std::filesystem::exists(models_info_path)) {
         repo->set_model_info_file_path(models_info_path.string());
@@ -90,18 +92,18 @@ inline std::shared_ptr<domain::ai::model_repository::ModelRepository> setup_mode
  * @return Vector of 2D points representing face landmarks (5 points), empty if no face detected
  */
 inline types::Landmarks detect_face_landmarks(
-    const cv::Mat& image, std::shared_ptr<domain::ai::model_repository::ModelRepository> repo) {
+    const cv::Mat& image, std::shared_ptr<::domain::ai::model_repository::ModelRepository> repo) {
     if (image.empty()) return {};
 
-    auto detector = detector::FaceDetectorFactory::create(detector::DetectorType::Yolo);
+    auto detector_ptr = ::domain::face::detector::FaceDetectorFactory::create(::domain::face::detector::DetectorType::Yolo);
 
     std::string model_path = repo->ensure_model("yoloface");
     if (model_path.empty()) return {};
 
-    detector->load_model(model_path,
+    detector_ptr->load_model(model_path,
                          foundation::ai::inference_session::Options::with_best_providers());
 
-    auto results = detector->detect(image);
+    auto results = detector_ptr->detect(image);
     if (results.empty()) return {};
 
     return results[0].landmarks;
@@ -114,18 +116,18 @@ inline types::Landmarks detect_face_landmarks(
  * @return Bounding box of detected face, empty rect if no face detected
  */
 inline cv::Rect2f detect_face_bbox(
-    const cv::Mat& image, std::shared_ptr<domain::ai::model_repository::ModelRepository> repo) {
+    const cv::Mat& image, std::shared_ptr<::domain::ai::model_repository::ModelRepository> repo) {
     if (image.empty()) return {};
 
-    auto detector = detector::FaceDetectorFactory::create(detector::DetectorType::SCRFD);
+    auto detector_ptr = ::domain::face::detector::FaceDetectorFactory::create(::domain::face::detector::DetectorType::SCRFD);
 
     std::string model_path = repo->ensure_model("scrfd");
     if (model_path.empty()) return {};
 
-    detector->load_model(model_path,
+    detector_ptr->load_model(model_path,
                          foundation::ai::inference_session::Options::with_best_providers());
 
-    auto results = detector->detect(image);
+    auto results = detector_ptr->detect(image);
     if (results.empty()) return {};
 
     return results[0].box;
@@ -140,11 +142,11 @@ inline cv::Rect2f detect_face_bbox(
  */
 inline types::Embedding get_face_embedding(
     const cv::Mat& image, const types::Landmarks& landmarks,
-    std::shared_ptr<domain::ai::model_repository::ModelRepository> repo) {
+    std::shared_ptr<::domain::ai::model_repository::ModelRepository> repo) {
     if (image.empty() || landmarks.empty()) return {};
 
     auto recognizer_ptr =
-        recognizer::create_face_recognizer(recognizer::FaceRecognizerType::ArcFaceW600kR50);
+        ::domain::face::recognizer::create_face_recognizer(::domain::face::recognizer::FaceRecognizerType::ArcFaceW600kR50);
 
     std::string model_path = repo->ensure_model("arcface_w600k_r50");
     if (model_path.empty()) return {};
@@ -162,9 +164,9 @@ inline types::Embedding get_face_embedding(
  * @param repo Model repository instance
  * @return Shared pointer to FaceAnalyser
  */
-inline std::shared_ptr<domain::face::analyser::FaceAnalyser> create_face_analyser(
-    std::shared_ptr<domain::ai::model_repository::ModelRepository> repo) {
-    using namespace domain::face::analyser;
+inline std::shared_ptr<::domain::face::analyser::FaceAnalyser> create_face_analyser(
+    std::shared_ptr<::domain::ai::model_repository::ModelRepository> repo) {
+    using namespace ::domain::face::analyser;
     Options opts;
     opts.inference_session_options =
         foundation::ai::inference_session::Options::with_best_providers();
@@ -174,8 +176,8 @@ inline std::shared_ptr<domain::face::analyser::FaceAnalyser> create_face_analyse
     opts.model_paths.face_recognizer_arcface = repo->ensure_model("arcface_w600k_r50");
     // We only need detection and embedding for similarity check
 
-    opts.face_detector_options.type = domain::face::detector::DetectorType::Yolo;
-    opts.face_recognizer_type = domain::face::recognizer::FaceRecognizerType::ArcFaceW600kR50;
+    opts.face_detector_options.type = ::domain::face::detector::DetectorType::Yolo;
+    opts.face_recognizer_type = ::domain::face::recognizer::FaceRecognizerType::ArcFaceW600kR50;
 
     return std::make_shared<FaceAnalyser>(opts);
 }
