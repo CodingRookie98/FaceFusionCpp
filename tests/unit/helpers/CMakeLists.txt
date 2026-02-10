@@ -1,0 +1,9 @@
+add_facefusion_test(
+    helper_usage_test
+    SOURCES
+        helper_usage_test.cpp
+    LINK_LIBRARIES
+        test_helpers
+        GTest::gtest
+        ${OpenCV_LIBS}
+)

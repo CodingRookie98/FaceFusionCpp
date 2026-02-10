@@ -107,6 +107,7 @@ endfunction()
 add_subdirectory(test_support)
 add_subdirectory(common)
 add_subdirectory(mocks)
+add_subdirectory(helpers)
 add_subdirectory(unit)
 add_subdirectory(integration)
 
