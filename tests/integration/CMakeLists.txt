@@ -1,5 +1,5 @@
 add_facefusion_test(
-    app_test_pipeline
+    app_pipeline_tests
     SOURCES
         app/pipeline_runner_video_test.cpp
         app/pipeline_runner_image_test.cpp
@@ -24,10 +24,10 @@ add_facefusion_test(
         test_helpers
         test_common
 )
-copy_onnxruntime_libs(app_test_pipeline)
+copy_onnxruntime_libs(app_pipeline_tests)
 if(HAVE_NVML)
-    target_link_libraries(app_test_pipeline PRIVATE ${NVML_LIBRARY})
-    target_compile_definitions(app_test_pipeline PRIVATE HAVE_NVML)
+    target_link_libraries(app_pipeline_tests PRIVATE ${NVML_LIBRARY})
+    target_compile_definitions(app_pipeline_tests PRIVATE HAVE_NVML)
 endif()
 add_facefusion_test(
     component_integration_tests
