@@ -24,9 +24,12 @@ def run_test(executable: Path, config: Path, dry_run: bool = False) -> bool:
 
     start_time = time.time()
     try:
+        # Use subprocess.run to execute the command.
+        # Capture output is False to stream stdout/stderr to the console (User Requirement: preserve full output)
         result = subprocess.run(
             cmd,
             text=True,
+            capture_output=False,
             timeout=600
         )
         duration = time.time() - start_time
