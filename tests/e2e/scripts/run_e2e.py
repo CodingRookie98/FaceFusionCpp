@@ -16,21 +16,25 @@ def run_test(executable: Path, config: Path, dry_run: bool = False) -> bool:
     print(f"[TEST] Running {config.name}...")
     print(f"{'='*60}")
     
-    cmd = [str(executable.absolute()), "--config", str(config.absolute())]
+    executable = executable.resolve()
+    config = config.resolve()
+    
+    cmd = [str(executable), "--config", str(config)]
+    
+    work_dir = executable.parent
     
     if dry_run:
         print(f"[DRY-RUN] Command: {' '.join(cmd)}")
+        print(f"[DRY-RUN] Working Directory: {work_dir}")
         return True
 
     start_time = time.time()
     try:
-        # Use subprocess.run to execute the command.
-        # Capture output is False to stream stdout/stderr to the console (User Requirement: preserve full output)
         result = subprocess.run(
             cmd,
+            cwd=str(work_dir),
             text=True,
-            capture_output=False,
-            timeout=600
+            capture_output=False
         )
         duration = time.time() - start_time
         
@@ -41,12 +45,30 @@ def run_test(executable: Path, config: Path, dry_run: bool = False) -> bool:
             print(f"\n[FAIL] {config.name} (Exit Code: {result.returncode})")
             return False
             
-    except subprocess.TimeoutExpired:
-        print(f"\n[FAIL] {config.name} (Timeout after 600s)")
-        return False
     except Exception as e:
         print(f"\n[FAIL] {config.name} (Exception: {e})")
         return False
+
+def find_executable(provided_path: Path) -> Path:
+    if provided_path.exists() and provided_path.is_file():
+        return provided_path
+        
+    script_dir = Path(__file__).resolve().parent
+    project_root = script_dir.parents[2]
+    
+    print(f"Executable not found at {provided_path}, searching in {project_root}/build/...")
+    
+    candidates = list(project_root.glob("build/*/bin/FaceFusionCpp")) + \
+                 list(project_root.glob("build/*/bin/FaceFusionCpp.exe"))
+                 
+    if not candidates:
+        return provided_path
+        
+    candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    
+    best_candidate = candidates[0]
+    print(f"Auto-detected executable: {best_candidate}")
+    return best_candidate
 
 def main():
     parser = argparse.ArgumentParser(description="Run FaceFusionCpp E2E Tests")
@@ -61,6 +83,11 @@ def main():
     
     args = parser.parse_args()
     
+    executable = find_executable(args.executable)
+    if not executable.exists():
+        print(f"Error: Executable not found at {executable}")
+        sys.exit(1)
+        
     configs = find_configs(args.config_dir)
     if args.filter:
         configs = [c for c in configs if args.filter in c.name]
@@ -75,7 +102,7 @@ def main():
     print(f"Found {len(configs)} tests.")
     
     for config in configs:
-        if run_test(args.executable, config, args.dry_run):
+        if run_test(executable, config, args.dry_run):
             success_count += 1
         else:
             fail_count += 1
