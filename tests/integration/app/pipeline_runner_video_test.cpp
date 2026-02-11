@@ -480,8 +480,8 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideo_AchievesMinimumFPS) {
 
 #ifdef NDEBUG
     EXPECT_GE(actual_fps, tests::helpers::foundation::constants::MIN_FPS_RTX4060)
-        << "FPS below threshold: " << actual_fps << " (min: " << tests::helpers::foundation::constants::MIN_FPS_RTX4060
-        << ")";
+        << "FPS below threshold: " << actual_fps
+        << " (min: " << tests::helpers::foundation::constants::MIN_FPS_RTX4060 << ")";
 #else
     std::cout << "[WARN] Running in DEBUG mode. FPS requirement ignored. Got: " << actual_fps
               << std::endl;
@@ -517,4 +517,42 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideo_CompletesWithinTimeLimit) {
     int64_t max_duration_s = tests::helpers::foundation::constants::TIMEOUT_VIDEO_40S_MS / 1000;
     EXPECT_LT(duration_s, max_duration_s)
         << "Processing time exceeded: " << duration_s << "s (max: " << max_duration_s << "s)";
+}
+
+TEST_F(PipelineRunnerVideoTest, ProcessVideo_ReportsFPS) {
+    if (!std::filesystem::exists(video_path)) { GTEST_SKIP() << "Test video asset not found."; }
+
+    config::AppConfig app_config;
+    auto runner = create_pipeline_runner(app_config);
+
+    config::TaskConfig task_config;
+    task_config.task_info.id = "video_fps_repro";
+    task_config.io.source_paths = {source_path.string()};
+    task_config.io.target_paths = {video_path.string()};
+    task_config.io.output.path = output_dir.string();
+    task_config.io.output.prefix = "fps_repro_";
+
+    config::PipelineStep step;
+    step.step = "face_swapper";
+    step.enabled = true;
+    config::FaceSwapperParams params;
+    params.model = "inswapper_128_fp16";
+    step.params = params;
+    task_config.pipeline.push_back(step);
+
+    bool received_fps = false;
+    double max_fps = 0.0;
+
+    auto result = runner->run(config::MergeConfigs(task_config, app_config),
+                              [&](const services::pipeline::TaskProgress& p) {
+                                  if (p.fps > 0.0) {
+                                      received_fps = true;
+                                      max_fps = std::max(max_fps, p.fps);
+                                  }
+                              });
+
+    ASSERT_TRUE(result.is_ok());
+
+    EXPECT_TRUE(received_fps) << "FPS was never reported > 0 during video processing";
+    if (received_fps) { std::cout << "Max reported FPS: " << max_fps << std::endl; }
 }

@@ -11,6 +11,7 @@ module;
 #include <atomic>
 #include <filesystem>
 #include <thread>
+#include <chrono>
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
@@ -174,6 +175,12 @@ public:
         std::thread writer_thread([&]() {
             int frame_count = 0;
             int total_frames = reader.get_frame_count();
+            auto start_time = std::chrono::steady_clock::now();
+
+            TaskProgress progress;
+            progress.task_id = task_config.task_info.id;
+            progress.total_frames = total_frames;
+            progress.current_step = "processing";
 
             while (true) {
                 auto result_opt = pipeline->pop_frame();
@@ -203,11 +210,13 @@ public:
 
                 frame_count++;
                 if (progress_callback && frame_count % 10 == 0) {
-                    TaskProgress progress;
-                    progress.task_id = task_config.task_info.id;
+                    auto now = std::chrono::steady_clock::now();
+                    double elapsed = std::chrono::duration<double>(now - start_time).count();
+                    double fps =
+                        (elapsed > 0.0) ? (static_cast<double>(frame_count) / elapsed) : 0.0;
+
                     progress.current_frame = frame_count;
-                    progress.total_frames = total_frames;
-                    progress.current_step = "processing";
+                    progress.fps = fps;
                     progress_callback(progress);
                 }
             }
@@ -415,6 +424,13 @@ private:
         std::thread writer_thread([&]() {
             int frame_count = 0;
             int total_frames = reader.get_frame_count();
+            auto start_time = std::chrono::steady_clock::now();
+
+            TaskProgress progress;
+            progress.task_id = task_config.task_info.id;
+            progress.total_frames = total_frames;
+            progress.current_step = "processing";
+
             while (true) {
                 auto result_opt = pipeline->pop_frame();
                 if (!result_opt || result_opt->is_end_of_stream) break;
@@ -439,11 +455,13 @@ private:
                 if (context.metrics_collector) context.metrics_collector->record_frame_completed();
                 frame_count++;
                 if (progress_callback && frame_count % 10 == 0) {
-                    TaskProgress progress;
-                    progress.task_id = task_config.task_info.id;
+                    auto now = std::chrono::steady_clock::now();
+                    double elapsed = std::chrono::duration<double>(now - start_time).count();
+                    double fps =
+                        (elapsed > 0.0) ? (static_cast<double>(frame_count) / elapsed) : 0.0;
+
                     progress.current_frame = frame_count;
-                    progress.total_frames = total_frames;
-                    progress.current_step = "processing";
+                    progress.fps = fps;
                     progress_callback(progress);
                 }
             }
