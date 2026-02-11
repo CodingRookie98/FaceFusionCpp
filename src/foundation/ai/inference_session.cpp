@@ -205,20 +205,24 @@ struct InferenceSession::Impl {
         fs::path base_path_fs =
             m_options.engine_cache_path.empty() ? "./.cache/tensorrt" : m_options.engine_cache_path;
 
-        // Resolve to absolute path for robust directory creation
+        // Use absolute path for directory creation to be robust
+        fs::path abs_base_path_fs = base_path_fs;
         try {
-            base_path_fs = fs::absolute(base_path_fs);
+            abs_base_path_fs = fs::absolute(base_path_fs);
         } catch (...) {
             // Ignore resolution errors, fallback to original
         }
+
+        // For ORT options, use the original path (which might be relative)
+        // because ORT requires relative path when dumping context model.
         std::string base_path = base_path_fs.string();
 
         // Ensure base path exists
         try {
-            if (!base_path.empty()) { fs::create_directories(base_path_fs); }
+            if (!abs_base_path_fs.empty()) { fs::create_directories(abs_base_path_fs); }
         } catch (const std::exception& e) {
             m_logger->warn(std::format("Failed to create engine cache directory [{}]: {}",
-                                       base_path, e.what()));
+                                       abs_base_path_fs.string(), e.what()));
         }
 
         if (m_options.enable_tensorrt_embed_engine) {
@@ -241,23 +245,28 @@ struct InferenceSession::Impl {
         std::string tensorrt_cache_path;
         if (m_options.enable_tensorrt_cache) {
             fs::path trt_path_fs;
+            // Always create the directory using absolute path
+            fs::path abs_trt_path_fs = abs_base_path_fs / "trt_engines";
+
             if (enable_tensorrt_embed_engine.empty()) {
                 keys.emplace_back("trt_engine_cache_enable");
                 values.emplace_back("1");
                 trt_path_fs = base_path_fs / "trt_engines";
             } else {
-                trt_path_fs = base_path_fs / "trt_engines";
+                // When embedding is enabled, ORT requires trt_engine_cache_path to be relative
+                // to the context file path (base_path).
+                trt_path_fs = "trt_engines";
             }
 
             // Ensure cache path exists (using absolute path)
             try {
-                fs::create_directories(trt_path_fs);
+                fs::create_directories(abs_trt_path_fs);
             } catch (const std::exception& e) {
                 m_logger->warn(std::format("Failed to create engine cache subdirectory [{}]: {}",
-                                           trt_path_fs.string(), e.what()));
+                                           abs_trt_path_fs.string(), e.what()));
             }
 
-            // Use absolute path to avoid filesystem errors
+            // Use calculated path for ORT
             tensorrt_cache_path = trt_path_fs.string();
 
             keys.emplace_back("trt_engine_cache_path");
