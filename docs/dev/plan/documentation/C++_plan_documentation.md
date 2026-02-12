@@ -129,11 +129,11 @@ docs/dev/
 ### 3.3 阶段三: 开发者文档 — 架构与构建 (P2-High)
 **目标**: 新贡献者能理解项目结构并成功构建
 
-*   [ ] **任务 3.1**: `architecture.md` (EN + ZH)
+*   [x] **任务 3.1**: `architecture.md` (EN + ZH)
     *   内容: 5层架构图 (Mermaid), 层间依赖规则, 设计模式总结, 关键设计决策记录
-*   [ ] **任务 3.2**: `build_guide.md` (EN + ZH)
+*   [x] **任务 3.2**: `build_guide.md` (EN + ZH)
     *   内容: 工具链版本要求, 首次构建 step-by-step, CMakePresets 解读, 平台差异表
-*   [ ] **任务 3.3**: `contributing.md` (EN + ZH)
+*   [x] **任务 3.3**: `contributing.md` (EN + ZH)
     *   内容: 分支命名规范, commit 规范, PR 流程, TDD 强制要求, clang-format/tidy 使用
 *   [ ] **验收标准**:
     *   新贡献者凭这 3 篇文档能完成: 理解架构 → 搭建环境 → 提交首个 PR
