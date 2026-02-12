@@ -89,8 +89,25 @@ def run_build(cmake_exe, preset, target, jobs, env, project_root):
         sys.exit(1)
 
 
-def run_test(ctest_exe, preset, regex, label, env, project_root):
+def run_test(ctest_exe, preset, regex, label, env, project_root, build_dir):
     log("\n=== Action: test ===", "info")
+
+    if label == "e2e":
+        exe_name = "FaceFusionCpp.exe" if platform.system() == "Windows" else "FaceFusionCpp"
+        executable = build_dir / "bin" / exe_name
+        e2e_script = project_root / "tests" / "e2e" / "scripts" / "run_e2e.py"
+
+        if not executable.exists():
+            log(f"Executable not found at {executable}. Please build first.", "error")
+            sys.exit(1)
+
+        cmd = [sys.executable, str(e2e_script), "--executable", str(executable)]
+        if regex:
+            cmd.extend(["--filter", regex])
+
+        run_command(cmd, env=env, cwd=project_root)
+        return
+
     cmd = [ctest_exe, "--preset", preset, "--no-tests=error"]
 
     # Determine test filter
@@ -208,7 +225,12 @@ def main():
     # 3. Clean if requested
     # We need to guess the build dir path based on preset convention
     # This might be fragile if preset defines a different binaryDir, but common convention holds.
-    build_dir = project_root / "build" / preset
+    build_dir_name = preset
+    if platform.system() == "Linux" and preset.startswith("linux-") and "x64" not in preset:
+        # Fix for linux-debug -> linux-x64-debug convention in CMakePresets.json
+        build_dir_name = preset.replace("linux-", "linux-x64-")
+
+    build_dir = project_root / "build" / build_dir_name
     if args.clean and build_dir.exists():
         log(f"Cleaning build directory: {build_dir}", "warning")
         shutil.rmtree(build_dir)
@@ -243,7 +265,7 @@ def main():
         if not regex and args.target != "all":
             regex = args.target
 
-        run_test(ctest_exe, preset, regex, args.test_label, env, project_root)
+        run_test(ctest_exe, preset, regex, args.test_label, env, project_root, build_dir)
 
     elif args.action == "install":
         run_install(cmake_exe, build_dir, env, project_root)
