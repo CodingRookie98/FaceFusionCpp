@@ -141,13 +141,13 @@ docs/dev/
 ### 3.4 阶段四: 开发者文档 — 深度参考 (P2-Standard)
 **目标**: 为二次开发和维护提供深度参考资料
 
-*   [ ] **任务 4.1**: `module_reference.md` (EN + ZH)
+*   [x] **任务 4.1**: `module_reference.md` (EN + ZH)
     *   内容: ~100 个 .ixx 模块速查表 (模块名, 职责, 公开接口, 依赖), 按 5 层分组
-*   [ ] **任务 4.2**: `testing_guide.md` (EN + ZH)
+*   [x] **任务 4.2**: `testing_guide.md` (EN + ZH)
     *   内容: 4 类测试说明 (unit/integration/benchmark/e2e), Fixture 继承图, Mock 使用示例, 新增测试 checklist
-*   [ ] **任务 4.3**: `pipeline_internals.md` (EN + ZH)
+*   [x] **任务 4.3**: `pipeline_internals.md` (EN + ZH)
     *   内容: Pipeline 执行序列图 (Mermaid), Adapter 模式详解, 队列背压机制, Sequential vs Batch 对比
-*   [ ] **任务 4.4**: `ai_inference.md` (EN + ZH)
+*   [x] **任务 4.4**: `ai_inference.md` (EN + ZH)
     *   内容: InferenceSession 生命周期, TensorRT EP 配置参数, SessionPool LRU/TTL 图解, 引擎缓存策略
 *   [ ] **验收标准**:
     *   所有 7 篇开发者文档完整, 代码引用路径正确
