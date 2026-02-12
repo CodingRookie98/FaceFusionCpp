@@ -14,6 +14,7 @@ target_sources(test_common
         fixtures/unit_test_fixture.cpp
         fixtures/integration_test_fixture.cpp
         fixtures/global_env_helper.cpp
+        test_paths.cpp
 )
 
 target_link_libraries(test_common

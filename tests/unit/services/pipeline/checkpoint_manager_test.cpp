@@ -4,6 +4,8 @@
 #include <thread>
 #include <chrono>
 
+#include "common/test_paths.h"
+
 import services.pipeline.checkpoint;
 
 namespace fs = std::filesystem;
@@ -12,8 +14,9 @@ using namespace services::pipeline;
 class CheckpointManagerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_dir = "./test_checkpoints";
+        test_dir = tests::common::TestPaths::GetTestOutputDir("checkpoint_manager");
         if (fs::exists(test_dir)) fs::remove_all(test_dir);
+        fs::create_directories(test_dir);
         mgr = std::make_unique<CheckpointManager>(test_dir);
     }
 

@@ -12,7 +12,7 @@ io:
     - "../../../assets/standard_face_test_images/woman.jpg"
     - "../../../assets/standard_face_test_images/barbara.bmp"
   output:
-    path: "./tests_output/image_batch/"
+    path: "output/test/e2e/e2e_image_batch/"
     prefix: "pipeline_runner_image_batch_output_"
     suffix: ""
     image_format: "jpg"

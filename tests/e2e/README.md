@@ -20,6 +20,15 @@ tests/e2e/
 └── README.md           # This document
 ```
 
+## 📤 Output Location
+
+All E2E test outputs are generated in a structured directory within the binary folder:
+`build/{preset}/bin/output/test/e2e/{config_name}/`
+
+Example:
+If running `e2e_image_single.yaml` in Debug mode:
+`build/linux-x64-debug/bin/output/test/e2e/e2e_image_single/`
+
 ## 🚀 How to Run
 
 ### Prerequisites

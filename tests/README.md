@@ -48,6 +48,13 @@ tests/
 - **构建**: 默认不构建，需 `cmake -DBUILD_BENCHMARK_TESTS=ON ..`
 - **运行**: `ctest -L benchmark`
 
+### 4. 测试输出 (Test Output)
+所有测试的输出文件现已统一存放，不再散落在项目根目录。
+- **路径规则**: `build/{preset}/bin/output/test/{category}/`
+- **示例**:
+  - 单元测试: `.../bin/output/test/checkpoint_manager/`
+  - E2E测试: `.../bin/output/test/e2e/e2e_image_single/`
+
 ## 基础设施与工具
 
 ### Common (`tests/common/`)

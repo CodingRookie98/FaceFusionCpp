@@ -13,6 +13,7 @@
 #include <fstream>
 #include <string>
 #include <unordered_set>
+#include "common/test_paths.h"
 
 import foundation.infrastructure.crypto;
 
@@ -21,7 +22,7 @@ namespace fs = std::filesystem;
 class CryptoTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_dir = "test_crypto_sandbox";
+        test_dir = tests::common::TestPaths::GetTestOutputDir("crypto").string();
         if (fs::exists(test_dir)) { fs::remove_all(test_dir); }
         fs::create_directories(test_dir);
     }

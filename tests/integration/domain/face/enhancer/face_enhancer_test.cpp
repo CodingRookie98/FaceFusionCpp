@@ -18,6 +18,7 @@ import domain.face.helper;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
 import tests.helpers.foundation.test_utilities;
+#include "common/test_paths.h"
 
 using namespace domain::face::enhancer;
 using namespace tests::helpers::domain;
@@ -35,8 +36,7 @@ protected:
         auto assets_path = get_assets_path();
         repo = tests::helpers::domain::setup_model_repository(assets_path);
         target_path = get_test_data_path("standard_face_test_images/lenna.bmp");
-        output_dir = fs::temp_directory_path() / "facefusion_tests" / "face_enhancer";
-        fs::create_directories(output_dir);
+        output_dir = tests::common::TestPaths::GetTestOutputDir("face_enhancer");
     }
 
     std::shared_ptr<domain::ai::model_repository::ModelRepository> repo;

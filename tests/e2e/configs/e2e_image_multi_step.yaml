@@ -11,7 +11,7 @@ io:
   target_paths:
     - "../../../assets/standard_face_test_images/woman.jpg"
   output:
-    path: "./tests_output/image_multi/"
+    path: "output/test/e2e/e2e_image_multi_step/"
     prefix: "pipeline_runner_image_multi_output_"
     suffix: ""
     image_format: "jpg"

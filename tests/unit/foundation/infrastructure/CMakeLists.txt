@@ -13,6 +13,7 @@ add_facefusion_test(
     LINK_LIBRARIES
     foundation_infrastructure
     test_helpers
+    test_common
 )
 
 add_facefusion_test(
@@ -21,6 +22,7 @@ add_facefusion_test(
     crypto_test.cpp
     LINK_LIBRARIES
     foundation_infrastructure
+    test_common
 )
 
 
@@ -46,6 +48,7 @@ add_facefusion_test(
         concurrent_crypto_test.cpp
         LINK_LIBRARIES
         foundation_infrastructure
+        test_common
 )
 
 add_facefusion_test(

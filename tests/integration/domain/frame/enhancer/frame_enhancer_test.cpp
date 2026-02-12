@@ -17,6 +17,7 @@ import domain.frame.enhancer;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
 import tests.helpers.foundation.test_utilities;
+#include "common/test_paths.h"
 
 using namespace domain::frame::enhancer;
 using namespace tests::helpers::foundation;
@@ -96,8 +97,7 @@ TEST_F(FrameEnhancerTest, EnhanceFrameRealEsrGan) {
     EXPECT_EQ(result.rows, source_img.rows * 2);
 
     // Save output
-    std::filesystem::path output_dir = "tests_output";
-    if (!std::filesystem::exists(output_dir)) { std::filesystem::create_directories(output_dir); }
+    auto output_dir = tests::common::TestPaths::GetTestOutputDir("frame_enhancer");
     std::string output_filename = "frame_enhancer_result_" + model_key + ".jpg";
     cv::imwrite((output_dir / output_filename).string(), result);
 }

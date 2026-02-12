@@ -14,6 +14,7 @@
 #include <string>
 #include <unordered_set>
 #include <gmock/gmock.h>
+#include "common/test_paths.h"
 
 import foundation.infrastructure.concurrent_crypto;
 
@@ -24,8 +25,10 @@ protected:
     void SetUp() override {
         const testing::TestInfo* const test_info =
             testing::UnitTest::GetInstance()->current_test_info();
-        test_dir = std::string("test_ccrypto_sandbox_") + test_info->test_suite_name() + "_"
-                 + test_info->name();
+        auto base_dir = tests::common::TestPaths::GetTestOutputDir("concurrent_crypto");
+        test_dir =
+            (base_dir / (std::string(test_info->test_suite_name()) + "_" + test_info->name()))
+                .string();
 
         if (fs::exists(test_dir)) { fs::remove_all(test_dir); }
         fs::create_directories(test_dir);

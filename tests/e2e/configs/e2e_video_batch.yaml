@@ -12,7 +12,7 @@ io:
     - "../../../assets/standard_face_test_videos/slideshow_scaled.mp4"
     - "../../../assets/standard_face_test_videos/slideshow_scaled.mp4" 
   output:
-    path: "./tests_output/video_batch/"
+    path: "output/test/e2e/e2e_video_batch/"
     prefix: "pipeline_video_batch_multi_step_"
     suffix: ""
     conflict_policy: "overwrite"

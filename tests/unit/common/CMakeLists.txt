@@ -1,6 +1,7 @@
 add_facefusion_test(
     common_unit_tests
     SOURCES
+        test_paths_test.cpp
         fixtures_test.cpp
         matchers_test.cpp
     LINK_LIBRARIES

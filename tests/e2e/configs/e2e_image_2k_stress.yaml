@@ -11,7 +11,7 @@ io:
   target_paths:
     - "../../../assets/standard_face_test_images/woman.jpg"
   output:
-    path: "./tests_output/image_2k/"
+    path: "output/test/e2e/e2e_image_2k_stress/"
     prefix: "test_2k_"
     conflict_policy: "overwrite"
 

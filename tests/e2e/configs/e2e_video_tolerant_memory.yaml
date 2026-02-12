@@ -11,7 +11,7 @@ io:
   target_paths:
     - "../../../assets/standard_face_test_videos/slideshow_scaled.mp4"
   output:
-    path: "./tests_output/video_tolerant/"
+    path: "output/test/e2e/e2e_video_tolerant_memory/"
     prefix: "pipeline_video_tolerant_memory_"
     suffix: ""
     conflict_policy: "overwrite"

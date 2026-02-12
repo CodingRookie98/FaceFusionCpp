@@ -11,7 +11,7 @@ io:
   target_paths:
     - "../../../assets/standard_face_test_images/man.bmp"
   output:
-    path: "./tests_output/image_palette/"
+    path: "output/test/e2e/e2e_image_palette_edge/"
     prefix: "test_pal8_"
     conflict_policy: "overwrite"
 

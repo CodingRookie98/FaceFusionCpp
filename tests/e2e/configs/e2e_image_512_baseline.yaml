@@ -12,7 +12,7 @@ io:
   target_paths:
     - "../../../assets/standard_face_test_images/tiffany.bmp"
   output:
-    path: "./tests_output/image_512/"
+    path: "output/test/e2e/e2e_image_512_baseline/"
     prefix: "test_512_"
     conflict_policy: "overwrite"
     image_quality: 90

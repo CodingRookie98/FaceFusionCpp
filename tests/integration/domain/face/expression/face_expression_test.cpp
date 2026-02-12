@@ -19,6 +19,7 @@ import domain.face.helper;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
 import tests.helpers.foundation.test_utilities;
+#include "common/test_paths.h"
 
 using namespace domain::face::expression;
 using namespace tests::helpers::domain;
@@ -102,6 +103,6 @@ TEST_F(LivePortraitTest, RestoreExpressionBasic) {
     EXPECT_EQ(result.size(), cv::Size(512, 512));
 
     // Save output
-    fs::create_directories("tests_output");
-    cv::imwrite("tests_output/live_portrait_result.jpg", result);
+    auto output_dir = tests::common::TestPaths::GetTestOutputDir("face_expression");
+    cv::imwrite((output_dir / "live_portrait_result.jpg").string(), result);
 }
