@@ -228,7 +228,31 @@ else()
     set(CUDA_SUFFIX "")
 endif()
 
-set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}${CUDA_SUFFIX}")
+# Customize System Name for Linux to be distro-specific if needed
+if (LINUX)
+    # Detect distro? For now, we hardcode to Ubuntu24.04 as we build on it and rely on its glibc.
+    file(READ "/etc/os-release" OS_RELEASE_CONTENT)
+    string(REGEX MATCH "ID=([a-zA-Z0-9]+)" _ ${OS_RELEASE_CONTENT})
+    set(OS_ID ${CMAKE_MATCH_1})
+    string(REGEX MATCH "VERSION_ID=\"?([0-9]+\\.[0-9]+)\"?" _ ${OS_RELEASE_CONTENT})
+    set(OS_VERSION_ID ${CMAKE_MATCH_1})
+    
+    if (OS_ID AND OS_VERSION_ID)
+        # Capitalize first letter of ID (e.g. ubuntu -> Ubuntu)
+        string(SUBSTRING ${OS_ID} 0 1 FIRST_CHAR)
+        string(TOUPPER ${FIRST_CHAR} FIRST_CHAR)
+        string(SUBSTRING ${OS_ID} 1 -1 REMAINING_CHARS)
+        set(OS_ID_CAP "${FIRST_CHAR}${REMAINING_CHARS}")
+        
+        set(OS_DISTRO_NAME "${OS_ID_CAP}${OS_VERSION_ID}")
+    else()
+        set(OS_DISTRO_NAME "Linux")
+    endif()
+else()
+    set(OS_DISTRO_NAME "${CMAKE_SYSTEM_NAME}")
+endif()
+
+set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-${OS_DISTRO_NAME}-${CMAKE_SYSTEM_PROCESSOR}${CUDA_SUFFIX}")
 set(CPACK_PACKAGE_CHECKSUM "SHA256")
 set(CPACK_THREADS 0) # Use multi-threads. Given 0 CPack will try to use all available CPU cores.
 set(CPACK_PACKAGE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/packages/${CMAKE_BUILD_TYPE}")
