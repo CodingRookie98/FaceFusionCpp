@@ -44,7 +44,7 @@ temp_directory: "./temp"
 
 ## 2. Task Configuration (`task_config.yaml`)
 
-This file defines **what** you want to do (e.g., swap faces in a specific video). You can pass this file using the `-c` CLI argument.
+This file defines **what** you want to do (e.g., swap faces in a specific video). You can pass this file using the `-c/--task-config` CLI argument.
 
 ### 2.1 Basic Structure
 

@@ -27,7 +27,7 @@ These options apply to all running modes.
 ## 2. Quick Mode Options
 
 Use these options to run a task directly from the command line without creating a task config file.
-> **Note**: These options cannot be used with `-c/--config`.
+> **Note**: These options cannot be used with `-c/--task-config`.
 
 | Option | Argument | Description | Example |
 | :--- | :--- | :--- | :--- |
@@ -50,7 +50,7 @@ For complex tasks or batch processing, use a YAML configuration file.
 
 | Option | Argument | Description |
 | :--- | :--- | :--- |
-| `-c, --config` | `<file_path>` | Path to the task configuration file (YAML). |
+| `-c, --task-config` | `<file_path>` | Path to the task configuration file (YAML). |
 
 ---
 

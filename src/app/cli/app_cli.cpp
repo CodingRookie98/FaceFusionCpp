@@ -87,7 +87,7 @@ int App::run(int argc, char** argv) {
     bool system_check = false;
     bool json_output = false;
 
-    app.add_option("-c,--config", config_path, "Path to task configuration file");
+    app.add_option("-c,--task-config", config_path, "Path to task configuration file");
     app.add_option("--app-config", app_config_path, "Path to application config");
     app.add_option("--log-level", log_level, "Override log level (trace/debug/info/warn/error)")
         ->check(CLI::IsMember({"trace", "debug", "info", "warn", "error"}));
@@ -104,14 +104,15 @@ int App::run(int argc, char** argv) {
     std::string output_path;
     std::string processors_str;
 
-    app.add_option("-s,--source", source_paths, "Source face image(s)")->excludes("--config");
-    app.add_option("-t,--target", target_paths, "Target image/video path(s)")->excludes("--config");
+    app.add_option("-s,--source", source_paths, "Source face image(s)")->excludes("--task-config");
+    app.add_option("-t,--target", target_paths, "Target image/video path(s)")
+        ->excludes("--task-config");
     app.add_option("-o,--output", output_path, "Output directory or file path")
-        ->excludes("--config");
+        ->excludes("--task-config");
     app.add_option("--processors", processors_str,
                    "Comma-separated processor list "
                    "(face_swapper,face_enhancer,expression_restorer,frame_enhancer)")
-        ->excludes("--config");
+        ->excludes("--task-config");
 
     try {
         app.parse(argc, argv);
@@ -166,7 +167,7 @@ int App::run(int argc, char** argv) {
 
         if (validate_only) {
             if (config_path.empty()) {
-                std::cerr << "Error: --validate requires --config" << '\n';
+                std::cerr << "Error: --validate requires --task-config" << '\n';
                 exit_code = 1;
             } else {
                 exit_code = run_validate(config_path, *app_config);
