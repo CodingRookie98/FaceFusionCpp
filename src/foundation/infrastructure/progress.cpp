@@ -7,14 +7,37 @@ module;
 #include <memory>
 #include <vector>
 #include <mutex>
+#include <sstream>
+#include <iostream>
+#include <algorithm>
+
+#if defined(_WIN32)
+#include <windows.h>
+#else
+#include <sys/ioctl.h>
+#include <unistd.h>
+#endif
 
 module foundation.infrastructure.progress;
 import foundation.infrastructure.console;
 
 namespace foundation::infrastructure::progress {
 
+int get_terminal_width() {
+#if defined(_WIN32)
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    return csbi.srWindow.Right - csbi.srWindow.Left + 1;
+#else
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    return w.ws_col;
+#endif
+}
+
 struct ProgressBar::Impl {
     indicators::ProgressBar bar;
+    std::stringstream buffer;
 
     Impl(const std::string& postfix_text) :
         bar{indicators::option::BarWidth{50},
@@ -28,7 +51,25 @@ struct ProgressBar::Impl {
             indicators::option::ShowElapsedTime{true},
             indicators::option::ShowRemainingTime{true},
             indicators::option::FontStyles{
-                std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}} {}
+                std::vector<indicators::FontStyle>{indicators::FontStyle::bold}},
+            indicators::option::Stream{buffer}} {}
+
+    void flush_buffer() {
+        std::string content = buffer.str();
+        buffer.str("");
+        buffer.clear();
+
+        if (content.empty()) return;
+
+        while (!content.empty() && (content.back() == '\n' || content.back() == '\r')) {
+            content.pop_back();
+        }
+
+        int width = get_terminal_width();
+        if (width <= 0) width = 80;
+
+        std::cout << "\r" << content << "\033[K" << std::flush;
+    }
 };
 
 ProgressBar::ProgressBar(const std::string& postfix_text) :
@@ -57,24 +98,28 @@ ProgressBar& ProgressBar::operator=(ProgressBar&& other) noexcept {
 void ProgressBar::set_progress(float percent) {
     std::lock_guard<std::recursive_mutex> lock(
         foundation::infrastructure::console::ConsoleManager::instance().mutex());
-    if (m_impl) m_impl->bar.set_progress(percent);
+    if (m_impl) {
+        m_impl->bar.set_progress(percent);
+        m_impl->flush_buffer();
+    }
 }
 
 void ProgressBar::set_postfix_text(const std::string& text) {
     std::lock_guard<std::recursive_mutex> lock(
         foundation::infrastructure::console::ConsoleManager::instance().mutex());
-    if (m_impl) m_impl->bar.set_option(indicators::option::PostfixText{text});
+    if (m_impl) { m_impl->bar.set_option(indicators::option::PostfixText{text}); }
 }
 
 void ProgressBar::tick() {
     std::lock_guard<std::recursive_mutex> lock(
         foundation::infrastructure::console::ConsoleManager::instance().mutex());
-    if (m_impl) m_impl->bar.tick();
+    if (m_impl) {
+        m_impl->bar.tick();
+        m_impl->flush_buffer();
+    }
 }
 
 bool ProgressBar::is_completed() const {
-    // Read-only, maybe no lock needed if is_completed is atomic?
-    // But to be safe and consistent
     std::lock_guard<std::recursive_mutex> lock(
         foundation::infrastructure::console::ConsoleManager::instance().mutex());
     if (m_impl) return m_impl->bar.is_completed();
@@ -84,18 +129,20 @@ bool ProgressBar::is_completed() const {
 void ProgressBar::mark_as_completed() {
     std::lock_guard<std::recursive_mutex> lock(
         foundation::infrastructure::console::ConsoleManager::instance().mutex());
-    if (m_impl) m_impl->bar.mark_as_completed();
+    if (m_impl) {
+        m_impl->bar.mark_as_completed();
+        m_impl->flush_buffer();
+    }
 }
 
 void ProgressBar::suspend() {
-    // Clear line using ANSI escape code: \033[2K (clear line), \r (move to start)
     std::cout << "\033[2K\r" << std::flush;
 }
 
 void ProgressBar::resume() {
     if (m_impl) {
         m_impl->bar.print_progress();
-        std::cout << std::flush;
+        m_impl->flush_buffer();
     }
 }
 

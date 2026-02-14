@@ -9,8 +9,11 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <thread>
+#include <chrono>
 
 import foundation.infrastructure.progress;
+import foundation.infrastructure.logger;
 
 using namespace foundation::infrastructure::progress;
 
@@ -73,4 +76,26 @@ TEST(ProgressTest, LifecycleStress) {
         }
         pb.mark_as_completed();
     });
+}
+
+TEST(ProgressTest, DISABLED_VisualLogInterference) {
+    // Manually register console if needed, but ProgressBar does it automatically.
+
+    std::cout << "\nStarting visual test (V2)...\n";
+    ProgressBar pb("Visual Check V2");
+
+    for (int i = 0; i <= 100; ++i) {
+        pb.set_progress(static_cast<float>(i));
+        pb.set_postfix_text("Step " + std::to_string(i));
+        pb.tick();
+
+        if (i % 10 == 0) {
+            foundation::infrastructure::logger::Logger::get_instance()->info(
+                "Log message at " + std::to_string(i) + "%");
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    pb.mark_as_completed();
+    std::cout << "\nVisual test completed.\n";
 }
