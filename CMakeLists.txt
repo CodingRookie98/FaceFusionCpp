@@ -59,6 +59,12 @@ find_package(Python3 REQUIRED)
 
 include(cmake/dependencies.cmake)
 
+# Find CUDA Toolkit to get version for package naming
+find_package(CUDAToolkit)
+if (CUDAToolkit_FOUND)
+    message(STATUS "CUDA Toolkit found: ${CUDAToolkit_VERSION} (Major: ${CUDAToolkit_VERSION_MAJOR})")
+endif()
+
 # --- OpenCV C++20 Compatibility Patch ---
 # This is an enterprise-grade workaround for an ambiguity in OpenCV 4.x Rect class
 # when compiled with C++20 standard.
@@ -214,7 +220,15 @@ set(CPACK_PACKAGE_VERSION_MAJOR "${${PROJECT_NAME}_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${${PROJECT_NAME}_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${${PROJECT_NAME}_VERSION_PATCH}")
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
-set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_BUILD_TYPE}")
+
+# Get CUDA version major for package name suffix
+if (DEFINED CUDAToolkit_VERSION_MAJOR)
+    set(CUDA_SUFFIX "-CUDA${CUDAToolkit_VERSION_MAJOR}")
+else()
+    set(CUDA_SUFFIX "")
+endif()
+
+set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}${CUDA_SUFFIX}")
 set(CPACK_PACKAGE_CHECKSUM "SHA256")
 set(CPACK_THREADS 0) # Use multi-threads. Given 0 CPack will try to use all available CPU cores.
 set(CPACK_PACKAGE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/packages/${CMAKE_BUILD_TYPE}")
