@@ -209,7 +209,7 @@ public:
                 if (context.metrics_collector) context.metrics_collector->record_frame_completed();
 
                 frame_count++;
-                if (progress_callback && frame_count % 10 == 0) {
+                if (progress_callback) {
                     auto now = std::chrono::steady_clock::now();
                     double elapsed = std::chrono::duration<double>(now - start_time).count();
                     double fps =
@@ -454,7 +454,7 @@ private:
                 }
                 if (context.metrics_collector) context.metrics_collector->record_frame_completed();
                 frame_count++;
-                if (progress_callback && frame_count % 10 == 0) {
+                if (progress_callback) {
                     auto now = std::chrono::steady_clock::now();
                     double elapsed = std::chrono::duration<double>(now - start_time).count();
                     double fps =
