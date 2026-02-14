@@ -171,6 +171,9 @@ if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/assets")
     )
 endif()
 
+# Ensure assets/models directory structure exists in the package
+install(DIRECTORY DESTINATION "assets/models" COMPONENT "resource")
+
 # Please configure cmake again after building the project
 if (WIN32)
     file(GLOB ONNXRUNTIME_LIBS "${ORT_PATH}/lib/*.dll")
