@@ -147,10 +147,12 @@ endif ()
 
 install(FILES ${RESOURCE_FILES} DESTINATION "." COMPONENT "resource")
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/README.md"
-        "${CMAKE_CURRENT_SOURCE_DIR}/DOCUMENT.md"
-        "${CMAKE_CURRENT_SOURCE_DIR}/DOCUMENT_CN.md"
         "${CMAKE_CURRENT_SOURCE_DIR}/DISCLAIMER.txt"
         DESTINATION "."
+        COMPONENT "doc"
+)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/docs/user"
+        DESTINATION "docs"
         COMPONENT "doc"
 )
 
