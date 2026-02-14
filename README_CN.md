@@ -4,11 +4,11 @@
 
 ## 安装
 
-请在[Release]()页面下载打包好的程序。
+请在 [Release](https://github.com/CodingRookie98/faceFusionCpp/releases) 页面下载打包好的程序 (支持 Windows x64 和 Linux x64)。
 
 另外的环境要求：
 
-> - CUDA >= 12.2 (CUDA 12.5测试通过) (如果开启)
+> - CUDA >= 12.2 (CUDA 12.5测试通过)
 > - CUDNN >= 9.2 (测试通过)
 > - Tensorrt >= 10.2（测试通过)(如果开启)
 > - ffmpeg >= 7.0.2 (测试通过)(视频)
@@ -22,12 +22,13 @@
 5.  批量处理
 6.  多线程加速
 7.  TensorRT引擎加速（可开启引擎缓存）
-8.  混合图片he视频输入
-
-## 即将到来
-
--   [x] 视频支持
+8.  混合图片和视频输入
 
 ## 文档
 
-阅读此[文档](https://github.com/CodingRookie98/faceFusionCpp/blob/master/DOCUMENT.md)以获得更多功能使用。
+- [快速开始](docs/user/zh/getting_started.md)
+- [用户指南](docs/user/zh/user_guide.md)
+- [CLI 参考](docs/user/zh/cli_reference.md)
+- [配置指南](docs/user/zh/configuration_guide.md)
+- [硬件指南](docs/user/zh/hardware_guide.md)
+- [常见问题 (FAQ)](docs/user/zh/faq.md)

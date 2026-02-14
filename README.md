@@ -6,7 +6,7 @@
 
 ## Installation
 
-Please download the packaged program from the [Release]() page (currently available for Windows x64 only).
+Please download the packaged program from the [Release](https://github.com/CodingRookie98/faceFusionCpp/releases) page (available for Windows x64 and Linux x64).
 
 Additional environment requirements:
 
@@ -26,10 +26,11 @@ Additional environment requirements:
 7. TensorRT engine acceleration (engine caching available)
 8. Mixed image and video input
 
-## Next
-
-- [x] Video support
-
 ## Documentation
 
-Refer to this [DOCUMENT](https://github.com/CodingRookie98/faceFusionCpp/blob/master/DOCUMENT.md) for more details on how to use the features.
+- [Getting Started](docs/user/en/getting_started.md)
+- [User Guide](docs/user/en/user_guide.md)
+- [CLI Reference](docs/user/en/cli_reference.md)
+- [Configuration Guide](docs/user/en/configuration_guide.md)
+- [Hardware Guide](docs/user/en/hardware_guide.md)
+- [FAQ](docs/user/en/faq.md)
