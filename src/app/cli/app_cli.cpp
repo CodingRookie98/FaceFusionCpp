@@ -334,15 +334,16 @@ int App::run_pipeline_internal(const config::TaskConfig& task_config,
     // 4. Run
     logger->info("Starting task: " + task_config.task_info.id);
 
+    std::string last_progress_info;
     auto result = runner->run(task_config, [&](const TaskProgress& p) {
         float progress = 0.0f;
         if (p.total_frames > 0) { progress = (float)p.current_frame / p.total_frames * 100.0f; }
 
         bar.set_progress(progress);
 
-        std::string postfix =
+        last_progress_info =
             std::format("Frame: {}/{} ({:.1f} FPS)", p.current_frame, p.total_frames, p.fps);
-        bar.set_postfix_text(postfix);
+        bar.set_postfix_text(last_progress_info);
     });
 
     // Uninstall handler
@@ -356,7 +357,8 @@ int App::run_pipeline_internal(const config::TaskConfig& task_config,
         return static_cast<int>(result.error().code);
     } else {
         bar.set_progress(100.0f);
-        bar.set_postfix_text("Completed");
+        bar.set_postfix_text(std::format("{} Completed", last_progress_info));
+        bar.mark_as_completed();
         logger->info("Task completed successfully.");
         return 0;
     }
