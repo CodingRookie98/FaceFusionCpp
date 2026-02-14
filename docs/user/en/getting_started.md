@@ -19,10 +19,9 @@ You must have the following installed and configured in your system PATH or plac
 
 | Component | Version Requirement | Tested Version | Note |
 | :--- | :--- | :--- | :--- |
-| **CUDA Toolkit** | >= 12.2 | 12.5 | Required for GPU execution. |
-| **cuDNN** | >= 9.2 | 9.2 | Deep learning primitives. |
-| **TensorRT** | >= 10.2 | 10.2 | Optional but recommended for max speed. |
-| **FFmpeg** | >= 7.0.2 | 7.0.2 | Required for video processing. |
+| **CUDA Toolkit** | >= 12.2 | 12.8.1 | Required for GPU execution. |
+| **cuDNN** | >= 9.2 | 9.19.0 | Deep learning primitives. |
+| **TensorRT** | >= 10.2 | 10.15.1 | Optional but recommended for max speed. |
 
 > **Note**: If you download the pre-packaged Release, some dependencies (like FFmpeg) might be included or instructions provided to place DLLs. Ensure CUDA/cuDNN are installed on your system.
 
