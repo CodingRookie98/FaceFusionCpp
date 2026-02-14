@@ -26,7 +26,10 @@
             "installDir": "${sourceDir}/build/install/linux-x64-release",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "BUILD_TESTING": "OFF"
+                "BUILD_TESTING": "OFF",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/bin/linux-x64-release",
+                "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/bin/linux-x64-release",
+                "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/lib/linux-x64-release"
             }
         },
         {
@@ -38,7 +41,10 @@
             "installDir": "${sourceDir}/build/install/linux-x64-debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "BUILD_TESTING": "OFF"
+                "BUILD_TESTING": "OFF",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/bin/linux-x64-debug",
+                "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/bin/linux-x64-debug",
+                "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/lib/linux-x64-debug"
             }
         },
         {
@@ -76,7 +82,10 @@
             "installDir": "${sourceDir}/build/install/msvc-x64-release",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "BUILD_TESTING": "OFF"
+                "BUILD_TESTING": "OFF",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/bin/msvc-x64-release",
+                "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/bin/msvc-x64-release",
+                "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/lib/msvc-x64-release"
             }
         },
         {
@@ -88,7 +97,10 @@
             "installDir": "${sourceDir}/build/install/msvc-x64-debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "BUILD_TESTING": "OFF"
+                "BUILD_TESTING": "OFF",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/bin/msvc-x64-debug",
+                "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/bin/msvc-x64-debug",
+                "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/lib/msvc-x64-debug"
             }
         }
     ],
@@ -130,7 +142,7 @@
             "configurePreset": "msvc-x64-debug",
             "configuration": "Debug",
             "execution": {
-                "workingDirectory": "${sourceDir}/build/msvc-x64-debug/bin"
+                "workingDirectory": "${sourceDir}/build/bin/msvc-x64-debug"
             },
             "output": {
                 "outputOnFailure": true
@@ -143,7 +155,7 @@
             "configurePreset": "msvc-x64-release",
             "configuration": "Release",
             "execution": {
-                "workingDirectory": "${sourceDir}/build/msvc-x64-release/bin"
+                "workingDirectory": "${sourceDir}/build/bin/msvc-x64-release"
             },
             "output": {
                 "outputOnFailure": true
@@ -156,7 +168,7 @@
             "configurePreset": "linux-debug",
             "configuration": "Debug",
             "execution": {
-                "workingDirectory": "${sourceDir}/build/linux-x64-debug/bin"
+                "workingDirectory": "${sourceDir}/build/bin/linux-x64-debug"
             },
             "output": {
                 "outputOnFailure": true
@@ -169,7 +181,7 @@
             "configurePreset": "linux-release",
             "configuration": "Release",
             "execution": {
-                "workingDirectory": "${sourceDir}/build/linux-x64-release/bin"
+                "workingDirectory": "${sourceDir}/build/bin/linux-x64-release"
             },
             "output": {
                 "outputOnFailure": true

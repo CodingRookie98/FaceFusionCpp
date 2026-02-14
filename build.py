@@ -94,7 +94,9 @@ def run_test(ctest_exe, preset, regex, label, env, project_root, build_dir):
 
     if label == "e2e":
         exe_name = "FaceFusionCpp.exe" if platform.system() == "Windows" else "FaceFusionCpp"
-        executable = build_dir / "bin" / exe_name
+        # Determine the bin directory based on the preset name (which corresponds to the build/bin/{preset} structure)
+        bin_dir_name = build_dir.name
+        executable = project_root / "build" / "bin" / bin_dir_name / exe_name
         e2e_script = project_root / "tests" / "e2e" / "scripts" / "run_e2e.py"
 
         if not executable.exists():

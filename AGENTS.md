@@ -44,7 +44,7 @@ trigger: always_on
   - 核心指令：`--action {configure,build,test,install,package}`
   - **开发阶段必须使用 Debug 模式**：`python build.py` (默认配置为 Debug)
   - Release 模式仅用于最终发布验证
-  - 二进制输出路径 (Debug): `build/<preset>/bin` (例如 Windows 下为 `build/msvc-x64-debug/bin`，Linux 下为 `build/linux-x64-debug/bin`)
+  - 二进制输出路径 (Debug): `build/bin/<preset>` (例如 Windows 下为 `build/bin/msvc-x64-debug`，Linux 下为 `build/bin/linux-x64-debug`)
   - **运行要求**：禁止在项目根目录直接运行程序。**必须**先 `cd` 切换至可执行文件输出目录后再运行，以确保相对路径资源加载正确。开发中直接运行可执行程序时，工作目录需要在程序所在目录，防止重复下载资源以及 TensorRT 引擎重新构建。
   - 🚨 **详细用法 (必读)**：@docs/dev/zh/build_guide.md —— **请务必阅读以避免环境配置错误**
 - **质量控制**：
@@ -85,4 +85,4 @@ trigger: always_on
 - **幻觉引用**：引用不存在的文件路径（必须先 `ls` 或 `glob` 确认文件存在）。
 - **严禁递归删除** `build` 目录及其子文件。
 - **严禁提交** 未通过编译或基础测试的代码。
-- **严禁向构建脚本传递 --clean 参数** 可通过删除 cmake 缓存达到相同效果
+- **严禁向构建脚本传递 --clean 参数** (已修复：现在 --clean 仅清理中间构建文件，保留 bin 目录和 TensorRT 缓存)

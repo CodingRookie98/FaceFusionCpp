@@ -7,6 +7,8 @@ project(FaceFusionCpp
 include(cmake/version.cmake)
 
 # --- 路径与输出目录配置 ---
+# 注意：使用 CMakePresets.json 构建时，这些变量会被 Preset 中的 cacheVariables 覆盖，
+# 指向 ${sourceDir}/build/bin/<preset> 目录，以防止 clean 操作误删二进制文件。
 if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 endif()
