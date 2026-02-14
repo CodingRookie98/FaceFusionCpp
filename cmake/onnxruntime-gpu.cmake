@@ -73,8 +73,24 @@ if (NOT EXISTS "${ORT_PATH}")
     endif ()
 endif ()
 
-# --- Import Target ---
-if (NOT TARGET ONNXRuntime::ONNXRuntime)
+# --- Try to find via Config first ---
+set(onnxruntime_DIR "${ORT_PATH}/lib/cmake/onnxruntime")
+find_package(onnxruntime CONFIG QUIET)
+
+if (onnxruntime_FOUND)
+    message(STATUS "Found ONNX Runtime via Config: ${onnxruntime_DIR}")
+    if (NOT TARGET ONNXRuntime::ONNXRuntime)
+        add_library(ONNXRuntime::ONNXRuntime INTERFACE IMPORTED GLOBAL)
+        target_link_libraries(ONNXRuntime::ONNXRuntime INTERFACE onnxruntime::onnxruntime)
+        
+        # Fix include path: The official config might point to include/onnxruntime, 
+        # but the tarball layout has headers in include/
+        if (EXISTS "${ORT_PATH}/include/onnxruntime_c_api.h")
+             target_include_directories(ONNXRuntime::ONNXRuntime INTERFACE "${ORT_PATH}/include")
+        endif()
+    endif()
+# --- Fallback to manual setup ---
+elseif (NOT TARGET ONNXRuntime::ONNXRuntime)
     add_library(ONNXRuntime::ONNXRuntime INTERFACE IMPORTED GLOBAL)
 
     # Use find_path and find_library for better robustness
@@ -109,18 +125,25 @@ endif()
 function(copy_onnxruntime_libs TARGET_NAME)
     if (WIN32 OR WIN64)
         file(GLOB ORT_RUNTIME_LIBS "${ORT_PATH}/lib/*.dll")
+        if (ORT_RUNTIME_LIBS)
+            add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${ORT_RUNTIME_LIBS}
+                $<TARGET_FILE_DIR:${TARGET_NAME}>
+                COMMENT "Copying ONNX Runtime runtime libraries for ${TARGET_NAME}"
+            )
+        endif ()
     elseif (LINUX)
         # On Linux, we copy all .so files (including providers) to the output directory
         # so they can be loaded as plugins at runtime.
         file(GLOB ORT_RUNTIME_LIBS "${ORT_PATH}/lib/*.so*")
-    endif ()
-
-    if (ORT_RUNTIME_LIBS)
-        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${ORT_RUNTIME_LIBS}
-            $<TARGET_FILE_DIR:${TARGET_NAME}>
-            COMMENT "Copying ONNX Runtime runtime libraries for ${TARGET_NAME}"
-        )
+        
+        if (ORT_RUNTIME_LIBS)
+            # Use cp -P to preserve symbolic links to avoid duplicating libraries
+            add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                COMMAND cp -P ${ORT_RUNTIME_LIBS} $<TARGET_FILE_DIR:${TARGET_NAME}>
+                COMMENT "Copying ONNX Runtime runtime libraries for ${TARGET_NAME}"
+            )
+        endif ()
     endif ()
 endfunction()
