@@ -98,3 +98,12 @@ add_facefusion_test(
         LINK_LIBRARIES
         foundation_infrastructure
 )
+
+add_facefusion_test(
+        console_integration_test
+        SOURCES
+        console_integration_test.cpp
+        LINK_LIBRARIES
+        foundation_infrastructure
+        test_common
+)

@@ -10,6 +10,7 @@ module;
  * @date 2026-01-27
  */
 export module foundation.infrastructure.progress;
+import foundation.infrastructure.console;
 
 export namespace foundation::infrastructure::progress {
 
@@ -29,20 +30,20 @@ struct IProgressObserver {
 /**
  * @brief Console progress bar implementation
  */
-class ProgressBar {
+class ProgressBar : public foundation::infrastructure::console::IProgressController {
 public:
     /**
      * @brief Construct a new Progress Bar
      * @param postfix_text Initial text to display
      */
     explicit ProgressBar(const std::string& postfix_text = "Processing...");
-    ~ProgressBar(); // Required for PIMPL
+    ~ProgressBar() override; // Required for PIMPL
 
     // Delete copy/move as it holds unique_ptr to external resource potentially
     ProgressBar(const ProgressBar&) = delete;
     ProgressBar& operator=(const ProgressBar&) = delete;
-    ProgressBar(ProgressBar&&);
-    ProgressBar& operator=(ProgressBar&&);
+    ProgressBar(ProgressBar&&) noexcept;
+    ProgressBar& operator=(ProgressBar&&) noexcept;
 
     /**
      * @brief Set current progress percentage
@@ -71,6 +72,10 @@ public:
      * @brief Mark progress as completed
      */
     void mark_as_completed();
+
+    // IProgressController implementation
+    void suspend() override;
+    void resume() override;
 
 private:
     struct Impl;

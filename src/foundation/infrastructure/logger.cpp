@@ -17,6 +17,7 @@ module;
 #include <chrono>
 
 module foundation.infrastructure.logger;
+import foundation.infrastructure.console;
 
 namespace foundation::infrastructure::logger {
 
@@ -192,27 +193,32 @@ void Logger::cleanup_old_logs() {
 }
 
 void Logger::trace(const std::string& msg) const {
-    if (m_logger) m_logger->trace(msg);
+    internal_log(spdlog::level::trace, msg);
 }
 
 void Logger::debug(const std::string& msg) const {
-    if (m_logger) m_logger->debug(msg);
+    internal_log(spdlog::level::debug, msg);
 }
 
 void Logger::info(const std::string& msg) const {
-    if (m_logger) m_logger->info(msg);
+    internal_log(spdlog::level::info, msg);
 }
 
 void Logger::warn(const std::string& msg) const {
-    if (m_logger) m_logger->warn(msg);
+    internal_log(spdlog::level::warn, msg);
 }
 
 void Logger::error(const std::string& msg) const {
-    if (m_logger) m_logger->error(msg);
+    internal_log(spdlog::level::err, msg);
 }
 
 void Logger::critical(const std::string& msg) const {
-    if (m_logger) m_logger->critical(msg);
+    internal_log(spdlog::level::critical, msg);
+}
+
+void Logger::internal_log(spdlog::level::level_enum level, const std::string& msg) const {
+    foundation::infrastructure::console::ScopedSuspend suspend;
+    if (m_logger) m_logger->log(level, msg);
 }
 
 void Logger::log(const std::string& level, const std::string& msg) {

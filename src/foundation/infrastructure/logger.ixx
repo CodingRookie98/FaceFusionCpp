@@ -97,12 +97,13 @@ public:
      * @param msg The message to log
      */
     static void log(const std::string& level, const std::string& msg);
-
+    
 private:
     Logger();
     void setup_sinks();
     void start_cleanup_task();
     void cleanup_old_logs();
+    void internal_log(spdlog::level::level_enum level, const std::string& msg) const;
 
     std::shared_ptr<spdlog::logger> m_logger;
     LogLevel m_level{LogLevel::Info};

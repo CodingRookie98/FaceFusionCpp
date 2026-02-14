@@ -25,6 +25,8 @@ public:
     void suspend_active();
     void resume_active();
 
+    IProgressController* active_controller() const { return m_active_controller; }
+
     std::recursive_mutex& mutex();
 
 private:
