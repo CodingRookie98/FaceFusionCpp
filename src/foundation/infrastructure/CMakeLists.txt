@@ -39,6 +39,7 @@ target_sources(foundation_infrastructure
             process.ixx
             thread_pool.ixx
             cuda_utils.ixx
+            console.ixx
     PRIVATE
         core_utils.cpp
         network.cpp
@@ -52,6 +53,7 @@ target_sources(foundation_infrastructure
         process.cpp
         thread_pool.cpp
         cuda_utils.cpp
+        console.cpp
 )
 
 target_link_libraries(foundation_infrastructure
