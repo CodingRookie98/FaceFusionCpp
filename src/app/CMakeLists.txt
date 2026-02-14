@@ -9,6 +9,7 @@ target_sources(app_version PUBLIC
         PRIVATE
         ${PROJECT_BINARY_DIR}/generated/version.cpp
 )
+add_dependencies(app_version update_version_info)
 target_link_libraries(app_version PRIVATE foundation_infrastructure)
 
 add_subdirectory(cli)
