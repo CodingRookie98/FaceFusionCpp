@@ -68,6 +68,18 @@ def run_configure(cmake_exe, preset, env, project_root, extra_args=None):
     run_command(cmd, env=env, cwd=project_root)
 
 
+def ensure_configured(cmake_exe, preset, env, project_root, extra_args=None):
+    build_dir_name = preset
+    if platform.system() == "Linux" and preset.startswith("linux-") and "x64" not in preset:
+        build_dir_name = preset.replace("linux-", "linux-x64-")
+    
+    build_dir = project_root / "build" / build_dir_name
+    
+    if not (build_dir / "CMakeCache.txt").exists():
+        log(f"Build directory {build_dir} not configured. Running configure...", "warning")
+        run_configure(cmake_exe, preset, env, project_root, extra_args)
+
+
 def run_build(cmake_exe, preset, target, jobs, env, project_root):
     log("\n=== Action: build ===", "info")
     cmd = [cmake_exe, "--build", "--preset", preset]
@@ -254,10 +266,12 @@ def main():
         run_configure(cmake_exe, preset, env, project_root, extra_cmake_args)
 
     elif args.action == "build":
+        ensure_configured(cmake_exe, preset, env, project_root, extra_cmake_args)
         run_build(cmake_exe, preset, args.target, jobs, env, project_root)
 
     elif args.action == "test":
         if not args.no_build:
+            ensure_configured(cmake_exe, preset, env, project_root, extra_cmake_args)
             run_build(cmake_exe, preset, args.target, jobs, env, project_root)
         else:
             log("Skipping build step as requested.", "info")
@@ -270,13 +284,12 @@ def main():
         run_test(ctest_exe, preset, regex, args.test_label, env, project_root, build_dir)
 
     elif args.action == "install":
+        ensure_configured(cmake_exe, preset, env, project_root, extra_cmake_args)
         run_install(cmake_exe, build_dir, env, project_root)
 
     elif args.action == "package":
         # Ensure configured and built before packaging
-        if not build_dir.exists() or not (build_dir / "CMakeCache.txt").exists():
-            log("Configuration not found. Running configure...", "info")
-            run_configure(cmake_exe, preset, env, project_root, extra_cmake_args)
+        ensure_configured(cmake_exe, preset, env, project_root, extra_cmake_args)
             
         log("Running build before packaging...", "info")
         run_build(cmake_exe, preset, "all", jobs, env, project_root)
