@@ -1,5 +1,8 @@
 set(ORT_VERSION_STR "1.24.1")
 set(THIRD_PARTY_DIR "${CMAKE_BINARY_DIR}/third_party")
+# Use a shared downloads directory inside build/ to persist across clean builds
+set(DOWNLOADS_DIR "${CMAKE_SOURCE_DIR}/build/downloads")
+file(MAKE_DIRECTORY "${DOWNLOADS_DIR}")
 
 # --- Download Configuration ---
 if (LINUX)
@@ -11,7 +14,7 @@ elseif (WIN32 OR WIN64)
 endif ()
 
 get_filename_component(ORT_FILE_NAME "${ORT_DOWNLOAD_URL}" NAME)
-set(ORT_DOWNLOAD_FILE "${CMAKE_BINARY_DIR}/${ORT_FILE_NAME}")
+set(ORT_DOWNLOAD_FILE "${DOWNLOADS_DIR}/${ORT_FILE_NAME}")
 set(ORT_EXTRACT_DIR "${THIRD_PARTY_DIR}")
 set(ORT_PATH "${ORT_EXTRACT_DIR}/${ORT_FILE_BASE_NAME}")
 
