@@ -39,6 +39,7 @@ import services.pipeline.metrics;
 import :types;
 import :video;
 import :image;
+import services.pipeline.utils;
 import domain.pipeline.context;
 
 namespace services::pipeline {
@@ -197,8 +198,11 @@ private:
             return this->AddProcessorsToPipeline(p, c, ctx);
         };
 
-        std::vector<std::string> image_batch;
         namespace fs = std::filesystem;
+
+        // 1. Validate targets
+        std::vector<std::string> valid_targets;
+        valid_targets.reserve(task_config.io.target_paths.size());
 
         for (const auto& target_path : task_config.io.target_paths) {
             if (m_cancelled) break;
@@ -208,28 +212,30 @@ private:
                     config::ConfigError(config::ErrorCode::E402VideoOpenFailed,
                                         "Target file not found: " + target_path));
             }
-
-            if (foundation::media::ffmpeg::is_video(target_path)) {
-                // Flush pending images
-                if (!image_batch.empty()) {
-                    auto res = ProcessImageBatch(image_batch, task_config, progress_callback,
-                                                 context, add_processors);
-                    if (!res) return res;
-                    image_batch.clear();
-                }
-
-                auto result = ProcessVideoTarget(target_path, task_config, progress_callback,
-                                                 context, add_processors);
-                if (!result) return result;
-            } else {
-                image_batch.push_back(target_path);
-            }
+            valid_targets.push_back(target_path);
         }
 
-        if (!image_batch.empty() && !m_cancelled) {
-            auto res = ProcessImageBatch(image_batch, task_config, progress_callback, context,
-                                         add_processors);
+        // 2. Sort into images and videos
+        auto is_video_pred = [](const std::string& path) {
+            return foundation::media::ffmpeg::is_video(path);
+        };
+
+        auto sorted_targets = sort_targets_by_type(valid_targets, is_video_pred);
+
+        // 3. Process All Images as a single batch (Priority 1)
+        if (!sorted_targets.images.empty() && !m_cancelled) {
+            auto res = ProcessImageBatch(sorted_targets.images, task_config, progress_callback,
+                                         context, add_processors);
             if (!res) return res;
+        }
+
+        // 4. Process Videos sequentially (Priority 2)
+        for (const auto& video_path : sorted_targets.videos) {
+            if (m_cancelled) break;
+
+            auto result = ProcessVideoTarget(video_path, task_config, progress_callback, context,
+                                             add_processors);
+            if (!result) return result;
         }
 
         return config::Result<void, config::ConfigError>::ok();

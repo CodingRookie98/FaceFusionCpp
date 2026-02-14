@@ -15,8 +15,9 @@ target_sources(services_pipeline
             checkpoint_manager.ixx
             metrics_collector.ixx
             runner_video.cpp
-            runner_image.cpp
-            runner_types.cpp
+        runner_image.cpp
+        runner_types.cpp
+        utils.ixx
 )
 
 target_sources(services_pipeline
