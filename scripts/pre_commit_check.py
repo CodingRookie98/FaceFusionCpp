@@ -121,11 +121,19 @@ def main():
     if clang_tidy:
         build_dir = project_root / "build"
         if build_dir.exists():
+            # Strategy: Prefer debug builds, then any other valid build dir
+            candidates = []
             for child in build_dir.iterdir():
                 if child.is_dir() and (child / "compile_commands.json").exists():
-                    compile_commands_path = child / "compile_commands.json"
-                    build_path_used = child
-                    break
+                    candidates.append(child)
+            
+            if candidates:
+                # Sort: directories with 'debug' in name come first (0), others second (1)
+                # Secondary sort by name for stability
+                candidates.sort(key=lambda p: (0 if "debug" in p.name.lower() else 1, p.name))
+                
+                build_path_used = candidates[0]
+                compile_commands_path = build_path_used / "compile_commands.json"
 
         if compile_commands_path:
             is_msvc = is_msvc_build(compile_commands_path)

@@ -46,7 +46,7 @@ TEST(ResultTest, VoidSpecialization) {
 
 TEST(AppConfigValidationTest, ValidConfig) {
     AppConfig config;
-    config.config_version = "1.0";
+    config.config_version = kSupportedConfigVersion;
     config.models.path = "."; // Use current dir which exists
     config.logging.directory = "./logs";
 
@@ -56,7 +56,7 @@ TEST(AppConfigValidationTest, ValidConfig) {
 
 TEST(AppConfigValidationTest, EmptyModelsPath) {
     AppConfig config;
-    config.config_version = "1.0";
+    config.config_version = kSupportedConfigVersion;
     config.models.path = "non_existent_path_xyz";
     config.logging.directory = "./logs";
 
@@ -71,7 +71,7 @@ TEST(AppConfigValidationTest, EmptyModelsPath) {
 
 TEST(TaskConfigValidationTest, ValidConfig) {
     TaskConfig config;
-    config.config_version = "1.0";
+    config.config_version = kSupportedConfigVersion;
     config.task_info.id = "test_task";
     config.io.source_paths = {"."};
     config.io.target_paths = {"."};
@@ -93,7 +93,7 @@ TEST(TaskConfigValidationTest, ValidConfig) {
 
 TEST(TaskConfigValidationTest, InvalidVideoQuality) {
     TaskConfig config;
-    config.config_version = "1.0";
+    config.config_version = kSupportedConfigVersion;
     config.task_info.id = "test";
     config.io.source_paths = {"."};
     config.io.target_paths = {"."};
@@ -130,7 +130,7 @@ TEST(TaskConfigValidationTest, VersionMismatch) {
 
 TEST(TaskConfigValidationTest, FaceAnalysisRangeValidation) {
     TaskConfig config;
-    config.config_version = "1.0";
+    config.config_version = kSupportedConfigVersion;
     config.task_info.id = "test";
     config.io.source_paths = {"."};
     config.io.target_paths = {"."};
@@ -158,7 +158,7 @@ TEST(TaskConfigValidationTest, FaceAnalysisRangeValidation) {
 
 TEST(TaskConfigValidationTest, ReferenceFacePathRequired) {
     TaskConfig config;
-    config.config_version = "1.0";
+    config.config_version = kSupportedConfigVersion;
     config.task_info.id = "test";
     config.io.source_paths = {"."};
     config.io.target_paths = {"."};
@@ -188,7 +188,7 @@ TEST(TaskConfigValidationTest, ReferenceFacePathRequired) {
 
 TEST(TaskConfigValidationTest, ReferenceFacePathExists) {
     TaskConfig config;
-    config.config_version = "1.0";
+    config.config_version = kSupportedConfigVersion;
     config.task_info.id = "test";
     config.io.source_paths = {"."};
     config.io.target_paths = {"."};
