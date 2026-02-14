@@ -146,7 +146,7 @@ graph TD
 **Schema 参考**:
 ```yaml
 # Schema Version
-config_version: "1.0"
+config_version: "0.34.0"
 
 # 推理基础设施 (Inference Infrastructure)
 inference:

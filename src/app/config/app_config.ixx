@@ -133,7 +133,7 @@ struct DefaultTaskSettings {
  * @brief Global application configuration
  */
 struct AppConfig {
-    std::string config_version = "1.0";        ///< Config schema version
+    std::string config_version = "0.34.0";     ///< Config schema version
     InferenceConfig inference;                 ///< Inference-specific settings
     ResourceConfig resource;                   ///< Resource limits
     LoggingConfig logging;                     ///< Logging settings

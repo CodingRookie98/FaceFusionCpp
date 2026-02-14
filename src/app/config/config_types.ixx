@@ -267,7 +267,7 @@ private:
 /**
  * @brief Currently supported configuration format version
  */
-inline constexpr const char* kSupportedConfigVersion = "1.0";
+inline constexpr const char* kSupportedConfigVersion = "0.34.0";
 
 /**
  * @brief Memory usage strategy for AI processors

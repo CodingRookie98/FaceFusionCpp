@@ -152,6 +152,13 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/README.md"
         DESTINATION "."
         COMPONENT "doc"
 )
+
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/app_config.yaml"
+        "${CMAKE_CURRENT_SOURCE_DIR}/task_config.yaml"
+        DESTINATION "config"
+        COMPONENT "config"
+)
+
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/docs/user"
         DESTINATION "docs"
         COMPONENT "doc"

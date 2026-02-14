@@ -1,0 +1,51 @@
+# FaceFusionCpp Application Configuration
+config_version: "0.34.0"
+
+# --- Inference Infrastructure ---
+inference:
+  device_id: 0
+  engine_cache:
+    enable: true
+    path: "./.cache/tensorrt"
+    max_entries: 3
+    idle_timeout_seconds: 60
+  default_providers: ["tensorrt", "cuda", "cpu"]
+
+# --- Resource Management ---
+resource:
+  # Memory Strategy: "strict" (release ASAP) or "tolerant" (keep loaded)
+  memory_strategy: "tolerant"
+
+# --- Logging ---
+logging:
+  # Level: trace, debug, info, warn, error
+  level: "info"
+  directory: "./logs"
+  rotation: "daily" # daily, hourly, size
+  max_files: 7
+  max_total_size: "1GB"
+
+# --- Metrics & Observability ---
+metrics:
+  enable: true
+  step_latency: true
+  gpu_memory: true
+  report_path: "./logs/metrics_{timestamp}.json"
+  gpu_sample_interval_ms: 1000
+
+# --- Model Management ---
+models:
+  path: "./assets/models"
+  # Download Strategy: "auto", "force", "skip"
+  download_strategy: "auto"
+
+# --- Default Models ---
+default_models:
+  face_detector: "yoloface"
+  face_recognizer: "arcface_w600k_r50"
+  face_swapper: "inswapper_128_fp16"
+  face_enhancer: "gfpgan_1.4"
+  frame_enhancer: "real_esrgan_x2_fp16"
+
+# --- System ---
+temp_directory: "./temp"

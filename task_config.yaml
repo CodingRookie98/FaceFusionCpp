@@ -1,0 +1,76 @@
+# FaceFusionCpp Task Configuration
+config_version: "0.34.0"
+
+# --- Task Metadata ---
+task_info:
+  id: "task_001"
+  description: "Example face swap task"
+  enable_logging: true
+  enable_resume: false
+
+# --- Input / Output ---
+io:
+  # Source images (faces to use for swapping)
+  source_paths:
+    - "assets/standard_face_test_images/lenna.bmp"
+
+  # Target media (images or videos to be processed)
+  target_paths:
+    - "assets/standard_face_test_images/woman.jpg"
+
+  # Output settings
+  output:
+    path: "output" # Directory
+    prefix: "result_"
+    suffix: ""
+    image_format: "png"
+    video_encoder: "libx264"
+    video_quality: 80
+    conflict_policy: "overwrite" # overwrite, skip, error
+    audio_policy: "copy"
+
+# --- Resources ---
+resource:
+  thread_count: 0 # 0 = auto
+  max_queue_size: 20
+  # Execution Order: "sequential" (low latency) or "batch" (low VRAM)
+  execution_order: "sequential"
+  memory_strategy: "tolerant"
+  segment_duration_seconds: 0 # 0 = no segmentation
+
+# --- Face Analysis ---
+face_analysis:
+  face_detector:
+    models: ["yoloface", "retinaface", "scrfd"]
+    score_threshold: 0.5
+  face_recognizer:
+    model: "arcface_w600k_r50"
+    similarity_threshold: 0.6
+  face_masker:
+    types: ["box", "occlusion", "region"]
+    region: ["face", "eyes"]
+
+# --- Processing Pipeline ---
+pipeline:
+  - step: "face_swapper"
+    name: "main_swapper"
+    enabled: true
+    params:
+      model: "inswapper_128_fp16"
+      face_selector_mode: "many" # reference, one, many
+      # reference_face_path: "path/to/ref.jpg" # Required if mode is reference
+
+  - step: "face_enhancer"
+    name: "enhancer"
+    enabled: true
+    params:
+      model: "gfpgan_1.4"
+      blend_factor: 1.0
+      face_selector_mode: "many"
+
+  # - step: "frame_enhancer"
+  #   name: "super_res"
+  #   enabled: false
+  #   params:
+  #     model: "real_esrgan_x4"
+  #     enhance_factor: 1.0
