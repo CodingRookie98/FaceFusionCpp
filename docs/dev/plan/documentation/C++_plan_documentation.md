@@ -109,7 +109,7 @@ docs/dev/
     *   内容: 完整参数表, 每个参数的使用示例, 参数组合规则 (快捷模式 vs --config 互斥)
 *   [x] **任务 1.3**: `configuration_guide.md` (EN + ZH)
     *   内容: app_config.yaml 逐字段说明, task_config.yaml 逐字段说明, 4 个场景化完整示例
-*   [ ] **验收标准**:
+*   [x] **验收标准**:
     *   新用户仅凭这 3 篇文档 + Release 包能完成基础换脸操作
     *   所有配置示例经过实际运行验证
 
@@ -122,7 +122,7 @@ docs/dev/
     *   内容: GPU 4 档分级配置, 显存优化策略, 性能期望表, 低显存适配建议
 *   [x] **任务 2.3**: `faq.md` (EN + ZH)
     *   内容: 按错误码分类 (E1xx 系统/E2xx 配置/E3xx 模型/E4xx 运行时), 性能调优 checklist
-*   [ ] **验收标准**:
+*   [x] **验收标准**:
     *   所有 6 篇用户文档内容完整, 交叉引用正确
     *   `docs/user/en/` 和 `docs/user/zh/` 目录各 6 个文件
 
@@ -135,7 +135,7 @@ docs/dev/
     *   内容: 工具链版本要求, 首次构建 step-by-step, CMakePresets 解读, 平台差异表
 *   [x] **任务 3.3**: `contributing.md` (EN + ZH)
     *   内容: 分支命名规范, commit 规范, PR 流程, TDD 强制要求, clang-format/tidy 使用
-*   [ ] **验收标准**:
+*   [x] **验收标准**:
     *   新贡献者凭这 3 篇文档能完成: 理解架构 → 搭建环境 → 提交首个 PR
 
 ### 3.4 阶段四: 开发者文档 — 深度参考 (P2-Standard)
@@ -149,7 +149,7 @@ docs/dev/
     *   内容: Pipeline 执行序列图 (Mermaid), Adapter 模式详解, 队列背压机制, Sequential vs Batch 对比
 *   [x] **任务 4.4**: `ai_inference.md` (EN + ZH)
     *   内容: InferenceSession 生命周期, TensorRT EP 配置参数, SessionPool LRU/TTL 图解, 引擎缓存策略
-*   [ ] **验收标准**:
+*   [x] **验收标准**:
     *   所有 7 篇开发者文档完整, 代码引用路径正确
     *   `docs/dev/en/` 和 `docs/dev/zh/` 目录各 7 个文件
 
