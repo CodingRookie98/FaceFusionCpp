@@ -177,37 +177,11 @@ private:
                                     "No target paths specified", "io.target_paths"));
         }
 
-        for (const auto& target_path : task_config.io.target_paths) {
-            if (m_cancelled) break;
-
-            auto result = ProcessTarget(target_path, task_config, progress_callback);
-            if (!result) return result;
-        }
-
-        return config::Result<void, config::ConfigError>::ok();
-    }
-
-    config::Result<void, config::ConfigError> ProcessTarget(const std::string& target_path,
-                                                            const config::TaskConfig& task_config,
-                                                            ProgressCallback progress_callback) {
-        namespace fs = std::filesystem;
-        if (!fs::exists(target_path)) {
-            return config::Result<void, config::ConfigError>::err(config::ConfigError(
-                config::ErrorCode::E402VideoOpenFailed, "Target file not found: " + target_path));
-        }
-
+        // 1. Prepare shared context
         ProcessorContext context;
         context.model_repo = m_model_repo;
         context.inference_options = m_inference_options;
         context.face_analyser = GetFaceAnalyser();
-
-        // Initialize Metrics if enabled
-        if (m_app_config.metrics.enable) {
-            m_metrics_collector = std::make_unique<MetricsCollector>(task_config.task_info.id);
-            m_metrics_collector->set_gpu_sample_interval(
-                std::chrono::milliseconds(m_app_config.metrics.gpu_sample_interval_ms));
-            context.metrics_collector = m_metrics_collector.get();
-        }
 
         if (!task_config.io.source_paths.empty()) {
             auto embed_result = LoadSourceEmbeddings(task_config.io.source_paths);
@@ -218,43 +192,112 @@ private:
             }
         }
 
-        bool is_video = foundation::media::ffmpeg::is_video(target_path);
-
         auto add_processors = [this](std::shared_ptr<Pipeline> p, const config::TaskConfig& c,
                                      ProcessorContext& ctx) {
             return this->AddProcessorsToPipeline(p, c, ctx);
         };
 
-        config::Result<void, config::ConfigError> process_result =
-            config::Result<void, config::ConfigError>::ok();
+        std::vector<std::string> image_batch;
+        namespace fs = std::filesystem;
 
-        if (is_video) {
-            process_result = VideoProcessingHelper::ProcessVideo(
-                target_path, task_config, progress_callback, context, add_processors, m_cancelled);
-        } else {
-            process_result = ImageProcessingHelper::ProcessImage(
-                target_path, task_config, progress_callback, context, add_processors);
+        for (const auto& target_path : task_config.io.target_paths) {
+            if (m_cancelled) break;
+
+            if (!fs::exists(target_path)) {
+                return config::Result<void, config::ConfigError>::err(
+                    config::ConfigError(config::ErrorCode::E402VideoOpenFailed,
+                                        "Target file not found: " + target_path));
+            }
+
+            if (foundation::media::ffmpeg::is_video(target_path)) {
+                // Flush pending images
+                if (!image_batch.empty()) {
+                    auto res = ProcessImageBatch(image_batch, task_config, progress_callback,
+                                                 context, add_processors);
+                    if (!res) return res;
+                    image_batch.clear();
+                }
+
+                auto result = ProcessVideoTarget(target_path, task_config, progress_callback,
+                                                 context, add_processors);
+                if (!result) return result;
+            } else {
+                image_batch.push_back(target_path);
+            }
         }
 
+        if (!image_batch.empty() && !m_cancelled) {
+            auto res = ProcessImageBatch(image_batch, task_config, progress_callback, context,
+                                         add_processors);
+            if (!res) return res;
+        }
+
+        return config::Result<void, config::ConfigError>::ok();
+    }
+
+    config::Result<void, config::ConfigError> ProcessImageBatch(
+        const std::vector<std::string>& batch, const config::TaskConfig& task_config,
+        ProgressCallback progress_callback, ProcessorContext& context,
+        std::function<config::Result<void, config::ConfigError>(
+            std::shared_ptr<Pipeline>, const config::TaskConfig&, ProcessorContext&)>
+            add_processors) {
+        if (m_app_config.metrics.enable) {
+            m_metrics_collector = std::make_unique<MetricsCollector>(task_config.task_info.id);
+            m_metrics_collector->set_gpu_sample_interval(
+                std::chrono::milliseconds(m_app_config.metrics.gpu_sample_interval_ms));
+            context.metrics_collector = m_metrics_collector.get();
+        } else {
+            context.metrics_collector = nullptr;
+        }
+
+        auto result = ImageProcessingHelper::ProcessBatch(batch, task_config, progress_callback,
+                                                          context, add_processors, m_cancelled);
+
+        if (m_metrics_collector && m_app_config.metrics.enable && !batch.empty()) {
+            namespace fs = std::filesystem;
+            fs::path report_path(m_app_config.metrics.report_path);
+            std::string batch_name = fs::path(batch[0]).stem().string() + "_batch";
+
+            std::string stem = report_path.stem().string();
+            std::string ext = report_path.extension().string();
+            fs::path final_path = report_path.parent_path() / (stem + "_" + batch_name + ext);
+
+            m_metrics_collector->export_json(final_path);
+        }
+        return result;
+    }
+
+    config::Result<void, config::ConfigError> ProcessVideoTarget(
+        const std::string& target_path, const config::TaskConfig& task_config,
+        ProgressCallback progress_callback, ProcessorContext& context,
+        std::function<config::Result<void, config::ConfigError>(
+            std::shared_ptr<Pipeline>, const config::TaskConfig&, ProcessorContext&)>
+            add_processors) {
+        if (m_app_config.metrics.enable) {
+            m_metrics_collector = std::make_unique<MetricsCollector>(task_config.task_info.id);
+            m_metrics_collector->set_gpu_sample_interval(
+                std::chrono::milliseconds(m_app_config.metrics.gpu_sample_interval_ms));
+            context.metrics_collector = m_metrics_collector.get();
+        } else {
+            context.metrics_collector = nullptr;
+        }
+
+        auto result = VideoProcessingHelper::ProcessVideo(
+            target_path, task_config, progress_callback, context, add_processors, m_cancelled);
+
         if (m_metrics_collector && m_app_config.metrics.enable) {
-            // Generate report path with target name to avoid collisions
             namespace fs = std::filesystem;
             fs::path report_path(m_app_config.metrics.report_path);
             fs::path target(target_path);
 
-            // Inject target stem before extension
             std::string stem = report_path.stem().string();
             std::string ext = report_path.extension().string();
             std::string target_stem = target.stem().string();
 
-            // If path already contains {timestamp}, we keep it for MetricsCollector to replace
-            // We just append target name
             fs::path final_path = report_path.parent_path() / (stem + "_" + target_stem + ext);
-
             m_metrics_collector->export_json(final_path);
         }
-
-        return process_result;
+        return result;
     }
 
     config::Result<std::vector<float>, config::ConfigError> LoadSourceEmbeddings(

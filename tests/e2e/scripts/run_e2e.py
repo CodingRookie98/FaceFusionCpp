@@ -19,7 +19,7 @@ def run_test(executable: Path, config: Path, dry_run: bool = False) -> bool:
     executable = executable.resolve()
     config = config.resolve()
     
-    cmd = [str(executable), "--config", str(config)]
+    cmd = [str(executable), "--task-config", str(config)]
     
     work_dir = executable.parent
     
