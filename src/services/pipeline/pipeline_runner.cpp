@@ -27,6 +27,7 @@ import domain.face.landmarker;
 import domain.face.recognizer;
 import domain.face.masker;
 import domain.face.analyser;
+import domain.face.helper;
 import domain.ai.model_repository;
 import foundation.ai.inference_session;
 import foundation.media.ffmpeg;
@@ -209,7 +210,7 @@ private:
         }
 
         if (!task_config.io.source_paths.empty()) {
-            auto embed_result = LoadSourceEmbedding(task_config.io.source_paths[0]);
+            auto embed_result = LoadSourceEmbeddings(task_config.io.source_paths);
             if (embed_result) {
                 context.source_embedding = std::move(embed_result).value();
             } else {
@@ -256,31 +257,36 @@ private:
         return process_result;
     }
 
-    config::Result<std::vector<float>, config::ConfigError> LoadSourceEmbedding(
-        const std::string& source_path) {
-        cv::Mat source_img = cv::imread(source_path);
-        if (source_img.empty()) {
-            return config::Result<std::vector<float>, config::ConfigError>::err(
-                config::ConfigError(config::ErrorCode::E401ImageDecodeFailed,
-                                    "Failed to load source image: " + source_path));
-        }
-
+    config::Result<std::vector<float>, config::ConfigError> LoadSourceEmbeddings(
+        const std::vector<std::string>& source_paths) {
+        std::vector<domain::face::Face> all_faces;
         auto analyser = GetFaceAnalyser();
         if (!analyser) {
             return config::Result<std::vector<float>, config::ConfigError>::err(config::ConfigError(
                 config::ErrorCode::E100SystemError, "Failed to create FaceAnalyser"));
         }
 
-        auto faces = analyser->get_many_faces(
-            source_img, domain::face::analyser::FaceAnalysisType::Detection
-                            | domain::face::analyser::FaceAnalysisType::Embedding);
+        for (const auto& path : source_paths) {
+            cv::Mat source_img = cv::imread(path);
+            if (source_img.empty()) {
+                Logger::get_instance()->warn("Failed to load source image: " + path);
+                continue;
+            }
 
-        if (faces.empty()) {
-            return config::Result<std::vector<float>, config::ConfigError>::err(config::ConfigError(
-                config::ErrorCode::E403NoFaceDetected, "No face detected in source image"));
+            auto faces = analyser->get_many_faces(
+                source_img, domain::face::analyser::FaceAnalysisType::Detection
+                                | domain::face::analyser::FaceAnalysisType::Embedding);
+
+            if (!faces.empty()) { all_faces.insert(all_faces.end(), faces.begin(), faces.end()); }
         }
 
-        return config::Result<std::vector<float>, config::ConfigError>::ok(faces[0].embedding());
+        if (all_faces.empty()) {
+            return config::Result<std::vector<float>, config::ConfigError>::err(config::ConfigError(
+                config::ErrorCode::E403NoFaceDetected, "No face detected in source images"));
+        }
+
+        auto avg_embedding = domain::face::helper::compute_average_embedding(all_faces);
+        return config::Result<std::vector<float>, config::ConfigError>::ok(avg_embedding);
     }
 
     config::Result<void, config::ConfigError> AddProcessorsToPipeline(
@@ -461,7 +467,7 @@ PipelineRunner::PipelineRunner(PipelineRunner&&) noexcept = default;
 PipelineRunner& PipelineRunner::operator=(PipelineRunner&&) noexcept = default;
 
 config::Result<void, config::ConfigError> PipelineRunner::run(const config::TaskConfig& task_config,
-                                                               ProgressCallback progress_callback) {
+                                                              ProgressCallback progress_callback) {
     return m_impl->run(task_config, progress_callback);
 }
 
