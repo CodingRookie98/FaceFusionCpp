@@ -10,11 +10,13 @@ module;
 #include <sstream>
 #include <algorithm>
 #include <cctype>
+#include <unordered_set>
 #include <nlohmann/json.hpp>
 
 module config.parser;
 
 import foundation.infrastructure.core_utils;
+import foundation.infrastructure.file_system;
 
 namespace config {
 
@@ -49,6 +51,45 @@ std::string ToLower(std::string str) {
     std::transform(str.begin(), str.end(), str.begin(),
                    [](unsigned char c) { return std::tolower(c); });
     return str;
+}
+
+// Supported extensions (should be lower case)
+const std::unordered_set<std::string> kImageExtensions = {".png",  ".jpg",  ".jpeg", ".bmp",
+                                                          ".webp", ".tiff", ".tif"};
+
+const std::unordered_set<std::string> kVideoExtensions = {".mp4", ".mov", ".avi", ".mkv", ".webm"};
+
+/// 展开路径（如果是目录则递归扫描）
+std::vector<std::string> ExpandPaths(const std::vector<std::string>& input_paths,
+                                     const std::unordered_set<std::string>& extensions) {
+    std::vector<std::string> expanded_paths;
+
+    for (const auto& path_str : input_paths) {
+        if (path_str.empty()) continue;
+
+        try {
+            if (foundation::infrastructure::file_system::is_dir(path_str)) {
+                // Recursive directory scan
+                for (const auto& entry : std::filesystem::recursive_directory_iterator(path_str)) {
+                    if (entry.is_regular_file()) {
+                        auto ext = ToLower(entry.path().extension().string());
+                        if (extensions.contains(ext)) {
+                            expanded_paths.push_back(
+                                std::filesystem::absolute(entry.path()).string());
+                        }
+                    }
+                }
+            } else {
+                // Keep original file path (validation happens later)
+                expanded_paths.push_back(path_str);
+            }
+        } catch (const std::exception& e) {
+            // Log warning? For now just ignore faulty paths during expansion
+            // The validator will catch invalid paths later if they are added
+        }
+    }
+
+    return expanded_paths;
 }
 
 /// JSON 安全获取字符串
@@ -512,8 +553,14 @@ Result<TaskConfig> ParseTaskConfigFromJson(const json& j) {
 
     // io
     auto io_j = detail::GetObject(j, "io");
-    config.io.source_paths = detail::GetStringArray(io_j, "source_paths");
-    config.io.target_paths = detail::GetStringArray(io_j, "target_paths");
+    auto raw_source_paths = detail::GetStringArray(io_j, "source_paths");
+    config.io.source_paths = detail::ExpandPaths(raw_source_paths, detail::kImageExtensions);
+
+    auto raw_target_paths = detail::GetStringArray(io_j, "target_paths");
+    // Target can be image or video
+    std::unordered_set<std::string> target_exts = detail::kImageExtensions;
+    target_exts.insert(detail::kVideoExtensions.begin(), detail::kVideoExtensions.end());
+    config.io.target_paths = detail::ExpandPaths(raw_target_paths, target_exts);
 
     auto output_j = detail::GetObject(io_j, "output");
     config.io.output.path = detail::GetString(output_j, "path", "");

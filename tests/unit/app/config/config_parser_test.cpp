@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <string>
+#include <filesystem>
+#include <fstream>
 
 import config.parser;
 import config.types;
@@ -205,6 +207,72 @@ TEST(TaskConfigValidationTest, ReferenceFacePathExists) {
     EXPECT_TRUE(result.is_err());
     EXPECT_EQ(result.error().code, ErrorCode::E206InvalidPath);
     EXPECT_EQ(result.error().yaml_path, "pipeline[0].params.reference_face_path");
+}
+
+// ============================================================================
+// ConfigParser Directory Expansion Tests
+// ============================================================================
+
+TEST(ConfigParserTest, ParseSourceDirectory) {
+    // 1. Setup temporary directory
+    auto temp_dir =
+        std::filesystem::temp_directory_path() / ("test_source_dir_" + std::to_string(std::rand()));
+    if (std::filesystem::exists(temp_dir)) std::filesystem::remove_all(temp_dir);
+    std::filesystem::create_directories(temp_dir);
+
+    // 2. Create dummy files
+    std::ofstream(temp_dir / "img1.png").close();
+    std::ofstream(temp_dir / "img2.jpg").close();
+    std::ofstream(temp_dir / "note.txt").close(); // Should be ignored
+
+    // 3. YAML content (Must use current version 0.34.0)
+    std::string path_str = temp_dir.generic_string(); // Use generic separators
+    std::string yaml = R"(
+config_version: "0.34.0"
+task_info:
+  id: "test_dir_scan"
+io:
+  source_paths:
+    - ")" + path_str + R"("
+  target_paths:
+    - "target.jpg"
+  output:
+    path: "out.jpg"
+    image_format: "png"
+    video_encoder: "libx264"
+    video_quality: 80
+face_analysis:
+  face_detector:
+    models: ["yoloface"]
+    score_threshold: 0.5
+  face_recognizer:
+    model: "arcface"
+    similarity_threshold: 0.6
+  face_masker:
+    types: ["box"]
+pipeline: []
+)";
+
+    // 4. Act
+    auto result = parse_task_config_from_string(yaml);
+
+    // 5. Assert
+    ASSERT_TRUE(result.is_ok()) << (result.is_err() ? result.error().formatted() : "");
+    auto config = result.value();
+
+    // Should contain 2 images
+    EXPECT_EQ(config.io.source_paths.size(), 2);
+
+    std::vector<std::string> filenames;
+    for (const auto& p : config.io.source_paths) {
+        filenames.push_back(std::filesystem::path(p).filename().string());
+    }
+    EXPECT_THAT(filenames, Contains("img1.png"));
+    EXPECT_THAT(filenames, Contains("img2.jpg"));
+    EXPECT_THAT(filenames, Not(Contains("note.txt")));
+
+    // Cleanup
+    std::filesystem::remove_all(temp_dir);
 }
 
 int main(int argc, char** argv) {
