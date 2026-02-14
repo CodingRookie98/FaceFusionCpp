@@ -271,6 +271,14 @@ def main():
         run_install(cmake_exe, build_dir, env, project_root)
 
     elif args.action == "package":
+        # Ensure configured and built before packaging
+        if not build_dir.exists() or not (build_dir / "CMakeCache.txt").exists():
+            log("Configuration not found. Running configure...", "info")
+            run_configure(cmake_exe, preset, env, project_root, extra_cmake_args)
+            
+        log("Running build before packaging...", "info")
+        run_build(cmake_exe, preset, "all", jobs, env, project_root)
+
         run_package(cpack_exe, build_dir, env)
 
     log("\nOperation completed successfully!", "success")

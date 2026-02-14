@@ -156,6 +156,13 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/docs/user"
         COMPONENT "doc"
 )
 
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/assets")
+    install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+            DESTINATION "."
+            COMPONENT "resource"
+    )
+endif()
+
 # Please configure cmake again after building the project
 if (WIN32)
     file(GLOB ONNXRUNTIME_LIBS "${ORT_PATH}/lib/*.dll")

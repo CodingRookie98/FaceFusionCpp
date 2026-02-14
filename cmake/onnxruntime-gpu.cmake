@@ -73,24 +73,8 @@ if (NOT EXISTS "${ORT_PATH}")
     endif ()
 endif ()
 
-# --- Try to find via Config first ---
-set(onnxruntime_DIR "${ORT_PATH}/lib/cmake/onnxruntime")
-find_package(onnxruntime CONFIG QUIET)
-
-if (onnxruntime_FOUND)
-    message(STATUS "Found ONNX Runtime via Config: ${onnxruntime_DIR}")
-    if (NOT TARGET ONNXRuntime::ONNXRuntime)
-        add_library(ONNXRuntime::ONNXRuntime INTERFACE IMPORTED GLOBAL)
-        target_link_libraries(ONNXRuntime::ONNXRuntime INTERFACE onnxruntime::onnxruntime)
-        
-        # Fix include path: The official config might point to include/onnxruntime, 
-        # but the tarball layout has headers in include/
-        if (EXISTS "${ORT_PATH}/include/onnxruntime_c_api.h")
-             target_include_directories(ONNXRuntime::ONNXRuntime INTERFACE "${ORT_PATH}/include")
-        endif()
-    endif()
-# --- Fallback to manual setup ---
-elseif (NOT TARGET ONNXRuntime::ONNXRuntime)
+# --- Import Target (Manual Setup) ---
+if (NOT TARGET ONNXRuntime::ONNXRuntime)
     add_library(ONNXRuntime::ONNXRuntime INTERFACE IMPORTED GLOBAL)
 
     # Use find_path and find_library for better robustness
