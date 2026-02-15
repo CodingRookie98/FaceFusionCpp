@@ -97,6 +97,7 @@ Thumbs.db
 
 # opencode
 opencode.json
+/.opencode/
 
 .trae/
 
