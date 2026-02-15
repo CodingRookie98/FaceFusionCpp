@@ -229,7 +229,8 @@ public:
      * @param frame The frame data to be processed and updated
      */
     void process(FrameData& frame) override {
-        const foundation::infrastructure::logger::ScopedTimer kTimer("FaceEnhancerAdapter::process");
+        const foundation::infrastructure::logger::ScopedTimer kTimer(
+            "FaceEnhancerAdapter::process");
         ensure_loaded();
         if (!m_enhancer) return;
 
@@ -386,8 +387,8 @@ public:
                         working_frame, input.target_landmarks[i], m_template_type, m_size);
 
                     // 3. Inference
-                    const cv::Mat kRestoredCrop = m_restorer->restore_expression(source_crop, target_crop,
-                                                                            input.restore_factor);
+                    const cv::Mat kRestoredCrop = m_restorer->restore_expression(
+                        source_crop, target_crop, input.restore_factor);
 
                     if (kRestoredCrop.empty()) continue;
 
@@ -487,7 +488,8 @@ public:
      * @param frame The frame data to be processed and updated
      */
     void process(FrameData& frame) override {
-        const foundation::infrastructure::logger::ScopedTimer kTimer("FrameEnhancerAdapter::process");
+        const foundation::infrastructure::logger::ScopedTimer kTimer(
+            "FrameEnhancerAdapter::process");
         ensure_loaded();
         if (!m_enhancer) return;
 

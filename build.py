@@ -70,13 +70,20 @@ def run_configure(cmake_exe, preset, env, project_root, extra_args=None):
 
 def ensure_configured(cmake_exe, preset, env, project_root, extra_args=None):
     build_dir_name = preset
-    if platform.system() == "Linux" and preset.startswith("linux-") and "x64" not in preset:
+    if (
+        platform.system() == "Linux"
+        and preset.startswith("linux-")
+        and "x64" not in preset
+    ):
         build_dir_name = preset.replace("linux-", "linux-x64-")
-    
+
     build_dir = project_root / "build" / build_dir_name
-    
+
     if not (build_dir / "CMakeCache.txt").exists():
-        log(f"Build directory {build_dir} not configured. Running configure...", "warning")
+        log(
+            f"Build directory {build_dir} not configured. Running configure...",
+            "warning",
+        )
         run_configure(cmake_exe, preset, env, project_root, extra_args)
 
 
@@ -105,7 +112,9 @@ def run_test(ctest_exe, preset, regex, label, env, project_root, build_dir):
     log("\n=== Action: test ===", "info")
 
     if label == "e2e":
-        exe_name = "FaceFusionCpp.exe" if platform.system() == "Windows" else "FaceFusionCpp"
+        exe_name = (
+            "FaceFusionCpp.exe" if platform.system() == "Windows" else "FaceFusionCpp"
+        )
         # Determine the bin directory based on the preset name (which corresponds to the build/bin/{preset} structure)
         bin_dir_name = build_dir.name
         executable = project_root / "build" / "bin" / bin_dir_name / exe_name
@@ -135,7 +144,7 @@ def run_test(ctest_exe, preset, regex, label, env, project_root, build_dir):
     if label:
         cmd.extend(["-L", label])
         if not test_filter:
-             test_filter = f"label:{label}"
+            test_filter = f"label:{label}"
 
     try:
         run_command(cmd, env=env, cwd=project_root, exit_on_error=False)
@@ -211,6 +220,11 @@ def main():
         action="store_true",
         help="Enable building tests (activates 'test' feature in vcpkg and BUILD_TESTING=ON)",
     )
+    parser.add_argument(
+        "--enable-gpu",
+        action="store_true",
+        help="Enable GPU support (activates FACEFUSION_ENABLE_GPU=ON)",
+    )
 
     args = parser.parse_args()
 
@@ -240,7 +254,11 @@ def main():
     # We need to guess the build dir path based on preset convention
     # This might be fragile if preset defines a different binaryDir, but common convention holds.
     build_dir_name = preset
-    if platform.system() == "Linux" and preset.startswith("linux-") and "x64" not in preset:
+    if (
+        platform.system() == "Linux"
+        and preset.startswith("linux-")
+        and "x64" not in preset
+    ):
         # Fix for linux-debug -> linux-x64-debug convention in CMakePresets.json
         build_dir_name = preset.replace("linux-", "linux-x64-")
 
@@ -257,9 +275,14 @@ def main():
     # Determine CMake arguments
     extra_cmake_args = []
     if args.enable_tests or args.action == "test":
-        extra_cmake_args.extend(["-DVCPKG_MANIFEST_FEATURES=test", "-DBUILD_TESTING=ON"])
+        extra_cmake_args.extend(
+            ["-DVCPKG_MANIFEST_FEATURES=test", "-DBUILD_TESTING=ON"]
+        )
     else:
         extra_cmake_args.append("-DBUILD_TESTING=OFF")
+
+    if args.enable_gpu:
+        extra_cmake_args.append("-DFACEFUSION_ENABLE_GPU=ON")
 
     # Action Dispatcher
     if args.action == "configure":
@@ -281,7 +304,9 @@ def main():
         if not regex and args.target != "all":
             regex = args.target
 
-        run_test(ctest_exe, preset, regex, args.test_label, env, project_root, build_dir)
+        run_test(
+            ctest_exe, preset, regex, args.test_label, env, project_root, build_dir
+        )
 
     elif args.action == "install":
         ensure_configured(cmake_exe, preset, env, project_root, extra_cmake_args)
@@ -290,7 +315,7 @@ def main():
     elif args.action == "package":
         # Ensure configured and built before packaging
         ensure_configured(cmake_exe, preset, env, project_root, extra_cmake_args)
-            
+
         log("Running build before packaging...", "info")
         run_build(cmake_exe, preset, "all", jobs, env, project_root)
 

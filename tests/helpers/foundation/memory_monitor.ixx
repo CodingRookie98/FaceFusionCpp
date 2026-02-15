@@ -22,16 +22,14 @@ export namespace tests::helpers::foundation {
 class MemoryMonitor {
 public:
     struct MemoryInfo {
-        int64_t rss_bytes;      // Resident Set Size (physical memory)
-        int64_t vms_bytes;      // Virtual Memory Size
+        int64_t rss_bytes; // Resident Set Size (physical memory)
+        int64_t vms_bytes; // Virtual Memory Size
     };
 
-    explicit MemoryMonitor(std::chrono::milliseconds interval = std::chrono::milliseconds(100))
-        : interval_(interval), running_(false) {}
+    explicit MemoryMonitor(std::chrono::milliseconds interval = std::chrono::milliseconds(100)) :
+        interval_(interval), running_(false) {}
 
-    ~MemoryMonitor() {
-        stop();
-    }
+    ~MemoryMonitor() { stop(); }
 
     void start() {
         if (running_) return;
@@ -52,25 +50,20 @@ public:
     void stop() {
         if (!running_) return;
         running_ = false;
-        if (monitor_thread_.joinable()) {
-            monitor_thread_.join();
-        }
+        if (monitor_thread_.joinable()) { monitor_thread_.join(); }
     }
 
-    size_t get_peak_usage_mb() const {
-        return peak_usage_ / (1024 * 1024);
-    }
+    size_t get_peak_usage_mb() const { return peak_usage_ / (1024 * 1024); }
 
-    static size_t get_current_usage() {
-        return get_current_memory().rss_bytes;
-    }
+    static size_t get_current_usage() { return get_current_memory().rss_bytes; }
 
     static MemoryInfo get_current_memory() {
         MemoryInfo info{0, 0};
-        
+
 #if defined(_WIN32)
         PROCESS_MEMORY_COUNTERS_EX pmc;
-        if (GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc))) {
+        if (GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc,
+                                 sizeof(pmc))) {
             info.rss_bytes = static_cast<int64_t>(pmc.WorkingSetSize);
             info.vms_bytes = static_cast<int64_t>(pmc.PrivateUsage);
         }
@@ -94,13 +87,9 @@ public:
         return info;
     }
 
-    static double bytes_to_mb(int64_t bytes) {
-        return bytes / (1024.0 * 1024.0);
-    }
-    
-    static double bytes_to_gb(int64_t bytes) {
-        return bytes / (1024.0 * 1024.0 * 1024.0);
-    }
+    static double bytes_to_mb(int64_t bytes) { return bytes / (1024.0 * 1024.0); }
+
+    static double bytes_to_gb(int64_t bytes) { return bytes / (1024.0 * 1024.0 * 1024.0); }
 
 private:
     std::chrono::milliseconds interval_;
@@ -115,19 +104,15 @@ private:
 class MemoryDeltaChecker {
 public:
     MemoryDeltaChecker() : start_(MemoryMonitor::get_current_memory()) {}
-    
+
     int64_t get_rss_delta_bytes() const {
         auto current = MemoryMonitor::get_current_memory();
         return current.rss_bytes - start_.rss_bytes;
     }
-    
-    double get_rss_delta_mb() const {
-        return MemoryMonitor::bytes_to_mb(get_rss_delta_bytes());
-    }
-    
-    void reset() {
-        start_ = MemoryMonitor::get_current_memory();
-    }
+
+    double get_rss_delta_mb() const { return MemoryMonitor::bytes_to_mb(get_rss_delta_bytes()); }
+
+    void reset() { start_ = MemoryMonitor::get_current_memory(); }
 
 private:
     MemoryMonitor::MemoryInfo start_;

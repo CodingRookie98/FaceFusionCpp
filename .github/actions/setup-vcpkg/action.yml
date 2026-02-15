@@ -1,0 +1,29 @@
+name: 'Setup vcpkg'
+description: 'Setup vcpkg with binary caching to GitHub Packages'
+inputs:
+  github-token:
+    description: 'GitHub Token'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Configure NuGet for vcpkg binary caching
+      shell: bash
+      run: |
+        dotnet nuget add source \
+          --username "${{ github.repository_owner }}" \
+          --password "${{ inputs.github-token }}" \
+          --store-password-in-clear-text \
+          --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" || \
+        dotnet nuget update source github \
+          --username "${{ github.repository_owner }}" \
+          --password "${{ inputs.github-token }}" \
+          --store-password-in-clear-text \
+          --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+
+    - name: Set vcpkg binary caching environment variables
+      shell: bash
+      run: |
+        echo "VCPKG_BINARY_SOURCES=clear;nuget,github,readwrite" >> $GITHUB_ENV

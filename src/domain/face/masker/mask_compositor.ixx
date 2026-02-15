@@ -114,7 +114,8 @@ public:
 
         // Final Blur for Edge Blending (Task 3.3)
         // Smooth transitions between combined masks
-        int kernel_size = std::max(3, static_cast<int>(static_cast<float>(input.size.width) * 0.025F)); // 2.5% of width
+        int kernel_size = std::max(
+            3, static_cast<int>(static_cast<float>(input.size.width) * 0.025F)); // 2.5% of width
         if (kernel_size % 2 == 0) { kernel_size++; }
         cv::GaussianBlur(final_mask, final_mask, cv::Size(kernel_size, kernel_size), 0);
 
@@ -129,10 +130,18 @@ private:
 
         cv::Mat mask = cv::Mat::ones(size, CV_32FC1);
 
-        const int kPadTop = std::max(kBlurArea, static_cast<int>(static_cast<float>(size.height) * static_cast<float>(padding[0]) / 100.0F));
-        const int kPadRight = std::max(kBlurArea, static_cast<int>(static_cast<float>(size.width) * static_cast<float>(padding[1]) / 100.0F));
-        const int kPadBot = std::max(kBlurArea, static_cast<int>(static_cast<float>(size.height) * static_cast<float>(padding[2]) / 100.0F));
-        const int kPadLeft = std::max(kBlurArea, static_cast<int>(static_cast<float>(size.width) * static_cast<float>(padding[3]) / 100.0F));
+        const int kPadTop =
+            std::max(kBlurArea, static_cast<int>(static_cast<float>(size.height)
+                                                 * static_cast<float>(padding[0]) / 100.0F));
+        const int kPadRight =
+            std::max(kBlurArea, static_cast<int>(static_cast<float>(size.width)
+                                                 * static_cast<float>(padding[1]) / 100.0F));
+        const int kPadBot =
+            std::max(kBlurArea, static_cast<int>(static_cast<float>(size.height)
+                                                 * static_cast<float>(padding[2]) / 100.0F));
+        const int kPadLeft =
+            std::max(kBlurArea, static_cast<int>(static_cast<float>(size.width)
+                                                 * static_cast<float>(padding[3]) / 100.0F));
 
         // Set borders to 0
         if (kPadTop > 0) { mask(cv::Rect(0, 0, size.width, kPadTop)) = 0; }

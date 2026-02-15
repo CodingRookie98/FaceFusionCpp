@@ -3,6 +3,7 @@ import os
 import sys
 import subprocess
 import shutil
+import argparse
 from pathlib import Path
 
 # Add script directory to sys.path to allow importing from scripts/
@@ -13,6 +14,7 @@ from scripts.utils.msvc import get_msvc_env
 
 
 def log(message, level="info"):
+
     colors = {
         "info": "\033[96m",  # Cyan
         "success": "\033[92m",  # Green
@@ -28,6 +30,14 @@ def log(message, level="info"):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Format C++ code using clang-format")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Check formatting without modifying files (dry-run)",
+    )
+    args = parser.parse_args()
+
     project_root = script_dir.parent
 
     # 1. Check for clang-format
@@ -38,7 +48,7 @@ def main():
             clang_format = shutil.which(f"clang-format-{version}")
             if clang_format:
                 break
-    
+
     if not clang_format:
         log("Error: clang-format executable not found in PATH.", "error")
         log(
@@ -76,22 +86,34 @@ def main():
     # 3. Format files
     format_errors = False
     for file_path in files_to_format:
-        # log(f"Formatting: {file_path}", "info") # Too verbose?
-        print(f"Formatting: {file_path}")
-        try:
+        if args.check:
+            # --dry-run: don't modify files
+            # --Werror: exit with non-zero if formatting is needed
+            cmd = [clang_format, "--dry-run", "--Werror", "-style=file", str(file_path)]
+        else:
             # -i edits in place, -style=file uses .clang-format
-            subprocess.run(
-                [clang_format, "-i", "-style=file", str(file_path)], check=True
-            )
-        except subprocess.CalledProcessError:
-            log(f"Error formatting file: {file_path}", "error")
+            cmd = [clang_format, "-i", "-style=file", str(file_path)]
+
+        try:
+            subprocess.run(cmd, check=True, capture_output=True)
+        except subprocess.CalledProcessError as e:
+            if args.check:
+                log(f"Formatting issue in: {file_path}", "warning")
+            else:
+                log(f"Error formatting file: {file_path}", "error")
             format_errors = True
 
     if format_errors:
-        log("Formatting complete with errors.", "error")
+        if args.check:
+            log("Formatting check failed. Please run format_code.py locally.", "error")
+        else:
+            log("Formatting complete with errors.", "error")
         sys.exit(1)
     else:
-        log("Formatting complete.", "success")
+        if args.check:
+            log("Formatting check passed.", "success")
+        else:
+            log("Formatting complete.", "success")
 
 
 if __name__ == "__main__":

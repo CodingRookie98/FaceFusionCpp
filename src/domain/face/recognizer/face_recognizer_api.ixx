@@ -34,9 +34,8 @@ public:
      */
     virtual void load_model(const std::string& model_path,
                             const foundation::ai::inference_session::Options& options) {
-        m_session =
-            foundation::ai::inference_session::InferenceSessionRegistry::get_instance()->get_session(
-                model_path, options);
+        m_session = foundation::ai::inference_session::InferenceSessionRegistry::get_instance()
+                        ->get_session(model_path, options);
     }
 
     /**
@@ -83,7 +82,8 @@ public:
     }
 
 protected:
-    [[nodiscard]] std::shared_ptr<foundation::ai::inference_session::InferenceSession> session() const {
+    [[nodiscard]] std::shared_ptr<foundation::ai::inference_session::InferenceSession> session()
+        const {
         return m_session;
     }
 

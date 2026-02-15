@@ -26,7 +26,7 @@ protected:
         InferenceSessionRegistry::get_instance()->clear();
         mock_session = std::make_shared<NiceMock<MockInferenceSession>>();
         InferenceSessionRegistry::get_instance()->preload_session(model_path, Options(),
-                                                                 mock_session);
+                                                                  mock_session);
 
         // Default expectations
         EXPECT_CALL(*mock_session, is_model_loaded()).WillRepeatedly(Return(true));

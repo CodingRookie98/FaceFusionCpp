@@ -28,8 +28,8 @@ export namespace domain::pipeline {
  */
 struct FrameData {
     std::int64_t sequence_id = 0; ///< Sequential frame number (0-based)
-    double timestamp_ms = 0.0; ///< Presentation timestamp in milliseconds
-    cv::Mat image;             ///< Current frame image data (BGR)
+    double timestamp_ms = 0.0;    ///< Presentation timestamp in milliseconds
+    cv::Mat image;                ///< Current frame image data (BGR)
 
     // Optimized Metadata (Strongly Typed)
     // Avoid std::any for high-frequency data

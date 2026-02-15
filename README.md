@@ -1,5 +1,7 @@
 # FaceFusionCpp
 
+[![CI](https://github.com/CodingRookie98/faceFusionCpp/actions/workflows/ci.yml/badge.svg)](https://github.com/CodingRookie98/faceFusionCpp/actions/workflows/ci.yml)
+
 > **High-Performance C++ Implementation of FaceFusion**
 >
 > 🚀 *Faster, Lighter, and Production-Ready*

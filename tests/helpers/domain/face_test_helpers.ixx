@@ -95,13 +95,14 @@ inline types::Landmarks detect_face_landmarks(
     const cv::Mat& image, std::shared_ptr<::domain::ai::model_repository::ModelRepository> repo) {
     if (image.empty()) return {};
 
-    auto detector_ptr = ::domain::face::detector::FaceDetectorFactory::create(::domain::face::detector::DetectorType::Yolo);
+    auto detector_ptr = ::domain::face::detector::FaceDetectorFactory::create(
+        ::domain::face::detector::DetectorType::Yolo);
 
     std::string model_path = repo->ensure_model("yoloface");
     if (model_path.empty()) return {};
 
     detector_ptr->load_model(model_path,
-                         foundation::ai::inference_session::Options::with_best_providers());
+                             foundation::ai::inference_session::Options::with_best_providers());
 
     auto results = detector_ptr->detect(image);
     if (results.empty()) return {};
@@ -119,13 +120,14 @@ inline cv::Rect2f detect_face_bbox(
     const cv::Mat& image, std::shared_ptr<::domain::ai::model_repository::ModelRepository> repo) {
     if (image.empty()) return {};
 
-    auto detector_ptr = ::domain::face::detector::FaceDetectorFactory::create(::domain::face::detector::DetectorType::SCRFD);
+    auto detector_ptr = ::domain::face::detector::FaceDetectorFactory::create(
+        ::domain::face::detector::DetectorType::SCRFD);
 
     std::string model_path = repo->ensure_model("scrfd");
     if (model_path.empty()) return {};
 
     detector_ptr->load_model(model_path,
-                         foundation::ai::inference_session::Options::with_best_providers());
+                             foundation::ai::inference_session::Options::with_best_providers());
 
     auto results = detector_ptr->detect(image);
     if (results.empty()) return {};
@@ -145,8 +147,8 @@ inline types::Embedding get_face_embedding(
     std::shared_ptr<::domain::ai::model_repository::ModelRepository> repo) {
     if (image.empty() || landmarks.empty()) return {};
 
-    auto recognizer_ptr =
-        ::domain::face::recognizer::create_face_recognizer(::domain::face::recognizer::FaceRecognizerType::ArcFaceW600kR50);
+    auto recognizer_ptr = ::domain::face::recognizer::create_face_recognizer(
+        ::domain::face::recognizer::FaceRecognizerType::ArcFaceW600kR50);
 
     std::string model_path = repo->ensure_model("arcface_w600k_r50");
     if (model_path.empty()) return {};

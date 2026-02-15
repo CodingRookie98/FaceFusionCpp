@@ -1,0 +1,25 @@
+name: 'Setup CUDA (Windows)'
+description: 'Install CUDA Toolkit on Windows'
+inputs:
+  cuda-version:
+    description: 'CUDA version to install (e.g., 12.2.0)'
+    required: false
+    default: '12.2.0'
+runs:
+  using: "composite"
+  steps:
+    - name: Install CUDA Toolkit
+      shell: pwsh
+      run: |
+        choco install cuda --version ${{ inputs.cuda-version }} -y
+        $versionParts = "${{ inputs.cuda-version }}".Split('.')
+        $majorMinor = $versionParts[0] + "." + $versionParts[1]
+        $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v$majorMinor"
+        if (Test-Path $cudaPath) {
+          echo "CUDA_PATH=$cudaPath" >> $env:GITHUB_ENV
+          echo "$cudaPath\bin" >> $env:GITHUB_PATH
+          echo "$cudaPath\libnvvp" >> $env:GITHUB_PATH
+        } else {
+          Write-Error "CUDA installation path not found: $cudaPath"
+          exit 1
+        }
