@@ -46,7 +46,7 @@ trigger: always_on
   - Release 模式仅用于最终发布验证
   - 二进制输出路径 (Debug): `build/bin/<preset>` (例如 Windows 下为 `build/bin/msvc-x64-debug`，Linux 下为 `build/bin/linux-x64-debug`)
   - **运行要求**：禁止在项目根目录直接运行程序。**必须**先 `cd` 切换至可执行文件输出目录后再运行，以确保相对路径资源加载正确。开发中直接运行可执行程序时，工作目录需要在程序所在目录，防止重复下载资源以及 TensorRT 引擎重新构建。
-  - 🚨 **详细用法 (必读)**：@docs/dev/zh/build_guide.md —— **请务必阅读以避免环境配置错误**
+  - 🚨 **详细用法 (必读)**：@docs/build.md —— **请务必阅读以避免环境配置错误**
 - **质量控制**：
   - 格式化：`python scripts/format_code.py`
   - 静态分析：`python scripts/run_clang_tidy.py` (Windows + MSVC 环境下跳过)
@@ -75,13 +75,13 @@ trigger: always_on
   - 仅提交源码与必要资源，禁止提交文档、日志或构建文件(除非用户明确要求)。
   - 提交文档相关文件时跳过编译测试验证。
   - 文件重命名/移动必须使用 `git mv`。
-  - 提交前必须通过 `build.py test`。
+  - 提交前必须通过 `python build.py --action test --test-label unit`。
   - **测试职责划分**：智能体/AI 仅需运行单元测试；集成测试和端到端测试由用户手动验证。
 
 ## ⛔ 绝对禁令 (Violations trigger STOP)
 - **直接在主分支开发**：检测到 `git status` 为 `{os_name}/dev` 或 `master` 时修改代码。
 - **无文档即代码**：在未创建/更新 `docs/` 下对应文档前编写业务代码。
-- **无测试即提交**：在未运行 `build.py test` 并截图/贴出日志前进行 git commit（文档/注释等非代码类变更及 `docs/` 目录下内容除外）。
+- **无测试即提交**：在未运行 `python build.py --action test --test-label unit` 并截图/贴出日志前进行 git commit（文档/注释等非代码类变更及 `docs/` 目录下内容除外）。
 - **幻觉引用**：引用不存在的文件路径（必须先 `ls` 或 `glob` 确认文件存在）。
 - **严禁递归删除** `build` 目录及其子文件。
 - **严禁提交** 未通过编译或基础测试的代码。
