@@ -39,17 +39,19 @@
 
 ## 4. Release Artifact Packaging
 
-**Decision**: Use `cpack` or custom Python script invoked by `release.yml`.
+**Decision**: Use existing `python build.py --action package` functionality.
 **Rationale**:
-- Existing `build.py` likely has packaging logic or can be extended.
-- Need to strictly control what goes into the zip (binaries + configs, NO models).
-- Cross-platform consistency.
+- The project already has a working packaging mechanism via `build.py` (which wraps `cpack`).
+- Avoids duplicating packaging logic in YAML files.
+- Ensures consistency with local builds.
+- **Constraint**: Must verify `CPackConfig.cmake` is correctly generated and respects the "no models" requirement.
 
-## 5. Workflow Triggers
+## 5. Workflow Triggers (REVISED)
 
 **Decision**:
-- `ci.yml`: 
-  - `push`: branches `[ "master", "dev", "feature/*", "fix/*" ]`
-  - `pull_request`: branches `[ "master", "dev" ]`
-- `release.yml`:
-  - `push`: tags `[ "v*" ]`
+- `ci.yml` (Build & Test):
+  - `push`: branches `[ "master", "main", "dev", "*dev" ]`
+  - `pull_request`: branches `[ "master", "main", "dev" ]`
+- `release.yml` (Package & Publish):
+  - `push`: tags `[ "v*" ]` (ONLY if created on `master` or `main` - enforce via branch protection or workflow logic if possible, otherwise rely on tag discipline).
+  - Note: GitHub Actions tag triggers don't explicitly filter by "source branch" easily without hacks. Standard practice is to assume `v*` tags are pushed to stable branches.
