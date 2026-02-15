@@ -41,13 +41,15 @@ def main():
     project_root = script_dir.parent
 
     # 1. Check for clang-format
-    clang_format = shutil.which("clang-format")
+    clang_format = None
+    # Try versioned executables commonly found on Linux first (e.g., clang-format-21)
+    for version in range(21, 13, -1):
+        clang_format = shutil.which(f"clang-format-{version}")
+        if clang_format:
+            break
+
     if not clang_format:
-        # Try versioned executables commonly found on Linux
-        for version in range(21, 14, -1):
-            clang_format = shutil.which(f"clang-format-{version}")
-            if clang_format:
-                break
+        clang_format = shutil.which("clang-format")
 
     if not clang_format:
         log("Error: clang-format executable not found in PATH.", "error")
