@@ -1,10 +1,10 @@
 name: 'Setup CUDA (Linux)'
-description: 'Install CUDA Toolkit on Linux'
+description: 'Install CUDA Toolkit and TensorRT on Linux'
 inputs:
   cuda-version:
-    description: 'CUDA version to install (e.g., 12.2)'
+    description: 'CUDA version to install (e.g., 12.6)'
     required: false
-    default: '12.2'
+    default: '12.6'
 runs:
   using: "composite"
   steps:
@@ -20,3 +20,15 @@ runs:
         echo "CUDA_PATH=/usr/local/cuda-${{ inputs.cuda-version }}" >> $GITHUB_ENV
         echo "LD_LIBRARY_PATH=/usr/local/cuda-${{ inputs.cuda-version }}/lib64:$LD_LIBRARY_PATH" >> $GITHUB_ENV
         echo "/usr/local/cuda-${{ inputs.cuda-version }}/bin" >> $GITHUB_PATH
+
+    - name: Install cuDNN
+      shell: bash
+      run: |
+        sudo apt-get install -y libcudnn9-dev libcudnn9-cuda-12
+
+    - name: Install TensorRT
+      shell: bash
+      run: |
+        sudo apt-get install -y libnvinfer-dev libnvinfer10 libnvparsers-dev libnvparsers10 libnvonnxparsers-dev libnvonnxparsers10 libnvinfer-plugin-dev libnvinfer-plugin10
+        echo "TensorRT_ROOT=/usr" >> $GITHUB_ENV
+        echo "TENSORRT_ROOT=/usr" >> $GITHUB_ENV

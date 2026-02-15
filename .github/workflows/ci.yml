@@ -31,7 +31,7 @@ jobs:
       - name: Setup CUDA
         uses: ./.github/actions/setup-cuda-linux
         with:
-          cuda-version: '12.2'
+          cuda-version: '12.6'
 
       - name: Setup vcpkg
         uses: ./.github/actions/setup-vcpkg
@@ -64,7 +64,7 @@ jobs:
       - name: Setup CUDA
         uses: ./.github/actions/setup-cuda-windows
         with:
-          cuda-version: '12.2.0'
+          cuda-version: '12.6.0'
 
       - name: Setup vcpkg
         uses: ./.github/actions/setup-vcpkg
