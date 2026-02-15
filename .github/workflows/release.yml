@@ -26,7 +26,7 @@ jobs:
       - name: Setup CUDA
         uses: ${{ matrix.os == 'ubuntu-latest' && './.github/actions/setup-cuda-linux' || './.github/actions/setup-cuda-windows' }}
         with:
-          cuda-version: ${{ matrix.os == 'ubuntu-latest' && '12.2' || '12.2.0' }}
+          cuda-version: ${{ matrix.os == 'ubuntu-latest' && '12.6' || '12.6.0' }}
 
       - name: Setup vcpkg
         uses: ./.github/actions/setup-vcpkg
