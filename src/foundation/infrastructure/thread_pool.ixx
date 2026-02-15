@@ -47,7 +47,8 @@ public:
      * @return std::future holding the result of the task
      */
     template <class TF, class... TArgs>
-    auto enqueue(TF&& f, TArgs&&... args) -> std::future<std::invoke_result_t<TF, TArgs...>> { // NOLINT(cppcoreguidelines-missing-std-forward)
+    auto enqueue(TF&& f, TArgs&&... args) -> std::future<
+        std::invoke_result_t<TF, TArgs...>> { // NOLINT(cppcoreguidelines-missing-std-forward)
         using return_type = std::invoke_result_t<TF, TArgs...>;
 
         auto promise = std::make_shared<std::promise<return_type>>();

@@ -16,45 +16,44 @@ export namespace tests::helpers::foundation {
 
 /**
  * @brief RAII NVML GPU Memory Monitor
- * 
+ *
  * Samples GPU memory usage in a background thread and tracks peak usage.
  */
 class NvmlMonitor {
 public:
-    NvmlMonitor(unsigned int device_index = 0, 
+    NvmlMonitor(unsigned int device_index = 0,
                 std::chrono::milliseconds sample_interval = std::chrono::milliseconds(100))
 #ifdef HAVE_NVML
-        : device_index_(device_index), 
-          sample_interval_(sample_interval),
-          running_(false),
-          peak_used_bytes_(0),
-          device_(nullptr) {
-        
+        :
+        device_index_(device_index), sample_interval_(sample_interval), running_(false),
+        peak_used_bytes_(0), device_(nullptr) {
+
         nvmlReturn_t result = nvmlInit();
         if (result != NVML_SUCCESS) {
             std::cerr << "NVML Init failed: " << nvmlErrorString(result) << std::endl;
-            throw std::runtime_error("Failed to initialize NVML: " + 
-                                     std::string(nvmlErrorString(result)));
+            throw std::runtime_error("Failed to initialize NVML: "
+                                     + std::string(nvmlErrorString(result)));
         }
-        
+
         result = nvmlDeviceGetHandleByIndex(device_index_, &device_);
         if (result != NVML_SUCCESS) {
             nvmlShutdown();
-            throw std::runtime_error("Failed to get device handle: " + 
-                                     std::string(nvmlErrorString(result)));
+            throw std::runtime_error("Failed to get device handle: "
+                                     + std::string(nvmlErrorString(result)));
         }
     }
 #else
-    {}
+    {
+    }
 #endif
-    
+
     ~NvmlMonitor() {
 #ifdef HAVE_NVML
         stop();
         nvmlShutdown();
 #endif
     }
-    
+
     void start() {
 #ifdef HAVE_NVML
         if (running_) return;
@@ -63,33 +62,29 @@ public:
         sample_thread_ = std::thread(&NvmlMonitor::sample_loop, this);
 #endif
     }
-    
+
     void stop() {
 #ifdef HAVE_NVML
         if (!running_) return;
         running_ = false;
-        if (sample_thread_.joinable()) {
-            sample_thread_.join();
-        }
+        if (sample_thread_.joinable()) { sample_thread_.join(); }
 #endif
     }
-    
-    uint64_t get_peak_used_bytes() const { 
+
+    uint64_t get_peak_used_bytes() const {
 #ifdef HAVE_NVML
-        return peak_used_bytes_; 
+        return peak_used_bytes_;
 #else
         return 0;
 #endif
     }
     double get_peak_used_mb() const { return get_peak_used_bytes() / (1024.0 * 1024.0); }
     double get_peak_used_gb() const { return get_peak_used_bytes() / (1024.0 * 1024.0 * 1024.0); }
-    
+
     uint64_t get_current_used_bytes() const {
 #ifdef HAVE_NVML
         nvmlMemory_t memory;
-        if (nvmlDeviceGetMemoryInfo(device_, &memory) == NVML_SUCCESS) {
-            return memory.used;
-        }
+        if (nvmlDeviceGetMemoryInfo(device_, &memory) == NVML_SUCCESS) { return memory.used; }
 #endif
         return 0;
     }
@@ -102,15 +97,15 @@ private:
             if (nvmlDeviceGetMemoryInfo(device_, &memory) == NVML_SUCCESS) {
                 uint64_t current = memory.used;
                 uint64_t expected = peak_used_bytes_.load();
-                while (current > expected && 
-                       !peak_used_bytes_.compare_exchange_weak(expected, current)) {
+                while (current > expected
+                       && !peak_used_bytes_.compare_exchange_weak(expected, current)) {
                     // CAS loop
                 }
             }
             std::this_thread::sleep_for(sample_interval_);
         }
     }
-    
+
     unsigned int device_index_;
     std::chrono::milliseconds sample_interval_;
     std::atomic<bool> running_;

@@ -8,13 +8,13 @@ export namespace tests::helpers::foundation::constants {
 // ============================================================================
 // Face Verification Thresholds
 // ============================================================================
-constexpr float FACE_SIMILARITY_THRESHOLD = 0.65f;  // ArcFace distance threshold
+constexpr float FACE_SIMILARITY_THRESHOLD = 0.65f; // ArcFace distance threshold
 
 // ============================================================================
 // Performance Thresholds (RTX 4060 8GB Baseline)
 // ============================================================================
 constexpr double MIN_FPS_RTX4060 = 15.0;
-constexpr double FRAME_PASS_RATE = 0.9;  // 90% frame pass rate
+constexpr double FRAME_PASS_RATE = 0.9; // 90% frame pass rate
 
 // ============================================================================
 // Resource Thresholds
@@ -37,4 +37,4 @@ constexpr int64_t TIMEOUT_IMAGE_2K_MS = 20000;
 constexpr int64_t TIMEOUT_VIDEO_40S_MS = 120000; // Increased for debug overhead
 #endif
 
-}  // namespace tests::helpers::foundation::constants
+} // namespace tests::helpers::foundation::constants

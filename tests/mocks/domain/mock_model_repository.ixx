@@ -18,4 +18,4 @@ public:
     MOCK_METHOD(bool, is_downloaded, (const std::string&), (const, override));
 };
 
-}
+} // namespace tests::mocks::domain

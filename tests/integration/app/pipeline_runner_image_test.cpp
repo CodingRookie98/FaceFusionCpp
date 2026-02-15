@@ -59,7 +59,8 @@ protected:
     // Helper to verify face swap result
     void verify_face_swap(const std::filesystem::path& output_image,
                           const std::filesystem::path& source_face,
-                          float distance_threshold = tests::helpers::foundation::constants::FACE_SIMILARITY_THRESHOLD) {
+                          float distance_threshold =
+                              tests::helpers::foundation::constants::FACE_SIMILARITY_THRESHOLD) {
         ASSERT_TRUE(std::filesystem::exists(output_image))
             << "Output image does not exist: " << output_image;
 
@@ -260,7 +261,7 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
 // Performance & Stress Tests (Merged from E2E)
 // ============================================================================
 
-TEST_F(PipelineRunnerImageTest, Process720pImage_CompletesWithinTimeLimit) {
+TEST_F(PipelineRunnerImageTest, Process720pImageCompletesWithinTimeLimit) {
     auto target_path = get_assets_path() / "standard_face_test_images" / "girl.bmp";
     if (!std::filesystem::exists(target_path)) { GTEST_SKIP() << "Test assets not found."; }
 
@@ -298,7 +299,7 @@ TEST_F(PipelineRunnerImageTest, Process720pImage_CompletesWithinTimeLimit) {
     verify_face_swap(output_path, source_path);
 }
 
-TEST_F(PipelineRunnerImageTest, Process2KImage_CompletesWithinTimeLimit) {
+TEST_F(PipelineRunnerImageTest, Process2KImageCompletesWithinTimeLimit) {
     auto target_path = get_assets_path() / "standard_face_test_images" / "woman.jpg";
     if (!std::filesystem::exists(target_path)) { GTEST_SKIP() << "Test assets not found."; }
 

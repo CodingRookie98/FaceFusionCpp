@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [ "master", "main", "dev", "**dev" ]
+  pull_request:
+    branches: [ "master", "main", "dev" ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-linux:
+    name: Build (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check Formatting
+        run: python scripts/format_code.py --check
+
+      - name: Setup CUDA
+        uses: ./.github/actions/setup-cuda-linux
+        with:
+          cuda-version: '12.6'
+
+      - name: Setup vcpkg
+        uses: ./.github/actions/setup-vcpkg
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure
+        run: python build.py --action configure --enable-gpu --enable-tests
+
+      - name: Build
+        run: python build.py --action build --enable-gpu --enable-tests
+
+      - name: Test
+        run: python build.py --action test --test-label unit --no-build --enable-gpu
+
+  build-windows:
+    name: Build (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup CUDA
+        uses: ./.github/actions/setup-cuda-windows
+        with:
+          cuda-version: '12.6.0'
+
+      - name: Setup vcpkg
+        uses: ./.github/actions/setup-vcpkg
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure
+        run: python build.py --action configure --enable-gpu --enable-tests
+
+      - name: Build
+        run: python build.py --action build --enable-gpu --enable-tests
+
+      - name: Test
+        run: python build.py --action test --test-label unit --no-build --enable-gpu

@@ -13,8 +13,10 @@ export namespace tests::mocks::domain {
 
 class MockFaceDetector : public ::domain::face::detector::IFaceDetector {
 public:
-    MOCK_METHOD(void, load_model, (const std::string&, const ::foundation::ai::inference_session::Options&), (override));
+    MOCK_METHOD(void, load_model,
+                (const std::string&, const ::foundation::ai::inference_session::Options&),
+                (override));
     MOCK_METHOD(::domain::face::detector::DetectionResults, detect, (const cv::Mat&), (override));
 };
 
-}
+} // namespace tests::mocks::domain

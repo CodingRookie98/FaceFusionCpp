@@ -47,7 +47,7 @@ protected:
 
         mock_session = std::make_shared<NiceMock<MockInferenceSession>>();
         InferenceSessionRegistry::get_instance()->preload_session(model_path, Options(),
-                                                                 mock_session);
+                                                                  mock_session);
     }
 
     void TearDown() override {

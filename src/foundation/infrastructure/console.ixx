@@ -39,7 +39,7 @@ class ScopedSuspend {
 public:
     ScopedSuspend();
     ~ScopedSuspend();
-    
+
     // Allow move but not copy
     ScopedSuspend(ScopedSuspend&&) = default;
     ScopedSuspend& operator=(ScopedSuspend&&) = default;
@@ -50,4 +50,4 @@ private:
     std::unique_lock<std::recursive_mutex> m_lock;
 };
 
-}
+} // namespace foundation::infrastructure::console

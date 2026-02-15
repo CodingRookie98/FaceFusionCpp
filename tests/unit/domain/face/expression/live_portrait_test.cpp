@@ -39,10 +39,11 @@ TEST_F(LivePortraitTest, LoadModelAndRestoreExpression) {
     std::string motion_path = "motion_extractor.onnx";
     std::string generator_path = "generator.onnx";
 
-    InferenceSessionRegistry::get_instance()->preload_session(feature_path, Options(), feature_mock);
+    InferenceSessionRegistry::get_instance()->preload_session(feature_path, Options(),
+                                                              feature_mock);
     InferenceSessionRegistry::get_instance()->preload_session(motion_path, Options(), motion_mock);
     InferenceSessionRegistry::get_instance()->preload_session(generator_path, Options(),
-                                                             generator_mock);
+                                                              generator_mock);
 
     auto restorer = create_live_portrait_restorer();
 

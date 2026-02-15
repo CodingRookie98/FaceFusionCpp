@@ -97,7 +97,7 @@ public:
      * @param msg The message to log
      */
     static void log(const std::string& level, const std::string& msg);
-    
+
 private:
     Logger();
     void setup_sinks();

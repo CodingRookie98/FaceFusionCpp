@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build & Package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup CUDA
+        uses: ${{ matrix.os == 'ubuntu-latest' && './.github/actions/setup-cuda-linux' || './.github/actions/setup-cuda-windows' }}
+        with:
+          cuda-version: ${{ matrix.os == 'ubuntu-latest' && '12.6' || '12.6.0' }}
+
+      - name: Setup vcpkg
+        uses: ./.github/actions/setup-vcpkg
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Package
+        run: python build.py --action package --config Release --enable-gpu
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.os }}
+          path: |
+            build/**/*.zip
+            build/**/*.tar.gz
+            build/**/*.7z
+
+  publish:
+    name: Publish Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
