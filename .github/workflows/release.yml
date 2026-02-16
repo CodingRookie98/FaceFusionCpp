@@ -51,7 +51,7 @@ jobs:
         shell: pwsh
         run: |
           # cuDNN
-          $url = "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.0.0.312_cuda12-archive.zip"
+          $url = "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.19.0.56_cuda12-archive.zip"
           $output = "cudnn.zip"
           Write-Host "Downloading cuDNN from $url"
           try {
@@ -68,7 +68,7 @@ jobs:
           Copy-Item -Path "$($cudnnDir.FullName)\lib\x64\*" -Destination "$cudaPath\lib\x64" -Force
 
           # TensorRT
-          $url = "https://developer.download.nvidia.com/compute/machine-learning/tensorrt/10.0.1/zip/TensorRT-10.0.1.6.Windows10.win10.cuda-12.4.zip"
+          $url = "https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/10.7.0/zip/TensorRT-10.7.0.23.Windows.win10.cuda-12.6.zip"
           $output = "TensorRT.zip"
           Write-Host "Downloading TensorRT from $url"
           try {
