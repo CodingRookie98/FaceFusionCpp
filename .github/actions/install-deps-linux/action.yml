@@ -30,6 +30,6 @@ runs:
         sudo dpkg -i cuda-keyring_1.1-1_all.deb
         sudo apt-get update
         sudo apt-get install -y libcudnn9-dev-cuda-12 libcudnn9-cuda-12
-        sudo apt-get install -y libnvinfer-dev libnvonnxparsers-dev libnvinfer-plugin-dev
+        sudo apt-get install -y nasm libnvinfer-dev libnvonnxparsers-dev libnvinfer-plugin-dev
         echo "TensorRT_ROOT=/usr" >> $GITHUB_ENV
         echo "TENSORRT_ROOT=/usr" >> $GITHUB_ENV
