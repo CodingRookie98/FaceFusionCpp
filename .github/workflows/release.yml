@@ -41,7 +41,7 @@ jobs:
           wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
           sudo dpkg -i cuda-keyring_1.1-1_all.deb
           sudo apt-get update
-          sudo apt-get install -y libcudnn9-dev libcudnn9-cuda-12
+          sudo apt-get install -y libcudnn9-dev-cuda-12 libcudnn9-cuda-12
           sudo apt-get install -y libnvinfer-dev libnvinfer10 libnvparsers-dev libnvparsers10 libnvonnxparsers-dev libnvonnxparsers10 libnvinfer-plugin-dev libnvinfer-plugin10
           echo "TensorRT_ROOT=/usr" >> $GITHUB_ENV
           echo "TENSORRT_ROOT=/usr" >> $GITHUB_ENV
