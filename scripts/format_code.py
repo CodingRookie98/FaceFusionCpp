@@ -42,12 +42,24 @@ def main():
 
     # 1. Check for clang-format
     clang_format = None
-    # Try versioned executables commonly found on Linux first (e.g., clang-format-21)
-    for version in range(21, 13, -1):
-        clang_format = shutil.which(f"clang-format-{version}")
-        if clang_format:
-            break
 
+    # Priority 1: LLVM_PATH environment variable (used in CI)
+    llvm_path = os.environ.get("LLVM_PATH")
+    if llvm_path:
+        candidate = Path(llvm_path) / "bin" / "clang-format"
+        if sys.platform == "win32":
+            candidate = candidate.with_suffix(".exe")
+        if candidate.exists():
+            clang_format = str(candidate)
+
+    # Priority 2: Versioned executables commonly found on Linux (e.g., clang-format-21)
+    if not clang_format:
+        for version in range(21, 13, -1):
+            clang_format = shutil.which(f"clang-format-{version}")
+            if clang_format:
+                break
+
+    # Priority 3: Generic executable
     if not clang_format:
         clang_format = shutil.which("clang-format")
 
