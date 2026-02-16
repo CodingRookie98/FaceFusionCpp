@@ -27,7 +27,7 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
         uses: KyleMayes/install-llvm-action@v2
         with:
-          version: "21.0"
+          version: "21"
           env: true
 
       - name: Setup CUDA
