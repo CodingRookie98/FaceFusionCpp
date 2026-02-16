@@ -8,7 +8,9 @@
 module;
 
 #include <cstdint>
+#if defined(__clang__)
 #include <foundation/infrastructure/opencv_workaround.hpp>
+#endif
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <vector>
