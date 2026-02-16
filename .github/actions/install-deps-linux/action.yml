@@ -1,0 +1,35 @@
+name: 'Install Dependencies (Linux)'
+description: 'Install LLVM, CUDA, cuDNN, and TensorRT for Linux'
+inputs:
+  llvm-version:
+    description: 'LLVM version to install'
+    required: false
+    default: '21'
+  cuda-version:
+    description: 'CUDA version to install'
+    required: false
+    default: '12.6.0'
+runs:
+  using: "composite"
+  steps:
+    - name: Install LLVM ${{ inputs.llvm-version }}
+      uses: KyleMayes/install-llvm-action@v2
+      with:
+        version: ${{ inputs.llvm-version }}
+        env: true
+
+    - name: Setup CUDA
+      uses: Jimver/cuda-toolkit@v0.2.21
+      with:
+        cuda: ${{ inputs.cuda-version }}
+
+    - name: Install cuDNN & TensorRT (Linux)
+      shell: bash
+      run: |
+        wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+        sudo dpkg -i cuda-keyring_1.1-1_all.deb
+        sudo apt-get update
+        sudo apt-get install -y libcudnn9-dev-cuda-12 libcudnn9-cuda-12
+        sudo apt-get install -y libnvinfer-dev libnvinfer10 libnvparsers-dev libnvparsers10 libnvonnxparsers-dev libnvonnxparsers10 libnvinfer-plugin-dev libnvinfer-plugin10
+        echo "TensorRT_ROOT=/usr" >> $GITHUB_ENV
+        echo "TENSORRT_ROOT=/usr" >> $GITHUB_ENV

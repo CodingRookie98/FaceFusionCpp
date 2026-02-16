@@ -1,0 +1,52 @@
+name: 'Install Dependencies (Windows)'
+description: 'Install CUDA, cuDNN, and TensorRT for Windows'
+inputs:
+  cuda-version:
+    description: 'CUDA version to install'
+    required: false
+    default: '12.6.0'
+runs:
+  using: "composite"
+  steps:
+    - name: Setup CUDA
+      uses: Jimver/cuda-toolkit@v0.2.21
+      with:
+        cuda: ${{ inputs.cuda-version }}
+
+    - name: Install cuDNN & TensorRT (Windows)
+      shell: pwsh
+      run: |
+        # cuDNN
+        $url = "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.19.0.56_cuda12-archive.zip"
+        $output = "cudnn.zip"
+        Write-Host "Downloading cuDNN from $url"
+        try {
+          Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
+        } catch {
+          Write-Error "Failed to download cuDNN: $_"
+          exit 1
+        }
+        Expand-Archive -Path $output -DestinationPath .
+        $cudnnDir = Get-ChildItem -Directory -Filter "cudnn-windows-x86_64-*" | Select-Object -First 1
+        $cudaPath = $env:CUDA_PATH
+        Copy-Item -Path "$($cudnnDir.FullName)\bin\*" -Destination "$cudaPath\bin" -Force
+        Copy-Item -Path "$($cudnnDir.FullName)\include\*" -Destination "$cudaPath\include" -Force
+        Copy-Item -Path "$($cudnnDir.FullName)\lib\x64\*" -Destination "$cudaPath\lib\x64" -Force
+
+        # TensorRT
+        $url = "https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/10.7.0/zip/TensorRT-10.7.0.23.Windows.win10.cuda-12.6.zip"
+        $output = "TensorRT.zip"
+        Write-Host "Downloading TensorRT from $url"
+        try {
+          Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
+        } catch {
+          Write-Error "Failed to download TensorRT: $_"
+          exit 1
+        }
+        Expand-Archive -Path $output -DestinationPath .
+        $trDir = Get-ChildItem -Directory -Filter "TensorRT-*" | Select-Object -First 1
+        $trPath = $trDir.FullName
+        echo "TensorRT_ROOT=$trPath" >> $env:GITHUB_ENV
+        echo "TENSORRT_ROOT=$trPath" >> $env:GITHUB_ENV
+        echo "$trPath\lib" >> $env:GITHUB_PATH
+        echo "$trPath\bin" >> $env:GITHUB_PATH
