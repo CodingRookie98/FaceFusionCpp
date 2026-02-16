@@ -40,6 +40,9 @@ jobs:
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonGlob: 'vcpkg.json'
+          vcpkgGitCommitId: '6d7bf7ef2193e2d1c5798a5ff8811d533104c861'
         env:
           VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,readwrite"
           VCPKG_NUGET_REPOSITORY: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
@@ -73,6 +76,9 @@ jobs:
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonGlob: 'vcpkg.json'
+          vcpkgGitCommitId: '6d7bf7ef2193e2d1c5798a5ff8811d533104c861'
         env:
           VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,readwrite"
           VCPKG_NUGET_REPOSITORY: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
