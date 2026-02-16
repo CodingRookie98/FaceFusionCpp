@@ -38,6 +38,8 @@ jobs:
       - name: Install cuDNN & TensorRT (Linux)
         if: startsWith(matrix.os, 'ubuntu')
         run: |
+          wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+          sudo dpkg -i cuda-keyring_1.1-1_all.deb
           sudo apt-get update
           sudo apt-get install -y libcudnn9-dev libcudnn9-cuda-12
           sudo apt-get install -y libnvinfer-dev libnvinfer10 libnvparsers-dev libnvparsers10 libnvonnxparsers-dev libnvonnxparsers10 libnvinfer-plugin-dev libnvinfer-plugin10
@@ -49,11 +51,15 @@ jobs:
         shell: pwsh
         run: |
           # cuDNN
-          $cudnnVersion = "9.6.0.74"
-          $url = "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-$cudnnVersion`_cuda12-archive.zip"
+          $url = "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.19.0.56_cuda12-archive.zip"
           $output = "cudnn.zip"
           Write-Host "Downloading cuDNN from $url"
-          Invoke-WebRequest -Uri $url -OutFile $output
+          try {
+            Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
+          } catch {
+            Write-Error "Failed to download cuDNN: $_"
+            exit 1
+          }
           Expand-Archive -Path $output -DestinationPath .
           $cudnnDir = Get-ChildItem -Directory -Filter "cudnn-windows-x86_64-*" | Select-Object -First 1
           $cudaPath = $env:CUDA_PATH
@@ -62,12 +68,15 @@ jobs:
           Copy-Item -Path "$($cudnnDir.FullName)\lib\x64\*" -Destination "$cudaPath\lib\x64" -Force
 
           # TensorRT
-          $trVersion = "10.7.0.23"
-          $cudaVersion = "12.6"
-          $url = "https://developer.download.nvidia.com/compute/machine-learning/tensorrt/10.7.0/TensorRT-$trVersion.Windows.win10.cuda-$cudaVersion.zip"
+          $url = "https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/10.7.0/zip/TensorRT-10.7.0.23.Windows.win10.cuda-12.6.zip"
           $output = "TensorRT.zip"
           Write-Host "Downloading TensorRT from $url"
-          Invoke-WebRequest -Uri $url -OutFile $output
+          try {
+            Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
+          } catch {
+            Write-Error "Failed to download TensorRT: $_"
+            exit 1
+          }
           Expand-Archive -Path $output -DestinationPath .
           $trDir = Get-ChildItem -Directory -Filter "TensorRT-*" | Select-Object -First 1
           $trPath = $trDir.FullName
