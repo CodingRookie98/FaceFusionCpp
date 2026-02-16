@@ -51,11 +51,15 @@ jobs:
         shell: pwsh
         run: |
           # cuDNN
-          $cudnnVersion = "9.6.0.74"
-          $url = "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-$cudnnVersion`_cuda12-archive.zip"
+          $url = "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.0.0.312_cuda12-archive.zip"
           $output = "cudnn.zip"
           Write-Host "Downloading cuDNN from $url"
-          Invoke-WebRequest -Uri $url -OutFile $output
+          try {
+            Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
+          } catch {
+            Write-Error "Failed to download cuDNN: $_"
+            exit 1
+          }
           Expand-Archive -Path $output -DestinationPath .
           $cudnnDir = Get-ChildItem -Directory -Filter "cudnn-windows-x86_64-*" | Select-Object -First 1
           $cudaPath = $env:CUDA_PATH
@@ -64,12 +68,15 @@ jobs:
           Copy-Item -Path "$($cudnnDir.FullName)\lib\x64\*" -Destination "$cudaPath\lib\x64" -Force
 
           # TensorRT
-          $trVersion = "10.7.0.23"
-          $cudaVersion = "12.6"
-          $url = "https://developer.download.nvidia.com/compute/machine-learning/tensorrt/10.7.0/TensorRT-$trVersion.Windows.win10.cuda-$cudaVersion.zip"
+          $url = "https://developer.download.nvidia.com/compute/machine-learning/tensorrt/10.0.1/zip/TensorRT-10.0.1.6.Windows10.win10.cuda-12.4.zip"
           $output = "TensorRT.zip"
           Write-Host "Downloading TensorRT from $url"
-          Invoke-WebRequest -Uri $url -OutFile $output
+          try {
+            Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
+          } catch {
+            Write-Error "Failed to download TensorRT: $_"
+            exit 1
+          }
           Expand-Archive -Path $output -DestinationPath .
           $trDir = Get-ChildItem -Directory -Filter "TensorRT-*" | Select-Object -First 1
           $trPath = $trDir.FullName
