@@ -29,15 +29,16 @@ jobs:
           VERSION_CLEAN=$(echo $TAG | sed 's/^v//')
 
           # 尝试带 v 的匹配
-          CONTENT=$(awk "/^## \[$TAG\]/{flag=1; next} /^## \[/{flag=0} flag" change_log.md)
+          # 尝试带 v 的匹配
+          CONTENT=$(awk "/^## \[$TAG\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
 
           if [ -z "$CONTENT" ]; then
             # 如果没找到带 v 的，尝试不带 v 的匹配
-            CONTENT=$(awk "/^## \[$VERSION_CLEAN\]/{flag=1; next} /^## \[/{flag=0} flag" change_log.md)
+            CONTENT=$(awk "/^## \[$VERSION_CLEAN\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
           fi
 
           if [ -z "$CONTENT" ]; then
-            CONTENT="No changelog entry found for $TAG in change_log.md"
+            CONTENT="No changelog entry found for $TAG in CHANGELOG.md"
           fi
 
           # 处理多行输出供 GitHub Actions 使用
@@ -51,7 +52,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           body: ${{ steps.changelog.outputs.body }}
-          draft: true
+          draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
