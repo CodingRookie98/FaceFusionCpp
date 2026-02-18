@@ -7,69 +7,49 @@ on:
 
 permissions:
   contents: write
-  packages: write
 
 jobs:
-  build:
-    name: Build & Package (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-24.04, ubuntu-22.04, windows-latest]
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install Dependencies (Linux)
-        if: startsWith(matrix.os, 'ubuntu')
-        uses: ./.github/actions/install-deps-linux
-
-      - name: Install Dependencies (Windows)
-        if: matrix.os == 'windows-latest'
-        uses: ./.github/actions/install-deps-windows
-
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgJsonGlob: 'vcpkg.json'
-          vcpkgGitCommitId: '6d7bf7ef2193e2d1c5798a5ff8811d533104c861'
-        env:
-          VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,readwrite"
-          VCPKG_NUGET_REPOSITORY: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build & Package
-        run: python build.py --action package --config Release --enable-gpu
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-${{ matrix.os }}
-          path: |
-            build/**/*.zip
-            build/**/*.tar.gz
-            build/**/*.7z
-
-  publish:
-    name: Publish Release
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
+      - name: Extract Changelog
+        id: changelog
+        run: |
+          TAG="${{ github.ref_name }}"
+          echo "Target tag: $TAG"
+          
+          # 提取两个版本号之间的内容 (假设格式为 ## [vX.Y.Z])
+          # 使用 sed 提取从匹配的 Tag 到下一个 ## 开始之前的内容
+          VERSION_CLEAN=$(echo $TAG | sed 's/^v//')
+          CONTENT=$(sed -n "/## \[$TAG\]/,/## /p" change_log.md | sed '$d')
+          
+          if [ -z "$CONTENT" ]; then
+            # 如果没找到带 v 的，尝试不带 v 的匹配
+            CONTENT=$(sed -n "/## \[$VERSION_CLEAN\]/,/## /p" change_log.md | sed '$d')
+          fi
+          
+          if [ -z "$CONTENT" ]; then
+            CONTENT="No changelog entry found for $TAG in change_log.md"
+          fi
+          
+          # 处理多行输出供 GitHub Actions 使用
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.body }}
+          draft: true
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
