@@ -392,12 +392,24 @@ std::optional<config::AppConfig> App::load_app_config(const std::string& path,
 }
 
 void App::print_version() {
+#ifdef _WIN32
+    std::cout << foundation::infrastructure::core_utils::encoding::utf8_to_sys_default_local(
+        app::version::get_version_string())
+              << std::endl;
+#else
     std::cout << app::version::get_version_string() << std::endl;
+#endif
 }
 
 void App::print_startup_banner() {
     using foundation::infrastructure::logger::Logger;
+#ifdef _WIN32
+    Logger::get_instance()->info(
+        foundation::infrastructure::core_utils::encoding::utf8_to_sys_default_local(
+            app::version::get_banner()));
+#else
     Logger::get_instance()->info(app::version::get_banner());
+#endif
 }
 
 void App::log_config_summary(const config::AppConfig& app_config) {

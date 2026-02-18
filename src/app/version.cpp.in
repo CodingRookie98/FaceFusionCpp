@@ -56,9 +56,9 @@ std::string get_banner() {
     return std::format(
         R"(
 ╔═══════════════════════════════════════════════════════════════╗
-║  {} v{}                                          
-║  Build: {} ({})                                  
-║  Branch: {}                                                   
+║  {} v{}
+║  Build: {} ({})
+║  Branch: {}
 ╚═══════════════════════════════════════════════════════════════╝
 )",
         app_name(), version(), build_time(), git_commit(), git_branch());

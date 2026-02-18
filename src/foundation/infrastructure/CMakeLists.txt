@@ -26,6 +26,7 @@ target_sources(foundation_infrastructure
             core_utils.ixx
             core_utils_random.ixx
             core_utils_conversion.ixx
+            core_utils_encoding.ixx
             network.ixx
             file_system.ixx
             concurrent_file_system.ixx

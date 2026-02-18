@@ -5,6 +5,14 @@ module;
 #include <yaml-cpp/yaml.h>
 #include <nlohmann/json.hpp>
 #include <string>
+#include <locale>
+#include <mutex>
+#include <format>
+#include <iostream>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 module foundation.infrastructure.core_utils;
 
@@ -172,5 +180,49 @@ std::string json_to_yaml_str(const nlohmann::json& j) {
 }
 
 } // namespace conversion
+
+namespace encoding {
+
+void set_global_locale_utf8() {
+    static std::once_flag onceFlag;
+    std::call_once(onceFlag, []() {
+        try {
+            std::locale::global(std::locale("en_US.UTF-8"));
+        } catch (const std::runtime_error& e) {
+            std::cerr << std::format("Failed to set locale: {}. Fall back to system default.\n",
+                                     e.what());
+            std::locale::global(std::locale(""));
+        }
+    });
+}
+
+#ifdef _WIN32
+std::string utf8_to_sys_default_local(const std::string& utf8_str) {
+    if (utf8_str.empty()) return {};
+
+    // Compute size for WideChar
+    const int wide_char_size = MultiByteToWideChar(CP_UTF8, 0, utf8_str.c_str(), -1, nullptr, 0);
+    if (wide_char_size == 0) return {};
+
+    std::wstring wide_str(wide_char_size, 0);
+    MultiByteToWideChar(CP_UTF8, 0, utf8_str.c_str(), -1, &wide_str[0], wide_char_size);
+
+    // Compute size for Local
+    const int local_size =
+        WideCharToMultiByte(CP_ACP, 0, wide_str.c_str(), -1, nullptr, 0, nullptr, nullptr);
+    if (local_size == 0) return {};
+
+    std::string local_str(local_size, 0);
+    WideCharToMultiByte(CP_ACP, 0, wide_str.c_str(), -1, &local_str[0], local_size, nullptr,
+                        nullptr);
+
+    // Remove null terminator if present at the end because std::string handles size
+    if (!local_str.empty() && local_str.back() == '\0') { local_str.pop_back(); }
+
+    return local_str;
+}
+#endif
+
+} // namespace encoding
 
 } // namespace foundation::infrastructure::core_utils
