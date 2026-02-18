@@ -50,17 +50,26 @@ endif ()
 # --- Download and Extract ---
 if (NOT EXISTS "${ORT_PATH}")
     if (NOT EXISTS "${ORT_DOWNLOAD_FILE}")
+        set(ORT_DOWNLOAD_FILE_TMP "${ORT_DOWNLOAD_FILE}.tmp")
         message(STATUS "Downloading ONNX Runtime v${ORT_VERSION_STR} from ${ORT_DOWNLOAD_URL}...")
         message(STATUS "If download fails, you can manually download it to ${ORT_DOWNLOAD_FILE}")
-        file(DOWNLOAD "${ORT_DOWNLOAD_URL}" "${ORT_DOWNLOAD_FILE}"
+
+        # Clean up any previous partial download
+        if (EXISTS "${ORT_DOWNLOAD_FILE_TMP}")
+            file(REMOVE "${ORT_DOWNLOAD_FILE_TMP}")
+        endif()
+
+        file(DOWNLOAD "${ORT_DOWNLOAD_URL}" "${ORT_DOWNLOAD_FILE_TMP}"
             SHOW_PROGRESS
             STATUS ORT_DOWNLOAD_STATUS
         )
         list(GET ORT_DOWNLOAD_STATUS 0 ORT_DOWNLOAD_CODE)
         list(GET ORT_DOWNLOAD_STATUS 1 ORT_DOWNLOAD_MSG)
         if (NOT ORT_DOWNLOAD_CODE EQUAL 0)
-            file(REMOVE "${ORT_DOWNLOAD_FILE}")
+            file(REMOVE "${ORT_DOWNLOAD_FILE_TMP}")
             message(FATAL_ERROR "Error downloading ONNX Runtime: ${ORT_DOWNLOAD_MSG}")
+        else()
+             file(RENAME "${ORT_DOWNLOAD_FILE_TMP}" "${ORT_DOWNLOAD_FILE}")
         endif ()
     endif ()
 
@@ -124,7 +133,7 @@ function(copy_onnxruntime_libs TARGET_NAME)
         # On Linux, we copy all .so files (including providers) to the output directory
         # so they can be loaded as plugins at runtime.
         file(GLOB ORT_RUNTIME_LIBS "${ORT_PATH}/lib/*.so*")
-        
+
         if (ORT_RUNTIME_LIBS)
             # Use cp -P to preserve symbolic links to avoid duplicating libraries
             add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
