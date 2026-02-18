@@ -23,21 +23,23 @@ jobs:
         run: |
           TAG="${{ github.ref_name }}"
           echo "Target tag: $TAG"
-          
+
           # 提取两个版本号之间的内容 (假设格式为 ## [vX.Y.Z])
-          # 使用 sed 提取从匹配的 Tag 到下一个 ## 开始之前的内容
+          # 使用 awk 提取从匹配的 Tag 到下一个 ## 开始之前的内容
           VERSION_CLEAN=$(echo $TAG | sed 's/^v//')
-          CONTENT=$(sed -n "/## \[$TAG\]/,/## /p" change_log.md | sed '$d')
-          
+
+          # 尝试带 v 的匹配
+          CONTENT=$(awk "/^## \[$TAG\]/{flag=1; next} /^## \[/{flag=0} flag" change_log.md)
+
           if [ -z "$CONTENT" ]; then
             # 如果没找到带 v 的，尝试不带 v 的匹配
-            CONTENT=$(sed -n "/## \[$VERSION_CLEAN\]/,/## /p" change_log.md | sed '$d')
+            CONTENT=$(awk "/^## \[$VERSION_CLEAN\]/{flag=1; next} /^## \[/{flag=0} flag" change_log.md)
           fi
-          
+
           if [ -z "$CONTENT" ]; then
             CONTENT="No changelog entry found for $TAG in change_log.md"
           fi
-          
+
           # 处理多行输出供 GitHub Actions 使用
           echo "body<<EOF" >> $GITHUB_OUTPUT
           echo "$CONTENT" >> $GITHUB_OUTPUT
