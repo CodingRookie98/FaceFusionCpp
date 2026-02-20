@@ -107,11 +107,13 @@
 - 测试失败时，修复代码直到测试通过
 - 支持部分完成后的继续执行，避免全量重做
 
-**6. 版本控制与分支规范**
-- **强制分支**：严禁在 `master` 或 `dev` 分支直接提交代码
-- **分支模型**：`master`（稳定/发布）← `dev`（开发集成）← `feature/fix-*`（功能/修复）
-- **`master` 保护**：`master` 仅接受来自 `dev` 的合并
-- **分支命名**：`feature/plan-{name}` 或 `fix/task-{name}`
+**6. 版本控制与分支规范（标准 Git Flow）**
+- **长期分支**：`master`（生产/发布）+ `dev`（开发集成），严禁直接提交
+- **临时分支**：
+  - `feature/plan-{name}`：新功能，基于 `dev` 创建 → 合并回 `dev`
+  - `fix/task-{name}`：bug 修复，基于 `dev` 创建 → 合并回 `dev`
+  - `release/v{version}`：发布准备，基于 `dev` 创建 → 合并到 `master` + `dev`，打 Tag
+  - `hotfix/v{version}-{desc}`：紧急修复，基于 `master` 创建 → 合并到 `master` + `dev`
 - **原子提交**：每个子任务完成后，提交代码更改到当前分支
 - **合并清理**：任务验收后合并并删除分支，保持仓库整洁
 
