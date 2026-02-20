@@ -140,8 +140,8 @@ python scripts/install_hooks.py
 
 构建产物将位于 `build` 目录下：
 
-- **Windows Debug**: `build/msvc-x64-debug/`
-- **Linux Debug**: `build/linux-debug/`
+- **Windows Debug**: `build/msvc-x64-debug/`（可执行文件位于 `build/bin/msvc-x64-debug/`）
+- **Linux Debug**: `build/linux-x64-debug/`（可执行文件位于 `build/bin/linux-x64-debug/`）
 - **Release 构建**: `build/*-release/`
 - **安装目录**: 对应构建目录下的 install 文件夹
 - **打包文件**: 对应构建目录下或 `build/packages/`
@@ -179,7 +179,7 @@ cmake --list-presets
 cmake --preset msvc-x64-debug
 
 # 配置 Debug 版本 (Linux)
-cmake --preset linux-debug
+cmake --preset linux-x64-debug
 ```
 
 ### 构建 (Build)

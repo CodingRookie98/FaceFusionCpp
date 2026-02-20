@@ -9,17 +9,15 @@
 # {任务名称} 实施任务单
 
 > **标准参考 & 跨文档链接**:
-> *   架构与模块规范: [C++20 Modules 大型工程实践](../../C++/C++_20_模块-大型工程实践.md)
-> *   质量与评估标准: [C++代码质量与评估标准指南](../C++_quality_standard.md)
+> *   TDD 与开发规范: [AGENTS.md](../../../AGENTS.md)
+> *   质量与评估标准: [C++代码质量与评估标准指南](../process/C++_quality_standard.md)
 > *   所属计划: [链接至对应计划](../plan/C++_plan_{plan_name}.md) (见第 1.1 节)
-> *   相关评估: [链接至对应评估](../evaluation/C++_evaluation_{title}.md) (任务完成后创建)
-
 > *   相关评估: [链接至对应评估](../evaluation/C++_evaluation_{title}.md) (任务完成后创建)
 
 ## 0. 任务前验证 (AI Agent 自检)
 > **指令**: 在验证以下内容之前，不要编写任何代码或详细设计。
 
-*   [ ] **父计划**: 我已阅读 `docs/dev_docs/plan/...` 并理解架构。
+*   [ ] **父计划**: 我已阅读 `docs/dev/plan/...` 并理解架构。
 *   [ ] **Target 检查**: 我已检查 `src/CMakeLists.txt` (或相关) 并确认了 Target 名称。
 *   [ ] **冲突检查**: 我已验证即将创建的文件名不存在。
 *   [ ] **TDD 承诺**: 我确认将严格遵循 TDD 流程，先写失败测试，再写实现代码。
@@ -63,10 +61,10 @@ import {module_name};
 TEST({TestSuite}, {TestName}_ExpectedBehavior) {
     // Arrange: 准备测试数据
     // {待填写}
-    
+
     // Act: 执行被测行为
     // {待填写}
-    
+
     // Assert: 验证期望结果
     // {待填写}
     FAIL() << "TODO: 实现此测试";
@@ -161,7 +159,7 @@ python build.py --action test
 ### 3.1 开发者自测 (Checklist)
 
 *   [ ] **🧪 TDD 合规**: 所有功能代码均由失败测试驱动产生
-*   [ ] **编译通过**: MSVC / Ninja 构建成功，无 Error。
+*   [ ] **编译通过**: 构建成功，无 Error。
 *   [ ] **BMI 检查**: 确认修改 `.cpp` 后，下游模块（如 `service.trade`）**未**发生重新编译。
 *   [ ] **测试通过**: 对应的单元测试 (`test_{feature}.exe`) 100% 通过。
 *   [ ] **测试质量**: 测试是行为测试（测"做什么"）而非实现测试（测"怎么做"）
@@ -204,7 +202,9 @@ python build.py --action test
     - 仅改 .cpp 增量编译: `___ 秒` (预期 < 基线的 20%)
     - 改 .ixx 增量编译: `___ 秒` (预期接近完整编译，因为下游多)
 
-### 3.1.2 平台特定检查 (Windows MSVC)
+### 3.1.2 平台特定检查
+
+#### Windows (MSVC)
 
 *   [ ] **MSVC C++20 模块编译无警告**
     ```bash
@@ -221,14 +221,32 @@ python build.py --action test
     # 验证 FILE_SET cxx_modules 中：
     #   1. 依赖方（被 import 的模块）声明在前
     #   2. 使用方（import 其他模块的模块）声明在后
-    #   示例：foundation_core.ixx 应在 domain_order.ixx 之前
+    #   示例：foundation_core.ixx 应在 domain_face.ixx 之前
     ```
 *   [ ] **模块接口文件 (.ixx) 编译产物检查**
     ```bash
-    # 查看 build 目录中的 .ifc 或 .pcm 文件（BMI 二进制接口）
+    # 查看 build 目录中的 .ifc 文件（BMI 二进制接口）
     ls -la build/msvc-x64-debug/CMakeFiles/{target_name}.dir/*.ifc
 
     # 验证：修改时间是否为最新（应晚于源文件修改时间）
+    ```
+
+#### Linux (GCC/Clang)
+
+*   [ ] **C++20 模块编译无警告**
+    ```bash
+    # 查看 ninja 的详细编译命令
+    ninja -C build/linux-x64-debug -v | grep {module_name}
+
+    # 验证：
+    #   1. 是否包含 -std=c++20
+    #   2. 是否有模块相关警告
+    ```
+*   [ ] **CMakeLists.txt 模块依赖顺序正确**（同 Windows 检查项）
+*   [ ] **模块接口文件编译产物检查**
+    ```bash
+    # 查看 build 目录中的 .pcm 文件（GCC/Clang BMI）
+    find build/linux-x64-debug -name "*.pcm" -o -name "*.gcm" | head -20
     ```
 
 ### 3.2 依赖检查
