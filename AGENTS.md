@@ -60,8 +60,11 @@
 
 ## 项目管理规范
 - **分支策略**：
-  - **严禁直推主分支**。
-  - **流程**：基于主分支(master 或 {os_name}/dev)新建 -> 实现与测试 -> 验收通过 -> 合并主分支并删除。
+  - **严禁直推 `master` 或 `dev` 分支**。
+  - **分支模型**：`master`（稳定/发布分支）← `dev`（开发集成分支）← `feature/fix-*`（功能/修复分支）。
+  - **`master`**：仅接受来自 `dev` 的合并，代表可发布状态。严禁直接提交或从其他分支合并。
+  - **`dev`**：日常开发集成分支，功能/修复分支基于它创建并合并回它。
+  - **流程**：基于 `dev` 新建功能分支 → 实现与测试 → 验收通过 → 合并回 `dev` 并删除分支。
   - **命名**：`feature/plan-{name}` 或 `fix/task-{name}`。
 - **文档管理** (`/docs/dev/`)：
   - 计划：`plan/{name}/C++_plan_{title}.md` (使用 `@docs/dev/templates/C++_plan_template.md`)
@@ -76,7 +79,8 @@
   - **测试职责划分**：智能体/AI 仅需运行单元测试；集成测试和端到端测试由用户手动验证。
 
 ## ⛔ 绝对禁令 (Violations trigger STOP)
-- **直接在主分支开发**：检测到 `git status` 为 `{os_name}/dev` 或 `master` 时修改代码。
+- **直接在 `master` 或 `dev` 分支开发**：检测到 `git status` 为 `dev` 或 `master` 时修改代码。
+- **向 `master` 合并非 `dev` 分支**：`master` 仅接受来自 `dev` 的合并。
 - **无文档即代码**：在未创建/更新 `docs/` 下对应文档前编写业务代码（小型 bug 修复 < 20行改动 和非功能性变更可豁免）。
 - **无测试即提交**：在未运行 `python build.py --action test --test-label unit` 并截图/贴出日志前进行 git commit（文档/注释等非代码类变更及 `docs/` 目录下内容除外）。
 - **幻觉引用**：引用不存在的文件路径（必须先 `ls` 或 `glob` 确认文件存在）。
