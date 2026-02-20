@@ -100,5 +100,5 @@ opencode.json
 /.opencode/
 
 .trae/
-
 .clangd
+/.agent/
