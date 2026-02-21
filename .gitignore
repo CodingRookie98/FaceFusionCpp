@@ -102,3 +102,4 @@ opencode.json
 .trae/
 .clangd
 /.agent/
+/.specify/
