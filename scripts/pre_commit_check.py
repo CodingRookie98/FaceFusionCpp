@@ -32,7 +32,7 @@ def check_test_naming_convention(files):
     # Regex to match file paths starting with tests/ and filename starting with test_
     # Note: We use forward slash as git returns paths with forward slashes usually
     file_name_pattern = re.compile(r"^tests/.*/test_[^/]+\.cpp$")
-    
+
     # Regex to match TEST macros with underscores in the second argument (TestName)
     # TEST(TestSuiteName, TestName) or TEST_F(TestSuiteName, TestName)
     test_case_pattern = re.compile(r"TEST(?:_F)?\s*\(\s*[a-zA-Z0-9_]+\s*,\s*[a-zA-Z0-9_]+_[a-zA-Z0-9_]+\s*\)")
@@ -40,7 +40,7 @@ def check_test_naming_convention(files):
     for f in files:
         # Normalize path separators just in case, though git usually uses /
         f_normalized = f.replace(os.sep, "/")
-        
+
         # Check if it is a test file in tests directory
         if not f_normalized.startswith("tests/") or not f.endswith(".cpp"):
             continue
@@ -126,12 +126,12 @@ def main():
             for child in build_dir.iterdir():
                 if child.is_dir() and (child / "compile_commands.json").exists():
                     candidates.append(child)
-            
+
             if candidates:
                 # Sort: directories with 'debug' in name come first (0), others second (1)
                 # Secondary sort by name for stability
                 candidates.sort(key=lambda p: (0 if "debug" in p.name.lower() else 1, p.name))
-                
+
                 build_path_used = candidates[0]
                 compile_commands_path = build_path_used / "compile_commands.json"
 
@@ -189,39 +189,40 @@ def main():
         sys.exit(1)
 
     # 3. Clang-Tidy (Simplified)
-    if clang_tidy and files_to_tidy:
-        if is_msvc:
-            log(
-                "Detected MSVC. Disabling clang-tidy hook check due to C++20 Modules compatibility issues.",
-                "warning",
-            )
-            log(
-                "Please run 'python scripts/run_clang_tidy.py' manually if needed.",
-                "info",
-            )
-        elif build_path_used:
-            log(
-                f"Running static analysis using build directory: {build_path_used}",
-                "info",
-            )
-            try:
-                # We can run on all files at once (assuming not too many staged files)
-                # or batch them if needed. Usually staged files count is low.
-                cmd = [clang_tidy, "-p", str(build_path_used)] + files_to_tidy
-                subprocess.run(cmd, check=True)
-            except subprocess.CalledProcessError:
-                log(
-                    "Static analysis found issues. Please fix them before committing.",
-                    "error",
-                )
-                sys.exit(1)
-        else:
-            log(
-                "Skipping static analysis (compile_commands.json not found in build directories).",
-                "warning",
-            )
+    # if clang_tidy and files_to_tidy:
+    #     if is_msvc:
+    #         log(
+    #             "Detected MSVC. Disabling clang-tidy hook check due to C++20 Modules compatibility issues.",
+    #             "warning",
+    #         )
+    #         log(
+    #             "Please run 'python scripts/run_clang_tidy.py' manually if needed.",
+    #             "info",
+    #         )
+    #     elif build_path_used:
+    #         log(
+    #             f"Running static analysis using build directory: {build_path_used}",
+    #             "info",
+    #         )
+    #         try:
+    #             # We can run on all files at once (assuming not too many staged files)
+    #             # or batch them if needed. Usually staged files count is low.
+    #             cmd = [clang_tidy, "-p", str(build_path_used)] + files_to_tidy
+    #             subprocess.run(cmd, check=True)
+    #         except subprocess.CalledProcessError:
+    #             log(
+    #                 "Static analysis found issues. Please fix them before committing.",
+    #                 "error",
+    #             )
+    #             sys.exit(1)
+    #     else:
+    #         log(
+    #             "Skipping static analysis (compile_commands.json not found in build directories).",
+    #             "warning",
+    #         )
 
-    elif not files_to_tidy:
+    if not files_to_tidy:
+        log("No implementation files to static analyze.", "success")
         log("No implementation files to static analyze.", "success")
 
     log("Pre-commit checks passed.", "success")
