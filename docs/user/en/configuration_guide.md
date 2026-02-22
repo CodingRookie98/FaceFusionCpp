@@ -20,10 +20,10 @@ config_version: "0.34.0"
 inference:
   device_id: 0                  # GPU Device ID (Default: 0. Leave as 0 if you only have one dedicated GPU).
   engine_cache:
-    enable: true                # Enable CPU/GPU engine cache (Default: true. Speeds up startup).
+    enable: true                # Enable推理引擎缓存 (Default: true. Speeds up startup).
     path: "./.cache/tensorrt"   # Cache location (relative to root).
-    max_entries: 3              # LRU Cache Limit (Default: 3. Max number of model engines to keep in VRAM).
-    idle_timeout_seconds: 60    # Auto-release time after idle (Default: 60s. How long before unloading engine to free VRAM).
+    max_entries: 3              # LRU (Least Recently Used) Cache Limit (Default: 3. Max number of model engines to keep in VRAM; oldest are unloaded first).
+    idle_timeout_seconds: 60    # TTL (Time To Live) auto-release time after idle (Default: 60s. How long before unloading engine to free VRAM).
   default_providers:            # Default inference backend priority (Default: tensorrt > cuda > cpu).
     - tensorrt
     - cuda
@@ -36,9 +36,9 @@ resource:
   #   tolerant: "Resident memory" mode. Loads everything upfront. Ideal for high-end setups (12GB+) that demand extreme processing speed.
   memory_strategy: "strict"
 
-  # Global memory quota (Default: "4GB").
-  # Used for Adaptive Backpressure control.
-  # When memory usage nears this cap, the program slows down production (decoding) to prevent OOM.
+  # Adaptive Backpressure Limit (Default: "4GB").
+  # This serves as a critical "safety valve" mechanism.
+  # When memory usage nears this cap, the producer (video decoder) automatically throttles or pauses until the consumer (AI inference engine) processes the queued frames, fundamentally preventing OOM crashes.
   max_memory_usage: "4GB"
 
 # --- Logging (Where to look if things go wrong) ---
@@ -101,8 +101,9 @@ This file defines the **specific task** you want to execute (e.g., swapping a fa
   * `thread_count`: Concurrent task thread count (Default `0`, lets program decide, usually half your CPU thread count).
   * `max_queue_size`: Max queue capacity, buffers to prevent VRAM overflow. (Default `20`. If you get constant OOM errors, drop this to 10 or 5).
   * `execution_order`:
-    * `sequential` (Default): Processes frame by frame in order. **Recommended for most beginners.**
-    * `batch`: Breaks steps into batches, drastically dropping peak VRAM. **Only recommended for extreme low-end VRAM (<=4GB) setups or those with massive SSD drives.**
+    * `sequential` (Default): **Low Latency Mode**. Processes frame by frame in order. Best if VRAM fits all active models.
+    * `batch`: **High Throughput Mode**. Processes all frames through Processor A, buffers results, then shuts down A to load B.
+    * **Advantage**: Combines with `strict` memory mode for "single-model VRAM footprint," enabling large pipelines on 4GB-8GB cards.
   * `batch_buffer_mode`: `memory` (saves to RAM, fast) or `disk` (saves to disk to prevent RAM blowouts, slower but stable).
   * `segment_duration_seconds`: Video segment processing length (Default `0` no segmentation. Can set to minutes for ultra-long videos).
 

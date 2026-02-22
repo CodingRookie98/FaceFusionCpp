@@ -30,9 +30,9 @@ FaceFusionCpp uses specific error codes to identify issues. They fall into four 
 * **E101: Out of Memory (OOM)**
   * **Reason**: GPU VRAM exhaustion, typically caused by the producer (decoder) running much faster than the consumer (AI inference).
   * **Solution**:
-    1. Enable the `strict` memory strategy in `app_config.yaml`.
-    2. Enable **Adaptive Backpressure**: Set a reasonable `max_memory_usage` (e.g., "4GB") in `app_config.yaml`. The system will automatically throttle based on this limit.
-    3. Decrease `max_queue_size` (suggest dropping from 20 down to 5 or 10).
+    1. Enable **Adaptive Backpressure**: Set a reasonable `max_memory_usage` (e.g., "4GB") in `app_config.yaml`. The system will automatically throttle based on this limit.
+    2. Use the `batch` execution order in `task_config.yaml` with the `disk` buffer (see the configuration guide).
+    3. Decrease `max_queue_size` or `thread_count`.
 * **E102: CUDA Device Not Found/Lost**
   * **Reason**: Driver not installed, version too low, or hardware connection failure.
   * **Solution**: Run `./FaceFusionCpp --system-check` for an environment integrity self-test.
