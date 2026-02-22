@@ -51,8 +51,8 @@ FaceFusionCpp is built upon a modular pipeline architecture. The core processing
 
 The simplest workflow imaginable.
 
-```powershell
-FaceFusionCpp.exe -s source.jpg -t target.jpg -o output.png
+```bash
+./FaceFusionCpp -s source.jpg -t target.jpg -o output.png
 ```
 
 * **Input**: Both `-s` and `-t` support passing multiple paths separated by commas (or via a list inside a config file).
@@ -62,8 +62,8 @@ FaceFusionCpp.exe -s source.jpg -t target.jpg -o output.png
 
 The application will automatically multiplex video inputs.
 
-```powershell
-FaceFusionCpp.exe -s source.jpg -t target.mp4 -o output.mp4
+```bash
+./FaceFusionCpp -s source.jpg -t target.mp4 -o output.mp4
 ```
 
 * **Audio**: By default, the target video's audio track is perfectly copied over to the output video.
@@ -76,8 +76,8 @@ For processing multiple files or configuring complex pipelines, utilize configur
 1. Create `my_task.yaml` (See the `configuration_guide.md`).
 2. Run:
 
-    ```powershell
-    FaceFusionCpp.exe -c my_task.yaml
+    ```bash
+    ./FaceFusionCpp -c my_task.yaml
     ```
 
 3. **Directory Inputs**: You can map directories inside `source_paths` or `target_paths` in the config. The program sweeps the folder and processes every valid media file.
@@ -97,8 +97,8 @@ This ensures the low-resolution face output from the swapper is passed into the 
 
 **The Quick CLI Method**:
 
-```powershell
-FaceFusionCpp.exe -s my_face.jpg -t target_video.mp4 -o result.mp4 --processors face_swapper,face_enhancer
+```bash
+./FaceFusionCpp -s my_face.jpg -t target_video.mp4 -o result.mp4 --processors face_swapper,face_enhancer
 ```
 
 **Or via YAML Configuration**:
@@ -128,8 +128,8 @@ pipeline:
 
 And then run it:
 
-```powershell
-FaceFusionCpp.exe -c do_job.yaml
+```bash
+./FaceFusionCpp -c do_job.yaml
 ```
 
 ### Advanced Pipeline: Swap -> Restorer -> Face Enhance -> Frame Enhance

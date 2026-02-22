@@ -7,8 +7,14 @@
 在下载之前，请确保您的系统满足以下要求。FaceFusionCpp 依赖 NVIDIA CUDA 进行 GPU 加速。
 
 ### 操作系统
-*   **Windows 10/11 x64** (目前主要支持平台)
-*   *Linux 支持目前主要用于开发和源码构建。*
+
+* **Linux x64** (推荐，主要支持平台)
+* **Windows 10/11 x64** (提供支持，建议使用 WSL2 或 Bash 环境)
+
+### 界面与交互
+
+* **CLI**: 目前主要通过命令行交互。
+* **WebUI**: 正在开发中，后续将提供直观的网页操作界面。
 
 ### 硬件
 *   **NVIDIA GPU**: 必需，用于高性能推理。
@@ -61,8 +67,8 @@
 ### 执行
 在安装目录打开终端 (PowerShell 或 CMD)，并运行：
 
-```powershell
-.\FaceFusionCpp.exe -s source.jpg -t target.jpg -o output.jpg
+```bash
+./FaceFusionCpp -s source.jpg -t target.jpg -o output.jpg
 ```
 
 **参数说明**:
@@ -85,8 +91,8 @@
 
 在遇到环境问题或首次大规模运行前，建议运行内置的自检工具。该工具能快速诊断 CUDA、TensorRT、模型及 FFmpeg 依赖的状态：
 
-```powershell
-.\FaceFusionCpp.exe --system-check
+```bash
+./FaceFusionCpp --system-check
 ```
 
 ---
