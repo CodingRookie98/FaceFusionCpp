@@ -5,7 +5,7 @@
 
 **核心原则**：
 1. 所有开发工作必须在独立的功能/修复分支上进行，严禁直接修改 `master` 或 `dev` 分支。
-2. **TDD 强制**：遵循项目 TDD 开发原则（详见 [AGENTS.md](../../../AGENTS.md#-tdd-开发原则-mandatory---最高优先级)），所有适用代码必须通过 TDD 流程产生。
+2. **TDD 强制**：遵循项目 TDD 开发原则（详见 [AGENTS.md](../../AGENTS.md#-tdd-开发原则-mandatory---最高优先级)），所有适用代码必须通过 TDD 流程产生。
 
 ---
 
@@ -64,7 +64,7 @@
 
 **阶段三：任务实现（分支操作 + TDD）**
 7. **创建功能分支**：基于 `dev` 分支新建分支（例如：`feature/plan-{plan_name}`）
-8. **TDD 循环实现子任务**（详见 [AGENTS.md TDD 原则](../../../AGENTS.md#-tdd-开发原则-mandatory---最高优先级)）：
+8. **TDD 循环实现子任务**（详见 [AGENTS.md TDD 原则](../../AGENTS.md#-tdd-开发原则-mandatory---最高优先级)）：
    - 🔴 为当前子任务编写失败测试
    - 🟢 编写最少量代码使测试通过
    - 🔵 重构优化代码结构
@@ -91,7 +91,7 @@
 - 简单任务或无需评估的场景可直接从阶段一开始
 
 **2. TDD 强制集成**
-- 每个子任务实现必须遵循 Red-Green-Refactor 循环（适用范围详见 [AGENTS.md](../../../AGENTS.md)）
+- 每个子任务实现必须遵循 Red-Green-Refactor 循环（适用范围详见 [AGENTS.md](../../AGENTS.md)）
 - 测试通过是提交代码的前提条件
 - 无测试代码不得合并
 

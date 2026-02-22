@@ -47,6 +47,7 @@ Explore our comprehensive documentation to get started:
 - **[Configuration Guide](docs/user/en/configuration_guide.md)**: Advanced configuration options.
 - **[Hardware Guide](docs/user/en/hardware_guide.md)**: Hardware compatibility and setup.
 - **[FAQ](docs/user/en/faq.md)**: Frequently asked questions.
+- **[Developer Documentation](docs/dev/en/architecture/design.md)**: Architecture, process, and technical guides.
 
 ## ⚖️ Disclaimer
 
