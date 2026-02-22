@@ -2,12 +2,12 @@
 
 FaceFusionCpp uses a flexible YAML configuration system. There are two main configuration files:
 
-1. **`app_config.yaml`**: Global application settings (hardware foundation, paths, logging, observability).
-2. **`task_config.yaml`**: Task-specific settings (I/O strategy, pipeline topology, algorithm parameters).
+1. **`config/app_config.yaml`**: Global application settings (hardware foundation, paths, logging, observability).
+2. **`config/task_config.yaml`**: Task-specific settings (I/O strategy, pipeline topology, algorithm parameters).
 
 ---
 
-## 1. Application Configuration (`app_config.yaml`)
+## 1. Application Configuration (`config/app_config.yaml`)
 
 This file is usually located in the `config/` directory. It defines the runtime environment and infrastructure. **These settings apply globally to the entire application.**
 
@@ -80,7 +80,7 @@ default_task_settings:
 
 ---
 
-## 2. Task Configuration (`task_config.yaml`)
+## 2. Task Configuration (`config/task_config.yaml`)
 
 This file defines the **specific task** you want to execute (e.g., swapping a face in a particular video). You can pass this file via the `-c/--task-config` command line argument.
 

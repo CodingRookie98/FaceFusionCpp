@@ -624,7 +624,7 @@ graph LR
     *   可通过环境变量 `FACEFUSION_HOME` 显式覆盖。
 *   **标准目录布局 (Standard Layout)**:
     *   `bin/`: 可执行文件 (FaceFusionCpp)
-    *   `config/`: 配置文件 (app_config.yaml)
+    *   `config/`: 配置文件 (`app_config.yaml`, `task_config.yaml`)
     *   `assets/`: 模型与资源
     *   `logs/`: 运行日志
 *   **路径解析原则**:
@@ -852,7 +852,7 @@ graph LR
 | 文件                | 位置                     | 生命周期 | 主要用途                      |
 | :------------------ | :----------------------- | :------- | :---------------------------- |
 | `app_config.yaml`   | `config/app_config.yaml` | 进程级   | 全局环境配置 (日志、模型路径) |
-| `task_config.yaml`  | CLI `-c` 指定            | 任务级   | 单次任务的 I/O 与 Pipeline    |
+| `task_config.yaml`  | `config/task_config.yaml` | 任务级   | 单次任务的 I/O 与 Pipeline    |
 | `{task_id}.ckpt`    | `checkpoints/`           | 临时     | 断点续传状态                  |
 | `metrics_{ts}.json` | `logs/`                  | 归档     | 任务执行指标报告              |
 
@@ -978,8 +978,9 @@ graph LR
 | 用途                              | 格式 | 库              | 理由                     |
 | :-------------------------------- | :--- | :-------------- | :----------------------- |
 | **配置文件** (人编辑)             | YAML | `yaml-cpp`      | 可读性优秀，原生注释支持 |
-| └─ `app_config.yaml`              |      |                 |                          |
-| └─ `task_config.yaml`             |      |                 |                          |
+| └─ `config/`                      |      |                 |                          |
+|    └─ `app_config.yaml`           |      |                 |                          |
+|    └─ `task_config.yaml`          |      |                 |                          |
 | **数据输出** (机器生成/消费)      | JSON | `nlohmann-json` | 解析快，生态系统兼容性好 |
 | └─ `metrics_{timestamp}.json`     |      |                 |                          |
 | └─ `--system-check --json` 输出   |      |                 |                          |

@@ -16,13 +16,13 @@ FaceFusionCpp is a high-performance face swapping application and library design
 
 The system uses a hierarchical configuration approach using YAML for persistence.
 
-### 2.1 App Configuration (`app_config.yaml`)
+### 2.1 App Configuration (`config/app_config.yaml`)
 Global settings that persist across different tasks:
 - `log_level`: (DEBUG, INFO, WARN, ERROR)
 - `model_path`: Base directory for AI models.
 - `gpu_id`: Target NVIDIA GPU for execution.
 
-### 2.2 Task Configuration (`task_config.yaml`)
+### 2.2 Task Configuration (`config/task_config.yaml`)
 Specific to a single execution run:
 - **IO**: Input/Output paths.
 - **Pipeline**: List of processors (e.g., `face_swapper`, `face_enhancer`).

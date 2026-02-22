@@ -2,12 +2,12 @@
 
 FaceFusionCpp 采用灵活的 YAML 配置系统。主要的配置文件有两个：
 
-1. **`app_config.yaml`**: 全局应用程序设置 (硬件基础、路径、日志、可观测性)。
-2. **`task_config.yaml`**: 特定任务设置 (I/O 策略、流水线拓扑、算法参数)。
+1. **`config/app_config.yaml`**: 全局应用程序设置 (硬件基础、路径、日志、可观测性)。
+2. **`config/task_config.yaml`**: 特定任务设置 (I/O 策略、流水线拓扑、算法参数)。
 
 ---
 
-## 1. 应用程序配置 (`app_config.yaml`)
+## 1. 应用程序配置 (`config/app_config.yaml`)
 
 此文件通常位于 `config/` 目录下，用于定义运行时环境和基础设施。**这是对整个程序生效的全局设置**。
 
@@ -80,7 +80,7 @@ default_task_settings:
 
 ---
 
-## 2. 任务配置 (`task_config.yaml`)
+## 2. 任务配置 (`config/task_config.yaml`)
 
 此文件定义了您想要执行的**具体任务**（例如，在特定视频中进行换脸）。您可以通过 `-c/--task-config` 命令行参数传入此文件。
 
