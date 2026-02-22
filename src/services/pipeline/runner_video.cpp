@@ -128,6 +128,12 @@ public:
         video_params.width = reader.get_width();
         video_params.height = reader.get_height();
         video_params.frameRate = reader.get_fps();
+        if (!task_config.io.output.video_encoder.empty()) {
+            video_params.videoCodec = task_config.io.output.video_encoder;
+        }
+        if (task_config.io.output.video_quality > 0) {
+            video_params.quality = task_config.io.output.video_quality;
+        }
 
         VideoWriter writer(video_output_path, video_params);
 
@@ -387,6 +393,12 @@ private:
         video_params.width = reader.get_width();
         video_params.height = reader.get_height();
         video_params.frameRate = reader.get_fps();
+        if (!task_config.io.output.video_encoder.empty()) {
+            video_params.videoCodec = task_config.io.output.video_encoder;
+        }
+        if (task_config.io.output.video_quality > 0) {
+            video_params.quality = task_config.io.output.video_quality;
+        }
 
         VideoWriter writer(video_output_path, video_params);
 
