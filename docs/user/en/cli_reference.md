@@ -3,8 +3,9 @@
 The FaceFusionCpp executable provides a powerful command-line interface (CLI) for both quick tasks and complex production pipelines.
 
 **Usage Syntax**:
-```powershell
-FaceFusionCpp.exe [Global Options] [Quick Mode Options | Task Config Mode]
+
+```bash
+./FaceFusionCpp [Global Options] [Quick Mode Options | Task Config Mode]
 ```
 
 ---
@@ -18,7 +19,7 @@ These options control the base behavior of the application.
 | `-v, --version` | None | Display application version. | `false` |
 | `--app-config` | `<path>` | Path to the **global** application configuration file. | `config/app_config.yaml` |
 | `--log-level` | `<level>` | Override log level (`trace`, `debug`, `info`, `warn`, `error`). | `info` |
-| `--system-check`| None | Run environment self-check (CUDA, library versions). | `false` |
+| `--system-check` | None | Run environment self-check (CUDA, library versions). | `false` |
 | `--json` | None | If set, `--system-check` results will be output in JSON format. | `false` |
 | `--validate` | None | Parse and validate configuration file (Dry-Run) without executing. | `false` |
 
@@ -53,8 +54,9 @@ For complex workflows or batch processing, use YAML.
 ## 4. Examples & Advanced Usage
 
 ### 4.1 Readiness Check (JSON Integration)
-```powershell
-FaceFusionCpp.exe --system-check --json
+
+```bash
+./FaceFusionCpp --system-check --json
 ```
 Output Example:
 ```json
@@ -69,11 +71,13 @@ Output Example:
 
 ### 4.2 Dry-Run Validation
 Validate your YAML before submitting long-running tasks:
-```powershell
-FaceFusionCpp.exe -c my_complex_task.yaml --validate
+
+```bash
+./FaceFusionCpp -c my_complex_task.yaml --validate
 ```
 
 ### 4.3 Basic Swap + Enhance
-```powershell
-FaceFusionCpp.exe -s face.jpg -t movie.mp4 -o out/ --processors face_swapper,face_enhancer
+
+```bash
+./FaceFusionCpp -s face.jpg -t movie.mp4 -o out/ --processors face_swapper,face_enhancer
 ```
