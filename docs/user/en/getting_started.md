@@ -36,9 +36,10 @@ You must install the following components and add them to your system PATH, or p
     Extract the ZIP archive into a directory (e.g., `D:\FaceFusionCpp`).
     *Try to avoid paths incorporating non-ASCII characters or excessive spacing.*
 
-3.  **Directory Structure**:
+3. **Directory Structure**:
     Once extracted, you should see the following structure:
-    ```
+
+    ```text
     FaceFusionCpp/
     ├── bin/                # Executables and DLLs
     ├── models/             # AI model files (.onnx)
@@ -54,9 +55,10 @@ You must install the following components and add them to your system PATH, or p
 Let's execute a basic face-swapping operation to verify that everything is working.
 
 ### Preparation
-1.  Prepare a **Source Image** (the face you wish to use). Let's assume it is named `source.jpg`.
-2.  Prepare a **Target Image** (the picture you wish to overwrite). Let's assume it is named `target.jpg`.
-3.  For convenience, place them directly inside the project root directory.
+
+1. Prepare a **Source Image** (the face you wish to use). Let's assume it is named `source.jpg`.
+2. Prepare a **Target Image** (the picture you wish to overwrite). Let's assume it is named `target.jpg`.
+3. For convenience, place them directly inside the project root directory.
 
 ### Execution
 Open a terminal (PowerShell or CMD) at the installation directory, and run:
@@ -71,11 +73,13 @@ Open a terminal (PowerShell or CMD) at the installation directory, and run:
 *   `-o, --output`: The path to save the result.
 
 ### Expected Output
+
 You should witness the following scroll in the log:
-1.  **Device Initialization** (CUDA/TensorRT).
-2.  **Model Loading** (inswapper_128, etc.).
-3.  **Processing Progress**.
-4.  **Completion Message**.
+
+1. **Device Initialization** (CUDA/TensorRT).
+2. **Model Loading** (inswapper_128, etc.).
+3. **Processing Progress**.
+4. **Completion Message**.
 
 Check `output.jpg` to view your result!
 
@@ -95,8 +99,8 @@ When encountering environmental problems or before kicking off your first massiv
 
 If the application fails to start or crashes abruptly:
 
-*   **"DLL not found"**: Ensure the `bin` directories for CUDA, cuDNN, and TensorRT have been added to your system PATH, or manually copy the required `.dll` files next to `FaceFusionCpp.exe`.
-*   **"CUDA error"**: Update your NVIDIA graphics card driver to the newest version.
-*   **"Model not found"**: Ensure the `models/` directory exists and houses the required `.onnx` files.
+* **"DLL not found"**: Ensure the `bin` directories for CUDA, cuDNN, and TensorRT have been added to your system PATH, or manually copy the required `.dll` files next to `FaceFusionCpp.exe`.
+* **"CUDA error"**: Update your NVIDIA graphics card driver to the newest version.
+* **"Model not found"**: Ensure the `models/` directory exists and houses the required `.onnx` files.
 
 For a significantly more detailed explanation of configuration options, please refer to the [User Guide](user_guide.md) or the [CLI Reference](cli_reference.md).

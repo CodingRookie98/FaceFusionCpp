@@ -145,7 +145,9 @@ face_analysis:
     occluder_model: "xseg"                # Model to mask out hands/objects in front of the face.
     parser_model: "bisenet_resnet_34"     # Model to parse out facial features.
     region: ["skin", "nose", "mouth"]     # Default "all". Beginners should leave this untouched.
+
 ```
+
 ### 2.3 Pipeline Processors (`pipeline`)
 
 The core business logic! These are the "workers" (processors) that execute the tasks. They consist of a series of `step`s, **passing the frame sequentially down the line based on the order you configure them**.
