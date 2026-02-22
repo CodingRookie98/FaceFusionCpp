@@ -71,11 +71,18 @@
     - **`release/*`**：发布准备，基于 `dev` 创建，完成后同时合并到 `master` 和 `dev`。命名：`release/v{version}`。
     - **`hotfix/*`**：生产紧急修复，基于 `master` 创建，完成后同时合并到 `master` 和 `dev`。命名：`hotfix/v{version}-{desc}`。
   - **日常开发流程**：基于 `dev` 新建 `feature/*` → 实现与测试 → 验收通过 → 合并回 `dev` 并删除分支。
-- **文档管理** (`docs/dev/`)：
-  - 规范：遵循 `docs/dev/process/zh/` 中的质量标准和流程文档。
-  - 架构：参考 `docs/dev/zh/architecture/design.md` 或 `layers.md`。
-  - 指南：参考 `docs/dev/zh/guides/setup.md`。
-  - 记录：`docs/dev/zh/troubleshooting/README.md` (记录疑难杂症的分级索引)
+- **文档管理** (`docs/`)：
+  - **用户文档** (`docs/user/{en,zh}/`)：面向终端用户。
+    - `getting_started.md`：快速上手，环境初探。
+    - `user_guide.md`：功能介绍与操作指南。
+    - `configuration_guide.md`：**核心配置参数**说明 (`app_config.yaml`, `task_config.yaml`)。
+    - `cli_reference.md`：命令行参数详解。
+    - `hardware_guide.md`：硬件性能优化建议。
+  - **开发文档** (`docs/dev/{en,zh}/`)：面向开发者与 AI Agent。
+    - `architecture/`：**架构核心**。`design.md` (系统设计与原则)；`layers.md` (分层结构)。
+    - `process/`：**流程军规**。`workflow.md` (必读！开发流水线 Checklist)；`quality.md` (质量标准)；`C++_quality_standard.md` (代码规范)。
+    - `guides/setup.md`：技术构建环境搭建指南。
+    - `troubleshooting/README.md`：疑难杂症的分级检索索引。
 - **提交要求**：
   - 仅提交源码与必要资源，禁止提交文档、日志或构建文件(除非用户明确要求)。
   - 提交文档相关文件时跳过编译测试验证。
