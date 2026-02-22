@@ -68,7 +68,10 @@ default_task_settings:
     output:
       video_encoder: "libx264"
       video_quality: 80
+      prefix: "result_"
+      suffix: ""
       conflict_policy: "error"
+      audio_policy: "copy"
 ```
 
 ---
@@ -83,9 +86,13 @@ default_task_settings:
 *   **`io`**: 输入源 (`source_paths`) 与目标 (`target_paths`)，支持图片、视频和目录扫描。
 *   **`io.output`**:
     *   `path`: 输出目录（强制绝对路径）。
+    *   `prefix`: 输出文件名前缀。
+    *   `suffix`: 输出文件名后缀。
     *   `conflict_policy`: `overwrite` (覆盖), `rename` (重命名), `error` (报错)。
     *   `audio_policy`: `copy` (保留音轨), `skip` (静音)。
 *   **`resource`**:
+    *   `thread_count`: 任务并发线程数，0 为自动（默认最大线程数的一半）。
+    *   `max_queue_size`: 队列最大容量，控制缓冲防 OOM。
     *   `execution_order`:
         *   `sequential`: 帧顺序处理，低延迟。
         *   `batch`: 各步骤分块批处理，极大降低显存峰值（适合低显存设备）。
@@ -110,6 +117,8 @@ io:
     - "inputs/video_b.mp4"      # 目标视频
   output:
     path: "outputs/result.mp4"  # 输出路径
+    prefix: "result_"           # 文件名前缀
+    suffix: "_v1"               # 文件名后缀
     video_quality: 80           # 视频质量 0-100 (默认: 80)
     video_encoder: "libx264"    # FFmpeg 编码器
     conflict_policy: "error"
@@ -117,7 +126,8 @@ io:
 
 resource:
   thread_count: 0               # 线程数 (0 = 自动)
-  execution_order: "sequential" # 执行顺序: sequential (顺序), parallel (并行)
+  max_queue_size: 20            # 每个步骤队列最大容量
+  execution_order: "sequential" # 执行顺序: sequential (顺序), batch (批处理)
   batch_buffer_mode: "memory"
   segment_duration_seconds: 30
 
@@ -132,16 +142,20 @@ face_analysis:
     similarity_threshold: 0.6   # 人脸识别相似度阈值
   face_masker:
     types: ["box", "occlusion", "region"] # 遮罩融合
-    region: ["skin", "nose", "mouth"]      # 指定处理区域
+    occluder_model: "xseg"                # 遮挡检测模型
+    parser_model: "bisenet_resnet_34"     # 人脸解析模型
+    region: ["skin", "nose", "mouth"]     # 指定处理区域
 
 pipeline:
   - step: "face_swapper"
+    name: "main_swap"            # 处理步骤标识符(可选)
     params:
       model: "inswapper_128_fp16"
       face_selector_mode: "many" # 模式: reference (参考), many (多人), one (单人)
       reference_face_path: ""    # 如果模式为 reference，则必须提供
 
   - step: "face_enhancer"
+    name: "post_enhancement"     # 处理步骤标识符(可选)
     enabled: true
     params:
       model: "gfpgan_1.4"
@@ -166,8 +180,9 @@ pipeline:
 *   `blend_factor`: 混合比例 (0.0 - 1.0)。1.0 为完全增强。
 
 #### **表情还原** (`expression_restorer`)
-*   `model`: `live_portrait`。
-*   `restore_factor`: 0.0 - 1.0。
+修正换脸后人脸裁切图的神态，使其贴合原始表情。
+*   `model`: `live_portrait` 等。
+*   `restore_factor`: 还原比例 (0.0 - 1.0)。
 
 #### **全帧增强/超分** (`frame_enhancer`)
 对整个画面/帧进行超分辨率处理。

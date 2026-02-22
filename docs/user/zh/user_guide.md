@@ -19,7 +19,11 @@ FaceFusionCpp 基于模块化的流水线架构。核心处理单元称为 **Pro
 使用 GFPGAN/CodeFormer 恢复人脸的细节和清晰度。这是换脸后的强烈推荐步骤，因为换脸模型的输出通常只有 128x128 分辨率。
 *   **关键参数**: `blend_factor` (0.0 - 1.0)。控制增强后的人脸与原始人脸的混合程度。
 
-### 1.3 全帧增强处理器 (Frame Enhancer)
+### 1.3 表情还原处理器 (Expression Restorer)
+使用 LivePortrait 恢复换脸后的人脸表情神态，使其更加生动贴合原始照片或视频。
+*   **关键参数**: `restore_factor` (0.0 - 1.0)。控制表情还原的比例。
+
+### 1.4 全帧增强处理器 (Frame Enhancer)
 使用 Real-ESRGAN 对整张图片或视频帧进行超分辨率放大。用于提升低分辨率目标的画质。
 *   **关键参数**: `enhance_factor` (增强强度)。
 
@@ -32,7 +36,7 @@ FaceFusionCpp 基于模块化的流水线架构。核心处理单元称为 **Pro
 ```powershell
 FaceFusionCpp.exe -s source.jpg -t target.jpg -o output.png
 ```
-*   **输入**: `target.jpg` (或 png, bmp)。
+*   **输入**: `-s` 与 `-t`均支持传入多个路径，以逗号分隔（或者在配置文件中配置列表）。
 *   **输出**: `output.png`。格式由输出文件扩展名决定。
 
 ### 2.2 视频处理 (Video Processing)
@@ -71,21 +75,27 @@ FaceFusionCpp.exe ... --processors face_swapper,face_enhancer
 ```yaml
 pipeline:
   - step: "face_swapper"
+    name: "main_swap"
     params:
       model: "inswapper_128_fp16"
   - step: "face_enhancer"
+    name: "post_enhancement"
     params:
       blend_factor: 1.0
 ```
 
-### 高级流水线: 换脸 -> 增强 -> 放大
+### 高级流水线: 换脸 -> 表情还原 -> 增强 -> 放大
 1.  **Swap**: 替换人脸。
-2.  **Enhance Face**: 修复人脸细节。
-3.  **Enhance Frame**: 放大整张图像 (例如 2倍或 4倍)。
+2.  **Expression Restore**: 恢复人脸神态。
+3.  **Enhance Face**: 修复人脸细节。
+4.  **Enhance Frame**: 放大整张图像 (例如 2倍或 4倍)。
 
 ```yaml
 pipeline:
   - step: "face_swapper"
+  - step: "expression_restorer"
+    params:
+      model: "live_portrait"
   - step: "face_enhancer"
   - step: "frame_enhancer"
     params:

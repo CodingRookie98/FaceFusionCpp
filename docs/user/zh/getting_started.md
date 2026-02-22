@@ -81,7 +81,17 @@
 
 ---
 
-## 4. 常见问题 (Troubleshooting)
+## 4. 系统自检 (System Check)
+
+在遇到环境问题或首次大规模运行前，建议运行内置的自检工具。该工具能快速诊断 CUDA、TensorRT、模型及 FFmpeg 依赖的状态：
+
+```powershell
+.\FaceFusionCpp.exe --system-check
+```
+
+---
+
+## 5. 常见问题 (Troubleshooting)
 
 如果程序启动失败或崩溃：
 
