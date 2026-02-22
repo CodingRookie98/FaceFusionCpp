@@ -47,6 +47,7 @@
 - **质量控制**：
   - 格式化：`python scripts/format_code.py`
   - 静态分析：`python scripts/run_clang_tidy.py` (Windows + MSVC 环境下跳过)
+  - **元数据同步**：修改版本号、作者或日期时，必须仅修改根目录的 `project.yaml`，然后运行 `python scripts/update_metadata.py` 同步到全项目。禁止手动修改各文件中的重复元信息。
   - 提交前检查：`python scripts/pre_commit_check.py` (强烈建议在 commit 前运行)
 - **开发原则**：
   - **智能指针优先于裸指针**。
@@ -88,6 +89,7 @@
 - **无文档即代码**：在未创建/更新 `docs/` 下对应文档前编写业务代码（小型 bug 修复 < 20行改动 和非功能性变更可豁免）。
 - **无测试即提交**：在未运行 `python build.py --action test --test-label unit` 并截图/贴出日志前进行 git commit（文档/注释等非代码类变更及 `docs/` 目录下内容除外）。
 - **幻觉引用**：引用不存在的文件路径（必须先 `ls` 或 `glob` 确认文件存在）。
+- **禁止硬编码元数据**：禁止在源码、CMake 或 README 中直接硬编码应由 `project.yaml` 管理的版本号、日期或作者信息。
 - **严禁递归删除** `build` 目录及其子文件。
 - **严禁提交** 未通过编译或基础测试的代码。
 - **谨慎使用 `--clean` 参数**：`--clean` 仅清理中间构建文件，bin 目录和 TensorRT 缓存会被保留。在不确定影响时请先确认。
