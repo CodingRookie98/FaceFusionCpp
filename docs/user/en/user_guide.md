@@ -18,7 +18,7 @@ FaceFusionCpp is built upon a modular pipeline architecture. The core processing
   * `many` (Default): Swap every single face detected on screen. Ideal for solo shots, or if you just want to spoof everyone's face.
   * `one`: Only swaps the **largest** face (the protagonist), ignoring background actors.
   * `reference`: Advanced mode. Requires setting `reference_face_path`. The program only processes faces that match the reference photo.
-    * **Pass-through Mechanism**: If no face is found in the source, or if no matching faces are detected in the frame, the program outputs the original frame directly to maintain audio-video sync.
+    * **Pass-through Mechanism (E403)**: If no face is found in the source, or if no matching faces are detected in the frame, the program **retains the original frame and outputs it directly**. This ensures non-stop rendering and perfect audio-video sync.
 
 ### 1.2 Face Enhancer
 
@@ -41,7 +41,8 @@ FaceFusionCpp is built upon a modular pipeline architecture. The core processing
 **What does it do?** The previously mentioned face enhancer only touches the "face". If the original video is blurry, a clean face will look extremely out of place. This module turns the entire frame (including clothes and background) into high definition.
 
 * **Supported Models**: `real_esrgan_x2`, `real_esrgan_x4_fp16`, etc.
-* **Tile Processing**: To prevent Out-of-Memory (OOM) errors on high-resolution targets (like 4K), this processor automatically slices the frame into smaller tiles for individual processing and seamlessly merges them back.
+* **Tile Processing**: When processing high-resolution targets (like 4K/8K), the system automatically slices frames into fixed-size **Tiles (clusters)** to prevent VRAM overflow (OOM).
+    * **Advantage**: Allows processing 4K content even on 8GB VRAM GPUs using the tile接力 strategy.
 * **Beginner Tip**: Extremely heavy on the graphics card! Only recommended for high-demand still images. Beginners are advised not to use this on long videos to avoid VRAM blowouts.
 * **Crucial Parameters (`enhance_factor`)**: Unsharp mask intensity, generally fine to leave at the default `1.0`.
 

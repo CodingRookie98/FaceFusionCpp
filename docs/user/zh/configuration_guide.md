@@ -22,8 +22,8 @@ inference:
   engine_cache:
     enable: true                # 启用推理引擎缓存 (默认: true。开启后第二次运行会极大地提高启动速度)
     path: "./.cache/tensorrt"   # 缓存位置 (相对于根目录)
-    max_entries: 3              # LRU 缓存容量上限 (默认: 3。显存最多保留的模型 Engine 数量)
-    idle_timeout_seconds: 60    # 空闲后自动释放时间 (默认: 60秒。推理引擎空闲多久后自动卸载以释放显存)
+    max_entries: 3              # LRU (Least Recently Used) 缓存容量上限 (默认: 3。显存最多保留的模型 Engine 数量，超过后自动卸载最久未用的模型)
+    idle_timeout_seconds: 60    # TTL (Time To Live) 空闲自动释放时间 (默认: 60秒。推理引擎空闲多久后自动卸载以释放显存)
   default_providers:            # 默认推理后端优先级 (默认顺序: tensorrt > cuda > cpu)
     - tensorrt
     - cuda
@@ -36,9 +36,9 @@ resource:
   #   tolerant: "常驻内存"模式。启动时就把所有东西塞进去，适合想要极致处理速度且显存很大的土豪（12GB+）。
   memory_strategy: "strict"
 
-  # 全局内存配额 (默认: "4GB")。
-  # 用于触发自适应背压 (Adaptive Backpressure) 机制。
-  # 当内存消耗接近此值时，程序将自动降低生产（解码）速度，直到队列有可用空间，从而彻底杜绝 OOM。
+  # 自适应背压限制 (Adaptive Backpressure - 默认: "4GB")。
+  # 这是一个极其重要的“安全阀”机制。
+  # 当程序检测到系统内存消耗接近此值时，生产者（视频解码器）将自动限速或暂停，直到消费者（AI 推理引擎）消耗掉排队的数据，从而从根本上杜绝 OOM (显存/内存溢出) 崩溃。
   max_memory_usage: "4GB"
 
 # --- 日志系统 (出了问题看哪里) ---
@@ -101,9 +101,10 @@ default_task_settings:
   * `thread_count`: 任务并发线程数 (默认 `0`，让程序自己决定，通常是你 CPU 框框数量的一半)。
   * `max_queue_size`: 队列最大容量，控制缓冲防显存撑爆。 (默认 `20`。如果运行时狂报 OOM，请调成 10 甚至 5)。
   * `execution_order`:
-    * `sequential` (默认值): 顺着一帧一帧处理。**推荐绝大部分小白使用此模式**。
-    * `batch`: 各步骤分块批处理，极大降低显存峰值。**仅适合显存极小 (<=4GB) 或硬盘空间极大的环境。**
-  * `batch_buffer_mode`: `memory` (存进内存，速度快) 或 `disk` (存入硬盘以防内存爆满，速度慢但稳)。
+    * `sequential` (默认值): **低延迟模式**。每一帧按顺序跑完整个流水线。适合实时预览或显存足以容纳所有模型的情况。
+    * `batch`: **高吞吐量模式**。所有帧先统一运行处理器 A，存入缓冲区后，关闭 A 再加载 B。
+    * **优势**: 配合 `strict` 内存模式，可实现“单模型显存占用”，极大降低硬件门槛。
+  * `batch_buffer_mode`: `memory` (存进内存，速度快) 或 `disk` (存入硬盘以防内存爆满，速度慢但极其稳健)。
   * `segment_duration_seconds`: 视频分段处理长度（默认 `0` 不分段。超长视频可以设置为分钟级的秒数）。
 
 ### 2.2 人脸分析 (`face_analysis`)

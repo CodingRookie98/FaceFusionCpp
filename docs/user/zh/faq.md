@@ -23,12 +23,12 @@
 FaceFusionCpp 使用特定的错误代码来标识问题。分为四类：系统 (E100-E199)、配置 (E200-E299)、模型 (E300-E399) 和 运行时 (E400-E499)。
 
 ### 系统级基础设施错误 (E100-E199)
-*   **E101: 内存不足 (Out of Memory - OOM)**
-    *   **原因**: GPU 显存耗尽，通常因为生产者（解码）速度远快于消费者（AI 推理）。
+*   **E101: 显存/内存溢出 (OOM)**
+    *   **原因**: 生产者（解码器）速度远超消费者（AI 推理引擎），导致排队帧堆积撑爆显存。
     *   **解决方案**:
-        1.  在 `app_config.yaml` 中启用 `strict` (严格) 内存策略。
-        2.  启用 **自适应背压 (Adaptive Backpressure)**: 在 `app_config.yaml` 中设置合理的 `max_memory_usage` (如 "4GB")。系统会根据此额度自动限流。
-        3.  减小 `max_queue_size` (最大队列长度，建议由 20 降至 5 或 10)。
+        1.  在 `app_config.yaml` 中启用 **自适应背压 (Adaptive Backpressure)**：设置合理的 `max_memory_usage` (如 "4GB")。系统会自动根据显存配额限速。
+        2.  将 `task_config.yaml` 中的 `execution_order` 设为 `batch` 指令顺序，并使用 `disk` 缓冲。
+        3.  减小 `max_queue_size` 或 `thread_count`。
 *   **E102: CUDA 设备未找到/丢失 (CUDA Device Not Found/Lost)**
     *   **原因**: 显卡驱动未安装、版本过低或硬件连接异常。
     *   **解决方案**: 运行 `./FaceFusionCpp --system-check` 进行环境完整性自检。
