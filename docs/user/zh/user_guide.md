@@ -9,27 +9,31 @@
 FaceFusionCpp 基于模块化的流水线架构。核心处理单元称为 **Processor (处理器)**。您可以单独使用它们，也可以组合使用。
 
 ### 1.1 换脸处理器 (Face Swapper)
-这是应用程序的核心功能。它检测目标图像/视频中的人脸，并将其替换为源图像中的人脸。
-*   **支持的模型**: `inswapper_128`, `inswapper_128_fp16`。
-*   **关键参数**: `face_selector_mode` (人脸选择模式)
-    *   `many` (默认): 替换所有检测到的人脸。
-    *   `one`: 仅替换最大的一张人脸。
-    *   `reference`: 仅替换与 `reference_face_path` 指定图片相似的人脸。
+**它的作用是？** 这就是"换头术"的执行者。它负责把视频里原来的脸，替换成你找来的那张脸。
+*   **支持的模型**: `inswapper_128`, `inswapper_128_fp16`。(默认 `inswapper_128_fp16`)
+*   **小白该怎么选？**: 保持默认模型即可。关键在于选择**脸**的模式。
+*   **关键参数 (`face_selector_mode`)**:
+    *   `many` (默认值): 只要是个人脸，我都全换了。适合画面里只有一个人，或者你就是想恶搞换掉所有人的脸的场景。
+    *   `one`: 我只挑视频里脸最大（占比最大）的那个人换。
+    *   `reference`: 高级玩法。你除了传你要换的脸，还得上传一张照片告诉程序：“视频里如果长得跟这张照片像，才换，不像的旁边那个路人不换”。此时需要配套设置 `reference_face_path`。
 
 ### 1.2 人脸增强处理器 (Face Enhancer)
-使用 GFPGAN/CodeFormer 恢复人脸的细节和清晰度。这是换脸后的强烈推荐步骤，因为换脸模型的输出通常只有 128x128 分辨率。
-*   **支持的模型**: `codeformer`, `gfpgan_1.2`, `gfpgan_1.3`, `gfpgan_1.4`。
-*   **关键参数**: `blend_factor` (0.0 - 1.0)。控制增强后的人脸与原始人脸的混合程度。
+**它的作用是？** 换脸模型输出的五官是非常模糊的。这个模块像是"去马赛克"和"磨皮"，能极大地恢复五官的高清细节。**换脸必开！**
+*   **支持的模型**: `codeformer`, `gfpgan_1.2`, `gfpgan_1.3`, `gfpgan_1.4`。(默认 `gfpgan_1.4`)
+*   **小白该怎么选？**: 默认的 `gfpgan_1.4` 就很好，如果源视频极度老旧破损，可以尝试 `codeformer`。
+*   **关键参数 (`blend_factor`)**: 控制假脸的高清化程度，0 不增强，1 完全变成 3D 假人脸。(默认 `0.8`。这能保留大概两成的原始照片光影环境，最为自然)。
 
 ### 1.3 表情还原处理器 (Expression Restorer)
-使用 LivePortrait 恢复换脸后的人脸表情神态，使其更加生动贴合原始照片或视频。
-*   **支持的模型**: `live_portrait`。
-*   **关键参数**: `restore_factor` (0.0 - 1.0)。控制表情还原的比例。
+**它的作用是？** 消除死鱼眼！换出来的脸有时候眼球没有对准，或者表情僵硬。它负责让新换上去的脸，去努力模仿原视频人的眼球微表情。
+*   **支持的模型**: `live_portrait`。(默认 `live_portrait`)
+*   **小白该怎么选？**: 遇到眼神对不上的特写镜头，可以加这一步。
+*   **关键参数 (`restore_factor`)**: 还原比例，0 到 1 之间。(默认 `0.8`)。
 
 ### 1.4 全帧增强处理器 (Frame Enhancer)
-使用 Real-ESRGAN 对整张图片或视频帧进行超分辨率放大。用于提升低分辨率目标的画质。
-*   **支持的模型**: `real_esrgan_x2`, `real_esrgan_x2_fp16`, `real_esrgan_x4`, `real_esrgan_x4_fp16`, `real_esrgan_x8`, `real_esrgan_x8_fp16`, `real_hatgan_x4`。
-*   **关键参数**: `enhance_factor` (增强强度)。
+**它的作用是？** 刚才的人脸增强只负责"脸"。如果原视频像马赛克一样，光是脸清晰了会极其突兀，它负责把整个画面（包含衣服背景）统统变成非常高清。
+*   **支持的模型**: `real_esrgan_x2`, `real_esrgan_x4_fp16` 等。
+*   **小白该怎么选？**: 非常吃显卡！只有在做非常精细的高要求图片时使用，普通配置不推荐拿来跑长视频。
+*   **关键参数 (`enhance_factor`)**: 增强强度，一般填默认值 `1.0` 即可。
 
 ---
 
@@ -67,16 +71,29 @@ FaceFusionCpp.exe -s source.jpg -t target.mp4 -o output.mp4
 
 FaceFusionCpp 的真正威力在于组合处理器。顺序很重要！
 
-### 推荐流水线: 换脸 -> 增强
-这确保了换脸后的低分辨率人脸在最终输出前被增强。
+### 推荐流水线: 换脸 -> 增强 (绝大多数够用了)
+这确保了换脸后的低分辨率脸得到高清处理，最符合实际使用预期。
 
-**命令行**:
+> [!TIP]
+> 可以在后面直接通过命令行的 `--processors` 拼接来快速执行。逗号不能有空格！
+
+**命令行最快执行法**:
 ```powershell
-FaceFusionCpp.exe ... --processors face_swapper,face_enhancer
+FaceFusionCpp.exe -s my_face.jpg -t target_video.mp4 -o result.mp4 --processors face_swapper,face_enhancer
 ```
 
-**YAML 配置**:
+**或者用 YAML 配置文件**:
+创建一个文件，随便叫比如 `do_job.yaml`：
 ```yaml
+config_version: "1.0"
+io:
+  source_paths:
+    - "my_face.jpg"
+  target_paths:
+    - "target_video.mp4"
+  output:
+    path: "result.mp4"
+
 pipeline:
   - step: "face_swapper"
     name: "main_swap"
@@ -85,7 +102,11 @@ pipeline:
   - step: "face_enhancer"
     name: "post_enhancement"
     params:
-      blend_factor: 1.0
+      blend_factor: 0.8
+```
+然后执行它：
+```powershell
+FaceFusionCpp.exe -c do_job.yaml
 ```
 
 ### 高级流水线: 换脸 -> 表情还原 -> 增强 -> 放大
