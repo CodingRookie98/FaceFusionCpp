@@ -2,8 +2,8 @@
 
 FaceFusionCpp 采用灵活的 YAML 配置系统。主要的配置文件有两个：
 
-1.  **`app_config.yaml`**: 全局应用程序设置 (硬件基础、路径、日志、可观测性)。
-2.  **`task_config.yaml`**: 特定任务设置 (I/O 策略、流水线拓扑、算法参数)。
+1. **`app_config.yaml`**: 全局应用程序设置 (硬件基础、路径、日志、可观测性)。
+2. **`task_config.yaml`**: 特定任务设置 (I/O 策略、流水线拓扑、算法参数)。
 
 ---
 
@@ -84,24 +84,25 @@ default_task_settings:
 
 ### 2.1 基础结构描述
 
-*   **`task_info`**: 任务元数据。支持 `enable_logging` (独立日志，默认 `false`) 和 `enable_resume` (断点续传，默认 `false`。长视频如果崩了可以接着跑)。
-*   **`io`**: 输入源 (`source_paths`) 与目标 (`target_paths`)，支持图片、视频和目录扫描。
-*   **`io.output`**:
+* **`task_info`**: 任务元数据。支持 `enable_logging` (独立日志，默认 `false`) 和 `enable_resume` (断点续传，默认 `false`。长视频如果崩了可以接着跑)。
+* **`io`**: 输入源 (`source_paths`) 与目标 (`target_paths`)，支持图片、视频和目录扫描。
+* **`io.output`**:
     > [!TIP]
     > 如果下面这些参数你不写，就会自动套用上面全局配置里的 `default_task_settings` 默认值。
-    *   `path`: 输出目录（强制绝对路径）。
-    *   `prefix`: 输出文件名前缀 (默认 `result_`)。
-    *   `suffix`: 输出文件名后缀 (默认 空)。
-    *   `conflict_policy`: `overwrite` (覆盖), `rename` (重命名), `error` (报错，默认值)。
-    *   `audio_policy`: `copy` (保留音轨，默认值), `skip` (静音)。
-*   **`resource`**:
-    *   `thread_count`: 任务并发线程数 (默认 `0`，让程序自己决定，通常是你 CPU 框框数量的一半)。
-    *   `max_queue_size`: 队列最大容量，控制缓冲防显存撑爆。 (默认 `20`。如果运行时狂报 OOM，请调成 10 甚至 5)。
-    *   `execution_order`:
-        *   `sequential` (默认值): 顺着一帧一帧处理。**推荐绝大部分小白使用此模式**。
-        *   `batch`: 各步骤分块批处理，极大降低显存峰值。**仅适合显存极小 (<=4GB) 或硬盘空间极大的环境。**
-    *   `batch_buffer_mode`: `memory` (存进内存，速度快) 或 `disk` (存入硬盘以防内存爆满，速度慢但稳)。
-    *   `segment_duration_seconds`: 视频分段处理长度（默认 `0` 不分段。超长视频可以设置为分钟级的秒数）。
+
+  * `path`: 输出目录（强制绝对路径）。
+  * `prefix`: 输出文件名前缀 (默认 `result_`)。
+  * `suffix`: 输出文件名后缀 (默认 空)。
+  * `conflict_policy`: `overwrite` (覆盖), `rename` (重命名), `error` (报错，默认值)。
+  * `audio_policy`: `copy` (保留音轨，默认值), `skip` (静音)。
+* **`resource`**:
+  * `thread_count`: 任务并发线程数 (默认 `0`，让程序自己决定，通常是你 CPU 框框数量的一半)。
+  * `max_queue_size`: 队列最大容量，控制缓冲防显存撑爆。 (默认 `20`。如果运行时狂报 OOM，请调成 10 甚至 5)。
+  * `execution_order`:
+    * `sequential` (默认值): 顺着一帧一帧处理。**推荐绝大部分小白使用此模式**。
+    * `batch`: 各步骤分块批处理，极大降低显存峰值。**仅适合显存极小 (<=4GB) 或硬盘空间极大的环境。**
+  * `batch_buffer_mode`: `memory` (存进内存，速度快) 或 `disk` (存入硬盘以防内存爆满，速度慢但稳)。
+  * `segment_duration_seconds`: 视频分段处理长度（默认 `0` 不分段。超长视频可以设置为分钟级的秒数）。
 
 ### 2.2 人脸分析 (`face_analysis`)
 
@@ -168,28 +169,36 @@ pipeline:
 > 如果你在 yaml 里漏写了某个 `params` 内的设置，它们会自动使用 [全局步骤参数](#3-全局步骤参数-global_pipeline_step_params) 或各自默认值。
 
 #### **换脸处理器** (`face_swapper`)
+
 这是最重要的干活组件：将目标中的人脸替换为源人脸。
-*   `model`: 模型名称，支持 `inswapper_128` 或 `inswapper_128_fp16`。(默认 `inswapper_128_fp16`。带 `fp16` 后缀的在大部分显卡上跑得更快且画质肉眼无区别)。
-*   `face_selector_mode`: (默认 `many`)
-    *   `many`: 给画面里**所有**检测到的人脸进行换脸接力。
-    *   `one`: 只要画面里**最大**的那张人脸，也就是主角，后面的群演不换了。
-    *   `reference`: 只要和 `reference_face_path` 指定图片（这张图片就是告诉程序谁是谁，只换这个人）非常相似的人脸才换。
+
+* `model`: 模型名称，支持 `inswapper_128` 或 `inswapper_128_fp16`。(默认 `inswapper_128_fp16`。带 `fp16` 后缀的在大部分显卡上跑得更快且画质肉眼无区别)。
+* `face_selector_mode`: (默认 `many`)
+  * `many`: 给画面里**所有**检测到的人脸进行换脸接力。
+  * `one`: 只要画面里**最大**的那张人脸，也就是主角，后面的群演不换了。
+  * `reference`: 只要和 `reference_face_path` 指定图片（这张图片就是告诉程序谁是谁，只换这个人）非常相似的人脸才换。
 
 #### **人脸增强** (`face_enhancer`)
+
 修复人脸区域的细节和马赛克。(因为换出来的脸只有128的网纹清晰度，这一步是变高清的刚需)。
-*   `model`: 模型名称，支持 `codeformer`, `gfpgan_1.2`~`1.4` 等。(默认 `gfpgan_1.4`。如果画面有极度破损，可以用 codeformer)。
-*   `blend_factor`: 增强后的人脸与原始人脸的混合比例 (0.0 - 1.0)。(默认 `0.8`。1.0 就是完全最高清的假人脸皮肤，0 相当于白干。设置 0.8 时，会保留 20% 原本的人脸的光影，看起来最自然)。
+
+* `model`: 模型名称，支持 `codeformer`, `gfpgan_1.2`~`1.4` 等。(默认 `gfpgan_1.4`。如果画面有极度破损，可以用 codeformer)。
+* `blend_factor`: 增强后的人脸与原始人脸的混合比例 (0.0 - 1.0)。(默认 `0.8`。1.0 就是完全最高清的假人脸皮肤，0 相当于白干。设置 0.8 时，会保留 20% 原本的人脸的光影，看起来最自然)。
 
 #### **表情还原** (`expression_restorer`)
+
 修正换脸后死板的人脸裁切图，使其眼球对视和微表情更贴切还原最初的原画面。
-*   `model`: 模型名称，支持 `live_portrait`。(默认 `live_portrait`)。
-*   `restore_factor`: 还原比例 (0.0 - 1.0)。(默认 `0.8`。建议维持默认)。
+
+* `model`: 模型名称，支持 `live_portrait`。(默认 `live_portrait`)。
+* `restore_factor`: 还原比例 (0.0 - 1.0)。(默认 `0.8`。建议维持默认)。
 
 #### **全帧增强/超分** (`frame_enhancer`)
+
 让整张模糊的原本的老照片/老视频变清楚（包括背景）。非常吃计算资源的一步。
-*   `model`: 模型名称，支持各种倍率的 `real_esrgan_x4_fp16` 之类。
-*   `enhance_factor`: 画质提升后画面占比的强度 (默认 `1.0`)。
-*   **Tile 分块策略**: 大视频处理的时候自动拆给计算的，防止直接爆了四倍以后显存装不下，所以通常你不需要调整。
+
+* `model`: 模型名称，支持各种倍率的 `real_esrgan_x4_fp16` 之类。
+* `enhance_factor`: 画质提升后画面占比的强度 (默认 `1.0`)。
+* **Tile 分块策略**: 大视频处理的时候自动拆给计算的，防止直接爆了四倍以后显存装不下，所以通常你不需要调整。
 
 ---
 
@@ -208,9 +217,10 @@ global_pipeline_step_params:
 
 ---
 
-## 3. 场景配置示例
+## 4. 场景配置示例
 
 ### 场景 A: 高质量视频处理
+
 启用换脸和增强，并设置高质量视频编码。
 
 ```yaml
@@ -226,6 +236,7 @@ pipeline:
 ```
 
 ### 场景 B: 低显存模式 (Low VRAM)
+
 通过顺序执行和严格内存策略来减少显存占用。
 
 ```yaml
@@ -240,6 +251,7 @@ resource:
 ```
 
 ### 场景 C: 特定人脸替换
+
 仅替换视频中特定的人脸。
 
 ```yaml
