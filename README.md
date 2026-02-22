@@ -10,7 +10,7 @@
 
 FaceFusionCpp is a high-performance C++ rewrite of the popular open-source project [facefusion](https://github.com/facefusion/facefusion). It aims to provide the same powerful face manipulation capabilities with significantly improved performance, lower resource usage, and easier deployment.
 
-## ✨ Key Features
+## FaceFusionCpp
 
 - **⚡ High Performance**: Optimized C++ core with multi-threading support for maximum throughput.
 - **🚀 Hardware Acceleration**: Native CUDA and TensorRT integration for lightning-fast inference.
@@ -22,11 +22,11 @@ FaceFusionCpp is a high-performance C++ rewrite of the popular open-source proje
 - **📦 Batch Processing**: Efficiently handle mixed inputs of images and videos.
 - **🔧 Cross-Platform**: Full support for **Windows x64** and **Linux x64**.
 
-## 📥 Installation
+## FaceFusionCpp
 
 Download the latest pre-built binaries from our [Releases Page](https://github.com/CodingRookie98/faceFusionCpp/releases).
 
-### System Requirements
+### FaceFusionCpp
 
 To ensure optimal performance and compatibility, please ensure your system meets the following requirements:
 
@@ -37,7 +37,7 @@ To ensure optimal performance and compatibility, please ensure your system meets
 | **cuDNN** | ≥ 9.2 | 9.19.0 | Required for GPU acceleration |
 | **TensorRT**| ≥ 10.2 | 10.15.1 | Optional, for max performance |
 
-## 📖 Documentation
+## FaceFusionCpp
 
 Explore our comprehensive documentation to get started:
 
@@ -49,13 +49,13 @@ Explore our comprehensive documentation to get started:
 - **[FAQ](docs/user/en/faq.md)**: Frequently asked questions.
 - **[Developer Documentation](docs/dev/en/architecture/design.md)**: Architecture, process, and technical guides.
 
-## ⚖️ Disclaimer
+## FaceFusionCpp
 
 This software is designed for **educational and research purposes only**. Users are responsible for ensuring their use of this software complies with local laws and regulations. Do not use this software for illegal purposes or to create content that violates the rights of others.
 
 The developers of FaceFusionCpp are not responsible for any misuse of this software.
 
-## 📄 License
+## FaceFusionCpp
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 

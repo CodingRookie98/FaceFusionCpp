@@ -2,7 +2,7 @@
  * @file config_types.ixx
  * @brief Common types for the configuration system
  * @author CodingRookie
- * @date 2026-01-27
+ * @date 2026-02-22
  * @details Defines shared enums, constants, and error handling types (Result<T, E>)
  *          used throughout the application configuration.
  */

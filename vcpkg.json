@@ -1,7 +1,7 @@
 {
   "name": "facefusioncpp",
   "version": "0.34.0",
-  "description": "C++ implementation of the open-source project facefusion",
+  "description": "High-Performance C++ Implementation of FaceFusion",
   "homepage": "https://github.com/CodingRookie98/faceFusionCpp",
   "license": "GPL-3.0-or-later",
   "builtin-baseline": "6d7bf7ef2193e2d1c5798a5ff8811d533104c861",
@@ -35,7 +35,7 @@
   ],
   "features": {
     "test": {
-      "description": "Build unit tests",
+      "description": "High-Performance C++ Implementation of FaceFusion",
       "dependencies": [
         "gtest"
       ]

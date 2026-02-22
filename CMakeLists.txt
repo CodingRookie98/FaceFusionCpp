@@ -221,7 +221,7 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_PACKAGE_VERSION_MAJOR "${${PROJECT_NAME}_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${${PROJECT_NAME}_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${${PROJECT_NAME}_VERSION_PATCH}")
-set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
+set(CPACK_PACKAGE_NAME "FaceFusionCpp")
 
 # Get CUDA version major for package name suffix
 if (DEFINED CUDAToolkit_VERSION_MAJOR)
@@ -238,14 +238,14 @@ if (LINUX)
     set(OS_ID ${CMAKE_MATCH_1})
     string(REGEX MATCH "VERSION_ID=\"?([0-9]+\\.[0-9]+)\"?" _ ${OS_RELEASE_CONTENT})
     set(OS_VERSION_ID ${CMAKE_MATCH_1})
-    
+
     if (OS_ID AND OS_VERSION_ID)
         # Capitalize first letter of ID (e.g. ubuntu -> Ubuntu)
         string(SUBSTRING ${OS_ID} 0 1 FIRST_CHAR)
         string(TOUPPER ${FIRST_CHAR} FIRST_CHAR)
         string(SUBSTRING ${OS_ID} 1 -1 REMAINING_CHARS)
         set(OS_ID_CAP "${FIRST_CHAR}${REMAINING_CHARS}")
-        
+
         set(OS_DISTRO_NAME "${OS_ID_CAP}${OS_VERSION_ID}")
     else()
         set(OS_DISTRO_NAME "Linux")
