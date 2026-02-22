@@ -1,72 +1,85 @@
 # Frequently Asked Questions (FAQ)
 
-This document addresses common issues, errors, and performance questions.
+This document addresses common installation issues, runtime errors, and performance-related questions.
 
 ---
 
 ## 1. Installation & Startup
 
-### Q: I get "VCRUNTIME140.dll" or "MSVCP140.dll" missing error.
-**A**: Install the [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) for Visual Studio 2015-2022.
+### Q: Startup complains about missing "VCRUNTIME140.dll" or "MSVCP140.dll".
+**A**: Please install the [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) (2015-2022 versions).
 
-### Q: I get "cudart64_12.dll" or "nvinfer.dll" not found.
-**A**: Ensure you have installed CUDA Toolkit (12.x) and TensorRT (10.x). Add their `bin` directories to your system PATH environment variable.
-Alternatively, copy the required DLLs to the same folder as `FaceFusionCpp.exe`.
+### Q: Startup complains about missing "cudart64_12.dll" or "nvinfer.dll".
+**A**: Ensure you have installed the CUDA Toolkit (12.x) and TensorRT (10.x), and added their `bin` directories to your system's PATH environment variable.
+Alternatively, copy the required DLL files directly next to `FaceFusionCpp.exe`.
 
-### Q: My antivirus flags the executable as a threat.
-**A**: This is likely a false positive because the application is not digitally signed. You can add an exception for the application folder.
+### Q: The antivirus software reports a virus.
+**A**: This is a common false positive because the program is not digitally signed. You can add the program directory to your antivirus software's whitelist.
 
 ---
 
 ## 2. Runtime Errors
 
-FaceFusionCpp uses specific error codes to help identify issues.
+FaceFusionCpp uses specific error codes to identify issues. They fall into four categories: System (E100-E199), Configuration (E200-E299), Model (E300-E399), and Runtime (E400-E499).
 
-### E101: Out of Memory (OOM)
-*   **Cause**: Your GPU VRAM is full.
-*   **Solution**:
-    1.  Switch to `strict` memory strategy in `app_config.yaml`.
-    2.  Use `batch` execution order with `disk` buffering (see [Hardware Guide](hardware_guide.md)).
-    3.  Lower `max_queue_size`.
+### System Infrastructure Errors (E100-E199)
+*   **E101: Out of Memory (OOM)**
+    *   **Reason**: GPU VRAM exhaustion.
+    *   **Solution**:
+        1.  Enable the `strict` memory strategy in `app_config.yaml`.
+        2.  Use the `batch` execution order in `task_config.yaml` with the `disk` buffer (see the configuration guide).
+        3.  Decrease `max_queue_size` or `thread_count`.
+*   **E102: CUDA Device Not Found/Lost**
+    *   **Reason**: Graphics driver uninstalled or the device forcibly disconnected.
+    *   **Solution**: Check your graphics driver and physical hardware connections.
+*   **E103: Worker Thread Deadlock**
+    *   **Reason**: Abnormal system resource scheduling.
+    *   **Solution**: Restart the application service or re-run the program.
 
-### E301 / E302: Model Errors
-*   **Cause**: Model files are missing, corrupted, or incompatible.
-*   **Solution**:
-    1.  Check if `assets/models` contains the required `.onnx` files.
-    2.  Delete the corrupted model and restart the application (if `download_strategy` is `auto`).
+### Configuration & Initialization Errors (E200-E299)
+*   **E201 (Invalid YAML Format)**: Verify the syntax in `app_config.yaml` or `task_config.yaml`.
+*   **E202 (Parameter Out of Bounds)**: Correct erroneous values, e.g., `blend_factor` must remain between 0.0 and 1.0.
+*   **E203 (Configuration File Not Found)**: Ensure the specified configuration file path is correct.
 
-### E4xx: Runtime Errors
-*   **E403 (No Face Detected)**: The application could not find a face in the frame. It will skip processing for this frame (pass-through).
-*   **E404 (Face Not Aligned)**: The face angle is too extreme for the landmark detector.
+### Model Resource Errors (E300-E399)
+*   **E301: Model Load Failed**
+    *   **Reason**: Corrupted model file or an incompatible version.
+*   **E302: Model File Missing**
+    *   **Solution**: Ensure the `models/` directory exists and contains the required `.onnx` files. If `download_strategy` is set to `auto`, they will download automatically.
+
+### Runtime Business Logic Errors (E400-E499)
+*   **E401 (Image Decode Failed) / E402 (Video Open Failed)**: Check if the input file is corrupted or in an unsupported format.
+*   **E403 (No Face Detected)**: The program could not detect a face in the current frame. The program will skip processing this frame (passing through the original frame). It will not cause the task to fail.
+*   **E404 (Face Not Aligned)**: The face angle is too extreme, causing keypoint detection to fail. It will be ignored or retried.
 
 ---
 
-## 3. Performance
+## 3. Performance Issues
 
 ### Q: Why is the first run so slow?
-**A**: On the first run, the application compiles **TensorRT Engines** optimized for your specific GPU. This process can take **5-10 minutes**.
-*   Subsequent runs will use the cached engine and start instantly.
-*   Ensure `engine_cache.enable: true` is set in `app_config.yaml`.
+**A**: During the first run, the program must compile an optimized **TensorRT engine** specifically for your GPU. This process can take **5-10 minutes**.
+*   Subsequent runs will skip this and directly use the cached engine, starting instantly.
+*   Ensure `engine_cache.enable: true` is enabled in `app_config.yaml`.
 
 ### Q: Why is video processing slow?
-**A**: Video processing involves decoding, face detection (per frame), swapping, enhancing, and encoding.
-*   **Bottleneck**: Usually Face Enhancer (GFPGAN). Disabling it will double or triple the speed.
-*   **Resolution**: Processing 4K video is significantly slower than 1080p.
+**A**: Video processing involves decoding, face detection (per frame), swapping, enhancement, and encoding. This is an immense computational workload.
+*   **Bottleneck**: Usually the face enhancer (GFPGAN). Disabling it can speed things up by 2-3 times.
+*   **Resolution**: Processing 4K videos is significantly slower than 1080p.
 
-### Q: How to make it faster?
-1.  **Disable Face Enhancer** if not strictly necessary.
-2.  **Use `many` face selector** only if needed (it processes all faces).
-3.  **Upgrade GPU**: An RTX 4090 is ~3x faster than an RTX 3060.
+### Q: How can I speed up processing?
+1.  **Disable the face enhancer** (if extreme details are unnecessary).
+2.  **Reduce concurrency**: If VRAM is tight, excessively high concurrency will actually cause thrashing from frequent context switches.
+3.  **Upgrade hardware**: An RTX 4090 is approximately 3 times faster than an RTX 3060.
 
 ---
 
-## 4. Quality
+## 4. Quality Issues
 
-### Q: The face flickers in the video.
-**A**: This is common in frame-by-frame swapping.
-*   **Solution**: We are working on a temporal consistency module (Planned).
-*   **Workaround**: Use a higher quality source face and ensure the target face is well-lit.
+### Q: The face in the video keeps flickering.
+**A**: This is a common issue with frame-by-frame face swapping.
+*   **Solution**: We are developing a temporal consistency module (planned).
+*   **Workaround**: Use a higher quality source face, and ensure the target video's face is evenly lit.
 
 ### Q: The colors look wrong.
-**A**: The color matching algorithm might fail in extreme lighting.
-*   We use `reinhard` or `hist_match` color transfer. Future versions will allow selecting the algorithm.
+**A**: Under extreme lighting conditions, the color matching algorithm may behave erratically.
+*   We currently use `reinhard` or `hist_match` for color transfer. Future versions will allow users to manually switch algorithms.

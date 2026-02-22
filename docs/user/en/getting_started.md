@@ -1,92 +1,102 @@
 # Getting Started
 
-Welcome to **FaceFusionCpp**, a high-performance C++ implementation of the popular [facefusion](https://github.com/facefusion/facefusion) project. This guide will help you set up your environment and perform your first face swap.
+Welcome to **FaceFusionCpp**, the high-performance C++ implementation of the popular open-source project [facefusion](https://github.com/facefusion/facefusion). This document will guide you through environment preparation, installation, and your first face-swapping operation.
 
 ## 1. System Requirements
 
-Before downloading, ensure your system meets the following requirements. FaceFusionCpp relies on NVIDIA CUDA for GPU acceleration.
+Before downloading, please ensure your system meets the following requirements. FaceFusionCpp relies on NVIDIA CUDA for GPU acceleration.
 
 ### Operating System
-*   **Windows 10/11 x64** (Primary support)
-*   *Linux support is currently for development/building from source only.*
+*   **Windows 10/11 x64** (Currently the primary supported platform)
+*   *Linux support is currently aimed primarily at development and source code building.*
 
 ### Hardware
 *   **NVIDIA GPU**: Required for high-performance inference.
-*   **VRAM**: 4GB minimum, 8GB+ recommended for 1080p+ video processing.
+*   **VRAM**: Minimum 4GB. Strongly recommended 8GB+ for handling 1080p+ videos.
 
 ### Software Dependencies
-You must have the following installed and configured in your system PATH or placed alongside the executable:
+You must install the following components and add them to your system PATH, or place them in the executable's directory:
 
-| Component | Version Requirement | Tested Version | Note |
+| Component | Required Version | Tested Version | Description |
 | :--- | :--- | :--- | :--- |
 | **CUDA Toolkit** | >= 12.2 | 12.8.1 | Required for GPU execution. |
-| **cuDNN** | >= 9.2 | 9.19.0 | Deep learning primitives. |
-| **TensorRT** | >= 10.2 | 10.15.1 | Optional but recommended for max speed. |
+| **cuDNN** | >= 9.2 | 9.19.0 | Required deep learning primitives. |
+| **TensorRT** | >= 10.2 | 10.15.1 | Optional but highly recommended for peak velocity. |
 
-> **Note**: If you download the pre-packaged Release, some dependencies (like FFmpeg) might be included or instructions provided to place DLLs. Ensure CUDA/cuDNN are installed on your system.
+> **Note**: If you downloaded a pre-packaged Release, some dependencies (like FFmpeg) might already be bundled, or shipped with instructions on where to drop your DLLs. Ensure CUDA/cuDNN are properly installed on your system.
 
 ---
 
-## 2. Installation
+## 2. Installation Steps
 
-1.  **Download Release**:
-    Go to the [Releases](https://github.com/CodingRookie98/faceFusionCpp/releases) page and download the latest `.zip` package for Windows.
+1.  **Download the Release Package**:
+    Proceed to our [Releases](https://github.com/CodingRookie98/faceFusionCpp/releases) page to download the latest `.zip` package for Windows.
 
-2.  **Extract**:
-    Unzip the package to a directory (e.g., `D:\FaceFusionCpp`).
-    *Avoid paths with non-ASCII characters or spaces if possible.*
+2.  **Unpack**:
+    Extract the ZIP archive into a directory (e.g., `D:\FaceFusionCpp`).
+    *Try to avoid paths incorporating non-ASCII characters or excessive spacing.*
 
 3.  **Directory Structure**:
-    After extraction, you should see:
+    Once extracted, you should see the following structure:
     ```
     FaceFusionCpp/
     ├── bin/                # Executables and DLLs
-    ├── models/             # AI Models (.onnx)
-    ├── resources/          # Font files, masks, etc.
+    ├── models/             # AI model files (.onnx)
+    ├── resources/          # Font files, overlays, and masks
     ├── FaceFusionCpp.exe   # Main application
     └── ...
     ```
 
 ---
 
-## 3. First Run (Face Swap)
+## 3. First Run (Face Swapping)
 
-Let's perform a basic face swap to verify everything is working.
+Let's execute a basic face-swapping operation to verify that everything is working.
 
 ### Preparation
-1.  Prepare a **Source Image** (the face you want to use). Let's call it `source.jpg`.
-2.  Prepare a **Target Image** (the image you want to change). Let's call it `target.jpg`.
-3.  Place them in the project root for simplicity.
+1.  Prepare a **Source Image** (the face you wish to use). Let's assume it is named `source.jpg`.
+2.  Prepare a **Target Image** (the picture you wish to overwrite). Let's assume it is named `target.jpg`.
+3.  For convenience, place them directly inside the project root directory.
 
 ### Execution
-Open a terminal (PowerShell or CMD) in the installation directory and run:
+Open a terminal (PowerShell or CMD) at the installation directory, and run:
 
 ```powershell
 .\FaceFusionCpp.exe -s source.jpg -t target.jpg -o output.jpg
 ```
 
-**Parameters Explained**:
-*   `-s, --source`: Path to the face source image.
-*   `-t, --target`: Path to the target image or video.
-*   `-o, --output`: Path where the result will be saved.
+**Parameter Explanation**:
+*   `-s, --source`: The source face image path.
+*   `-t, --target`: The target image or video path you're injecting into.
+*   `-o, --output`: The path to save the result.
 
 ### Expected Output
-You should see logs indicating:
-1.  **Device initialization** (CUDA/TensorRT).
-2.  **Model loading** (inswapper_128, etc.).
-3.  **Processing progress**.
-4.  **Completion message**.
+You should witness the following scroll in the log:
+1.  **Device Initialization** (CUDA/TensorRT).
+2.  **Model Loading** (inswapper_128, etc.).
+3.  **Processing Progress**.
+4.  **Completion Message**.
 
-Check `output.jpg` to see the result!
+Check `output.jpg` to view your result!
 
 ---
 
-## 4. Troubleshooting
+## 4. System Check
 
-If the application fails to start or crashes:
+When encountering environmental problems or before kicking off your first massive run, it is highly recommended to fire off the built-in system checker. This utility rapidly diagnoses the dependencies of CUDA, TensorRT, your Models, and FFmpeg:
 
-*   **"DLL not found"**: Ensure CUDA, cuDNN, and TensorRT `bin` directories are in your system PATH, or copy the required `.dll` files next to `FaceFusionCpp.exe`.
-*   **"CUDA error"**: Update your NVIDIA GPU drivers to the latest version.
-*   **"Model not found"**: Ensure the `models/` directory exists and contains the required `.onnx` files.
+```powershell
+.\FaceFusionCpp.exe --system-check
+```
 
-For more detailed configuration options, see the [User Guide](user_guide.md) or [CLI Reference](cli_reference.md).
+---
+
+## 5. Troubleshooting
+
+If the application fails to start or crashes abruptly:
+
+*   **"DLL not found"**: Ensure the `bin` directories for CUDA, cuDNN, and TensorRT have been added to your system PATH, or manually copy the required `.dll` files next to `FaceFusionCpp.exe`.
+*   **"CUDA error"**: Update your NVIDIA graphics card driver to the newest version.
+*   **"Model not found"**: Ensure the `models/` directory exists and houses the required `.onnx` files.
+
+For a significantly more detailed explanation of configuration options, please refer to the [User Guide](user_guide.md) or the [CLI Reference](cli_reference.md).
