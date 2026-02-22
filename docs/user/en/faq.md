@@ -28,17 +28,17 @@ FaceFusionCpp uses specific error codes to identify issues. They fall into four 
 ### System Infrastructure Errors (E100-E199)
 
 * **E101: Out of Memory (OOM)**
-  * **Reason**: GPU VRAM exhaustion.
+  * **Reason**: GPU VRAM exhaustion, typically caused by the producer (decoder) running much faster than the consumer (AI inference).
   * **Solution**:
     1. Enable the `strict` memory strategy in `app_config.yaml`.
-    2. Use the `batch` execution order in `task_config.yaml` with the `disk` buffer (see the configuration guide).
-    3. Decrease `max_queue_size` or `thread_count`.
+    2. Enable **Adaptive Backpressure**: Set a reasonable `max_memory_usage` (e.g., "4GB") in `app_config.yaml`. The system will automatically throttle based on this limit.
+    3. Decrease `max_queue_size` (suggest dropping from 20 down to 5 or 10).
 * **E102: CUDA Device Not Found/Lost**
-  * **Reason**: Graphics driver uninstalled or the device forcibly disconnected.
-  * **Solution**: Check your graphics driver and physical hardware connections.
+  * **Reason**: Driver not installed, version too low, or hardware connection failure.
+  * **Solution**: Run `./FaceFusionCpp --system-check` for an environment integrity self-test.
 * **E103: Worker Thread Deadlock**
-  * **Reason**: Abnormal system resource scheduling.
-  * **Solution**: Restart the application service or re-run the program.
+  * **Reason**: Queue resource contention or abnormal system scheduling.
+  * **Solution**: Restart the application. If this persists, try reducing `thread_count`.
 
 ### Configuration & Initialization Errors (E200-E299)
 
@@ -80,8 +80,9 @@ FaceFusionCpp uses specific error codes to identify issues. They fall into four 
 ### Q: How can I speed up processing?
 
 1. **Disable the face enhancer** (if extreme details are unnecessary).
-2. **Reduce concurrency**: If VRAM is tight, excessively high concurrency will actually cause thrashing from frequent context switches.
-3. **Upgrade hardware**: An RTX 4090 is approximately 3 times faster than an RTX 3060.
+2. **Set a proper memory strategy**: If your VRAM > 8GB, ensure you enable `memory_strategy: tolerant` in `app_config.yaml`.
+3. **Tune Thread Count**: Default `thread_count: 0` uses half of your logical cores. On high-core-count CPUs, manually setting this (e.g., 4 or 8) might balance throughput better.
+4. **Prefer TensorRT**: Ensure `tensorrt` has the highest priority in `inference.default_providers`.
 
 ---
 

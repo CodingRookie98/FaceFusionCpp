@@ -20,10 +20,10 @@ config_version: "0.34.0"
 inference:
   device_id: 0                  # GPU Device ID (Default: 0. Leave as 0 if you only have one dedicated GPU).
   engine_cache:
-    enable: true                # Enable inference engine cache (Default: true. Greatly speeds up startup from the 2nd run).
+    enable: true                # Enable CPU/GPU engine cache (Default: true. Speeds up startup).
     path: "./.cache/tensorrt"   # Cache location (relative to root).
-    max_entries: 3              # Max cache entries (Default: 3. Tells VRAM how many models to retain in cache).
-    idle_timeout_seconds: 60    # Auto-release time after idle (Default: 60s. How long before freeing VRAM when a model is unused).
+    max_entries: 3              # LRU Cache Limit (Default: 3. Max number of model engines to keep in VRAM).
+    idle_timeout_seconds: 60    # Auto-release time after idle (Default: 60s. How long before unloading engine to free VRAM).
   default_providers:            # Default inference backend priority (Default: tensorrt > cuda > cpu).
     - tensorrt
     - cuda
@@ -36,7 +36,9 @@ resource:
   #   tolerant: "Resident memory" mode. Loads everything upfront. Ideal for high-end setups (12GB+) that demand extreme processing speed.
   memory_strategy: "strict"
 
-  # Global memory quota (Default: "4GB"). Set a hard cap if you frequently experience Out of Memory crashes (e.g., "4GB", "2048MB").
+  # Global memory quota (Default: "4GB").
+  # Used for Adaptive Backpressure control.
+  # When memory usage nears this cap, the program slows down production (decoding) to prevent OOM.
   max_memory_usage: "4GB"
 
 # --- Logging (Where to look if things go wrong) ---
@@ -141,10 +143,25 @@ face_analysis:
     similarity_threshold: 0.6   # Similarity threshold (Default 0.6. Takes effect under 'reference' mode. 0.7 is extremely strict, 0.4 swaps almost any face).
   face_masker:
     # Mask fusion strategies. How to seamlessly stitch the face back on without wiping out blocking hair or glasses.
-    types: ["box", "occlusion", "region"]
+    types: ["box", "occlusion", "region"] # box: geometric boundary; occlusion: occlusion detection; region: semantic segmentation.
     occluder_model: "xseg"                # Model to mask out hands/objects in front of the face.
     parser_model: "bisenet_resnet_34"     # Model to parse out facial features.
-    region: ["skin", "nose", "mouth"]     # Default "all". Beginners should leave this untouched.
+    region: ["skin", "nose", "mouth"]     # Semantic regions. Supports: left-eyebrow, neck, cloth, hair, hat, etc.
+    # Default "all". Beginners should leave this untouched.
+
+---
+
+## 5. Error Handling & Diagnostics
+
+When the program reports an error, refer to the `E` prefix codes for quick troubleshooting:
+
+*   **E1xx (System)**: E.g., `E101` (VRAM Overflow/OOM). Try lowering `max_queue_size` or switching to `batch` execution.
+*   **E2xx (Config)**: E.g., `E201` (YAML Syntax Error). Check your indentation.
+*   **E3xx (Model)**: E.g., `E302` (Model File Missing). Check your asset repository.
+*   **E4xx (Runtime)**: E.g., `E403` (No Face Detected). This is a normal business flow; the frame will pass through unchanged.
+
+> [!IMPORTANT]
+> **Pass-through Mechanism**: To ensure long video tasks don't halt and keep audio-video sync, when a face isn't detected or a reference fails to match, the program will **skip processing and output the original frame** instead of stopping or dropping the frame.
 
 ```
 

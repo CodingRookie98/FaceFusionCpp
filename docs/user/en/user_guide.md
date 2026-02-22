@@ -17,7 +17,8 @@ FaceFusionCpp is built upon a modular pipeline architecture. The core processing
 * **Crucial Parameters (`face_selector_mode`)**:
   * `many` (Default): Swap every single face detected on screen. Ideal for solo shots, or if you just want to spoof everyone's face.
   * `one`: Only swaps the **largest** face (the protagonist), ignoring background actors.
-  * `reference`: Advanced mode. Alongside the target face to swap *in*, you must upload an original photo telling the program "Only swap faces that look like *this* person, leave bystanders alone." Requires setting `reference_face_path`.
+  * `reference`: Advanced mode. Requires setting `reference_face_path`. The program only processes faces that match the reference photo.
+    * **Pass-through Mechanism**: If no face is found in the source, or if no matching faces are detected in the frame, the program outputs the original frame directly to maintain audio-video sync.
 
 ### 1.2 Face Enhancer
 
@@ -40,6 +41,7 @@ FaceFusionCpp is built upon a modular pipeline architecture. The core processing
 **What does it do?** The previously mentioned face enhancer only touches the "face". If the original video is blurry, a clean face will look extremely out of place. This module turns the entire frame (including clothes and background) into high definition.
 
 * **Supported Models**: `real_esrgan_x2`, `real_esrgan_x4_fp16`, etc.
+* **Tile Processing**: To prevent Out-of-Memory (OOM) errors on high-resolution targets (like 4K), this processor automatically slices the frame into smaller tiles for individual processing and seamlessly merges them back.
 * **Beginner Tip**: Extremely heavy on the graphics card! Only recommended for high-demand still images. Beginners are advised not to use this on long videos to avoid VRAM blowouts.
 * **Crucial Parameters (`enhance_factor`)**: Unsharp mask intensity, generally fine to leave at the default `1.0`.
 
@@ -180,3 +182,30 @@ pipeline:
     params:
       model: "real_esrgan_x2_fp16"
 ```
+
+---
+
+## 4. Performance & Resource Strategies
+
+FaceFusionCpp allows you to tune the execution behavior based on your hardware to balance speed and VRAM usage.
+
+### 4.1 Memory Management Strategy (`memory_strategy`)
+
+*   **Strict**:
+    *   **Behavior**: Models are loaded only when needed and released immediately after processing.
+    *   **Pros**: Minimal VRAM footprint. Best for low-VRAM GPUs (e.g., 4GB/6GB).
+    *   **Cons**: Slower due to frequent model loading/unloading overhead.
+*   **Tolerant**:
+    *   **Behavior**: Models stay cached in VRAM after the first load.
+    *   **Pros**: Fastest execution with no re-loading overhead.
+    *   **Cons**: Constant VRAM usage. Best for GPUs with ample memory (e.g., 8GB+).
+
+### 4.2 Execution Order Strategy (`execution_order`)
+
+*   **Sequential (Default)**:
+    *   Each frame passes through the entire pipeline step-by-step.
+    *   **Use Case**: Low latency; ideal if VRAM can fit all active models simultaneously.
+*   **Batch**:
+    *   All frames (or chunks) pass through Processor A, then Processor B, etc.
+    *   **Pros**: When combined with `strict` memory mode, it achieves "single-model VRAM footprint," allowing huge pipelines on modest hardware.
+    *   **Cons**: Requires more disk or RAM for intermediate storage during processing.

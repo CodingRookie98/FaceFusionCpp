@@ -24,17 +24,17 @@ FaceFusionCpp 使用特定的错误代码来标识问题。分为四类：系统
 
 ### 系统级基础设施错误 (E100-E199)
 *   **E101: 内存不足 (Out of Memory - OOM)**
-    *   **原因**: GPU 显存耗尽。
+    *   **原因**: GPU 显存耗尽，通常因为生产者（解码）速度远快于消费者（AI 推理）。
     *   **解决方案**:
         1.  在 `app_config.yaml` 中启用 `strict` (严格) 内存策略。
-        2.  在 `task_config.yaml` 中使用 `batch` 模式配合 `disk` 缓冲 (参见配置指南)。
-        3.  减小 `max_queue_size` (最大队列长度) 或 `thread_count`。
+        2.  启用 **自适应背压 (Adaptive Backpressure)**: 在 `app_config.yaml` 中设置合理的 `max_memory_usage` (如 "4GB")。系统会根据此额度自动限流。
+        3.  减小 `max_queue_size` (最大队列长度，建议由 20 降至 5 或 10)。
 *   **E102: CUDA 设备未找到/丢失 (CUDA Device Not Found/Lost)**
-    *   **原因**: 显卡驱动未安装或设备离线。
-    *   **解决方案**: 检查显卡驱动及硬件连接状态。
+    *   **原因**: 显卡驱动未安装、版本过低或硬件连接异常。
+    *   **解决方案**: 运行 `./FaceFusionCpp --system-check` 进行环境完整性自检。
 *   **E103: 工作线程死锁 (Worker Thread Deadlock)**
-    *   **原因**: 系统资源调度异常。
-    *   **解决方案**: 重启服务 或 重新运行程序。
+    *   **原因**: 队列资源竞争或系统资源调度异常。
+    *   **解决方案**: 重启程序。如果持续出现，尝试降低 `thread_count`。
 
 ### 配置与初始化错误 (E200-E299)
 *   **E201 (YAML 格式无效)**: 检查 `app_config.yaml` 或 `task_config.yaml` 语法。
@@ -68,8 +68,9 @@ FaceFusionCpp 使用特定的错误代码来标识问题。分为四类：系统
 
 ### Q: 如何加快处理速度？
 1.  **禁用人脸增强** (如果不需要极致细节)。
-2.  **减少并发数**: 如果显存不足，过高的并发反而会导致频繁的上下文切换。
-3.  **升级硬件**: RTX 4090 比 RTX 3060 快约 3 倍。
+2.  **设置合理的内存策略**: 如果显存大于 8GB，务必在 `app_config.yaml` 中开启 `memory_strategy: tolerant`。
+3.  **调整线程数**: 默认 `thread_count: 0` 会使用逻辑核心数的一半。在多任务或核数极多的 CPU 上，手动设置（如 4 或 8）可能提高整体吞吐。
+4.  **使用 TensorRT**: 确保 `inference.default_providers` 中 `tensorrt` 优先级最高。
 
 ---
 

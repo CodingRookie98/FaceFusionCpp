@@ -22,8 +22,8 @@ inference:
   engine_cache:
     enable: true                # 启用推理引擎缓存 (默认: true。开启后第二次运行会极大地提高启动速度)
     path: "./.cache/tensorrt"   # 缓存位置 (相对于根目录)
-    max_entries: 3              # 最大缓存条数 (默认: 3。就是告诉显存最多保留几个模型的缓存)
-    idle_timeout_seconds: 60    # 空闲后自动释放时间 (默认: 60秒。不用模型的时候多久清理出来显存)
+    max_entries: 3              # LRU 缓存容量上限 (默认: 3。显存最多保留的模型 Engine 数量)
+    idle_timeout_seconds: 60    # 空闲后自动释放时间 (默认: 60秒。推理引擎空闲多久后自动卸载以释放显存)
   default_providers:            # 默认推理后端优先级 (默认顺序: tensorrt > cuda > cpu)
     - tensorrt
     - cuda
@@ -36,7 +36,9 @@ resource:
   #   tolerant: "常驻内存"模式。启动时就把所有东西塞进去，适合想要极致处理速度且显存很大的土豪（12GB+）。
   memory_strategy: "strict"
 
-  # 全局内存配额 (默认: "4GB")。如果你发现程序经常因为内存爆炸崩溃，可以设一个硬性上限 (比如 "4GB", "2048MB")。
+  # 全局内存配额 (默认: "4GB")。
+  # 用于触发自适应背压 (Adaptive Backpressure) 机制。
+  # 当内存消耗接近此值时，程序将自动降低生产（解码）速度，直到队列有可用空间，从而彻底杜绝 OOM。
   max_memory_usage: "4GB"
 
 # --- 日志系统 (出了问题看哪里) ---
@@ -141,10 +143,25 @@ face_analysis:
     similarity_threshold: 0.6   # 相似度阈值 (默认 0.6。当选择 reference 模式时起效。设置 0.7 及其严格，不是绝对像就不换；设置 0.4 几乎是个脸就换。)
   face_masker:
     # 遮罩融合。怎么把脸天衣无缝的贴回去，不把被遮挡的头发或者眼镜抹掉。
-    types: ["box", "occlusion", "region"]
+    types: ["box", "occlusion", "region"] # 遮罩类型组合。box: 几何边界; occlusion: 遮挡检测; region: 语义分割。
     occluder_model: "xseg"                # 把手和脸前障碍物抠出来的模型。
     parser_model: "bisenet_resnet_34"     # 把五官拆开抠出来的模型。
-    region: ["skin", "nose", "mouth"]     # 默认 "all" (包含所有)。小白建议不动。
+    region: ["skin", "nose", "mouth"]     # 语义分割具体的区域。支持: left-eyebrow, right-eye, neck, cloth, hair, hat 等。
+    # 默认 "all" (包含所有)。小白建议不动。
+
+---
+
+## 5. 错误处理与日志诊断
+
+当程序报错时，您可以参考 `E` 前缀的错误码进行快速排查：
+
+*   **E1xx (系统级)**: 如 `E101` (显存溢出)，通常需要调低 `max_queue_size` 或切换为 `batch` 指令顺序。
+*   **E2xx (配置级)**: 如 `E201` (YAML 格式错误)。请检查缩进。
+*   **E3xx (模型级)**: 如 `E302` (模型文件缺失)。请检查模型仓库目录。
+*   **E4xx (运行时)**: 如 `E403` (未检测到人脸)。这属于正常业务逻辑，画面将原样输出。
+
+> [!IMPORTANT]
+> **透传机制 (Pass-through)**: 为保证长视频处理不中断且音画同步，当某一帧检测不到人脸或模型匹配失败时，程序会**跳过处理并保留原图**，而非停止运行或丢弃该帧。
 pipeline:
   - step: "face_swapper"
     name: "main_swap"            # 处理步骤标识符(可选)
