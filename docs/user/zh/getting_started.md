@@ -65,10 +65,18 @@
 3.  为了方便，将它们放置在项目根目录。
 
 ### 执行
-在安装目录打开终端 (PowerShell 或 CMD)，并运行：
+在安装目录打开终端，根据您的操作系统运行命令：
+
+**Linux (Bash)**:
 
 ```bash
 ./FaceFusionCpp -s source.jpg -t target.jpg -o output.jpg
+```
+
+**Windows (PowerShell)**:
+
+```powershell
+.\FaceFusionCpp.exe -s source.jpg -t target.jpg -o output.jpg
 ```
 
 **参数说明**:
@@ -91,8 +99,16 @@
 
 在遇到环境问题或首次大规模运行前，建议运行内置的自检工具。该工具能快速诊断 CUDA、TensorRT、模型及 FFmpeg 依赖的状态：
 
+**Linux (Bash)**:
+
 ```bash
 ./FaceFusionCpp --system-check
+```
+
+**Windows (PowerShell)**:
+
+```powershell
+.\FaceFusionCpp.exe --system-check
 ```
 
 ---

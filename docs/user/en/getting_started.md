@@ -7,12 +7,14 @@ Welcome to **FaceFusionCpp**, the high-performance C++ implementation of the pop
 Before downloading, please ensure your system meets the following requirements. FaceFusionCpp relies on NVIDIA CUDA for GPU acceleration.
 
 ### Operating System
-*   **Linux x64** (Recommended, primary supported platform)
-*   **Windows 10/11 x64** (Supported, recommended to use WSL2 or Bash environment)
+
+* **Linux x64** (Recommended, primary supported platform)
+* **Windows 10/11 x64** (Supported, recommended to use WSL2 or Bash environment)
 
 ### UI & Interaction
-*   **CLI**: Currently the primary interaction method.
-*   **WebUI**: Coming soon, will provide an intuitive web-based interface.
+
+* **CLI**: Currently the primary interaction method.
+* **WebUI**: Coming soon, will provide an intuitive web-based interface.
 
 ### Hardware
 *   **NVIDIA GPU**: Required for high-performance inference.
@@ -65,10 +67,18 @@ Let's execute a basic face-swapping operation to verify that everything is worki
 3. For convenience, place them directly inside the project root directory.
 
 ### Execution
-Open a terminal (PowerShell or CMD) at the installation directory, and run:
+Open a terminal at the installation directory and run the command based on your OS:
+
+**Linux (Bash)**:
 
 ```bash
 ./FaceFusionCpp -s source.jpg -t target.jpg -o output.jpg
+```
+
+**Windows (PowerShell)**:
+
+```powershell
+.\FaceFusionCpp.exe -s source.jpg -t target.jpg -o output.jpg
 ```
 
 **Parameter Explanation**:
@@ -93,8 +103,16 @@ Check `output.jpg` to view your result!
 
 When encountering environmental problems or before kicking off your first massive run, it is highly recommended to fire off the built-in system checker. This utility rapidly diagnoses the dependencies of CUDA, TensorRT, your Models, and FFmpeg:
 
+**Linux (Bash)**:
+
 ```bash
 ./FaceFusionCpp --system-check
+```
+
+**Windows (PowerShell)**:
+
+```powershell
+.\FaceFusionCpp.exe --system-check
 ```
 
 ---

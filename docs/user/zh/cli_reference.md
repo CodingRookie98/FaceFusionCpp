@@ -4,8 +4,16 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 
 **使用语法**:
 
+**Linux (Bash)**:
+
 ```bash
 ./FaceFusionCpp [全局选项] [快捷模式选项 | 任务配置模式]
+```
+
+**Windows (PowerShell)**:
+
+```powershell
+.\FaceFusionCpp.exe [全局选项] [快捷模式选项 | 任务配置模式]
 ```
 
 ---
@@ -55,8 +63,16 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 
 ### 4.1 环境就绪检查 (JSON 集成)
 
+**Linux (Bash)**:
+
 ```bash
 ./FaceFusionCpp --system-check --json
+```
+
+**Windows (PowerShell)**:
+
+```powershell
+.\FaceFusionCpp.exe --system-check --json
 ```
 输出示例：
 ```json
@@ -72,12 +88,28 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 ### 4.2 离线校验配置
 在提交长时任务前，先校验 YAML 格式：
 
+**Linux (Bash)**:
+
 ```bash
 ./FaceFusionCpp -c my_complex_task.yaml --validate
 ```
 
+**Windows (PowerShell)**:
+
+```powershell
+.\FaceFusionCpp.exe -c my_complex_task.yaml --validate
+```
+
 ### 4.3 基础换脸 + 增强
+
+**Linux (Bash)**:
 
 ```bash
 ./FaceFusionCpp -s face.jpg -t movie.mp4 -o out/ --processors face_swapper,face_enhancer
+```
+
+**Windows (PowerShell)**:
+
+```powershell
+.\FaceFusionCpp.exe -s face.jpg -t movie.mp4 -o out/ --processors face_swapper,face_enhancer
 ```
