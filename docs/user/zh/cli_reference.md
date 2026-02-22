@@ -4,89 +4,76 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 
 **使用语法**:
 ```powershell
-FaceFusionCpp.exe [选项]
+FaceFusionCpp.exe [全局选项] [快捷模式选项 | 任务配置模式]
 ```
 
 ---
 
 ## 1. 全局选项 (Global Options)
 
-这些选项适用于所有运行模式。
+这些选项控制程序的基础行为。
 
 | 选项 | 参数 | 说明 | 默认值 |
 | :--- | :--- | :--- | :--- |
-| `-v, --version` | 无 | 显示应用程序版本并退出。 | `false` |
-| `--app-config` | `<file_path>` | 全局应用程序配置文件的路径。 | `config/app_config.yaml` |
-| `--log-level` | `<level>` | 覆盖配置中定义的日志级别。<br>可选值: `trace`, `debug`, `info`, `warn`, `error`。 | `info` |
-| `--system-check`| 无 | 运行系统环境检查 (CUDA, 库版本等) 并退出。 | `false` |
-| `--json` | 无 | 以 JSON 格式输出系统检查结果。 | `false` |
-| `--validate` | 无 | 解析并验证配置文件，但不运行任务。 | `false` |
+| `-v, --version` | 无 | 显示应用程序版本。 | `false` |
+| `--app-config` | `<path>` | **全局**应用程序配置路径。 | `config/app_config.yaml` |
+| `--log-level` | `<level>` | 覆盖配置的日志级别 (`trace`, `debug`, `info`, `warn`, `error`)。 | `info` |
+| `--system-check`| 无 | 运行环境自检 (CUDA, 库版本等)。 | `false` |
+| `--json` | 无 | 开启时，`--system-check` 的结果将以 JSON 格式输出。 | `false` |
+| `--validate` | 无 | 解析并校验配置文件合法性 (Dry-Run)，不执行任务。 | `false` |
 
 ---
 
 ## 2. 快捷模式选项 (Quick Mode Options)
 
-使用这些选项直接从命令行运行任务，无需创建任务配置文件。
-> **注意**: 这些选项不能与 `-c/--task-config` 同时使用。
+直接从命令行启动任务。**注意**: 快捷模式参数与 `-c/--task-config` 互斥。
 
 | 选项 | 参数 | 说明 | 示例 |
 | :--- | :--- | :--- | :--- |
-| `-s, --source` | `<path>` | 源人脸图片路径。支持多个源。 | `-s face1.jpg` |
-| `-t, --target` | `<path>` | 目标图片或视频路径。支持多个目标。 | `-t video.mp4` |
-| `-o, --output` | `<path>` | 输出文件路径 (单个目标) 或目录 (多个目标)。 | `-o result.mp4` |
-| `--processors` | `<list>` | 要启用的处理器列表 (逗号分隔)。 | `--processors face_swapper,face_enhancer` |
+| `-s, --source` | `<path>` | 源人脸图片路径。支持逗号分隔的多个路径。 | `-s a.jpg,b.jpg` |
+| `-t, --target` | `<path>` | 目标媒体路径。支持图片、视频或目录。 | `-t video.mp4` |
+| `-o, --output` | `<path>` | 输出路径。建议使用绝对路径。 | `-o D:/output/` |
+| `--processors` | `<list>` | 定义流水线步骤 (逗号分隔)。 | `--processors face_swapper` |
 
-**可用处理器**:
-*   `face_swapper`: 将目标中的人脸替换为源人脸。
-*   `face_enhancer`: 增强人脸细节 (超分/修复)。
-*   `expression_restorer`: 在换脸后恢复原始表情 (计划中)。
-*   `frame_enhancer`: 增强整个画面 (超分)。
+> [!TIP]
+> 快捷模式下，程序将自动加载 `app_config.yaml` 中的 `default_task_settings` 作为基础。
 
 ---
 
-## 3. 配置模式选项 (Configuration Mode Options)
+## 3. 任务配置模式
 
-对于复杂任务或批量处理，请使用 YAML 配置文件。
+对于生产环境或复杂流水线，建议使用 YAML。
 
 | 选项 | 参数 | 说明 |
 | :--- | :--- | :--- |
-| `-c, --task-config` | `<file_path>` | 任务配置文件 (YAML) 的路径。 |
+| `-c, --task-config` | `<path>` | 指定任务配置文件路径。 |
 
 ---
 
-## 4. 示例 (Examples)
+## 4. 示例与高级用法
 
-### 4.1 基础换脸
-将 `source.jpg` 中的人脸换到 `target.jpg` 中，保存为 `output.jpg`。
-```powershell
-FaceFusionCpp.exe -s source.jpg -t target.jpg -o output.jpg
-```
-
-### 4.2 换脸 + 增强
-执行换脸并对结果进行人脸增强。
-```powershell
-FaceFusionCpp.exe -s source.jpg -t target.jpg -o output.jpg --processors face_swapper,face_enhancer
-```
-
-### 4.3 使用配置文件
-运行定义在 `my_task.yaml` 中的任务。
-```powershell
-FaceFusionCpp.exe -c my_task.yaml
-```
-
-### 4.4 验证配置
-检查 `my_task.yaml` 是否有效，但不执行。
-```powershell
-FaceFusionCpp.exe -c my_task.yaml --validate
-```
-
-### 4.5 系统检查
-检查您的环境 (CUDA, 库) 是否准备就绪。
-```powershell
-FaceFusionCpp.exe --system-check
-```
-
-### 4.6 JSON 系统检查 (用于集成)
+### 4.1 环境就绪检查 (JSON 集成)
 ```powershell
 FaceFusionCpp.exe --system-check --json
+```
+输出示例：
+```json
+{
+  "checks": [
+    {"name": "cuda_driver", "status": "ok", "value": "12.4"},
+    {"name": "vram", "status": "warn", "value": "6.2GB", "message": "Recommended: 8GB+"}
+  ],
+  "summary": {"ok": 6, "warn": 1, "fail": 0}
+}
+```
+
+### 4.2 离线校验配置
+在提交长时任务前，先校验 YAML 格式：
+```powershell
+FaceFusionCpp.exe -c my_complex_task.yaml --validate
+```
+
+### 4.3 基础换脸 + 增强
+```powershell
+FaceFusionCpp.exe -s face.jpg -t movie.mp4 -o out/ --processors face_swapper,face_enhancer
 ```

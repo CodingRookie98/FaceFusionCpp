@@ -1,92 +1,79 @@
 # CLI Reference
 
-The FaceFusionCpp executable provides a command-line interface (CLI) for both quick tasks and complex batch processing.
+The FaceFusionCpp executable provides a powerful command-line interface (CLI) for both quick tasks and complex production pipelines.
 
 **Usage Syntax**:
 ```powershell
-FaceFusionCpp.exe [options]
+FaceFusionCpp.exe [Global Options] [Quick Mode Options | Task Config Mode]
 ```
 
 ---
 
 ## 1. Global Options
 
-These options apply to all running modes.
+These options control the base behavior of the application.
 
 | Option | Argument | Description | Default |
 | :--- | :--- | :--- | :--- |
-| `-v, --version` | None | Display application version and exit. | `false` |
-| `--app-config` | `<file_path>` | Path to the global application configuration file. | `config/app_config.yaml` |
-| `--log-level` | `<level>` | Override the logging level defined in config. <br>Values: `trace`, `debug`, `info`, `warn`, `error`. | `info` |
-| `--system-check`| None | Run a system environment check (CUDA, libraries) and exit. | `false` |
-| `--json` | None | Output system check results in JSON format. | `false` |
-| `--validate` | None | Parse and validate the configuration file without running the task. | `false` |
+| `-v, --version` | None | Display application version. | `false` |
+| `--app-config` | `<path>` | Path to the **global** application configuration file. | `config/app_config.yaml` |
+| `--log-level` | `<level>` | Override log level (`trace`, `debug`, `info`, `warn`, `error`). | `info` |
+| `--system-check`| None | Run environment self-check (CUDA, library versions). | `false` |
+| `--json` | None | If set, `--system-check` results will be output in JSON format. | `false` |
+| `--validate` | None | Parse and validate configuration file (Dry-Run) without executing. | `false` |
 
 ---
 
 ## 2. Quick Mode Options
 
-Use these options to run a task directly from the command line without creating a task config file.
-> **Note**: These options cannot be used with `-c/--task-config`.
+Run tasks directly from the CLI. **Note**: Quick mode options are mutually exclusive with `-c/--task-config`.
 
 | Option | Argument | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `-s, --source` | `<path>` | Path(s) to the source face image(s). Supports multiple sources. | `-s face1.jpg` |
-| `-t, --target` | `<path>` | Path(s) to the target image or video. Supports multiple targets. | `-t video.mp4` |
-| `-o, --output` | `<path>` | Output file path (single target) or directory (multiple targets). | `-o result.mp4` |
-| `--processors` | `<list>` | Comma-separated list of processors to enable. | `--processors face_swapper,face_enhancer` |
+| `-s, --source` | `<path>` | Path(s) to source face image(s). Supports comma-separated list. | `-s a.jpg,b.jpg` |
+| `-t, --target` | `<path>` | Path(s) to target media. Supports images, videos, or directories. | `-t movie.mp4` |
+| `-o, --output` | `<path>` | Output path. Absolute paths are recommended. | `-o D:/output/` |
+| `--processors` | `<list>` | Define pipeline steps (comma-separated). | `--processors face_swapper` |
 
-**Available Processors**:
-*   `face_swapper`: Replaces faces in target with source face.
-*   `face_enhancer`: Enhances face details (upscaling/restoration).
-*   `expression_restorer`: Restores original expression after swapping (Planned).
-*   `frame_enhancer`: Enhances the entire frame (Super-Resolution).
+> [!TIP]
+> In Quick Mode, the app automatically loads `default_task_settings` from `app_config.yaml` as the foundation.
 
 ---
 
-## 3. Configuration Mode Options
+## 3. Task Configuration Mode
 
-For complex tasks or batch processing, use a YAML configuration file.
+For complex workflows or batch processing, use YAML.
 
 | Option | Argument | Description |
 | :--- | :--- | :--- |
-| `-c, --task-config` | `<file_path>` | Path to the task configuration file (YAML). |
+| `-c, --task-config` | `<path>` | Specify path to a task configuration file (YAML). |
 
 ---
 
-## 4. Examples
+## 4. Examples & Advanced Usage
 
-### 4.1 Basic Face Swap
-Swap faces from `source.jpg` to `target.jpg` and save to `output.jpg`.
-```powershell
-FaceFusionCpp.exe -s source.jpg -t target.jpg -o output.jpg
-```
-
-### 4.2 Face Swap + Enhancement
-Perform swap and then enhance the face results.
-```powershell
-FaceFusionCpp.exe -s source.jpg -t target.jpg -o output.jpg --processors face_swapper,face_enhancer
-```
-
-### 4.3 Using a Config File
-Run a task defined in `my_task.yaml`.
-```powershell
-FaceFusionCpp.exe -c my_task.yaml
-```
-
-### 4.4 Validate Configuration
-Check if `my_task.yaml` is valid without running it.
-```powershell
-FaceFusionCpp.exe -c my_task.yaml --validate
-```
-
-### 4.5 System Check
-Check if your environment (CUDA, libraries) is ready.
-```powershell
-FaceFusionCpp.exe --system-check
-```
-
-### 4.6 JSON System Check (for integrations)
+### 4.1 Readiness Check (JSON Integration)
 ```powershell
 FaceFusionCpp.exe --system-check --json
+```
+Output Example:
+```json
+{
+  "checks": [
+    {"name": "cuda_driver", "status": "ok", "value": "12.4"},
+    {"name": "vram", "status": "warn", "value": "6.2GB", "message": "Recommended: 8GB+"}
+  ],
+  "summary": {"ok": 6, "warn": 1, "fail": 0}
+}
+```
+
+### 4.2 Dry-Run Validation
+Validate your YAML before submitting long-running tasks:
+```powershell
+FaceFusionCpp.exe -c my_complex_task.yaml --validate
+```
+
+### 4.3 Basic Swap + Enhance
+```powershell
+FaceFusionCpp.exe -s face.jpg -t movie.mp4 -o out/ --processors face_swapper,face_enhancer
 ```
