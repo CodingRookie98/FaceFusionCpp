@@ -168,7 +168,7 @@ pipeline:
 
 #### **换脸处理器** (`face_swapper`)
 将目标中的人脸替换为源人脸。
-*   `model`: 模型名称 (例如 `inswapper_128_fp16`)。
+*   `model`: 模型名称，支持 `inswapper_128`, `inswapper_128_fp16`。
 *   `face_selector_mode`:
     *   `many`: 替换所有检测到的人脸。
     *   `one`: 仅替换最大的一张人脸。
@@ -176,17 +176,17 @@ pipeline:
 
 #### **人脸增强** (`face_enhancer`)
 修复人脸区域的细节。
-*   `model`: 模型名称 (例如 `codeformer`, `gfpgan_1.4`)。
+*   `model`: 模型名称，支持 `codeformer`, `gfpgan_1.2`, `gfpgan_1.3`, `gfpgan_1.4`。
 *   `blend_factor`: 混合比例 (0.0 - 1.0)。1.0 为完全增强。
 
 #### **表情还原** (`expression_restorer`)
 修正换脸后人脸裁切图的神态，使其贴合原始表情。
-*   `model`: `live_portrait` 等。
+*   `model`: 模型名称，支持 `live_portrait`。
 *   `restore_factor`: 还原比例 (0.0 - 1.0)。
 
 #### **全帧增强/超分** (`frame_enhancer`)
 对整个画面/帧进行超分辨率处理。
-*   `model`: 模型名称 (例如 `real_esrgan_x4` 等)。
+*   `model`: 模型名称，支持 `real_esrgan_x2`, `real_esrgan_x2_fp16`, `real_esrgan_x4`, `real_esrgan_x4_fp16`, `real_esrgan_x8`, `real_esrgan_x8_fp16`, `real_hatgan_x4`。
 *   `enhance_factor`: 增强强度 (0.0 - 1.0)。
 *   **Tile 分块策略**: 应用会自动根据显存情况切分瓦片，防止 4K 视频 OOM。
 

@@ -10,6 +10,7 @@ FaceFusionCpp 基于模块化的流水线架构。核心处理单元称为 **Pro
 
 ### 1.1 换脸处理器 (Face Swapper)
 这是应用程序的核心功能。它检测目标图像/视频中的人脸，并将其替换为源图像中的人脸。
+*   **支持的模型**: `inswapper_128`, `inswapper_128_fp16`。
 *   **关键参数**: `face_selector_mode` (人脸选择模式)
     *   `many` (默认): 替换所有检测到的人脸。
     *   `one`: 仅替换最大的一张人脸。
@@ -17,14 +18,17 @@ FaceFusionCpp 基于模块化的流水线架构。核心处理单元称为 **Pro
 
 ### 1.2 人脸增强处理器 (Face Enhancer)
 使用 GFPGAN/CodeFormer 恢复人脸的细节和清晰度。这是换脸后的强烈推荐步骤，因为换脸模型的输出通常只有 128x128 分辨率。
+*   **支持的模型**: `codeformer`, `gfpgan_1.2`, `gfpgan_1.3`, `gfpgan_1.4`。
 *   **关键参数**: `blend_factor` (0.0 - 1.0)。控制增强后的人脸与原始人脸的混合程度。
 
 ### 1.3 表情还原处理器 (Expression Restorer)
 使用 LivePortrait 恢复换脸后的人脸表情神态，使其更加生动贴合原始照片或视频。
+*   **支持的模型**: `live_portrait`。
 *   **关键参数**: `restore_factor` (0.0 - 1.0)。控制表情还原的比例。
 
 ### 1.4 全帧增强处理器 (Frame Enhancer)
 使用 Real-ESRGAN 对整张图片或视频帧进行超分辨率放大。用于提升低分辨率目标的画质。
+*   **支持的模型**: `real_esrgan_x2`, `real_esrgan_x2_fp16`, `real_esrgan_x4`, `real_esrgan_x4_fp16`, `real_esrgan_x8`, `real_esrgan_x8_fp16`, `real_hatgan_x4`。
 *   **关键参数**: `enhance_factor` (增强强度)。
 
 ---
