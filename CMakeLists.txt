@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.30)
 project(FaceFusionCpp
-        VERSION 0.34.0
+        VERSION 0.34.1
         DESCRIPTION "This project is the C++ version of the open-source project FaceFusion."
 )
 
@@ -260,9 +260,3 @@ set(CPACK_THREADS 0) # Use multi-threads. Given 0 CPack will try to use all avai
 set(CPACK_PACKAGE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/packages/${CMAKE_BUILD_TYPE}")
 
 include(CPack)
-find_program(CPACK_EXE NAMES cpack)
-add_custom_target(cpack_all
-        COMMAND ${CPACK_EXE} -V --config CPackConfig.cmake -D INI_FILE_PATH=${file_${app_facefusioncpp}_ini}
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
-add_dependencies(cpack_all install_all)
