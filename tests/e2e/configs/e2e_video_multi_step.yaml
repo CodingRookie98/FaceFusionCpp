@@ -16,6 +16,7 @@ io:
     suffix: ""
     conflict_policy: "overwrite"
     audio_policy: "copy"
+    video_encoder: "hevc_nvenc"
 
 resource:
   thread_count: 0
