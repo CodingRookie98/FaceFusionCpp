@@ -17,6 +17,7 @@
 #### Fixed
 
 - **Documentation**: Resolved markdown linting warnings (spacing, indentation) across both English and translated user documents.
+- **Video Processing**: Fixed an issue where output `video_encoder` and `video_quality` configurations were silently ignored by the video writer.
 
 #### Removed
 
@@ -38,6 +39,7 @@
 #### 修复
 
 - **文档**：修复了中英文用户手册及配置指南中的 Markdown 语法警告（如间距和代码块缩进问题）。
+- **视频处理**：修复了输出配置中的 `video_encoder`（视频编码器）和 `video_quality`（视频质量）参数被视频写入器忽略的问题。
 
 #### 移除
 
