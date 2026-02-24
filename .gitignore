@@ -89,8 +89,6 @@ compile_commands.json
 .DS_Store
 Thumbs.db
 
-# agent
-.agents/
 
 # Worktrees
 .worktrees/
@@ -101,5 +99,3 @@ opencode.json
 
 .trae/
 .clangd
-/.agent/
-/.specify/
