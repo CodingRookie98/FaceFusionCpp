@@ -95,7 +95,10 @@ Thumbs.db
 
 # opencode
 opencode.json
+opencode.jsonc
 /.opencode/
 
 .trae/
 .clangd
+# codegraph
+.codegraph/
