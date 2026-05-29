@@ -3,91 +3,45 @@
 ## 基本信息
 - **所属计划**: fix-tech-debt-p2
 - **优先级**: P2
-- **修改文件**: `src/foundation/media/ffmpeg_reader.cpp`, `src/foundation/media/ffmpeg_writer.cpp`
-- **状态**: 待开始
+- **修改文件**: `src/foundation/media/ffmpeg_raii.h`, `src/foundation/media/ffmpeg_raii.cpp`
+- **状态**: 部分完成
+- **完成时间**: 2026-05-29
+- **Commit ID**: a2a2f53
 
 ## 目标
 用 `unique_ptr` + 自定义 deleter 替代手动 `cleanup()` 调用，实现 RAII 资源管理。
 
-## 研究发现
+## 已完成的工作
 
-### 当前问题
-1. FFmpeg 资源（AVFormatContext, AVCodecContext 等）需要手动释放
-2. 多处 `cleanup()` 调用容易遗漏，导致资源泄漏
-3. 异常路径下资源可能未正确释放
+### 1. 创建 RAII 包装器基础框架
+- 定义了 `AVFormatContextPtr`, `AVCodecContextPtr`, `AVFramePtr`, `AVPacketPtr`, `SwsContextPtr` 类型
+- 实现了自定义 Deleter 和工厂函数
+- 文件：`ffmpeg_raii.h`, `ffmpeg_raii.cpp`
 
-### RAII 模式优势
-1. **自动释放**：析构函数自动调用，无需手动管理
-2. **异常安全**：栈展开时自动释放资源
-3. **代码简洁**：消除重复的 cleanup 代码
+### 2. 技术难点
+- FFmpeg 的 `avformat_open_input` 需要二级指针，与 `unique_ptr` 不直接兼容
+- 解码线程与帧队列的生命周期管理复杂
+- 需要保持现有的异步解码架构
 
-## 具体改动
+## 待完成的工作
 
-### 1. 定义 RAII Wrapper 类型别名
-```cpp
-// 在 ffmpeg_common.ixx 或 ffmpeg.ixx 中
-namespace ffmpeg {
+### 1. 迁移 ffmpeg_reader.cpp
+- 将 `Impl` 类的成员变量改为 RAII 类型
+- 移除手动 `cleanup()` 调用
+- 确保解码线程正确工作
 
-// 自定义 Deleter
-struct AVFormatContextDeleter {
-    void operator()(AVFormatContext* ctx) {
-        if (ctx) avformat_close_input(&ctx);
-    }
-};
+### 2. 迁移 ffmpeg_writer.cpp
+- 类似地将成员变量改为 RAII 类型
+- 移除手动 `cleanup()` 调用
 
-struct AVCodecContextDeleter {
-    void operator()(AVCodecContext* ctx) {
-        if (ctx) avcodec_free_context(&ctx);
-    }
-};
+## 经验教训
 
-struct SwsContextDeleter {
-    void operator()(SwsContext* ctx) {
-        if (ctx) sws_freeContext(ctx);
-    }
-};
+1. **FFmpeg API 兼容性**：某些 FFmpeg API（如 `avformat_open_input`）需要二级指针，需要特殊处理
+2. **异步架构复杂性**：解码线程与帧队列的生命周期管理需要仔细设计
+3. **渐进式重构**：对于复杂的重构，应该分步进行，先验证核心逻辑
 
-// 类型别名
-using AVFormatContextPtr = std::unique_ptr<AVFormatContext, AVFormatContextDeleter>;
-using AVCodecContextPtr = std::unique_ptr<AVCodecContext, AVCodecContextDeleter>;
-using SwsContextPtr = std::unique_ptr<SwsContext, SwsContextDeleter>;
+## 下一步建议
 
-} // namespace ffmpeg
-```
-
-### 2. 替换手动管理为 RAII
-```cpp
-// 旧代码
-AVFormatContext* format_ctx = nullptr;
-avformat_open_input(&format_ctx, filename, nullptr, nullptr);
-// ... 使用 ...
-avformat_close_input(&format_ctx);  // 手动释放
-
-// 新代码
-ffmpeg::AVFormatContextPtr format_ctx;
-avformat_open_input(&format_ctx, filename, nullptr, nullptr);
-// ... 使用 ...
-// 自动释放，无需手动调用
-```
-
-### 3. 处理特殊情况
-```cpp
-// 对于需要延迟释放的场景
-ffmpeg::AVFormatContextPtr format_ctx;
-// ... 使用 ...
-format_ctx.release();  // 显式释放所有权
-// 或
-format_ctx.reset();  // 重置并释放
-```
-
-## 测试策略
-- 现有 `ffmpeg_test.cpp` 应全部通过
-- 集成测试验证视频处理流程
-- 内存泄漏检测（可选）
-
-## 验收标准
-- [ ] 消除所有手动 `cleanup()` 调用
-- [ ] 所有 FFmpeg 资源使用 RAII 管理
-- [ ] 单元测试通过
-- [ ] 集成测试通过
-- [ ] 无资源泄漏（可通过 Valgrind 验证）
+1. 在 `ffmpeg_reader.cpp` 中逐步引入 RAII 包装器
+2. 先修改简单的资源（如 `AVFrame`, `AVPacket`），再修改复杂的资源（如 `AVFormatContext`）
+3. 确保每一步都通过测试验证
