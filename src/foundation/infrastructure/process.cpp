@@ -239,7 +239,7 @@ Process::Process(const string_type& command, const string_type& path,
         if (m_impl->stdout_fd) {
             m_impl->stdout_thread = std::thread([this]() {
                 DWORD n;
-                std::unique_ptr<char[]> buffer(new char[m_impl->config.buffer_size]);
+                auto buffer = std::make_unique<char[]>(m_impl->config.buffer_size);
                 for (;;) {
                     BOOL bRes =
                         ReadFile(static_cast<HANDLE>(*m_impl->stdout_fd), buffer.get(),
@@ -256,7 +256,7 @@ Process::Process(const string_type& command, const string_type& path,
         if (m_impl->stderr_fd) {
             m_impl->stderr_thread = std::thread([this]() {
                 DWORD n;
-                std::unique_ptr<char[]> buffer(new char[m_impl->config.buffer_size]);
+                auto buffer = std::make_unique<char[]>(m_impl->config.buffer_size);
                 for (;;) {
                     BOOL bRes =
                         ReadFile(static_cast<HANDLE>(*m_impl->stderr_fd), buffer.get(),
@@ -555,7 +555,7 @@ Process::Process(const string_type& command, const string_type& path,
                 pollfds.back().events = POLLIN;
             }
 
-            auto buffer = std::unique_ptr<char[]>(new char[m_impl->config.buffer_size]);
+            auto buffer = std::make_unique<char[]>(m_impl->config.buffer_size);
             bool any_open = !pollfds.empty();
 
             while (any_open

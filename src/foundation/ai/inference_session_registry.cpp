@@ -31,9 +31,7 @@ void InferenceSessionRegistry::configure(const session_pool::PoolConfig& config,
 std::shared_ptr<InferenceSessionRegistry> InferenceSessionRegistry::get_instance() {
     static std::once_flag flag;
     static std::shared_ptr<InferenceSessionRegistry> instance;
-    std::call_once(flag, [&]() {
-        instance = std::shared_ptr<InferenceSessionRegistry>(new InferenceSessionRegistry());
-    });
+    std::call_once(flag, [&]() { instance = std::make_shared<InferenceSessionRegistry>(); });
     return instance;
 }
 

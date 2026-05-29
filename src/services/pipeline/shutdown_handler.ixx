@@ -10,6 +10,7 @@ module;
 #include <functional>
 #include <chrono>
 #include <atomic>
+#include <cstdint>
 #include <memory>
 #include <condition_variable>
 #include <mutex>
@@ -28,7 +29,7 @@ export namespace services::pipeline {
 /**
  * @brief Shutdown state enumeration
  */
-enum class ShutdownState {
+enum class ShutdownState : std::uint8_t {
     Running,   ///< Normal operation
     Requested, ///< Shutdown requested, waiting for cleanup
     TimedOut,  ///< Graceful shutdown timed out
@@ -114,6 +115,8 @@ private:
     // Non-copyable, non-movable
     ShutdownHandler(const ShutdownHandler&) = delete;
     ShutdownHandler& operator=(const ShutdownHandler&) = delete;
+    ShutdownHandler(ShutdownHandler&&) = delete;
+    ShutdownHandler& operator=(ShutdownHandler&&) = delete;
 
     // Platform-specific signal handlers
 #ifdef _WIN32
