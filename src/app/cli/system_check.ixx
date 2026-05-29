@@ -1,5 +1,6 @@
 module;
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -7,7 +8,7 @@ export module app.cli.system_check;
 
 export namespace app::cli {
 
-enum class CheckStatus { Ok, Warn, Fail };
+enum class CheckStatus : std::uint8_t { Ok, Warn, Fail };
 
 struct CheckResult {
     std::string name;
