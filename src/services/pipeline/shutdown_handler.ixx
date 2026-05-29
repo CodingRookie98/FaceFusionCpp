@@ -16,10 +16,6 @@ module;
 #include <mutex>
 #include <thread>
 
-#ifdef _WIN32
-#include <Windows.h> // Need DWORD, BOOL, WINAPI for handler signature
-#endif
-
 export module services.pipeline.shutdown;
 
 import foundation.infrastructure.logger;
@@ -117,13 +113,6 @@ private:
     ShutdownHandler& operator=(const ShutdownHandler&) = delete;
     ShutdownHandler(ShutdownHandler&&) = delete;
     ShutdownHandler& operator=(ShutdownHandler&&) = delete;
-
-    // Platform-specific signal handlers
-#ifdef _WIN32
-    static BOOL WINAPI windows_console_handler(DWORD ctrl_type);
-#else
-    static void posix_signal_handler(int signal);
-#endif
 
     // Internal state
     static std::atomic<ShutdownState> s_state;
