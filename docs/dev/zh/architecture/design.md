@@ -469,6 +469,7 @@ pipeline:
 *   **配置优先 (Configuration First)**: 生产环境应始终通过 `-c/--config` 加载完整 YAML，确保可复现性。
 *   **参数覆盖 (CLI Override)**: 命令行显式参数优先级高于配置文件（例如在 Config 中定义了输出路径，但 CLI 又指定了 `-o`，则以 CLI 为准）。
 *   **快捷模式 (Quick Run)**: 支持仅通过 CLI 参数 (`-s`, `-t`) 启动默认流水线，无需预先编写 YAML。
+*   **元数据驱动 (Metadata-Driven)**: 处理器参数通过 ProcessorParamRegistry 元数据注册表自动生成 CLI 标志，确保参数定义的单一事实来源。
 
 #### 3.5.2 命令结构
 `FaceFusionCpp.exe [GLOBAL_OPTIONS] [TASK_OPTIONS] [PROCESSOR_FLAGS]`
@@ -487,8 +488,23 @@ pipeline:
 |          | `-t`, `--target`  | Path(s) | 目标图片/视频路径 (支持多个)                             |
 |          | `-o`, `--output`  | Path    | 输出目录或文件路径                                       |
 |          | `--processors`    | String  | 启用的处理器 (逗号分隔，如 `face_swapper,face_enhancer`) |
+| **处理器** (face_swapper) | `--face-swapper-model` | String | 模型选择 (enum: inswapper_128, inswapper_128_fp16) |
+|          | `--face-swapper-face-selector-mode` | String | 人脸选择模式 (enum: reference, one, many) |
+|          | `--face-swapper-reference-face-path` | Path | 参考人脸图片路径 (mode=reference 时必需) |
+| **处理器** (face_enhancer) | `--face-enhancer-model` | String | 模型选择 (enum: codeformer, gfpgan_1.2, gfpgan_1.3, gfpgan_1.4) |
+|          | `--face-enhancer-blend-factor` | Float | 混合因子 (0-1, 默认 0.8) |
+|          | `--face-enhancer-face-selector-mode` | String | 人脸选择模式 (enum: reference, one, many) |
+|          | `--face-enhancer-reference-face-path` | Path | 参考人脸图片路径 (mode=reference 时必需) |
+| **处理器** (expression_restorer) | `--expression-restorer-model` | String | 模型选择 (enum: live_portrait) |
+|          | `--expression-restorer-restore-factor` | Float | 还原因子 (0-1, 默认 0.8) |
+|          | `--expression-restorer-face-selector-mode` | String | 人脸选择模式 (enum: reference, one, many) |
+|          | `--expression-restorer-reference-face-path` | Path | 参考人脸图片路径 (mode=reference 时必需) |
+| **处理器** (frame_enhancer) | `--frame-enhancer-model` | String | 模型选择 (enum: real_esrgan_x2, real_esrgan_x2_fp16, real_esrgan_x4, real_esrgan_x4_fp16, real_esrgan_x8, real_esrgan_x8_fp16, real_hatgan_x4) |
+|          | `--frame-enhancer-enhance-factor` | Float | 增强因子 (0-1, 默认 0.8) |
 
 > **注意**: 快捷模式参数与 `--config` 互斥。使用快捷参数时，系统将应用 `default_task_settings` 中的默认值。
+
+> **注意**: 处理器参数标志由 `ProcessorParamRegistry` 元数据注册表动态生成，确保参数定义与代码实现保持同步。所有处理器参数均不包含 `--task-config` 标志。
 
 #### 3.5.4 `--system-check` 输出规范
 系统自检结果支持两种输出格式，便于人工查看与脚本集成：
