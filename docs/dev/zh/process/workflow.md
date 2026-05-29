@@ -68,19 +68,29 @@
    - 🔴 为当前子任务编写失败测试
    - 🟢 编写最少量代码使测试通过
    - 🔵 重构优化代码结构
-   - ✅ 运行 `python build.py --action test` 确保所有测试通过
+   - ✅ 运行 `python build.py --action test --test-label unit` 确保单元测试通过
 9. 提交子任务更改到 git（仅提交代码文件，不提交文档文件）
 10. 更新任务文档状态
     - 将对应的子任务文档状态标记为"已完成"
     - 记录完成时间与相关 commit ID
 11. 重复步骤 8-10 直到所有子任务完成
 
+**阶段三.五：集成验证**
+> 所有子任务完成后、合并前执行。验证跨模块协作无回归。
+
+12. **运行集成测试**：`python build.py --action test --test-label integration`
+13. 若集成测试失败，定位并修复问题，回到阶段三的 TDD 循环
+14. 集成测试全部通过后，进入阶段四
+
 **阶段四：完成验收与合并**
-12. **最终验证**：运行完整测试套件确保所有测试通过
-13. **合并分支**：将功能分支合并回 `dev` 分支
-14. **清理分支**：删除已合并的功能分支
-15. 更新计划状态为"已完成"
-16. 流程结束
+15. **E2E 测试**：运行端到端测试验证完整业务流程（如适用）
+    - 命令：`cd build/<preset>/bin && python3 ../../../tests/e2e/scripts/run_e2e.py`
+    - 详细说明参见 `tests/e2e/README.md`
+16. **最终验证**：运行完整测试套件 `python build.py --action test` 确保所有测试通过
+17. **合并分支**：将功能分支合并回 `dev` 分支
+18. **清理分支**：删除已合并的功能分支
+19. 更新计划状态为"已完成"
+20. 流程结束
 
 ---
 
@@ -139,7 +149,7 @@ graph TD
     subgraph TDDCycle[TDD 实现循环]
         WriteTest["🔴 编写失败测试"] --> WriteCode["🟢 编写最少代码"]
         WriteCode --> Refactor["🔵 重构优化"]
-        Refactor --> RunTests["✅ 运行测试"]
+        Refactor --> RunTests["✅ 运行单元测试"]
     end
 
     TDDCycle --> TestPass{测试通过?}
@@ -153,7 +163,11 @@ graph TD
     AllTasksDone -->|否| NextTask[继续下一子任务]
     NextTask --> TDDCycle
 
-    AllTasksDone -->|是| FinalTest[阶段四: 最终验证]
+    AllTasksDone -->|是| IntegrationTest[阶段三.五: 集成测试]
+    IntegrationTest --> IntegPass{集成测试通过?}
+    IntegPass -->|否| FixCode
+    IntegPass -->|是| E2ETest[阶段四: E2E 测试]
+    E2ETest --> FinalTest[最终验证: 完整测试套件]
     FinalTest --> MergeBranch[合并并删除分支]
     MergeBranch --> UpdatePlanStatus[更新计划状态]
     UpdatePlanStatus --> End[流程结束]
