@@ -14,6 +14,7 @@ target_sources(domain_pipeline
             pipeline_adapters.ixx
             queue.ixx
             processor_factory.ixx
+            processor_param_registry.ixx
             impl/pipeline_impl.ixx
 )
 
