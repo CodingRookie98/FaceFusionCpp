@@ -94,7 +94,7 @@
    不仅用于配置私有 Registry，更重要的是通过 **Overlay Ports** 处理定制需求（如修改 ffmpeg 编译参数），避免直接修改 vcpkg 源码。
 
 2. **启用二进制缓存 (Binary Caching)**:
-   这是 C++ 工程化的核心。配置 `VCPKG_BINARY_SOURCES`（如本地文件共享或 Artifactory），实现“一人编译，全员（包括 CI）复用”，显著降低构建时间。
+   这是 C++ 工程化的核心。配置 `VCPKG_BINARY_SOURCES`（如本地文件共享或 Artifactory），实现"一人编译，全员（包括 CI）复用"，显著降低构建时间。
 
 3. **版本控制策略**：
    - **MUST NOT** 手动修改 `builtin-baseline`：**SHOULD** 使用 `vcpkg x-update-baseline` 命令更新。
@@ -105,6 +105,162 @@
    - 提交代码前运行 `vcpkg format-manifest`，自动排序依赖并规范化 JSON 格式，减少 Merge Conflict。
 
 > **避坑指南**：如果你在 VS/VS Code 中发现 vcpkg 没生效，请检查你的 CMake 设置是否开启了 `VCPKG_MANIFEST_MODE`（通常只要目录下有 `vcpkg.json` 且使用了 vcpkg 工具链文件，它会自动开启）。
+
+---
+
+## 5. 高级用法详解
+
+### 5.1 二进制缓存 (Binary Caching) 详解
+
+二进制缓存是 vcpkg 最重要的性能优化特性。当启用后，vcpkg 会在构建包后创建二进制包，后续安装时直接恢复缓存，避免重复编译。
+
+**默认缓存位置**：
+- **Linux/macOS**: `$HOME/.cache/vcpkg/archives`
+- **Windows**: `%LOCALAPPDATA%\vcpkg\archives`
+
+**配置方法**：
+
+```bash
+# 本地文件系统缓存
+export VCPKG_BINARY_SOURCES="clear;files,/path/to/cache,readwrite"
+
+# GitHub Packages (NuGet)
+export VCPKG_BINARY_SOURCES="clear;nuget,https://nuget.pkg.github.com/OWNER/index.json,readwrite"
+
+# Azure DevOps Artifacts
+export VCPKG_BINARY_SOURCES="clear;nuget,https://pkgs.dev.azure.com/ORG/_packaging/FEED/nuget/v3/index.json,readwrite"
+```
+
+**最佳实践**：
+- CI 管道 **SHOULD** 配置读写权限的二进制缓存
+- 开发者 **SHOULD** 使用只读权限访问 CI 产出的缓存
+- **推荐**：同时使用 vcpkg 二进制缓存和 CI 原生缓存（如 `actions/cache`）以获得最佳性能
+
+### 5.2 Overlay Ports 使用指南
+
+Overlay Ports 允许你在不修改 vcpkg 源码的情况下定制依赖包。这对于处理 C++20 兼容性问题（如 OpenCV patch）非常有用。
+
+**目录结构**：
+```
+project/
+├── vcpkg-ports/           # Overlay Ports 目录
+│   ├── opencv/
+│   │   ├── vcpkg.json     # 包元数据
+│   │   └── portfile.cmake # 构建脚本
+│   └── ffmpeg/
+│       ├── vcpkg.json
+│       └── portfile.cmake
+├── vcpkg.json
+└── vcpkg-configuration.json
+```
+
+**配置方式**：
+
+```json
+// vcpkg-configuration.json
+{
+  "overlay-ports": ["vcpkg-ports"]
+}
+```
+
+**优先级顺序**（从高到低）：
+1. 命令行 `--overlay-ports=<dir>`
+2. `vcpkg-configuration.json` 中的 `overlay-ports`
+3. 环境变量 `VCPKG_OVERLAY_PORTS`
+
+### 5.3 Asset Caching（源文件缓存）
+
+Asset Caching 用于缓存源代码压缩包和预构建工具，避免重复下载。
+
+```bash
+# 配置 Asset Cache
+export VCPKG_ASSET_SOURCES="clear;files,/path/to/assets,readwrite"
+
+# 使用 Azure Blob Storage
+export VCPKG_ASSET_SOURCES="clear;x-azblob,https://account.blob.core.windows.net/container?${SAS_TOKEN},readwrite"
+```
+
+### 5.4 vcpkg-configuration.json 详解
+
+`vcpkg-configuration.json` 用于配置 vcpkg 的行为，包括 Registry、Overlay Ports、Asset Cache 等。
+
+```json
+{
+  "default-registry": {
+    "kind": "git",
+    "repository": "https://github.com/Microsoft/vcpkg",
+    "baseline": "6d7bf7ef2193e2d1c5798a5ff8811d533104c861"
+  },
+  "registries": [
+    {
+      "kind": "git",
+      "repository": "https://github.com/my-org/my-vcpkg-registry",
+      "baseline": "...",
+      "packages": ["my-private-lib"]
+    }
+  ],
+  "overlay-ports": ["vcpkg-ports"],
+  "overlay-triplets": ["custom-triplets"]
+}
+```
+
+### 5.5 版本约束语法
+
+vcpkg 支持多种版本约束方式：
+
+```json
+{
+  "dependencies": [
+    {
+      "name": "opencv",
+      "version>=": "4.8.0"  // 最低版本
+    },
+    {
+      "name": "ffmpeg",
+      "version=": "6.0.0"   // 精确版本
+    }
+  ],
+  "overrides": [
+    {
+      "name": "openssl",
+      "version": "3.1.0"    // 强制覆盖版本
+    }
+  ]
+}
+```
+
+**版本约束优先级**：
+1. `overrides`（最高优先级，强制覆盖）
+2. `version=`（精确版本）
+3. `version>=`（最低版本）
+4. `builtin-baseline`（基线版本）
+
+### 5.6 GitHub Actions 集成
+
+```yaml
+# .github/workflows/ci.yml
+- name: Setup vcpkg
+  run: |
+    git clone https://github.com/Microsoft/vcpkg.git
+    ./vcpkg/bootstrap-vcpkg.sh
+
+- name: Cache vcpkg
+  uses: actions/cache@v4
+  with:
+    path: |
+      build/vcpkg_installed
+      ~/.cache/vcpkg/archives
+    key: vcpkg-${{ hashFiles('vcpkg.json') }}
+    restore-keys: vcpkg-
+
+- name: Configure
+  run: |
+    cmake --preset linux-debug \
+      -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake
+
+- name: Build
+  run: cmake --build build/linux-x64-debug
+```
 
 ---
 
