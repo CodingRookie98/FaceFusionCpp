@@ -121,3 +121,50 @@ add_custom_target(memory_leak_test
     COMMENT "Running integration tests with memory leak detection"
 )
 
+# ============================================================
+# E2E 测试集成 (End-to-End Tests)
+# ============================================================
+option(BUILD_E2E_TESTS "Build and register E2E tests with CTest" ON)
+
+if(BUILD_E2E_TESTS)
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
+    set(E2E_SCRIPTS_DIR "${CMAKE_SOURCE_DIR}/tests/e2e/scripts")
+    set(E2E_CONFIGS_DIR "${CMAKE_SOURCE_DIR}/tests/e2e/configs")
+
+    # 注册 E2E 测试：图像处理
+    add_test(
+        NAME e2e_image
+        COMMAND ${Python3_EXECUTABLE} ${E2E_SCRIPTS_DIR}/run_e2e.py --filter image
+        WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+    )
+    set_tests_properties(e2e_image PROPERTIES
+        LABELS "facefusion;e2e"
+        TIMEOUT 600
+    )
+
+    # 注册 E2E 测试：视频处理
+    add_test(
+        NAME e2e_video
+        COMMAND ${Python3_EXECUTABLE} ${E2E_SCRIPTS_DIR}/run_e2e.py --filter video
+        WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+    )
+    set_tests_properties(e2e_video PROPERTIES
+        LABELS "facefusion;e2e"
+        TIMEOUT 1200
+    )
+
+    # 注册 E2E 测试：边界情况
+    add_test(
+        NAME e2e_edge_cases
+        COMMAND ${Python3_EXECUTABLE} ${E2E_SCRIPTS_DIR}/run_e2e.py --filter edge
+        WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+    )
+    set_tests_properties(e2e_edge_cases PROPERTIES
+        LABELS "facefusion;e2e"
+        TIMEOUT 600
+    )
+
+    message(STATUS "E2E tests registered with CTest (labels: e2e)")
+endif()
+
