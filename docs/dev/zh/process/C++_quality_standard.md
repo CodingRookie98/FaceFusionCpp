@@ -14,12 +14,34 @@
 提交或交付一个变更（尤其是新增模块/公共 API）时，至少满足：
 
 - **可构建**：使用项目统一入口构建（`build.py` + CMake Presets），Debug 为开发默认配置。
-- **无新增告警**：不引入新的编译告警（必要时先降噪再开启更严格的告警级别，不接受长期“忽略”）。
+- **无新增告警**：不引入新的编译告警（必要时先降噪再开启更严格的告警级别，不接受长期"忽略"）。
 - **格式化一致**：运行项目格式化脚本后无差异（使用仓库内 `.clang-format`）。
 - **静态分析通过**：运行项目静态分析脚本（使用仓库内 `.clang-tidy`，基于 `compile_commands.json`）。
 - **测试覆盖到行为**：对新增/修改的行为补齐单元测试或集成测试；测试可稳定重复执行。
 - **文档同步**：公共模块接口的 Doxygen 注释齐全；若引入新的工程约束（构建参数、目录结构、使用方式），同步更新对应文档。
 - **提交前自检**：建议运行 `scripts/pre_commit_check.py` 作为本地质量门禁。
+
+### 1.1 Pre-Commit 检查清单
+
+在提交 PR 之前，**MUST** 确保以下检查项全部通过：
+
+| # | 检查项 | 验证命令 | 优先级 |
+| :--- | :--- | :--- | :--- |
+| 1 | 编译无误 | `python build.py --action build` | **MUST** |
+| 2 | 单元测试通过 | `python build.py --action test --test-label unit` | **MUST** |
+| 3 | 集成测试通过 | `python build.py --action test --test-label integration` | **MUST** |
+| 4 | 代码格式化 | `python scripts/format_code.py` | **MUST** |
+| 5 | 静态分析通过 | `python scripts/run_clang_tidy.py` | **SHOULD** |
+| 6 | 预提交检查 | `python scripts/pre_commit_check.py` | **SHOULD** |
+
+**代码规范检查**：
+
+| # | 检查项 | 验证方式 | 优先级 |
+| :--- | :--- | :--- | :--- |
+| 7 | 命名约定 | 人工审查（参见 3.1 节） | **SHOULD** |
+| 8 | 模块化 | 新增类是否使用 C++20 模块？是否隐藏实现细节？ | **MUST** |
+| 9 | 路径解析 | 是否使用 `platform.fs` 而非硬编码绝对路径？ | **SHOULD** |
+| 10 | 日志埋点 | 关键逻辑节点是否有 INFO/DEBUG 级别日志？ | **SHOULD** |
 
 ## 2. 注释与 API 文档（Doxygen）
 
@@ -77,25 +99,42 @@ namespace foundation::ai {
 
 ## 3. 代码层面的现代 C++ 质量标准
 
-### 3.1 资源管理与所有权
+### 3.1 命名约定
+
+| 元素 | 风格 | 示例 | 说明 |
+| :--- | :--- | :--- | :--- |
+| **类/结构体** | `PascalCase` | `FaceSwapper`, `PipelineRunner` | 类型名称 |
+| **函数/方法** | `snake_case` | `process_frame()`, `load_model()` | 操作动词开头 |
+| **变量** | `snake_case` | `frame_count`, `model_path` | 局部变量和参数 |
+| **成员变量** | `m_snake_case` | `m_session`, `m_is_ready` | 类成员变量 |
+| **常量** | `kPascalCase` | `kMaxQueueSize`, `kDefaultTimeout` | 编译期常量 |
+| **枚举值** | `PascalCase` | `ErrorCode::ModelLoadFailed` | 枚举成员 |
+| **命名空间** | `snake_case` | `domain::face::swapper` | 模块命名空间 |
+| **文件名** | `snake_case` | `face_swapper.ixx`, `pipeline_runner.cpp` | 源文件 |
+
+### 3.2 资源管理与所有权
 
 - **RAII 强制**：资源（文件、句柄、GPU/ONNX 资源等）必须由对象生命周期管理，禁止“成对调用”式的手动释放约定。
 - **智能指针优先**：用 `std::unique_ptr` 表达唯一所有权；共享所有权必须有明确原因并尽量局部化。
 - **避免隐式所有权**：禁止在 API 中返回/传入“谁负责释放不清楚”的裸指针；需要借用语义时，用引用/`std::span`/迭代器表达。
 
-### 3.2 错误处理与异常安全
+### 3.3 错误处理与异常安全
 
 - **异常策略必须一致**：同一层级（例如 foundation / domain / app）对错误的表达方式要统一（异常、返回值、状态对象等），不要混用导致调用方复杂化。
 - **明确异常保证**：关键 API 至少说明 basic/strong/no-throw 期望；不要随意标注 `noexcept`（会放大崩溃面）。
 - **永远不吞异常**：捕获异常必须做可诊断处理（增加上下文并重新抛出/转换），不得静默忽略。
+- **防御性编程**：
+  - 优先使用 `Early Return` 减少嵌套层级。
+  - 对第三方库（FFmpeg, ONNX Runtime）的调用必须有完善的错误检查。
+  - 所有异常必须在合适的层级被捕获并转化为错误码（Exxx）或记录日志。
 
-### 3.3 并发与线程安全
+### 3.4 并发与线程安全
 
 - **默认非线程安全**：除非文档明确声明并提供同步策略，否则类型视为非线程安全。
 - **优先使用现代并发设施**：在需要取消/停止语义时，优先使用 `std::jthread` + `std::stop_token`。
 - **数据竞争零容忍**：共享状态必须有清晰同步边界；出现竞态时优先通过设计消除共享，而不是“补锁”。
 
-### 3.4 API 设计与可维护性
+### 3.5 API 设计与可维护性
 
 - **值语义优先**：能用值语义就不要暴露复杂的生命周期管理；对大对象用移动语义与 `std::span`/`std::string_view` 等视图类型。
 - **强类型优先**：对单位/语义敏感的参数（时间、尺寸、阈值等）优先使用 `std::chrono` 与强类型封装，避免“裸 int/float”满天飞。
