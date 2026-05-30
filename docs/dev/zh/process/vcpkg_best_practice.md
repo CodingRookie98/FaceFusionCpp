@@ -48,8 +48,8 @@
 
 ### A. 身份识别 (Identity)
 
-* **`name`**: 必须是小写字母、数字或连字符（kebab-case）。
-* **`version`**: 建议使用 `version`（简单字符串）或 `version-semver`（语义化版本）。
+* **`name`**: **MUST** 是小写字母、数字或连字符（kebab-case）。
+* **`version`**: **SHOULD** 使用 `version`（简单字符串）或 `version-semver`（语义化版本）。
 
 ### B. 版本控制的关键：`builtin-baseline`
 
@@ -80,11 +80,11 @@
 
 | 字段 | 强制性 | 目的 | 工程化建议 |
 | --- | --- | --- | --- |
-| **`name`** | 是 | 项目标识 | 统一使用小写和连字符 |
-| **`builtin-baseline`** | 强烈建议 | **版本锁定** | 必须提供，以确保构建可重复性 |
-| **`dependencies`** | 是 | 核心依赖列表 | 尽量保持精简 |
-| **`features`** | 否 | 模块化依赖 | 将测试、文档、GUI 依赖分离 |
-| **`supports`** | 否 | 平台限制 | 如果库不支持 Windows，需在此声明避免误用 |
+| **`name`** | **MUST** | 项目标识 | 统一使用小写和连字符 |
+| **`builtin-baseline`** | **MUST** | **版本锁定** | **MUST** 提供，以确保构建可重复性 |
+| **`dependencies`** | **MUST** | 核心依赖列表 | **SHOULD** 尽量保持精简 |
+| **`features`** | **MAY** | 模块化依赖 | 将测试、文档、GUI 依赖分离 |
+| **`supports`** | **MAY** | 平台限制 | 如果库不支持 Windows，需在此声明避免误用 |
 
 ---
 
@@ -97,9 +97,9 @@
    这是 C++ 工程化的核心。配置 `VCPKG_BINARY_SOURCES`（如本地文件共享或 Artifactory），实现“一人编译，全员（包括 CI）复用”，显著降低构建时间。
 
 3. **版本控制策略**：
-   - **不要手动修改** `builtin-baseline`：建议使用 `vcpkg x-update-baseline` 命令更新。
-   - **慎用 Overrides**：`overrides` 会打破基线承诺。除非有版本冲突或紧急 Bug 修复，否则优先通过更新 `builtin-baseline` 来整体升级。
-   - **版本约束**：优先使用 `version>=` 确保最低版本。
+   - **MUST NOT** 手动修改 `builtin-baseline`：**SHOULD** 使用 `vcpkg x-update-baseline` 命令更新。
+   - **SHOULD** 慎用 Overrides：`overrides` 会打破基线承诺。除非有版本冲突或紧急 Bug 修复，否则优先通过更新 `builtin-baseline` 来整体升级。
+   - **版本约束**：**SHOULD** 使用 `version>=` 确保最低版本。
 
 4. **保持整洁**：
    - 提交代码前运行 `vcpkg format-manifest`，自动排序依赖并规范化 JSON 格式，减少 Merge Conflict。
