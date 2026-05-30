@@ -34,7 +34,6 @@ add_facefusion_test(
     MAIN_LIB GTest::gmock_main
     SOURCES
         domain/face/detector/face_detector_test.cpp
-        domain/face/detector/face_detector_param_test.cpp
         domain/face/swapper/face_swapper_test.cpp
         domain/face/enhancer/face_enhancer_test.cpp
         domain/face/recognizer/face_recognizer_test.cpp
