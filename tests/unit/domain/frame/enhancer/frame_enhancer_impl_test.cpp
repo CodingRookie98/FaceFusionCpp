@@ -6,13 +6,11 @@
 import domain.frame.enhancer;
 import foundation.ai.inference_session;
 import foundation.ai.inference_session_registry;
-import tests.mocks.foundation.mock_inference_session;
-import tests.helpers.foundation.test_utilities;
+import tests.test_support.foundation.ai.mock_inference_session;
 
 using namespace domain::frame::enhancer;
 using namespace foundation::ai::inference_session;
-using namespace tests::mocks::foundation;
-using namespace tests::helpers::foundation;
+using namespace tests::test_support::foundation::ai;
 using ::testing::_;
 using ::testing::NiceMock;
 using ::testing::Return;

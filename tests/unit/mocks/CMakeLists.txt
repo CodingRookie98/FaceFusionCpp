@@ -4,7 +4,6 @@ add_facefusion_test(
         mock_usage_test.cpp
     LINK_LIBRARIES
         test_common
-        test_helpers
         test_mocks
         GTest::gtest
         GTest::gmock

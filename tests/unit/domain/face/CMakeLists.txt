@@ -4,7 +4,7 @@ add_facefusion_test(
         face_store_test.cpp
         face_selector_test.cpp
         face_helper_test.cpp
-        face_enhancement_test.cpp
+        face_enhancement_tests.cpp
         masker/mask_compositor_test.cpp
         detector/face_detector_factory_test.cpp
         detector/yolo_detector_test.cpp
@@ -32,8 +32,9 @@ add_facefusion_test(
         domain_face_masker
         domain_face_expression
         domain_face_enhancer
-        test_helpers
-        test_mocks
+        domain_face_test_support
+        foundation_infrastructure_test_support
+        tests_test_support_foundation_ai_mock_inference_session
         ONNXRuntime::ONNXRuntime
         ONNX::onnx
         GTest::gmock

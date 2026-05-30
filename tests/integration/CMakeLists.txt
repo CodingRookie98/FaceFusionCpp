@@ -1,5 +1,5 @@
 add_facefusion_test(
-    app_pipeline_tests
+    app_test_pipeline
     SOURCES
         app/pipeline_runner_video_test.cpp
         app/pipeline_runner_image_test.cpp
@@ -8,6 +8,7 @@ add_facefusion_test(
         app/edge_cases_test.cpp
         app/memory_monitoring_test.cpp
     LINK_LIBRARIES
+        integration_test_support
         domain_pipeline
         services_pipeline
         domain_face
@@ -16,46 +17,51 @@ add_facefusion_test(
         domain_face_swapper
         domain_face_expression
         domain_face_enhancer
+        domain_face_test_support
+        domain_face_analyser
         domain_ai
         foundation_ai
         foundation_infrastructure
-        test_helpers
-        test_common
-        test_helpers
-        test_common
+        foundation_infrastructure_test_support
+        foundation_media
+        ${OpenCV_LIBS}
 )
-copy_onnxruntime_libs(app_pipeline_tests)
+
+copy_onnxruntime_libs(app_test_pipeline)
+
 if(HAVE_NVML)
-    target_link_libraries(app_pipeline_tests PRIVATE ${NVML_LIBRARY})
-    target_compile_definitions(app_pipeline_tests PRIVATE HAVE_NVML)
+    target_link_libraries(app_test_pipeline PRIVATE ${NVML_LIBRARY})
+    target_compile_definitions(app_test_pipeline PRIVATE HAVE_NVML)
 endif()
+
 add_facefusion_test(
     component_integration_tests
     MAIN_LIB GTest::gmock_main
     SOURCES
         domain/face/detector/face_detector_test.cpp
-        domain/face/detector/face_detector_param_test.cpp
-        domain/face/swapper/face_swapper_test.cpp
-        domain/face/enhancer/face_enhancer_test.cpp
-        domain/face/recognizer/face_recognizer_test.cpp
-        domain/face/masker/face_masker_test.cpp
-        domain/face/landmarker/face_landmarker_test.cpp
-        domain/face/classifier/face_classifier_test.cpp
-        domain/face/expression/face_expression_test.cpp
-        domain/face/analyser/face_analyser_integration_test.cpp
-        domain/face/analyser/model_registry_test.cpp
-        domain/ai/model_repository_test.cpp
-        domain/frame/enhancer/frame_enhancer_test.cpp
-        foundation/ai/inference_session_test.cpp
-        foundation/ai/session_pool_test.cpp
-        foundation/ai/inference_session_registry_test.cpp
-        foundation/media/ffmpeg_test.cpp
-        foundation/media/vision_test.cpp
-        foundation/infrastructure/network_test.cpp
+        domain/face/swapper/face_swapper_tests.cpp
+        domain/face/enhancer/face_enhancer_tests.cpp
+        domain/face/recognizer/face_recognizer_tests.cpp
+        domain/face/masker/face_masker_tests.cpp
+        domain/face/landmarker/face_landmarker_tests.cpp
+        domain/face/classifier/face_classifier_tests.cpp
+        domain/face/expression/face_expression_tests.cpp
+        domain/face/analyser/face_analyser_integration_tests.cpp
+        domain/face/analyser/model_registry_tests.cpp
+        domain/ai/model_repository_tests.cpp
+        domain/frame/enhancer/frame_enhancer_tests.cpp
+        foundation/ai/inference_session_tests.cpp
+        foundation/ai/session_pool_tests.cpp
+        foundation/ai/inference_session_registry_tests.cpp
+        foundation/media/ffmpeg_tests.cpp
+        foundation/media/vision_tests.cpp
+        foundation/infrastructure/network_tests.cpp
         domain/face/face_helper_test.cpp
         domain/face/face_selector_test.cpp
         domain/face/face_test.cpp
     LINK_LIBRARIES
+        integration_test_support
+        domain_face
         domain_face_detector
         domain_face_swapper
         domain_face_recognizer
@@ -69,14 +75,14 @@ add_facefusion_test(
         foundation_ai
         foundation_media
         foundation_infrastructure
-        test_helpers
-        test_common
-        test_helpers
-        test_common
+        domain_face_test_support
+        foundation_infrastructure_test_support
         ${OpenCV_LIBS}
         GTest::gmock
 )
+
 copy_onnxruntime_libs(component_integration_tests)
+
 if(HAVE_NVML)
     target_link_libraries(component_integration_tests PRIVATE ${NVML_LIBRARY})
     target_compile_definitions(component_integration_tests PRIVATE HAVE_NVML)

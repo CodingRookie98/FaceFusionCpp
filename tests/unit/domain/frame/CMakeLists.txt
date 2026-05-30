@@ -6,8 +6,8 @@ add_facefusion_test(
 
     LINK_LIBRARIES
         domain_frame
-        test_helpers
-        test_mocks
+        foundation_infrastructure_test_support
+        tests_test_support_foundation_ai_mock_inference_session
         ONNXRuntime::ONNXRuntime
         ONNX::onnx
         GTest::gmock

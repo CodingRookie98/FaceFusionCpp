@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <filesystem>
 #include <fstream>
-#include "common/test_paths.h"
 
 import foundation.ai.inference_session_registry;
 import foundation.ai.inference_session;
@@ -14,8 +13,7 @@ protected:
     std::string temp_dir;
 
     void SetUp() override {
-        auto base_dir = tests::common::TestPaths::GetTestOutputDir("inference_session_registry");
-        temp_dir = (base_dir / ("test_temp_registry_" + std::to_string(std::rand()))).string();
+        temp_dir = "test_temp_registry_" + std::to_string(std::rand());
         fs::create_directories(temp_dir);
     }
 

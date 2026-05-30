@@ -17,5 +17,4 @@ add_facefusion_test(
         GTest::gtest_main
     LINK_LIBRARIES
         foundation_ai
-        test_common
 )
