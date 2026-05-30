@@ -121,6 +121,43 @@ if(ENABLE_COVERAGE)
         message(STATUS "Enabling debug info for MSVC (use OpenCppCoverage)")
         add_compile_options(/DEBUG)
     endif()
+
+    # gcovr 集成：生成覆盖率报告
+    find_program(GCOVR gcovr)
+    if(GCOVR)
+        # XML 报告（CI 友好）
+        add_custom_target(coverage
+            COMMAND ${GCOVR}
+                --root ${CMAKE_SOURCE_DIR}
+                --filter ${CMAKE_SOURCE_DIR}/src/
+                --exclude ${CMAKE_SOURCE_DIR}/tests/
+                --exclude ${CMAKE_SOURCE_DIR}/build/
+                --xml ${CMAKE_BINARY_DIR}/coverage.xml
+                --print-summary
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Generating code coverage report (XML)"
+            VERBATIM
+        )
+
+        # HTML 报告（本地查看）
+        add_custom_target(coverage-html
+            COMMAND ${GCOVR}
+                --root ${CMAKE_SOURCE_DIR}
+                --filter ${CMAKE_SOURCE_DIR}/src/
+                --exclude ${CMAKE_SOURCE_DIR}/tests/
+                --exclude ${CMAKE_SOURCE_DIR}/build/
+                --html ${CMAKE_BINARY_DIR}/coverage.html
+                --html-details
+                --print-summary
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Generating code coverage report (HTML)"
+            VERBATIM
+        )
+
+        message(STATUS "Coverage targets available: 'coverage' (XML), 'coverage-html' (HTML)")
+    else()
+        message(WARNING "gcovr not found. Install with: pip install gcovr")
+    endif()
 endif()
 
 
