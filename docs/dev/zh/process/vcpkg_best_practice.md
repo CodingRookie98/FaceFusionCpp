@@ -108,4 +108,71 @@
 
 ---
 
-想为你的项目生成一个具体的 `vcpkg.json` 吗？告诉我你目前在用的库，我可以帮你写一个完整的出来。
+## 5. FaceFusionCpp 项目实际配置
+
+### 5.1 当前 vcpkg.json 配置
+
+项目使用以下依赖配置（截至 v0.34.1）：
+
+```json
+{
+  "name": "facefusioncpp",
+  "version": "0.34.1",
+  "builtin-baseline": "6d7bf7ef2193e2d1c5798a5ff8811d533104c861",
+  "dependencies": [
+    "cli11",           // CLI 参数解析
+    "curl",            // HTTP 客户端（模型下载）
+    "dp-thread-pool",  // 线程池
+    { "name": "ffmpeg", "features": ["avcodec", "avdevice", "avfilter", "avformat", "gpl", "nvcodec", "swresample", "swscale", "x264", "x265"] },
+    "flatbuffers",     // 序列化（Batch 模式）
+    "indicators",      // 进度条
+    "nlohmann-json",   // JSON 解析
+    "onnx",            // ONNX 模型支持
+    "opencv",          // 图像处理
+    "openssl",         // HTTPS 支持
+    "spdlog",          // 日志
+    "yaml-cpp"         // YAML 配置解析
+  ],
+  "features": {
+    "test": { "dependencies": ["gtest"] }
+  }
+}
+```
+
+### 5.2 已知兼容性问题与 Patch
+
+| 库 | 问题 | 解决方案 | 自动化 |
+| :--- | :--- | :--- | :--- |
+| **OpenCV** | `types.hpp` 的 C++20 模板歧义 | `scripts/patch_opencv.py` | CMakeLists.txt 自动调用 |
+
+### 5.3 vcpkg 更新流程
+
+```bash
+# 1. 更新 baseline 到最新
+vcpkg x-update-baseline
+
+# 2. 格式化 manifest
+vcpkg format-manifest
+
+# 3. 重新安装依赖
+vcpkg install
+
+# 4. 运行 OpenCV patch（如需要）
+python scripts/patch_opencv.py
+
+# 5. 验证构建
+python build.py --action build
+```
+
+### 5.4 添加新依赖的检查清单
+
+添加新依赖时，**MUST** 确认以下事项：
+
+| # | 检查项 | 验证方式 |
+| :--- | :--- | :--- |
+| 1 | 依赖是否支持 Clang 21 | 查阅依赖文档或测试编译 |
+| 2 | 依赖是否支持 C++20 | 查阅依赖文档 |
+| 3 | 依赖是否有已知的 C++20 兼容性问题 | 搜索 GitHub Issues |
+| 4 | 依赖是否需要 feature flags | 查阅 vcpkg port 文档 |
+| 5 | 依赖是否需要 patch | 测试编译后确认 |
+| 6 | 更新 vcpkg.json 后运行 `vcpkg format-manifest` | 自动格式化 |
