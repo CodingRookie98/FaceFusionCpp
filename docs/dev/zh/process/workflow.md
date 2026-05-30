@@ -91,8 +91,54 @@
 16. **最终验证**：运行完整测试套件 `python build.py --action test` 确保所有测试通过
 17. **合并分支**：将功能分支合并回 `dev` 分支
 18. **清理分支**：删除已合并的功能分支
-19. 更新计划状态为"已完成"
-20. 流程结束
+
+**阶段五：文档归档与更新**
+> 合并完成后执行。确保所有文档与代码变更保持同步。
+
+19. **文档变更检查**（按以下清单逐项确认）：
+
+    **📋 开发文档检查** (`docs/dev/{en,zh}/`)：
+
+    | 文档 | 检查条件 | 路径 |
+    | :--- | :--- | :--- |
+    | 架构设计 | 是否新增/修改了模块、分层、接口 | `architecture/design.md` |
+    | 分层结构 | 是否调整了层级依赖关系 | `architecture/layers.md` |
+    | 构建指南 | 是否新增/变更了构建依赖或配置 | `guides/setup.md` |
+    | 质量标准 | 是否新增/修改了代码规范 | `process/quality.md`, `process/C++_quality_standard.md` |
+    | 工作流程 | 是否调整了开发流程 | `process/workflow.md` |
+    | 疑难杂症 | 是否解决了新的技术问题 | `troubleshooting/README.md` |
+
+    **📋 用户文档检查** (`docs/user/{en,zh}/`)：
+
+    | 文档 | 检查条件 | 路径 |
+    | :--- | :--- | :--- |
+    | 快速上手 | 是否影响了安装/首次使用流程 | `getting_started.md` |
+    | 用户指南 | 是否新增/修改了功能特性 | `user_guide.md` |
+    | 配置指南 | 是否新增/修改了配置参数 | `configuration_guide.md` |
+    | CLI 参考 | 是否新增/修改了命令行参数 | `cli_reference.md` |
+    | 硬件指南 | 是否有新的硬件适配信息 | `hardware_guide.md` |
+    | FAQ | 是否有新的常见问题 | `faq.md` |
+
+    **📋 其他文档检查**：
+
+    | 文档 | 检查条件 | 路径 |
+    | :--- | :--- | :--- |
+    | 技术决策 (ADR) | 是否做出了重大技术选型决策 | `docs/dev/zh/guides/*.md` |
+    | 评估报告 | 是否完成了代码质量评估 | `docs/dev/evaluation/*.md` |
+    | 实施计划 | 是否有计划状态变更 | `docs/dev/plan/*/IMPLEMENTATION_PLAN.md` |
+    | 构建说明 | 是否有构建流程变更 | `docs/build.md` |
+
+20. **更新受影响的文档**：
+    - 对于每个"需要更新"的文档，执行更新并记录变更
+    - 开发文档和用户文档需同步更新中英文版本（`docs/dev/zh/` 和 `docs/dev/en/`，`docs/user/zh/` 和 `docs/user/en/`）
+    - 文档变更使用独立 commit，message 格式：`docs: update {文档名} for {变更原因}`
+
+21. **归档评估报告**（如有）：
+    - 将阶段零产生的评估报告保存到 `docs/dev/evaluation/`
+    - 将技术决策记录 (ADR) 保存到 `docs/dev/zh/guides/`
+
+22. 更新计划状态为"已完成"
+23. 流程结束
 
 ---
 
@@ -171,6 +217,13 @@ graph TD
     IntegPass -->|是| E2ETest[阶段四: E2E 测试]
     E2ETest --> FinalTest[最终验证: 完整测试套件]
     FinalTest --> MergeBranch[合并并删除分支]
-    MergeBranch --> UpdatePlanStatus[更新计划状态]
+    MergeBranch --> DocAudit[阶段五: 文档归档与更新]
+
+    subgraph DocAudit[阶段五: 文档归档]
+        CheckDocs["📋 检查文档变更清单"] --> UpdateDocs["更新受影响的文档"]
+        UpdateDocs --> ArchiveReports["归档评估报告/ADR"]
+    end
+
+    DocAudit --> UpdatePlanStatus[更新计划状态]
     UpdatePlanStatus --> End[流程结束]
 ```
