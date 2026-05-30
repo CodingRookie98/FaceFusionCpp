@@ -2,7 +2,7 @@ add_facefusion_test(
     face_analyser_unit_tests
     MAIN_LIB GTest::gmock_main
     SOURCES
-        face_analyser_unit_tests.cpp
+        face_analyser_unit_test.cpp
     LINK_LIBRARIES
         domain_face_analyser
         domain_face_detector

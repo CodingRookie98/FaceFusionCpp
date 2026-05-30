@@ -3,7 +3,7 @@
 # Config parser tests
 add_facefusion_test(config_parser_tests
     SOURCES
-        config/config_parser_tests.cpp
+        config/config_parser_test.cpp
     MAIN_LIB
         GTest::gtest
     LINK_LIBRARIES
@@ -14,7 +14,7 @@ add_facefusion_test(config_parser_tests
 # Config merger tests
 add_facefusion_test(config_merger_tests
     SOURCES
-        config/config_merger_tests.cpp
+        config/config_merger_test.cpp
     MAIN_LIB
         GTest::gtest
     LINK_LIBRARIES
