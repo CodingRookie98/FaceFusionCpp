@@ -1,5 +1,21 @@
 # Setup & Build Guide
 
+> **Document Control**
+> - **Document ID**: FFC-DEV-EN-GUIDE-SETUP-2026
+> - **Version**: V1.0.0
+> - **Status**: Official
+> - **Authority**: Informative
+> - **Owner**: 王辉
+> - **Reviewer**: 王辉
+> - **Last Updated**: 2026-08-13
+
+## Revision History
+
+| Version | Date | Author | Reviewer | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
+
+
 This guide is intended to help developers set up their development environment and successfully compile FaceFusionCpp on Windows and Linux.
 
 ## 1. Software Prerequisites

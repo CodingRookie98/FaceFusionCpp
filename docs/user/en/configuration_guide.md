@@ -1,5 +1,21 @@
 # Configuration Guide
 
+> **Document Control**
+> - **Document ID**: FFC-USER-EN-CFG-2026
+> - **Version**: V1.0.0
+> - **Status**: Official
+> - **Authority**: Informative
+> - **Owner**: 王辉
+> - **Reviewer**: 王辉
+> - **Last Updated**: 2026-08-13
+
+## Revision History
+
+| Version | Date | Author | Reviewer | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
+
+
 FaceFusionCpp uses a flexible YAML configuration system. There are two main configuration files:
 
 1. **`config/app_config.yaml`**: Global application settings (hardware foundation, paths, logging, observability).

@@ -1,3 +1,20 @@
+# vcpkg 最佳实践 (vcpkg Best Practice)
+
+> **文档控制信息 (Document Control)**
+> - **文档标识 (Document ID)**: FFC-DEV-ZH-PROC-VCPKG-2026
+> - **当前版本 (Version)**: V1.0.0
+> - **状态 (Status)**: 正式 (Official)
+> - **权威性 (Authority)**: Normative
+> - **所有者 (Owner)**: 王辉
+> - **审核人 (Reviewer)**: 王辉
+> - **最后更新 (Last Updated)**: 2026-08-13
+
+## 修订历史记录 (Revision History)
+
+| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
+
 在现代 C++ 工程化实践中，`vcpkg.json` 是 **清单模式 (Manifest Mode)** 的核心。一个“标准”且具备工程化水准的 `vcpkg.json` 不仅仅是列出依赖，更要解决**版本锁定、模块化功能开启**以及**平台兼容性**等问题。
 
 以下是一个标准工程化 `vcpkg.json` 的模版及其核心组成部分的详细拆解。

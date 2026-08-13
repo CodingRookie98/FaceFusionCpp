@@ -1,5 +1,21 @@
 # 配置指南 (Configuration Guide)
 
+> **文档控制信息 (Document Control)**
+> - **文档标识 (Document ID)**: FFC-USER-ZH-CFG-2026
+> - **当前版本 (Version)**: V1.0.0
+> - **状态 (Status)**: 正式 (Official)
+> - **权威性 (Authority)**: Informative
+> - **所有者 (Owner)**: 王辉
+> - **审核人 (Reviewer)**: 王辉
+> - **最后更新 (Last Updated)**: 2026-08-13
+
+## 修订历史记录 (Revision History)
+
+| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
+
+
 FaceFusionCpp 采用灵活的 YAML 配置系统。主要的配置文件有两个：
 
 1. **`config/app_config.yaml`**: 全局应用程序设置 (硬件基础、路径、日志、可观测性)。

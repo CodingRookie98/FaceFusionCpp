@@ -1,5 +1,21 @@
 # Issue: C++20 Modules 不被支持 (Compiler Support)
 
+> **文档控制信息 (Document Control)**
+> - **文档标识 (Document ID)**: FFC-DEV-ZH-TS-ISSUE-CPP20-2026
+> - **当前版本 (Version)**: V1.0.0
+> - **状态 (Status)**: 正式 (Official)
+> - **权威性 (Authority)**: Informative
+> - **所有者 (Owner)**: 王辉
+> - **审核人 (Reviewer)**: 王辉
+> - **最后更新 (Last Updated)**: 2026-08-13
+
+## 修订历史记录 (Revision History)
+
+| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
+
+
 ## 问题描述
 编译时报错提示无法识别模块语义，或提示 `ixx` 文件无法被处理。
 

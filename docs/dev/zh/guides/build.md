@@ -1,5 +1,21 @@
 # 使用 `build.py` 脚本配置和构建
 
+> **文档控制信息 (Document Control)**
+> - **文档标识 (Document ID)**: FFC-DEV-ZH-GUIDE-BUILD-2026
+> - **当前版本 (Version)**: V1.0.0
+> - **状态 (Status)**: 正式 (Official)
+> - **权威性 (Authority)**: Informative
+> - **所有者 (Owner)**: 王辉
+> - **审核人 (Reviewer)**: 王辉
+> - **最后更新 (Last Updated)**: 2026-08-13
+
+## 修订历史记录 (Revision History)
+
+| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
+
+
 本项目提供了 `build.py` 脚本，旨在简化配置、构建、测试和打包的流程。该脚本会自动检测系统环境，并支持 Windows、Linux 和 macOS（实验性）。
 
 ## 1. 快速开始

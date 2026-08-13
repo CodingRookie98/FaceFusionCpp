@@ -1,5 +1,21 @@
 # 快速开始 (Getting Started)
 
+> **文档控制信息 (Document Control)**
+> - **文档标识 (Document ID)**: FFC-USER-ZH-GS-2026
+> - **当前版本 (Version)**: V1.0.0
+> - **状态 (Status)**: 正式 (Official)
+> - **权威性 (Authority)**: Informative
+> - **所有者 (Owner)**: 王辉
+> - **审核人 (Reviewer)**: 王辉
+> - **最后更新 (Last Updated)**: 2026-08-13
+
+## 修订历史记录 (Revision History)
+
+| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
+
+
 欢迎使用 **FaceFusionCpp**，这是热门开源项目 [facefusion](https://github.com/facefusion/facefusion) 的高性能 C++ 实现。本文档将指导您完成环境准备、安装和首次人脸替换操作。
 
 ## 1. 系统要求

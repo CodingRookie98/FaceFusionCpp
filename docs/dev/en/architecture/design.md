@@ -1,4 +1,21 @@
-# Application Layer Architecture Design (V2.8)
+# Application Layer Architecture Design (V2.9)
+
+> **Document Control**
+> - **Document ID**: FFC-DEV-EN-ARCH-DESIGN-2026
+> - **Version**: V2.9
+> - **Status**: Official
+> - **Authority**: Normative
+> - **Owner**: 王辉
+> - **Reviewer**: 王辉
+> - **Last Updated**: 2026-08-13
+
+## Revision History
+
+| Version | Date | Author | Reviewer | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| V2.8 | 2026-02-05 | ArchTeam | - | Synced with zh design.md V2.8 |
+| **V2.9** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
+
 
 ## 1. Design Philosophy
 

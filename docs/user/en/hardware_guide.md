@@ -1,5 +1,21 @@
 # Hardware Guide
 
+> **Document Control**
+> - **Document ID**: FFC-USER-EN-HW-2026
+> - **Version**: V1.0.0
+> - **Status**: Official
+> - **Authority**: Informative
+> - **Owner**: 王辉
+> - **Reviewer**: 王辉
+> - **Last Updated**: 2026-08-13
+
+## Revision History
+
+| Version | Date | Author | Reviewer | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
+
+
 FaceFusionCpp is a high-performance application. This guide helps you choose the optimal configuration based on your hardware (specifically GPU) specs.
 
 ---

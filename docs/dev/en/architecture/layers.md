@@ -1,5 +1,21 @@
 # 5-Layer Architecture Implementation Details
 
+> **Document Control**
+> - **Document ID**: FFC-DEV-EN-ARCH-LAYERS-2026
+> - **Version**: V1.0.0
+> - **Status**: Official
+> - **Authority**: Normative
+> - **Owner**: 王辉
+> - **Reviewer**: 王辉
+> - **Last Updated**: 2026-08-13
+
+## Revision History
+
+| Version | Date | Author | Reviewer | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
+
+
 ## 1. Architecture Overview
 
 FaceFusionCpp follows a strict unidirectional dependency flow:

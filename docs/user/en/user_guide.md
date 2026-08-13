@@ -1,5 +1,21 @@
 # User Guide
 
+> **Document Control**
+> - **Document ID**: FFC-USER-EN-UG-2026
+> - **Version**: V1.0.0
+> - **Status**: Official
+> - **Authority**: Informative
+> - **Owner**: 王辉
+> - **Reviewer**: 王辉
+> - **Last Updated**: 2026-08-13
+
+## Revision History
+
+| Version | Date | Author | Reviewer | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
+
+
 This guide details the core features of FaceFusionCpp and how to effectively use them for image and video processing.
 
 ---

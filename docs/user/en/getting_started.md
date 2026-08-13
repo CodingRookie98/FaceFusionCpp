@@ -1,5 +1,21 @@
 # Getting Started
 
+> **Document Control**
+> - **Document ID**: FFC-USER-EN-GS-2026
+> - **Version**: V1.0.0
+> - **Status**: Official
+> - **Authority**: Informative
+> - **Owner**: 王辉
+> - **Reviewer**: 王辉
+> - **Last Updated**: 2026-08-13
+
+## Revision History
+
+| Version | Date | Author | Reviewer | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
+
+
 Welcome to **FaceFusionCpp**, the high-performance C++ implementation of the popular open-source project [facefusion](https://github.com/facefusion/facefusion). This document will guide you through environment preparation, installation, and your first face-swapping operation.
 
 ## 1. System Requirements
