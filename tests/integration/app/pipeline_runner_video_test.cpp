@@ -197,7 +197,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemoryOneStep) {
     auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
-    task_config.config_version = "1.0";
+    task_config.config_version = "0.34.1";
     task_config.task_info.id = "test_video_strict";
     task_config.io.source_paths.push_back(source_path.string());
     task_config.io.target_paths.push_back(video_path.string());
@@ -243,7 +243,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoTolerantMemoryOneStep) {
     auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
-    task_config.config_version = "1.0";
+    task_config.config_version = "0.34.1";
     task_config.task_info.id = "test_video_tolerant";
     task_config.io.source_paths.push_back(source_path.string());
     task_config.io.target_paths.push_back(video_path.string());
@@ -289,7 +289,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialMultiStep) {
     auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
-    task_config.config_version = "1.0";
+    task_config.config_version = "0.34.1";
     task_config.task_info.id = "test_video_seq_multi_step";
     task_config.io.source_paths.push_back(source_path.string());
     task_config.io.target_paths.push_back(video_path.string());
@@ -361,7 +361,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMutiStep) {
     auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
-    task_config.config_version = "1.0";
+    task_config.config_version = "0.34.1";
     task_config.task_info.id = "test_video_batch_multi_step";
     task_config.io.source_paths.push_back(source_path.string());
 
@@ -555,4 +555,121 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoReportsFPS) {
 
     EXPECT_TRUE(received_fps) << "FPS was never reported > 0 during video processing";
     if (received_fps) { std::cout << "Max reported FPS: " << max_fps << std::endl; }
+}
+
+// ============================================================================
+// Video Segmentation Tests
+// ============================================================================
+
+TEST_F(PipelineRunnerVideoTest, ProcessVideoSegmentedFrameCountConserved) {
+    if (!std::filesystem::exists(video_path) || !std::filesystem::exists(source_path)) {
+        GTEST_SKIP() << "Test assets not found.";
+    }
+
+    config::AppConfig app_config;
+    auto runner = create_pipeline_runner(app_config);
+
+    config::TaskConfig task_config;
+    task_config.config_version = "0.34.1";
+    task_config.task_info.id = "test_video_segmented";
+    task_config.io.source_paths.push_back(source_path.string());
+    task_config.io.target_paths.push_back(video_path.string());
+    task_config.io.output.path = output_dir.string();
+    task_config.io.output.prefix = "pipeline_video_segmented_";
+    task_config.io.output.suffix = "";
+    task_config.io.output.audio_policy = config::AudioPolicy::Skip;
+
+    // Segment the 16.4s / 491-frame video into 4s segments (~4 segments)
+    task_config.resource.segment_duration_seconds = 4;
+
+    // Limit total frames to keep the test fast (2 segments of 40 frames)
+    task_config.resource.max_frames = 80;
+
+    config::PipelineStep step;
+    step.step = "face_swapper";
+    step.enabled = true;
+    config::FaceSwapperParams params;
+    params.model = "inswapper_128_fp16";
+    step.params = params;
+    task_config.pipeline.push_back(step);
+
+    std::string expected_output =
+        (output_dir / "pipeline_video_segmented_slideshow_scaled.mp4").string();
+    if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
+
+    auto merged_task_config = config::MergeConfigs(task_config, app_config);
+    auto result = runner->run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
+
+    if (result.is_err()) {
+        std::cerr << "Segmented Runner Error: " << result.error().message << std::endl;
+    }
+    ASSERT_TRUE(result.is_ok());
+    EXPECT_TRUE(std::filesystem::exists(expected_output));
+
+    // Frame count must be conserved across segmentation + merge
+    foundation::media::ffmpeg::VideoReader out_reader(expected_output);
+    ASSERT_TRUE(out_reader.open());
+    EXPECT_EQ(out_reader.get_frame_count(), 80)
+        << "Segmented processing must conserve total frame count";
+    out_reader.close();
+
+    // No intermediate segment files may remain
+    int segment_files = 0;
+    for (const auto& entry : std::filesystem::directory_iterator(output_dir)) {
+        if (entry.path().extension() == ".mp4" &&
+            entry.path().filename().string().find("segment_") != std::string::npos) {
+            segment_files++;
+        }
+    }
+    EXPECT_EQ(segment_files, 0) << "Intermediate segment files must be cleaned up";
+}
+
+TEST_F(PipelineRunnerVideoTest, ProcessVideoSegmentedStrictMemory) {
+    if (!std::filesystem::exists(video_path) || !std::filesystem::exists(source_path)) {
+        GTEST_SKIP() << "Test assets not found.";
+    }
+
+    config::AppConfig app_config;
+    auto runner = create_pipeline_runner(app_config);
+
+    config::TaskConfig task_config;
+    task_config.config_version = "0.34.1";
+    task_config.task_info.id = "test_video_segmented_strict";
+    task_config.io.source_paths.push_back(source_path.string());
+    task_config.io.target_paths.push_back(video_path.string());
+    task_config.io.output.path = output_dir.string();
+    task_config.io.output.prefix = "pipeline_video_segmented_strict_";
+    task_config.io.output.suffix = "";
+    task_config.io.output.audio_policy = config::AudioPolicy::Skip;
+
+    task_config.resource.memory_strategy = config::MemoryStrategy::Strict;
+    task_config.resource.segment_duration_seconds = 4;
+    task_config.resource.max_frames = 80;
+
+    config::PipelineStep step;
+    step.step = "face_swapper";
+    step.enabled = true;
+    config::FaceSwapperParams params;
+    params.model = "inswapper_128_fp16";
+    step.params = params;
+    task_config.pipeline.push_back(step);
+
+    std::string expected_output =
+        (output_dir / "pipeline_video_segmented_strict_slideshow_scaled.mp4").string();
+    if (std::filesystem::exists(expected_output)) std::filesystem::remove(expected_output);
+
+    auto merged_task_config = config::MergeConfigs(task_config, app_config);
+    auto result = runner->run(merged_task_config, [](const services::pipeline::TaskProgress& p) {});
+
+    if (result.is_err()) {
+        std::cerr << "Segmented Strict Runner Error: " << result.error().message << std::endl;
+    }
+    ASSERT_TRUE(result.is_ok());
+    EXPECT_TRUE(std::filesystem::exists(expected_output));
+
+    foundation::media::ffmpeg::VideoReader out_reader(expected_output);
+    ASSERT_TRUE(out_reader.open());
+    EXPECT_EQ(out_reader.get_frame_count(), 80)
+        << "Segmented strict processing must conserve total frame count";
+    out_reader.close();
 }

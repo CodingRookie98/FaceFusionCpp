@@ -49,6 +49,7 @@ add_facefusion_test(
         foundation/ai/session_pool_test.cpp
         foundation/ai/inference_session_registry_test.cpp
         foundation/media/ffmpeg_test.cpp
+        foundation/media/ffmpeg_minimal_test.cpp
         foundation/media/vision_test.cpp
         foundation/infrastructure/network_test.cpp
         domain/face/face_helper_test.cpp

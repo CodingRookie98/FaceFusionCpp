@@ -3,7 +3,7 @@
 > **文档标识**: FACE-FUSION-APP-ARCH
 > **密级**: 内部公开 (Internal Public)
 > **状态**: 正式 (Official)
-> **当前版本**: V3.0
+> **当前版本**: V3.1
 > **最后更新**: 2026-08-13
 
 ## 版本历史 (Version History)
@@ -20,6 +20,7 @@
 | V2.8 | 2026-02-05 | ArchTeam | 更新 A.3.3 硬件适配验收标准; 添加当前测试环境基准 (RTX 4060 8GB); 优化性能基准表; 新增硬件适配策略分级指南                        |
 | V2.9 | 2026-08-13 | AI Agent | 依据文档治理规范更新文档控制信息并补齐修订历史                                                                                    |
 | V3.0 | 2026-08-13 | AI Agent | 依据 design_doc_assessment.md 评估结果全面修订：CLI 参数名修正 (--task-config)；FlatBuffers/错误码/配置校验标注已实现；补充 default_models/gpu_sample_interval_ms/max_frames 字段；对齐 Checkpoint/face_masker/FrameEnhancer 实现；标注 segment_duration_seconds WIP；明确 memory_strategy 级联语义 |
+| V3.1 | 2026-08-13 | AI Agent | 视频分段功能已实现 (feature/plan-video-segmentation)：segment_duration_seconds 接线至 runner_video ProcessVideoSegmented，移除 WIP 标注 |
 
 ---
 
@@ -343,8 +344,8 @@ resource:
   # 视频分段处理 (Optional)
   # 0: 不分段，整个视频一次性处理
   # >0: 按指定秒数分段处理，最后合并输出为单个文件
-  # ⚠️ WIP: 该字段当前已被配置解析 (config_parser)，但 runner_video 尚未接线使用，
-  #         配置 >0 暂不生效。实现规划见评估报告 design_doc_assessment.md §5 建议2。
+  # ✅ 已实现: runner_video ProcessVideoSegmented 按时间窗口分段处理，
+  #   逐段 seek + 处理 + 段文件合并 (重编码拼接)，最后 Remuxer 合成音频。
   segment_duration_seconds: 0
 
 # 人脸分析配置 (Shared Analysis Config)

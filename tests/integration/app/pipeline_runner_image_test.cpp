@@ -101,7 +101,7 @@ TEST_F(PipelineRunnerImageTest, ProcessSingleImage) {
     auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
-    task_config.config_version = "1.0";
+    task_config.config_version = "0.34.1";
     task_config.task_info.id = "test_image_single";
     task_config.io.source_paths.push_back(source_path.string());
 
@@ -147,7 +147,7 @@ TEST_F(PipelineRunnerImageTest, ProcessImageBatch) {
     auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
-    task_config.config_version = "1.0";
+    task_config.config_version = "0.34.1";
     task_config.task_info.id = "test_image_batch";
 
     task_config.io.source_paths.push_back(source_path.string());
@@ -197,7 +197,7 @@ TEST_F(PipelineRunnerImageTest, ProcessImageSequentialMultiStep) {
     auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
-    task_config.config_version = "1.0";
+    task_config.config_version = "0.34.1";
     task_config.task_info.id = "test_image_multi";
     task_config.io.source_paths.push_back(source_path.string());
 

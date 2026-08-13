@@ -214,6 +214,24 @@ struct VideoWriter::Impl {
                 break;
             }
 
+            // Skip packets marked DISCARD (e.g. encoder flush boundary artifacts).
+            // Writing them pollutes the container with frames that cannot be decoded,
+            // causing nb_frames (container) > actual decodable frames.
+            if (packet->flags & AV_PKT_FLAG_DISCARD) {
+                std::cerr << "[VideoWriter] SKIP discard packet pts=" << packet->pts << std::endl;
+                av_packet_unref(packet);
+                continue;
+            }
+
+            // FFmpeg 编码器（尤其 x264）可能不设置 packet->duration，
+            // 导致 mp4 muxer 计算容器时长时少算最后一帧时长，
+            // demuxer 会因此把超出容器时长的尾帧标记为 AV_PKT_FLAG_DISCARD。
+            // 注意: 需在 rescale 之前用 codec time_base 单位设置，rescale 会自动转换。
+            if (packet->duration <= 0) {
+                packet->duration = av_rescale_q(1, av_inv_q(codec_ctx->framerate),
+                                                codec_ctx->time_base);
+            }
+
             av_packet_rescale_ts(packet, codec_ctx->time_base, video_stream->time_base);
             packet->stream_index = video_stream->index;
 
