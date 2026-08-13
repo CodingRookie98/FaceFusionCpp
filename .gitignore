@@ -89,17 +89,16 @@ compile_commands.json
 .DS_Store
 Thumbs.db
 
-# agent
-.agents/
 
 # Worktrees
 .worktrees/
 
 # opencode
 opencode.json
+opencode.jsonc
 /.opencode/
 
 .trae/
 .clangd
-/.agent/
-/.specify/
+# codegraph
+.codegraph/

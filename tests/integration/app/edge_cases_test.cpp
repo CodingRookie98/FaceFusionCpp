@@ -51,7 +51,7 @@ protected:
 // Edge Case 1: Palette image (pal8) auto-conversion
 // ============================================================================
 
-TEST_F(EdgeCasesTest, PaletteImage_AutoConvertsToRGB24) {
+TEST_F(EdgeCasesTest, PaletteImageAutoConvertsToRGB24) {
     auto target_path = get_assets_path() / "standard_face_test_images" / "man.bmp";
     auto output_path = output_dir_ / "result_man.bmp";
 
@@ -94,7 +94,7 @@ TEST_F(EdgeCasesTest, PaletteImage_AutoConvertsToRGB24) {
 // Edge Case 2: Format disguise (WebP with .jpg extension)
 // ============================================================================
 
-TEST_F(EdgeCasesTest, FormatDisguise_WebPWithJpgExtension_DecodesCorrectly) {
+TEST_F(EdgeCasesTest, FormatDisguiseWebPWithJpgExtensionDecodesCorrectly) {
     auto target_path = get_assets_path() / "standard_face_test_images" / "woman.jpg";
     auto output_path = output_dir_ / "result_woman.png";
 
@@ -151,7 +151,7 @@ protected:
     }
 };
 
-TEST_F(NoFaceFrameTest, NoFaceDetected_PassthroughWithWarning) {
+TEST_F(NoFaceFrameTest, NoFaceDetectedPassthroughWithWarning) {
     auto no_face_img = create_no_face_image();
     auto target_path = output_dir_ / "no_face_input.bmp";
     cv::imwrite(target_path.string(), no_face_img);
@@ -190,7 +190,7 @@ TEST_F(NoFaceFrameTest, NoFaceDetected_PassthroughWithWarning) {
 // Edge Case 4: Vertical video aspect ratio preservation
 // ============================================================================
 
-TEST_F(EdgeCasesTest, VerticalVideo_PreservesAspectRatio) {
+TEST_F(EdgeCasesTest, VerticalVideoPreservesAspectRatio) {
     auto target_path = get_assets_path() / "standard_face_test_videos" / "slideshow_scaled.mp4";
 
     foundation::media::ffmpeg::VideoParams video_params(target_path.string());

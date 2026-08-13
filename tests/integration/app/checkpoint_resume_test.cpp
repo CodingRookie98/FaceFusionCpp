@@ -66,7 +66,7 @@ protected:
 // 场景 1: 正常中断恢复
 // ============================================================================
 
-TEST_F(CheckpointResumeTest, Resume_AfterInterruption_ContinuesFromLastFrame) {
+TEST_F(CheckpointResumeTest, ResumeAfterInterruptionContinuesFromLastFrame) {
     // Arrange
     const std::string task_id = "resume_test_001";
     CheckpointManager ckpt_mgr(checkpoint_dir_);
@@ -100,7 +100,7 @@ TEST_F(CheckpointResumeTest, Resume_AfterInterruption_ContinuesFromLastFrame) {
 // 场景 2: Checkpoint 完整性验证
 // ============================================================================
 
-TEST_F(CheckpointResumeTest, Load_CorruptedCheckpoint_ReturnsNullopt) {
+TEST_F(CheckpointResumeTest, LoadCorruptedCheckpointReturnsNullopt) {
     // Arrange
     const std::string task_id = "corrupt_test";
     CheckpointManager ckpt_mgr(checkpoint_dir_);
@@ -122,7 +122,7 @@ TEST_F(CheckpointResumeTest, Load_CorruptedCheckpoint_ReturnsNullopt) {
     EXPECT_FALSE(loaded.has_value());
 }
 
-TEST_F(CheckpointResumeTest, Load_ConfigHashMismatch_ReturnsNullopt) {
+TEST_F(CheckpointResumeTest, LoadConfigHashMismatchReturnsNullopt) {
     // Arrange
     const std::string task_id = "config_mismatch_test";
     CheckpointManager ckpt_mgr(checkpoint_dir_);
@@ -144,7 +144,7 @@ TEST_F(CheckpointResumeTest, Load_ConfigHashMismatch_ReturnsNullopt) {
 // 场景 3: 任务完成后自动清理
 // ============================================================================
 
-TEST_F(CheckpointResumeTest, Cleanup_AfterCompletion_RemovesCheckpointFile) {
+TEST_F(CheckpointResumeTest, CleanupAfterCompletionRemovesCheckpointFile) {
     // Arrange
     const std::string task_id = "cleanup_test";
     CheckpointManager ckpt_mgr(checkpoint_dir_);
@@ -169,7 +169,7 @@ TEST_F(CheckpointResumeTest, Cleanup_AfterCompletion_RemovesCheckpointFile) {
 // 场景 4: 周期性保存
 // ============================================================================
 
-TEST_F(CheckpointResumeTest, Save_RespectsMinInterval) {
+TEST_F(CheckpointResumeTest, SaveRespectsMinInterval) {
     // Arrange
     const std::string task_id = "interval_test";
     CheckpointManager ckpt_mgr(checkpoint_dir_);

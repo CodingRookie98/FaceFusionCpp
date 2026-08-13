@@ -49,7 +49,7 @@ protected:
     fs::path output_dir;
 };
 
-TEST_F(FaceSwapperIntegrationTest, SwapFace_ValidInput_ResultResemblesSource) {
+TEST_F(FaceSwapperIntegrationTest, SwapFaceValidInputResultResemblesSource) {
     if (!fs::exists(source_path) || !fs::exists(target_path)) {
         GTEST_SKIP() << "Test images not found";
     }

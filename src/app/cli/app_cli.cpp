@@ -15,6 +15,7 @@ module app.cli;
 
 import config.parser;
 import config.merger;
+import config.validator;
 import services.pipeline.runner;
 import services.pipeline.shutdown;
 import foundation.infrastructure.logger;
@@ -25,6 +26,7 @@ import domain.face.model_registry;
 import app.cli.system_check;
 import app.version;
 import foundation.infrastructure.progress;
+import processor.param_registry;
 
 namespace app::cli {
 
@@ -68,6 +70,54 @@ foundation::infrastructure::logger::LoggingConfig convert_logging_config(
     return result;
 }
 } // namespace
+
+// ─────────────────────────────────────────────────────────────────────────
+// Helper: Convert snake_case to kebab-case for CLI flag names
+// ─────────────────────────────────────────────────────────────────────────
+namespace {
+std::string to_kebab(const std::string& snake) {
+    std::string result;
+    for (char c : snake) { result += (c == '_') ? '-' : c; }
+    return result;
+}
+} // anonymous namespace
+
+// ─────────────────────────────────────────────────────────────────────────
+// Helper: Register processor params as CLI11 flags from registry
+// ─────────────────────────────────────────────────────────────────────────
+static ProcessorParamMap register_processor_cli_params(CLI::App& cli_app) {
+    using namespace domain::processor;
+    ProcessorParamMap result;
+    auto& registry = ProcessorParamRegistry::instance();
+
+    for (const auto& proc_name : registry.all_processor_names()) {
+        auto* meta = registry.find(proc_name);
+        if (!meta) continue;
+
+        for (const auto& param : meta->params) {
+            std::string cli_flag = "--" + to_kebab(proc_name) + "-" + to_kebab(param.name);
+            std::string* storage = &result[proc_name][param.name];
+
+            switch (param.type) {
+            case ParamType::Bool:
+                cli_app.add_flag(cli_flag, *storage, param.description)->excludes("--task-config");
+                break;
+            default: {
+                auto* opt = cli_app.add_option(cli_flag, *storage, param.description);
+                opt->excludes("--task-config");
+                if (!param.allowed_values.empty()) {
+                    opt->check(CLI::IsMember(param.allowed_values));
+                }
+                if (param.range) {
+                    opt->check(CLI::Range(param.range->first, param.range->second));
+                }
+                break;
+            }
+            }
+        }
+    }
+    return result;
+}
 
 int App::run(int argc, char** argv) {
     CLI::App app{"FaceFusionCpp - Face processing pipeline"};
@@ -113,6 +163,9 @@ int App::run(int argc, char** argv) {
                    "Comma-separated processor list "
                    "(face_swapper,face_enhancer,expression_restorer,frame_enhancer)")
         ->excludes("--task-config");
+
+    // Register processor-specific CLI flags from metadata registry
+    auto processor_params = register_processor_cli_params(app);
 
     try {
         app.parse(argc, argv);
@@ -166,17 +219,26 @@ int App::run(int argc, char** argv) {
         log_hardware_info();             // 3. 硬件信息
 
         if (validate_only) {
-            if (config_path.empty()) {
-                std::cerr << "Error: --validate requires --task-config" << '\n';
-                exit_code = 1;
+            config::TaskConfig task_config;
+            bool has_config = false;
+            if (!config_path.empty()) {
+                exit_code = run_validate_from_file(config_path, *app_config);
+            } else if (!source_paths.empty() && !target_paths.empty()) {
+                task_config = build_quick_task_config(source_paths, target_paths, output_path,
+                                                      processors_str, processor_params);
+                has_config = true;
             } else {
-                exit_code = run_validate(config_path, *app_config);
+                std::cerr << "Error: --validate requires --task-config or (-s, -t)" << '\n';
+                exit_code = 1;
+            }
+            if (has_config && exit_code == 0) {
+                exit_code = run_validate(task_config, *app_config);
             }
         } else if (!config_path.empty()) {
             exit_code = run_pipeline(config_path, *app_config);
         } else if (!source_paths.empty() && !target_paths.empty()) {
             exit_code = run_quick_mode(source_paths, target_paths, output_path, processors_str,
-                                       *app_config);
+                                       processor_params, *app_config);
         } else {
             std::cout << app.help() << '\n';
             exit_code = 0;
@@ -202,7 +264,8 @@ int App::run_system_check(bool json_output) {
     return report.fail_count > 0 ? 1 : 0;
 }
 
-int App::run_validate(const std::string& config_path, const config::AppConfig& app_config) {
+int App::run_validate_from_file(const std::string& config_path,
+                                const config::AppConfig& app_config) {
     using namespace config;
     using foundation::infrastructure::logger::Logger;
 
@@ -254,53 +317,16 @@ int App::run_pipeline(const std::string& config_path, const config::AppConfig& a
 int App::run_quick_mode(const std::vector<std::string>& source_paths,
                         const std::vector<std::string>& target_paths,
                         const std::string& output_path, const std::string& processors_str,
+                        const ProcessorParamMap& processor_params,
                         const config::AppConfig& app_config) {
-    using namespace config;
+    // Build TaskConfig from CLI params
+    auto task_config = build_quick_task_config(source_paths, target_paths, output_path,
+                                               processors_str, processor_params);
 
-    // 1. 构建 TaskConfig
-    TaskConfig task_config;
-    std::string uuid = foundation::infrastructure::core_utils::random::generate_uuid();
-    std::replace(uuid.begin(), uuid.end(), '-', '_');
-    task_config.task_info.id = "quick_" + uuid;
-    task_config.io.source_paths = source_paths;
-    task_config.io.target_paths = target_paths;
+    // Merge with app defaults
+    task_config = config::MergeConfigs(task_config, app_config);
 
-    if (!output_path.empty()) {
-        task_config.io.output.path = output_path;
-    } else {
-        // 默认输出目录
-        task_config.io.output.path = "./output/";
-    }
-
-    // 2. 解析 processors
-    std::vector<std::string> processors;
-    if (processors_str.empty()) {
-        processors = {"face_swapper"}; // 默认处理器
-    } else {
-        // Split by comma
-        std::stringstream ss(processors_str);
-        std::string item;
-        while (std::getline(ss, item, ',')) {
-            // Trim whitespace
-            item.erase(0, item.find_first_not_of(" \t"));
-            item.erase(item.find_last_not_of(" \t") + 1);
-            if (!item.empty()) { processors.push_back(item); }
-        }
-    }
-
-    // 3. 添加 pipeline steps
-    for (const auto& proc : processors) {
-        PipelineStep step;
-        step.step = proc;
-        step.enabled = true;
-        // 使用默认参数 (在 run_pipeline_internal 中会由 runner 处理或在 TaskConfig 中保留默认)
-        task_config.pipeline.push_back(step);
-    }
-
-    // 4. 合并配置 (应用全局默认设置)
-    task_config = MergeConfigs(task_config, app_config);
-
-    // 5. 运行
+    // Run
     return run_pipeline_internal(task_config, app_config);
 }
 
@@ -450,6 +476,78 @@ void App::log_hardware_info() {
         }
     }
     logger->info("============================");
+}
+
+int App::run_validate(const config::TaskConfig& task_config, const config::AppConfig& app_config) {
+    using namespace config;
+    using foundation::infrastructure::logger::Logger;
+
+    Logger::get_instance()->info("Validating configuration...");
+
+    // Merge with app defaults
+    auto merged = MergeConfigs(task_config, app_config);
+
+    // Run validator
+    ConfigValidator validator;
+    auto errors = validator.validate(merged);
+
+    if (errors.empty()) {
+        std::cout << "Configuration valid.\n";
+        return 0;
+    }
+
+    std::cout << "Validation failed with " << errors.size() << " error(s):\n";
+    for (const auto& err : errors) { std::cout << err.to_config_error().formatted() << "\n"; }
+
+    return static_cast<int>(errors[0].code);
+}
+
+config::TaskConfig App::build_quick_task_config(const std::vector<std::string>& source_paths,
+                                                const std::vector<std::string>& target_paths,
+                                                const std::string& output_path,
+                                                const std::string& processors_str,
+                                                const ProcessorParamMap& processor_params) {
+    using namespace config;
+
+    TaskConfig task_config;
+    std::string uuid = foundation::infrastructure::core_utils::random::generate_uuid();
+    std::replace(uuid.begin(), uuid.end(), '-', '_');
+    task_config.task_info.id = "quick_" + uuid;
+    task_config.io.source_paths = source_paths;
+    task_config.io.target_paths = target_paths;
+    task_config.io.output.path = output_path.empty() ? "./output/" : output_path;
+
+    // Parse processor names
+    std::vector<std::string> processors;
+    if (processors_str.empty()) {
+        processors = {"face_swapper"};
+    } else {
+        std::stringstream ss(processors_str);
+        std::string item;
+        while (std::getline(ss, item, ',')) {
+            item.erase(0, item.find_first_not_of(" \\t"));
+            item.erase(item.find_last_not_of(" \\t") + 1);
+            if (!item.empty()) { processors.push_back(item); }
+        }
+    }
+
+    // Build pipeline steps with CLI params
+    for (const auto& proc : processors) {
+        PipelineStep step;
+        step.step = proc;
+        step.enabled = true;
+
+        auto it = processor_params.find(proc);
+        if (it != processor_params.end()) {
+            for (const auto& [param_name, param_value] : it->second) {
+                if (!param_value.empty()) { step.cli_params[param_name] = param_value; }
+            }
+        }
+
+        task_config.pipeline.push_back(std::move(step));
+    }
+
+    return task_config;
 }
 
 } // namespace app::cli

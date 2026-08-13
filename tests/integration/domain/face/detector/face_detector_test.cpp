@@ -37,7 +37,7 @@ protected:
     }
 };
 
-TEST_F(FaceDetectorTest, DetectFaces_TiffanyImage_FindsAtLeastOneFace) {
+TEST_F(FaceDetectorTest, DetectFacesTiffanyImageFindsAtLeastOneFace) {
     try {
         auto model_repository = domain::ai::model_repository::ModelRepository::get_instance();
         auto img_path = get_test_data_path("standard_face_test_images/tiffany.bmp");

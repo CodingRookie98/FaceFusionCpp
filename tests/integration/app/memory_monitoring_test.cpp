@@ -80,7 +80,7 @@ protected:
     }
 };
 
-TEST_F(MemoryMonitoringTest, VRAMPeak_BelowThreshold_DuringVideoProcessing) {
+TEST_F(MemoryMonitoringTest, VRAMPeakBelowThresholdDuringVideoProcessing) {
 #ifndef HAVE_NVML
     GTEST_SKIP() << "NVML not available, skipping VRAM test";
 #endif
@@ -103,7 +103,7 @@ TEST_F(MemoryMonitoringTest, VRAMPeak_BelowThreshold_DuringVideoProcessing) {
     EXPECT_LT(peak_gb, 6.5);
 }
 
-TEST_F(MemoryMonitoringTest, MemoryLeak_DeltaBelowThreshold_AfterProcessing) {
+TEST_F(MemoryMonitoringTest, MemoryLeakDeltaBelowThresholdAfterProcessing) {
     RunTask("warmup", image_path_.string(), "warmup_");
 
     tests::helpers::foundation::MemoryDeltaChecker ram_checker;

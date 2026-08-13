@@ -150,7 +150,7 @@ TEST_F(FfmpegTest, VideoReaderPreciseSeek) {
     }
 }
 
-TEST_F(FfmpegTest, VideoWriter_BasicWrite) {
+TEST_F(FfmpegTest, VideoWriterBasicWrite) {
     auto temp_dir = fs::temp_directory_path() / "facefusion_ffmpeg_test_basic_write";
     if (fs::exists(temp_dir)) fs::remove_all(temp_dir);
     fs::create_directories(temp_dir);

@@ -97,7 +97,7 @@ TEST_F(FaceAnalyserUnitTest, InitializationTest) {
     });
 }
 
-TEST_F(FaceAnalyserUnitTest, GetManyFaces_FullPipeline) {
+TEST_F(FaceAnalyserUnitTest, GetManyFacesFullPipeline) {
     // 1. Setup Mock Detector
     DetectionResult det_res;
     det_res.box = cv::Rect2f(10, 10, 100, 100);

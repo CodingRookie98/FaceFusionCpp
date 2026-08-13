@@ -4,6 +4,7 @@ module;
 #include <functional>
 #include <memory>
 #include <unordered_map>
+#include <cstdint>
 
 /**
  * @file process.ixx
@@ -28,7 +29,7 @@ struct Config {
     /**
      * @brief Window display mode
      */
-    enum class ShowWindow {
+    enum class ShowWindow : std::uint8_t {
         hide = 0,               ///< Hide the window
         show_normal = 1,        ///< Activate and display in a normal size
         show_minimized = 2,     ///< Activate and display minimized
@@ -72,10 +73,10 @@ public:
      * @param open_stdin Whether to open stdin
      * @param config Process configuration
      */
-    Process(const string_type& command, const string_type& path = string_type(),
-            std::function<void(const char* bytes, size_t n)> read_stdout = nullptr,
-            std::function<void(const char* bytes, size_t n)> read_stderr = nullptr,
-            bool open_stdin = false, const Config& config = {}) noexcept;
+    explicit Process(const string_type& command, const string_type& path = string_type(),
+                     std::function<void(const char* bytes, size_t n)> read_stdout = nullptr,
+                     std::function<void(const char* bytes, size_t n)> read_stderr = nullptr,
+                     bool open_stdin = false, const Config& config = {}) noexcept;
 
     /**
      * @brief Constructor with arguments vector
@@ -86,10 +87,11 @@ public:
      * @param open_stdin Whether to open stdin
      * @param config Process configuration
      */
-    Process(const std::vector<string_type>& arguments, const string_type& path = string_type(),
-            std::function<void(const char* bytes, size_t n)> read_stdout = nullptr,
-            std::function<void(const char* bytes, size_t n)> read_stderr = nullptr,
-            bool open_stdin = false, const Config& config = {}) noexcept;
+    explicit Process(const std::vector<string_type>& arguments,
+                     const string_type& path = string_type(),
+                     std::function<void(const char* bytes, size_t n)> read_stdout = nullptr,
+                     std::function<void(const char* bytes, size_t n)> read_stderr = nullptr,
+                     bool open_stdin = false, const Config& config = {}) noexcept;
 
     ~Process() noexcept;
 
@@ -97,20 +99,20 @@ public:
      * @brief Get process ID
      * @return Process ID
      */
-    id_type get_id() const noexcept;
+    [[nodiscard]] id_type get_id() const noexcept;
 
     /**
      * @brief Get exit status (blocking)
      * @return Exit status code
      */
-    int get_exit_status() noexcept;
+    [[nodiscard]] int get_exit_status() noexcept;
 
     /**
      * @brief Try to get exit status (non-blocking)
      * @param exit_status Output parameter for exit status
      * @return True if process has exited, false otherwise
      */
-    bool try_get_exit_status(int& exit_status) noexcept;
+    [[nodiscard]] bool try_get_exit_status(int& exit_status) noexcept;
 
     /**
      * @brief Write to stdin

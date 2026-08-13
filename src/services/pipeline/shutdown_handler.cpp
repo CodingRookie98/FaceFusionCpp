@@ -39,6 +39,49 @@ std::condition_variable ShutdownHandler::s_cv;
 std::thread ShutdownHandler::s_watchdog_thread;
 std::atomic<bool> ShutdownHandler::s_signal_received{false};
 
+// Anonymous namespace for platform-specific functions
+namespace {
+
+#ifdef _WIN32
+BOOL WINAPI windows_console_handler(DWORD ctrl_type) {
+    switch (ctrl_type) {
+    case CTRL_C_EVENT:
+        Logger::get_instance()->warn("[ShutdownHandler] CTRL+C received");
+        ShutdownHandler::request_shutdown();
+        return TRUE;
+
+    case CTRL_CLOSE_EVENT:
+        Logger::get_instance()->warn("[ShutdownHandler] Console close event received");
+        ShutdownHandler::request_shutdown();
+        // Wait for graceful shutdown before returning
+        (void)ShutdownHandler::wait_for_shutdown();
+        return TRUE;
+
+    case CTRL_SHUTDOWN_EVENT:
+        Logger::get_instance()->warn("[ShutdownHandler] System shutdown event received");
+        ShutdownHandler::request_shutdown();
+        (void)ShutdownHandler::wait_for_shutdown();
+        return TRUE;
+
+    case CTRL_LOGOFF_EVENT:
+        // Ignore logoff for console apps
+        return FALSE;
+
+    default: return FALSE;
+    }
+}
+#else
+void posix_signal_handler(int signal) {
+    // Note: request_shutdown only sets a flag and notifies CV, which is safer
+    // but notify_all is still not strictly async-signal-safe.
+    // In a truly industrial Linux app, we'd use write() to a pipe.
+    // For this project, setting an atomic and hoping CV works is a common compromise.
+    ShutdownHandler::request_shutdown();
+}
+#endif
+
+} // anonymous namespace
+
 void ShutdownHandler::install(ShutdownCallback on_shutdown, std::chrono::seconds timeout,
                               TimeoutCallback on_timeout) {
     if (s_installed.exchange(true)) {
@@ -191,44 +234,5 @@ void ShutdownHandler::mark_completed() {
     s_state.store(ShutdownState::Completed, std::memory_order_release);
     Logger::get_instance()->info("[ShutdownHandler] Shutdown marked as completed");
 }
-
-#ifdef _WIN32
-BOOL WINAPI ShutdownHandler::windows_console_handler(DWORD ctrl_type) {
-    switch (ctrl_type) {
-    case CTRL_C_EVENT:
-        Logger::get_instance()->warn("[ShutdownHandler] CTRL+C received");
-        request_shutdown();
-        return TRUE;
-
-    case CTRL_CLOSE_EVENT:
-        Logger::get_instance()->warn("[ShutdownHandler] Console close event received");
-        request_shutdown();
-        // Wait for graceful shutdown before returning
-        (void)wait_for_shutdown();
-        return TRUE;
-
-    case CTRL_SHUTDOWN_EVENT:
-        Logger::get_instance()->warn("[ShutdownHandler] System shutdown event received");
-        request_shutdown();
-        (void)wait_for_shutdown();
-        return TRUE;
-
-    case CTRL_LOGOFF_EVENT:
-        // Ignore logoff for console apps
-        return FALSE;
-
-    default: return FALSE;
-    }
-}
-#else
-void ShutdownHandler::posix_signal_handler(int signal) {
-    // Note: request_shutdown only sets a flag and notifies CV, which is safer
-    // but notify_all is still not strictly async-signal-safe.
-    // In a truly industrial Linux app, we'd use write() to a pipe.
-    // For this project, setting an atomic and hoping CV works is a common compromise.
-    s_signal_received = true;
-    s_cv.notify_all();
-}
-#endif
 
 } // namespace services::pipeline

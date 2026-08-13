@@ -10,14 +10,11 @@ module;
 #include <functional>
 #include <chrono>
 #include <atomic>
+#include <cstdint>
 #include <memory>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
-
-#ifdef _WIN32
-#include <Windows.h> // Need DWORD, BOOL, WINAPI for handler signature
-#endif
 
 export module services.pipeline.shutdown;
 
@@ -28,7 +25,7 @@ export namespace services::pipeline {
 /**
  * @brief Shutdown state enumeration
  */
-enum class ShutdownState {
+enum class ShutdownState : std::uint8_t {
     Running,   ///< Normal operation
     Requested, ///< Shutdown requested, waiting for cleanup
     TimedOut,  ///< Graceful shutdown timed out
@@ -114,13 +111,8 @@ private:
     // Non-copyable, non-movable
     ShutdownHandler(const ShutdownHandler&) = delete;
     ShutdownHandler& operator=(const ShutdownHandler&) = delete;
-
-    // Platform-specific signal handlers
-#ifdef _WIN32
-    static BOOL WINAPI windows_console_handler(DWORD ctrl_type);
-#else
-    static void posix_signal_handler(int signal);
-#endif
+    ShutdownHandler(ShutdownHandler&&) = delete;
+    ShutdownHandler& operator=(ShutdownHandler&&) = delete;
 
     // Internal state
     static std::atomic<ShutdownState> s_state;

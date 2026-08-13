@@ -20,11 +20,27 @@ add_facefusion_test(
         ${OpenCV_LIBS}
 )
 
+add_facefusion_test(
+    face_detector_benchmark
+    SOURCES
+        domain/face/detector/face_detector_benchmark.cpp
+    LINK_LIBRARIES
+        domain_face_detector
+        domain_ai
+        foundation_ai
+        foundation_infrastructure
+        test_helpers
+        ${OpenCV_LIBS}
+)
+
 # Benchmark specific properties
 set_tests_properties(app_benchmark_pipeline PROPERTIES LABELS "benchmark")
 set_tests_properties(app_benchmark_pipeline PROPERTIES TIMEOUT 600)
+set_tests_properties(face_detector_benchmark PROPERTIES LABELS "benchmark")
+set_tests_properties(face_detector_benchmark PROPERTIES TIMEOUT 300)
 
 # Ensure ONNX Runtime DLLs are copied
 if(COMMAND copy_onnxruntime_libs)
     copy_onnxruntime_libs(app_benchmark_pipeline)
+    copy_onnxruntime_libs(face_detector_benchmark)
 endif()

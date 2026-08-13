@@ -89,6 +89,20 @@ include(cmake/modules_lib.cmake)
 
 add_subdirectory(src)
 
+# 添加代码覆盖率支持（必须在 add_subdirectory(tests) 之前）
+option(ENABLE_COVERAGE "Enable code coverage" OFF)
+
+if(ENABLE_COVERAGE)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        message(STATUS "Enabling coverage for GCC/Clang")
+        add_compile_options(--coverage)
+        add_link_options(--coverage)
+    elseif(MSVC)
+        message(STATUS "Enabling debug info for MSVC (use OpenCppCoverage)")
+        add_compile_options(/DEBUG)
+    endif()
+endif()
+
 if(BUILD_TESTING)
     # find_package(GTest) moved to cmake/dependencies.cmake
 
@@ -109,17 +123,43 @@ if(ENABLE_CLANG_TIDY)
     endif()
 endif()
 
-# 添加代码覆盖率支持
-option(ENABLE_COVERAGE "Enable code coverage" OFF)
-
 if(ENABLE_COVERAGE)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        message(STATUS "Enabling coverage for GCC/Clang")
-        add_compile_options(--coverage)
-        add_link_options(--coverage)
-    elseif(MSVC)
-        message(STATUS "Enabling debug info for MSVC (use OpenCppCoverage)")
-        add_compile_options(/DEBUG)
+    # gcovr 集成：生成覆盖率报告（使用 llvm-cov）
+    find_program(GCOVR gcovr)
+    if(GCOVR)
+        # XML 报告（CI 友好）
+        add_custom_target(coverage
+            COMMAND ${GCOVR}
+                --gcov-executable "llvm-cov gcov"
+                --root ${CMAKE_SOURCE_DIR}
+                --filter ${CMAKE_SOURCE_DIR}/src/
+                --exclude ${CMAKE_SOURCE_DIR}/tests/
+                --exclude ${CMAKE_SOURCE_DIR}/build/
+                --xml ${CMAKE_BINARY_DIR}/coverage.xml
+                --print-summary
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Generating code coverage report (XML)"
+            VERBATIM
+        )
+
+        # HTML 报告（本地查看）
+        add_custom_target(coverage-html
+            COMMAND ${GCOVR}
+                --root ${CMAKE_SOURCE_DIR}
+                --filter ${CMAKE_SOURCE_DIR}/src/
+                --exclude ${CMAKE_SOURCE_DIR}/tests/
+                --exclude ${CMAKE_SOURCE_DIR}/build/
+                --html ${CMAKE_BINARY_DIR}/coverage.html
+                --html-details
+                --print-summary
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Generating code coverage report (HTML)"
+            VERBATIM
+        )
+
+        message(STATUS "Coverage targets available: 'coverage' (XML), 'coverage-html' (HTML)")
+    else()
+        message(WARNING "gcovr not found. Install with: pip install gcovr")
     endif()
 endif()
 

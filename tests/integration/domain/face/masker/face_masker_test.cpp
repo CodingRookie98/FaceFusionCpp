@@ -48,19 +48,19 @@ protected:
 // Factory Exception Tests
 // ============================================================================
 
-TEST_F(FaceMaskerTest, CreateOcclusionMasker_EmptyPath_ThrowsException) {
+TEST_F(FaceMaskerTest, CreateOcclusionMaskerEmptyPathThrowsException) {
     EXPECT_ANY_THROW(create_occlusion_masker(""));
 }
 
-TEST_F(FaceMaskerTest, CreateRegionMasker_EmptyPath_ThrowsException) {
+TEST_F(FaceMaskerTest, CreateRegionMaskerEmptyPathThrowsException) {
     EXPECT_ANY_THROW(create_region_masker(""));
 }
 
-TEST_F(FaceMaskerTest, CreateOcclusionMasker_InvalidPath_ThrowsException) {
+TEST_F(FaceMaskerTest, CreateOcclusionMaskerInvalidPathThrowsException) {
     EXPECT_ANY_THROW(create_occlusion_masker("invalid_path.onnx"));
 }
 
-TEST_F(FaceMaskerTest, CreateRegionMasker_InvalidPath_ThrowsException) {
+TEST_F(FaceMaskerTest, CreateRegionMaskerInvalidPathThrowsException) {
     EXPECT_ANY_THROW(create_region_masker("invalid_path.onnx"));
 }
 
@@ -68,7 +68,7 @@ TEST_F(FaceMaskerTest, CreateRegionMasker_InvalidPath_ThrowsException) {
 // Occlusion Masker Integration Tests
 // ============================================================================
 
-TEST_F(FaceMaskerTest, CreateOcclusionMask_ValidInput_ReturnsValidMask) {
+TEST_F(FaceMaskerTest, CreateOcclusionMaskValidInputReturnsValidMask) {
     // Get model path
     std::string model_path = repo->ensure_model("xseg_1");
     if (model_path.empty()) { GTEST_SKIP() << "face_occluder model not available"; }
@@ -117,7 +117,7 @@ TEST_F(FaceMaskerTest, CreateOcclusionMask_ValidInput_ReturnsValidMask) {
 // Region Masker Integration Tests
 // ============================================================================
 
-TEST_F(FaceMaskerTest, CreateRegionMask_ValidInput_ReturnsValidMask) {
+TEST_F(FaceMaskerTest, CreateRegionMaskValidInputReturnsValidMask) {
     // Get model path
     std::string model_path = repo->ensure_model("bisenet_resnet_18");
     if (model_path.empty()) { GTEST_SKIP() << "face_parser model not available"; }
@@ -167,7 +167,7 @@ TEST_F(FaceMaskerTest, CreateRegionMask_ValidInput_ReturnsValidMask) {
     cv::imwrite((output_dir / "region_mask_result.png").string(), mask);
 }
 
-TEST_F(FaceMaskerTest, CreateRegionMask_MultipleRegions_ReturnsCombinedMask) {
+TEST_F(FaceMaskerTest, CreateRegionMaskMultipleRegionsReturnsCombinedMask) {
     std::string model_path = repo->ensure_model("bisenet_resnet_18");
     if (model_path.empty()) { GTEST_SKIP() << "face_parser model not available"; }
 

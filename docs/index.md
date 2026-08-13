@@ -4,7 +4,7 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DOC-INDEX-2026
-> - **当前版本 (Version)**: V1.0.0
+> - **当前版本 (Version)**: V1.1.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: 规范 (Normative)
 > - **所有者 (Owner)**: 王辉
@@ -15,6 +15,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-08-13 | AI Agent | 王辉 | 合并 dev 分支后更新索引：删除 quality.md（并入 C++_quality_standard.md），新增 evaluation/plan/templates/superpowers/compiler_selection 等 18 篇文档。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范创建全局索引，收录全部 35 篇文档；修复全仓断链并统一文档目录结构。 |
 
 > 仅保留最近 5 条记录，更早的历史可通过 `git log --oneline docs/index.md` 查阅。
@@ -79,8 +80,7 @@ docs/
 | 文档 | 说明 |
 | :--- | :--- |
 | [workflow.md](./dev/zh/process/workflow.md) | 开发流水线 Checklist（必读） |
-| [quality.md](./dev/zh/process/quality.md) | 质量标准 |
-| [C++_quality_standard.md](./dev/zh/process/C++_quality_standard.md) | C++ 代码规范与工程化标准 |
+| [C++_quality_standard.md](./dev/zh/process/C++_quality_standard.md) | C++ 代码规范与工程化标准（含原 quality.md 内容） |
 | [vcpkg_best_practice.md](./dev/zh/process/vcpkg_best_practice.md) | vcpkg 最佳实践 |
 | [CI_CD_recommendations.md](./dev/zh/process/CI_CD_recommendations.md) | CI/CD 开发与运行建议 |
 
@@ -90,6 +90,37 @@ docs/
 | :--- | :--- |
 | [setup.md](./dev/zh/guides/setup.md) | 技术构建环境搭建指南 |
 | [build.md](./dev/zh/guides/build.md) | 使用 `build.py` 脚本配置和构建 |
+| [compiler_selection.md](./dev/zh/guides/compiler_selection.md) | 编译器选型决策记录 (ADR) |
+
+**评估 (Evaluation)**
+
+| 文档 | 说明 |
+| :--- | :--- |
+| [C++_evaluation_code_smells_and_tech_debt.md](./dev/zh/evaluation/C++_evaluation_code_smells_and_tech_debt.md) | 代码坏味道与技术债务评估报告 |
+
+**计划与任务 (Plan & Task)**
+
+| 文档 | 说明 |
+| :--- | :--- |
+| [cli-enhancement/IMPLEMENTATION_PLAN.md](./dev/plan/cli-enhancement/IMPLEMENTATION_PLAN.md) | CLI 增强实施计划 |
+| [fix-tech-debt/IMPLEMENTATION_PLAN.md](./dev/plan/fix-tech-debt/IMPLEMENTATION_PLAN.md) | 技术债务修复计划（P1） |
+| [fix-tech-debt-p2/IMPLEMENTATION_PLAN.md](./dev/plan/fix-tech-debt-p2/IMPLEMENTATION_PLAN.md) | 技术债务修复计划（阶段二） |
+| [fix-tech-debt/task/C++_task_01_concurrent_queue.md](./dev/plan/fix-tech-debt/task/C++_task_01_concurrent_queue.md) | 子任务：并发队列 |
+| [fix-tech-debt/task/C++_task_02_process_interface.md](./dev/plan/fix-tech-debt/task/C++_task_02_process_interface.md) | 子任务：处理器接口 |
+| [fix-tech-debt/task/C++_task_03_network_type_safety.md](./dev/plan/fix-tech-debt/task/C++_task_03_network_type_safety.md) | 子任务：网络类型安全 |
+| [fix-tech-debt/task/C++_task_04_enum_underlying_type.md](./dev/plan/fix-tech-debt/task/C++_task_04_enum_underlying_type.md) | 子任务：枚举底层类型 |
+| [fix-tech-debt/task/C++_task_05_rule_of_five.md](./dev/plan/fix-tech-debt/task/C++_task_05_rule_of_five.md) | 子任务：Rule of Five |
+| [fix-tech-debt/task/C++_task_06_make_shared_unique.md](./dev/plan/fix-tech-debt/task/C++_task_06_make_shared_unique.md) | 子任务：make_shared/make_unique |
+| [fix-tech-debt-p2/task/C++_task_07_shutdown_handler_pimpl.md](./dev/plan/fix-tech-debt-p2/task/C++_task_07_shutdown_handler_pimpl.md) | 子任务：shutdown handler PIMPL |
+| [fix-tech-debt-p2/task/C++_task_08_ffmpeg_raii.md](./dev/plan/fix-tech-debt-p2/task/C++_task_08_ffmpeg_raii.md) | 子任务：FFmpeg RAII 包装 |
+
+**模板 (Templates)**
+
+| 文档 | 说明 |
+| :--- | :--- |
+| [C++_evaluation_template.md](./dev/templates/C++_evaluation_template.md) | 评估文档模板 |
+| [C++_plan_template.md](./dev/templates/C++_plan_template.md) | 计划文档模板 |
+| [C++_task_template.md](./dev/templates/C++_task_template.md) | 任务文档模板 |
 
 **故障排查 (Troubleshooting)**
 
@@ -133,6 +164,19 @@ docs/
 | [issues/trt_myelin_crash.md](./dev/en/troubleshooting/issues/trt_myelin_crash.md) | TensorRT Myelin crash on exit |
 | [issues/video_timeout.md](./dev/en/troubleshooting/issues/video_timeout.md) | Video test timeout (strict memory) |
 | [issues/videowriter_dimensions.md](./dev/en/troubleshooting/issues/videowriter_dimensions.md) | Invalid frame dimensions (VideoWriter) |
+
+**Evaluation**
+
+| 文档 | 说明 |
+| :--- | :--- |
+| [C++_evaluation_architecture_compliance.md](./dev/evaluation/C++_evaluation_architecture_compliance.md) | Architecture compliance deep review |
+| [C++_evaluation_cpp20_architecture.md](./dev/evaluation/C++_evaluation_cpp20_architecture.md) | C++20 modular architecture analysis |
+
+**Superpowers Specs**
+
+| 文档 | 说明 |
+| :--- | :--- |
+| [2026-05-29-cli-enhancement-design.md](./superpowers/specs/2026-05-29-cli-enhancement-design.md) | CLI enhancement design spec |
 
 ---
 

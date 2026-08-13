@@ -11,20 +11,20 @@ using namespace tests::mocks::domain;
 using ::testing::_;
 using ::testing::Return;
 
-TEST(MockUsageTest, MockInferenceSession_CanBeInstantiated) {
+TEST(MockUsageTest, MockInferenceSessionCanBeInstantiated) {
     MockInferenceSession session;
     EXPECT_CALL(session, is_model_loaded()).WillOnce(Return(true));
     EXPECT_TRUE(session.is_model_loaded());
 }
 
-TEST(MockUsageTest, MockFaceDetector_CanBeInstantiated) {
+TEST(MockUsageTest, MockFaceDetectorCanBeInstantiated) {
     MockFaceDetector detector;
     // Just verify instantiation and basic mock functionality
     EXPECT_CALL(detector, load_model(_, _)).Times(1);
     detector.load_model("path", {});
 }
 
-TEST(MockUsageTest, MockFaceEnhancer_CanBeInstantiated) {
+TEST(MockUsageTest, MockFaceEnhancerCanBeInstantiated) {
     MockFaceEnhancer enhancer;
     cv::Mat dummy = cv::Mat::zeros(10, 10, CV_8UC3);
     EXPECT_CALL(enhancer, enhance_face(_)).WillOnce(Return(dummy));
@@ -32,7 +32,7 @@ TEST(MockUsageTest, MockFaceEnhancer_CanBeInstantiated) {
     EXPECT_EQ(result.rows, 10);
 }
 
-TEST(MockUsageTest, MockModelRepository_CanBeInstantiated) {
+TEST(MockUsageTest, MockModelRepositoryCanBeInstantiated) {
     MockModelRepository repo;
     EXPECT_CALL(repo, ensure_model("test_model")).WillOnce(Return("/path/to/model"));
     EXPECT_EQ(repo.ensure_model("test_model"), "/path/to/model");

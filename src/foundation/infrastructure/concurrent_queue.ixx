@@ -28,6 +28,8 @@ public:
 
     ConcurrentQueue(const ConcurrentQueue&) = delete;
     ConcurrentQueue& operator=(const ConcurrentQueue&) = delete;
+    ConcurrentQueue(ConcurrentQueue&&) = delete;
+    ConcurrentQueue& operator=(ConcurrentQueue&&) = delete;
 
     /**
      * @brief Push a value into the queue (blocking)
@@ -68,7 +70,7 @@ public:
      * @return std::optional<T> The value, or std::nullopt if empty
      */
     std::optional<T> try_pop() {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock<std::mutex> lock(m_mutex);
         if (m_queue.empty()) return std::nullopt;
 
         T val = std::move(m_queue.front());
@@ -83,7 +85,7 @@ public:
      */
     void shutdown() {
         {
-            std::lock_guard<std::mutex> lock(m_mutex);
+            std::scoped_lock<std::mutex> lock(m_mutex);
             m_shutdown = true;
         }
         m_not_empty.notify_all();
@@ -94,7 +96,7 @@ public:
      * @brief Clear the queue
      */
     void clear() {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock<std::mutex> lock(m_mutex);
         std::queue<T> empty;
         std::swap(m_queue, empty);
         m_not_full.notify_all();
@@ -105,7 +107,7 @@ public:
      * @return True if empty
      */
     bool empty() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock<std::mutex> lock(m_mutex);
         return m_queue.empty();
     }
 
@@ -114,7 +116,7 @@ public:
      * @return Number of elements
      */
     size_t size() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock<std::mutex> lock(m_mutex);
         return m_queue.size();
     }
 
@@ -122,7 +124,7 @@ public:
      * @brief Reset the queue to initial state
      */
     void reset() {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock<std::mutex> lock(m_mutex);
         m_shutdown = false;
         std::queue<T> empty;
         std::swap(m_queue, empty);

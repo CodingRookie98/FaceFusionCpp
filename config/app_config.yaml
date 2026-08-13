@@ -14,7 +14,7 @@ inference:
 # --- Resource Management ---
 resource:
   # Memory Strategy: "strict" (release ASAP) or "tolerant" (keep loaded)
-  memory_strategy: "tolerant"
+  memory_strategy: "strict"
 
 # --- Logging ---
 logging:

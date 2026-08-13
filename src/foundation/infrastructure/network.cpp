@@ -15,7 +15,7 @@ module foundation.infrastructure.network;
 // Forward declarations if needed within the module implementation
 namespace foundation::infrastructure::network {
 std::string get_file_name_from_url(const std::string& url);
-long get_file_size_from_url(const std::string& url);
+std::int64_t get_file_size_from_url(const std::string& url);
 } // namespace foundation::infrastructure::network
 
 namespace foundation::infrastructure::network {
@@ -113,7 +113,7 @@ bool download(const std::string& url, const std::string& output_dir) {
                                  + std::string(curl_easy_strerror(res)));
     }
 
-    long http_code = 0;
+    std::int64_t http_code = 0;
     curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
     if (http_code != 0 && http_code != 200) {
         std::filesystem::remove(temp_file_path);
@@ -152,7 +152,7 @@ std::vector<bool> batch_download(const std::vector<std::string>& urls,
     return results;
 }
 
-long get_file_size_from_url(const std::string& url) {
+std::int64_t get_file_size_from_url(const std::string& url) {
     if (url.empty()) { throw std::invalid_argument("URL cannot be empty"); }
 
     CurlHandle curl;
@@ -173,7 +173,7 @@ long get_file_size_from_url(const std::string& url) {
     CURLcode res = curl_easy_perform(curl_handle);
     if (res != CURLE_OK) { return -1; }
 
-    long http_code = 0;
+    std::int64_t http_code = 0;
     curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
     if (http_code != 200) { return -1; }
 
@@ -195,10 +195,10 @@ bool is_downloaded(const std::string& url, const std::string& file_path) {
     std::filesystem::path file_path_obj(file_path);
     if (!std::filesystem::exists(file_path_obj)) { return false; }
 
-    long remote_size = get_file_size_from_url(url);
+    std::int64_t remote_size = get_file_size_from_url(url);
     if (remote_size < 0) { return false; }
 
-    long local_size = static_cast<long>(std::filesystem::file_size(file_path_obj));
+    std::int64_t local_size = static_cast<std::int64_t>(std::filesystem::file_size(file_path_obj));
     return local_size == remote_size;
 }
 
@@ -218,7 +218,7 @@ std::string get_file_name_from_url(const std::string& url) {
     return file_name;
 }
 
-std::string human_readable_size(long size) {
+std::string human_readable_size(std::int64_t size) {
     if (size < 0) { return "0 B"; }
 
     const char* units[] = {"B", "KB", "MB", "GB", "TB"};

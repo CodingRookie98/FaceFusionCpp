@@ -45,7 +45,7 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 | `--log-level` | `<level>` | 覆盖配置的日志级别 (`trace`, `debug`, `info`, `warn`, `error`)。 | `info` |
 | `--system-check`| 无 | 运行环境自检 (CUDA, 库版本等)。 | `false` |
 | `--json` | 无 | 开启时，`--system-check` 的结果将以 JSON 格式输出。 | `false` |
-| `--validate` | 无 | 解析并校验配置文件合法性 (Dry-Run)，不执行任务。 | `false` |
+| `--validate` | 无 | 解析并校验配置合法性 (Dry-Run)，不执行任务。支持 YAML 文件和快捷模式参数校验。 | `false` |
 
 ---
 
@@ -65,7 +65,36 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 
 ---
 
-## 3. 任务配置模式
+## 3. 处理器参数选项 (Processor Options)
+
+处理器参数 CLI 标志从参数元数据动态生成，允许在快捷模式下细粒度控制每个处理器的行为。
+
+**命名规则**: `--{processor-name}-{param-name}`（下划线转为连字符）。例如 `face_swapper` 的 `model` 参数对应 `--face-swapper-model`。
+
+**互斥规则**: 所有处理器参数标志与 `--task-config` 互斥。使用处理器参数时不能同时指定 `-c/--task-config`。
+
+| 处理器 | 参数 | CLI 标志 | 类型 | 可选值 | 默认值 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `face_swapper` | `model` | `--face-swapper-model` | String | `inswapper_128`, `inswapper_128_fp16` | `inswapper_128_fp16` |
+| `face_swapper` | `face_selector_mode` | `--face-swapper-face-selector-mode` | String | `reference`, `one`, `many` | `many` |
+| `face_swapper` | `reference_face_path` | `--face-swapper-reference-face-path` | Path | - | - |
+| `face_enhancer` | `model` | `--face-enhancer-model` | String | `codeformer`, `gfpgan_1.2`, `gfpgan_1.3`, `gfpgan_1.4` | `codeformer` |
+| `face_enhancer` | `blend_factor` | `--face-enhancer-blend-factor` | Float | `[0.0, 1.0]` | `0.8` |
+| `face_enhancer` | `face_selector_mode` | `--face-enhancer-face-selector-mode` | String | `reference`, `one`, `many` | `many` |
+| `face_enhancer` | `reference_face_path` | `--face-enhancer-reference-face-path` | Path | - | - |
+| `expression_restorer` | `model` | `--expression-restorer-model` | String | `live_portrait` | `live_portrait` |
+| `expression_restorer` | `restore_factor` | `--expression-restorer-restore-factor` | Float | `[0.0, 1.0]` | `0.8` |
+| `expression_restorer` | `face_selector_mode` | `--expression-restorer-face-selector-mode` | String | `reference`, `one`, `many` | `many` |
+| `expression_restorer` | `reference_face_path` | `--expression-restorer-reference-face-path` | Path | - | - |
+| `frame_enhancer` | `model` | `--frame-enhancer-model` | String | `real_esrgan_x2`, `real_esrgan_x2_fp16`, `real_esrgan_x4`, `real_esrgan_x4_fp16`, `real_esrgan_x8`, `real_esrgan_x8_fp16`, `real_hatgan_x4` | `real_esrgan_x4` |
+| `frame_enhancer` | `enhance_factor` | `--frame-enhancer-enhance-factor` | Float | `[0.0, 1.0]` | `0.8` |
+
+> [!NOTE]
+> 处理器参数仅在快捷模式下生效。未指定的参数将使用上表中的默认值。
+
+---
+
+## 4. 任务配置模式
 
 对于生产环境或复杂流水线，建议使用 YAML。
 
@@ -75,9 +104,9 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 
 ---
 
-## 4. 示例与高级用法
+## 5. 示例与高级用法
 
-### 4.1 环境就绪检查 (JSON 集成)
+### 5.1 环境就绪检查 (JSON 集成)
 
 **Linux (Bash)**:
 
@@ -101,8 +130,10 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 }
 ```
 
-### 4.2 离线校验配置
-在提交长时任务前，先校验 YAML 格式：
+### 5.2 离线校验配置
+支持校验 YAML 配置文件和快捷模式参数组合：
+
+**校验 YAML 配置**:
 
 **Linux (Bash)**:
 
@@ -116,7 +147,21 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 .\FaceFusionCpp.exe -c my_complex_task.yaml --validate
 ```
 
-### 4.3 基础换脸 + 增强
+**校验快捷模式参数**:
+
+**Linux (Bash)**:
+
+```bash
+./FaceFusionCpp -s face.jpg -t movie.mp4 -o out/ --processors face_swapper --validate
+```
+
+**Windows (PowerShell)**:
+
+```powershell
+.\FaceFusionCpp.exe -s face.jpg -t movie.mp4 -o out/ --processors face_swapper --validate
+```
+
+### 5.3 基础换脸 + 增强
 
 **Linux (Bash)**:
 
@@ -128,4 +173,52 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 
 ```powershell
 .\FaceFusionCpp.exe -s face.jpg -t movie.mp4 -o out/ --processors face_swapper,face_enhancer
+```
+
+### 5.4 快捷模式 + 处理器参数
+
+使用处理器参数自定义每个处理器的行为：
+
+**Linux (Bash)**:
+
+```bash
+./FaceFusionCpp -s face.jpg -t movie.mp4 -o out/ \
+  --processors face_swapper,face_enhancer \
+  --face-swapper-model inswapper_128 \
+  --face-enhancer-model gfpgan_1.4 \
+  --face-enhancer-blend-factor 0.9
+```
+
+**Windows (PowerShell)**:
+
+```powershell
+.\FaceFusionCpp.exe -s face.jpg -t movie.mp4 -o out/ `
+  --processors face_swapper,face_enhancer `
+  --face-swapper-model inswapper_128 `
+  --face-enhancer-model gfpgan_1.4 `
+  --face-enhancer-blend-factor 0.9
+```
+
+### 5.5 多处理器 + reference 模式
+
+使用 reference 模式进行精准换脸：
+
+**Linux (Bash)**:
+
+```bash
+./FaceFusionCpp -s face.jpg -t movie.mp4 -o out/ \
+  --processors face_swapper,expression_restorer,frame_enhancer \
+  --face-swapper-face-selector-mode reference \
+  --face-swapper-reference-face-path ref.jpg \
+  --frame-enhancer-model real_esrgan_x4_fp16
+```
+
+**Windows (PowerShell)**:
+
+```powershell
+.\FaceFusionCpp.exe -s face.jpg -t movie.mp4 -o out/ `
+  --processors face_swapper,expression_restorer,frame_enhancer `
+  --face-swapper-face-selector-mode reference `
+  --face-swapper-reference-face-path ref.jpg `
+  --frame-enhancer-model real_esrgan_x4_fp16
 ```

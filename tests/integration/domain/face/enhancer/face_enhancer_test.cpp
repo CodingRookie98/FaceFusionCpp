@@ -44,7 +44,7 @@ protected:
     fs::path output_dir;
 };
 
-TEST_F(FaceEnhancerIntegrationTest, EnhanceFace_CodeFormerModel_ProducesValidOutput) {
+TEST_F(FaceEnhancerIntegrationTest, EnhanceFaceCodeFormerModelProducesValidOutput) {
     if (!fs::exists(target_path)) { GTEST_SKIP() << "Test image not found: " << target_path; }
 
     cv::Mat target_img = cv::imread(target_path.string());
@@ -78,7 +78,7 @@ TEST_F(FaceEnhancerIntegrationTest, EnhanceFace_CodeFormerModel_ProducesValidOut
     cv::imwrite((output_dir / "enhance_codeformer_result.jpg").string(), result_img);
 }
 
-TEST_F(FaceEnhancerIntegrationTest, EnhanceFace_GfpGanModel_ProducesValidOutput) {
+TEST_F(FaceEnhancerIntegrationTest, EnhanceFaceGfpGanModelProducesValidOutput) {
     if (!fs::exists(target_path)) { GTEST_SKIP() << "Test image not found: " << target_path; }
 
     cv::Mat target_img = cv::imread(target_path.string());

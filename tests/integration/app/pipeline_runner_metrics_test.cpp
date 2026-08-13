@@ -32,7 +32,7 @@ protected:
     }
 };
 
-TEST_F(PipelineRunnerMetricsTest, MetricsExport_SchemaVersion_Matches1_0) {
+TEST_F(PipelineRunnerMetricsTest, MetricsExportSchemaVersionMatches10) {
     // Arrange
     services::pipeline::MetricsCollector collector("test_task");
     collector.set_total_frames(10);
@@ -49,7 +49,7 @@ TEST_F(PipelineRunnerMetricsTest, MetricsExport_SchemaVersion_Matches1_0) {
     EXPECT_EQ(metrics["schema_version"], "1.0");
 }
 
-TEST_F(PipelineRunnerMetricsTest, MetricsExport_Summary_FrameCountsCorrect) {
+TEST_F(PipelineRunnerMetricsTest, MetricsExportSummaryFrameCountsCorrect) {
     // Arrange
     services::pipeline::MetricsCollector collector("test_task");
     collector.set_total_frames(100);
@@ -68,7 +68,7 @@ TEST_F(PipelineRunnerMetricsTest, MetricsExport_Summary_FrameCountsCorrect) {
     EXPECT_EQ(metrics["summary"]["failed_frames"], 5);
 }
 
-TEST_F(PipelineRunnerMetricsTest, MetricsExport_StepLatency_RecordsMultipleSteps) {
+TEST_F(PipelineRunnerMetricsTest, MetricsExportStepLatencyRecordsMultipleSteps) {
     // Arrange
     services::pipeline::MetricsCollector collector("test_task");
 
@@ -104,7 +104,7 @@ TEST_F(PipelineRunnerMetricsTest, MetricsExport_StepLatency_RecordsMultipleSteps
     EXPECT_TRUE(has_enhance);
 }
 
-TEST_F(PipelineRunnerMetricsTest, MetricsExport_Timestamp_IsISO8601) {
+TEST_F(PipelineRunnerMetricsTest, MetricsExportTimestampIsISO8601) {
     // Arrange
     services::pipeline::MetricsCollector collector("test_task");
     collector.export_json(metrics_path);

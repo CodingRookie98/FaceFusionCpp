@@ -41,13 +41,13 @@ protected:
     fs::path test_image_path;
 };
 
-TEST_F(FaceRecognizerTest, CreateRecognizer_ArcFaceType_ReturnsValidInstance) {
+TEST_F(FaceRecognizerTest, CreateRecognizerArcFaceTypeReturnsValidInstance) {
     auto recognizer = domain::face::recognizer::create_face_recognizer(
         domain::face::recognizer::FaceRecognizerType::ArcFaceW600kR50);
     EXPECT_NE(recognizer, nullptr);
 }
 
-TEST_F(FaceRecognizerTest, RecognizeFace_ValidInput_ReturnsNormalizedEmbedding) {
+TEST_F(FaceRecognizerTest, RecognizeFaceValidInputReturnsNormalizedEmbedding) {
     if (!fs::exists(test_image_path)) {
         GTEST_SKIP() << "Test image not found: " << test_image_path;
     }

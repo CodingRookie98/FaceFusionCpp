@@ -68,7 +68,7 @@
     - `hardware_guide.md`：硬件性能优化建议。
   - **开发文档** (`docs/dev/{en,zh}/`)：面向开发者与 AI Agent。
     - `architecture/`：**架构核心**。`design.md` (系统设计与原则)；`layers.md` (分层结构)。
-    - `process/`：**流程军规**。`workflow.md` (必读！开发流水线 Checklist)；`quality.md` (质量标准)；`C++_quality_standard.md` (代码规范)。
+    - `process/`：**流程军规**。`workflow.md` (必读！开发流水线 Checklist)；`C++_quality_standard.md` (质量标准与代码规范，含原 quality.md 内容)。
     - `guides/setup.md`：技术构建环境搭建指南。
     - `troubleshooting/README.md`：疑难杂症的分级检索索引。
 - **提交要求**：

@@ -441,7 +441,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMutiStep) {
 // Performance Tests (Merged from E2E)
 // ============================================================================
 
-TEST_F(PipelineRunnerVideoTest, ProcessVideo_AchievesMinimumFPS) {
+TEST_F(PipelineRunnerVideoTest, ProcessVideoAchievesMinimumFPS) {
     auto input_info = get_video_info(video_path);
     auto output_path = output_dir / "result_slideshow_fps.mp4";
 
@@ -488,7 +488,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideo_AchievesMinimumFPS) {
 #endif
 }
 
-TEST_F(PipelineRunnerVideoTest, ProcessVideo_CompletesWithinTimeLimit) {
+TEST_F(PipelineRunnerVideoTest, ProcessVideoCompletesWithinTimeLimit) {
     config::TaskConfig task_config;
     task_config.task_info.id = "video_720p_time_test";
     task_config.io.source_paths = {source_path.string()};
@@ -519,7 +519,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideo_CompletesWithinTimeLimit) {
         << "Processing time exceeded: " << duration_s << "s (max: " << max_duration_s << "s)";
 }
 
-TEST_F(PipelineRunnerVideoTest, ProcessVideo_ReportsFPS) {
+TEST_F(PipelineRunnerVideoTest, ProcessVideoReportsFPS) {
     if (!std::filesystem::exists(video_path)) { GTEST_SKIP() << "Test video asset not found."; }
 
     config::AppConfig app_config;

@@ -1,6 +1,7 @@
 module;
 #include <string>
 #include <vector>
+#include <cstdint>
 
 /**
  * @file network.ixx
@@ -43,7 +44,7 @@ bool is_downloaded(const std::string& url, const std::string& file_path);
  * @param url URL to check
  * @return File size in bytes, or -1 if failed
  */
-long get_file_size_from_url(const std::string& url);
+std::int64_t get_file_size_from_url(const std::string& url);
 
 /**
  * @brief Extract file name from URL
@@ -57,6 +58,6 @@ std::string get_file_name_from_url(const std::string& url);
  * @param size Size in bytes
  * @return Human readable string (e.g. "1.5 MB")
  */
-std::string human_readable_size(long size);
+std::string human_readable_size(std::int64_t size);
 
 } // namespace foundation::infrastructure::network

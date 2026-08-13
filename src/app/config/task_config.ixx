@@ -14,6 +14,7 @@ module;
 #include <variant>
 #include <thread>
 #include <algorithm>
+#include <map>
 
 export module config.task;
 
@@ -123,10 +124,11 @@ using StepParams = std::variant<FaceSwapperParams, FaceEnhancerParams, Expressio
  * @brief Definition of a single step in the processing pipeline
  */
 struct PipelineStep {
-    std::string step;    ///< Processor type (e.g., "face_swapper")
-    std::string name;    ///< User-defined name for this step instance
-    bool enabled = true; ///< Whether this step is active
-    StepParams params;   ///< Processor-specific parameters
+    std::string step;                              ///< Processor type (e.g., "face_swapper")
+    std::string name;                              ///< User-defined name for this step instance
+    bool enabled = true;                           ///< Whether this step is active
+    StepParams params;                             ///< Processor-specific parameters
+    std::map<std::string, std::string> cli_params; ///< Explicit CLI parameter overrides
 };
 
 /**

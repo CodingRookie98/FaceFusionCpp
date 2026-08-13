@@ -70,6 +70,9 @@ public:
     // Non-copyable
     CheckpointManager(const CheckpointManager&) = delete;
     CheckpointManager& operator=(const CheckpointManager&) = delete;
+    // Non-movable
+    CheckpointManager(CheckpointManager&&) = delete;
+    CheckpointManager& operator=(CheckpointManager&&) = delete;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Core Operations
