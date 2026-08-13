@@ -11,4 +11,4 @@ The pipeline fails during processing with the error: `VideoWriter: Invalid frame
 - **Deferred Open**: Modify the `PipelineRunner` logic to dynamically open the Writer only after the first valid result frame is produced, using that frame's `width`/`height`.
 
 ## Related Links
-- [Pipeline Internals](../pipeline_internals.md) (To be updated)
+- [设计文档](../../architecture/design.md)

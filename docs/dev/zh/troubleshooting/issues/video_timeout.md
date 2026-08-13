@@ -13,4 +13,4 @@
 - **长期方案**: 在集成测试中改用更小功率的模型（如 `real_esrgan_x2_fp16`）或大幅缩减测试视频的帧数。
 
 ## 相关链接
-- [系统配置指南](../../user/configuration_guide.md#内存策略)
+- [系统配置指南](../../../../user/zh/configuration_guide.md#内存策略)

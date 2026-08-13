@@ -15,11 +15,11 @@ For easier retrieval, issues are organized into the following categories:
 
 | Category | Summary | Status | Details |
 | :--- | :--- | :--- | :--- |
-| Build | C++20 Modules not supported | Solved | [Issue #1](./zh/issues/cpp20_modules.md) |
-| Device | TensorRT Myelin crash on exit | Solved | [Issue #2](./zh/issues/trt_myelin_crash.md) |
-| Memory | Video test timeout (Strict Memory) | Investigated | [Issue #3](./zh/issues/video_timeout.md) |
-| Logic | VideoWriter invalid dimensions | Fixed | [Issue #4](./zh/issues/videowriter_dimensions.md) |
+| Build | C++20 Modules not supported | Solved | [Issue #1](./issues/cpp20_modules.md) |
+| Device | TensorRT Myelin crash on exit | Solved | [Issue #2](./issues/trt_myelin_crash.md) |
+| Memory | Video test timeout (Strict Memory) | Investigated | [Issue #3](./issues/video_timeout.md) |
+| Logic | VideoWriter invalid dimensions | Fixed | [Issue #4](./issues/videowriter_dimensions.md) |
 
 ## 3. Contribution Guidelines
 
-If you find a new issue and solve it, please record it in the `zh/issues/` directory (or `en/issues/`) following the [Maintenance Guide](../quickstart.md) and add an index here.
+If you find a new issue and solve it, please record it in the `zh/issues/` directory (or `en/issues/`) following the Maintenance Guide and add an index here.

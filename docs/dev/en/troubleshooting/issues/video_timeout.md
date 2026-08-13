@@ -13,4 +13,4 @@ During integration testing, `PipelineRunnerVideoTest.ProcessVideoStrictMemory` f
 - **Long-term**: Switch to lighter weight models (e.g., `real_esrgan_x2_fp16`) or reduce the number of frames in the test video for integration tests.
 
 ## Related Links
-- [System Configuration Guide](../../user/configuration_guide.md#memory-strategy)
+- [System Configuration Guide](../../../../user/en/configuration_guide.md#memory-strategy)
