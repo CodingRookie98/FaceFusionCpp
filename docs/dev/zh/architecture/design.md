@@ -3,7 +3,7 @@
 > **文档标识**: FACE-FUSION-APP-ARCH
 > **密级**: 内部公开 (Internal Public)
 > **状态**: 正式 (Official)
-> **当前版本**: V2.9
+> **当前版本**: V3.0
 > **最后更新**: 2026-08-13
 
 ## 版本历史 (Version History)
@@ -19,6 +19,7 @@
 | V2.7 | 2026-02-02 | ArchTeam | 新增 A.3 标准测试素材规范; 定义硬件适配验收标准; 补充边界情况测试要求                                                             |
 | V2.8 | 2026-02-05 | ArchTeam | 更新 A.3.3 硬件适配验收标准; 添加当前测试环境基准 (RTX 4060 8GB); 优化性能基准表; 新增硬件适配策略分级指南                        |
 | V2.9 | 2026-08-13 | AI Agent | 依据文档治理规范更新文档控制信息并补齐修订历史                                                                                    |
+| V3.0 | 2026-08-13 | AI Agent | 依据 design_doc_assessment.md 评估结果全面修订：CLI 参数名修正 (--task-config)；FlatBuffers/错误码/配置校验标注已实现；补充 default_models/gpu_sample_interval_ms/max_frames 字段；对齐 Checkpoint/face_masker/FrameEnhancer 实现；标注 segment_duration_seconds WIP；明确 memory_strategy 级联语义 |
 
 ---
 
@@ -58,13 +59,13 @@
     - [5.1 路径解析规范 (Path Resolution Criteria)](#51-路径解析规范-path-resolution-criteria)
     - [5.2 进度与遥测解耦 (Progress \& Telemetry Decoupling)](#52-进度与遥测解耦-progress--telemetry-decoupling)
     - [5.3 错误处理与恢复 (Error Handling \& Recovery)](#53-错误处理与恢复-error-handling--recovery)
-      - [5.3.1 错误码定义 (Error Codes) - *Planned*](#531-错误码定义-error-codes---planned)
+      - [5.3.1 错误码定义 (Error Codes)](#531-错误码定义-error-codes)
       - [5.3.2 错误策略](#532-错误策略)
     - [5.4 版本控制 (Versioning Strategy)](#54-版本控制-versioning-strategy)
     - [5.5 元数据管理 (Metadata Management)](#55-元数据管理-metadata-management)
     - [5.6 优雅停机 (Graceful Shutdown)](#56-优雅停机-graceful-shutdown)
     - [5.7 资源并发与流控 (Concurrency \& Flow Control)](#57-资源并发与流控-concurrency--flow-control)
-    - [5.8 数据序列化 (Data Serialization) - *Implementation Pending*](#58-数据序列化-data-serialization---implementation-pending)
+    - [5.8 数据序列化 (Data Serialization)](#58-数据序列化-data-serialization)
     - [5.9 断点续传 (Checkpointing)](#59-断点续传-checkpointing)
     - [5.10 增强日志规范 (Enhanced Logging Requirements)](#510-增强日志规范-enhanced-logging-requirements)
       - [5.10.1 日志分级策略 (Log Levels)](#5101-日志分级策略-log-levels)
@@ -72,7 +73,7 @@
       - [5.10.3 隐私与合规 (Privacy \& Compliance)](#5103-隐私与合规-privacy--compliance)
     - [5.11 Metrics JSON Schema 参考](#511-metrics-json-schema-参考)
   - [6. 未来规划 (Future Roadmap)](#6-未来规划-future-roadmap)
-    - [6.1 自动化配置校验 (Config Validation) - *部分实现*](#61-自动化配置校验-config-validation---部分实现)
+    - [6.1 自动化配置校验 (Config Validation)](#61-自动化配置校验-config-validation)
     - [6.2 插件化处理器架构 (Plugin Architecture)](#62-插件化处理器架构-plugin-architecture)
     - [6.3 服务化接口 (Server Mode)](#63-服务化接口-server-mode)
   - [附录 (Appendix)](#附录-appendix)
@@ -128,7 +129,7 @@ graph TD
 系统设计支持多种运行模式，底层核心逻辑（`RunPipeline` 接口）保持一致，仅在接入层（Access Layer）有所区分。
 
 *   **命令行接口 (CLI Mode)** (Current Focus)
-    *   通过命令行参数 (`--config`) 注入任务配置。
+    *   通过命令行参数 (`-c/--task-config`) 注入任务配置。
     *   适用于离线批处理、CICD 脚本自动化场景。
 *   **服务化接口 (Server Mode)** (Future Roadmap)
     *   通过 HTTP/RPC 接收动态配置负载。
@@ -179,6 +180,9 @@ resource:
   # tolerant: 宽容模式 (Cached).
   #         行为: 所有模型在系统启动时预加载，并常驻内存/显存，直到程序退出。
   #         场景: 适合高频实时任务或显存充足环境，避免模型重复加载开销。
+  # ⚠️ 级联语义: 运行时的实际内存策略**仅由 TaskConfig 的 resource.memory_strategy 决定**
+  #   (见 §3.2，runner_video 据此分支)。此处 AppConfig 级字段**不参与 MergeConfigs 合并**，
+  #   仅用于启动日志摘要 (log_config_summary)。若需控制任务行为，必须在 task_config.yaml 中显式配置。
   memory_strategy: "strict"
   # 全局内存配额 (用于背压流控)
   # 格式: "4GB", "2048MB" 等
@@ -204,6 +208,8 @@ metrics:
   step_latency: true
   # 记录 GPU 显存变化曲线
   gpu_memory: true
+  # GPU 显存采样间隔 (毫秒)
+  gpu_sample_interval_ms: 1000
   # 输出报告文件 (json)
   # 格式参考: 见 [Metrics JSON Schema 参考](#metrics-json-schema-参考)
   report_path: "./logs/metrics_{timestamp}.json"
@@ -217,6 +223,18 @@ models:
   # skip: 模型不存在时跳过下载，从 model_repository 返回空路径，后续加载模型报错退出程序
   # auto: 模型不存在时自动下载 (默认)
   download_strategy: "auto"
+
+# 默认模型 (Default Models)
+# 各处理器在未显式指定模型时的默认选择
+default_models:
+  face_detector: "yoloface"
+  face_recognizer: "arcface_w600k_r50"
+  face_swapper: "inswapper_128_fp16"
+  face_enhancer: "gfpgan_1.4"
+  frame_enhancer: "real_esrgan_x2_fp16"
+  expression_restorer_feature: "live_portrait_feature_extractor"
+  expression_restorer_motion: "live_portrait_motion_extractor"
+  expression_restorer_generator: "live_portrait_generator"
 
 # 临时文件管理 (Temp File Management)
 temp_directory: "./temp"
@@ -300,6 +318,12 @@ resource:
   # 策略: 实际容量 = min(max_queue_size, AvailableRAM / FrameSize)
   # 默认: 20 (1080p RGBA ~160MB/Queue; 4 queues ~640MB Total)
   max_queue_size: 20
+  # 内存策略 (⚠️ 实际生效字段，见 §3.1 级联语义说明)
+  # strict: 按需加载，处理器仅在执行期间持有模型资源 (配合 batch 模式可降低峰值显存)
+  # tolerant: 模型预加载并常驻 (默认，适合高频/显存充足)
+  memory_strategy: "tolerant"
+  # 最大处理帧数 (0: 全部处理；>0: 仅处理前 N 帧，用于调试/快速验证)
+  max_frames: 0
   # 处理顺序策略:
   # sequential: 顺序模式 (默认). 每一帧/图一次性经过流水线中所有处理器。
   #             优势: 低延迟，内存占用小 (仅需存当前帧).
@@ -319,6 +343,8 @@ resource:
   # 视频分段处理 (Optional)
   # 0: 不分段，整个视频一次性处理
   # >0: 按指定秒数分段处理，最后合并输出为单个文件
+  # ⚠️ WIP: 该字段当前已被配置解析 (config_parser)，但 runner_video 尚未接线使用，
+  #         配置 >0 暂不生效。实现规划见评估报告 design_doc_assessment.md §5 建议2。
   segment_duration_seconds: 0
 
 # 人脸分析配置 (Shared Analysis Config)
@@ -342,15 +368,13 @@ face_analysis:
     # 多遮罩融合策略 (Mask Fusion)
     # 遮罩类型组合 (多选)
     types: ["box", "occlusion", "region"]
-    # 遮挡检测模型 (用于 occlusion 类型)
-    occluder_model: "xseg"  # Models: [xseg]
-    # 人脸解析模型 (用于 region 类型)
-    parser_model: "bisenet_resnet_34"  # Models: [bisenet_resnet_18, bisenet_resnet_34]
     # Supported Regions: [skin, left-eyebrow, right-eyebrow, left-eye, right-eye,
     #                     eye-glasses, left-ear, right-ear, earring, nose, mouth,
     #                     upper-lip, lower-lip, neck, necklace, cloth, hair, hat]
-    # Default: "all" (if not specified or empty)
-    region: ["all"] # 遮罩区域
+    # 默认: ["face", "eyes"] (实现默认值，见 task_config.ixx FaceMaskerConfig)
+    region: ["face", "eyes"] # 遮罩区域
+    # 注意: 实现中 occluder_model / parser_model 未作为独立配置字段暴露，
+    #       遮罩模型由 face_analysis 组件内部确定 (occlusion 使用 xseg，region 使用 bisenet_resnet_34)
     # 融合逻辑: 将由代码内部实现最佳遮罩计算
 
 # 处理流水线 (Processing Pipeline)
@@ -468,7 +492,7 @@ pipeline:
 本设计旨在平衡生产环境的配置管理需求与开发调试的便捷性。
 
 #### 3.5.1 设计原则
-*   **配置优先 (Configuration First)**: 生产环境应始终通过 `-c/--config` 加载完整 YAML，确保可复现性。
+*   **配置优先 (Configuration First)**: 生产环境应始终通过 `-c/--task-config` 加载完整 YAML，确保可复现性。
 *   **参数覆盖 (CLI Override)**: 命令行显式参数优先级高于配置文件（例如在 Config 中定义了输出路径，但 CLI 又指定了 `-o`，则以 CLI 为准）。
 *   **快捷模式 (Quick Run)**: 支持仅通过 CLI 参数 (`-s`, `-t`) 启动默认流水线，无需预先编写 YAML。
 *   **元数据驱动 (Metadata-Driven)**: 处理器参数通过 ProcessorParamRegistry 元数据注册表自动生成 CLI 标志，确保参数定义的单一事实来源。
@@ -482,7 +506,7 @@ pipeline:
 | :------- | :---------------- | :------ | :------------------------------------------------------- |
 | **全局** | `-h`, `--help`    | Flag    | 显示帮助与用法                                           |
 |          | `-v`, `--version` | Flag    | 显示构建版本信息                                         |
-|          | `-c`, `--config`  | Path    | **(核心)** 载入任务配置文件                              |
+|          | `-c`, `--task-config` | Path | **(核心)** 载入任务配置文件                              |
 |          | `--log-level`     | String  | 覆盖日志级别                                             |
 |          | `--validate`      | Flag    | 仅校验配置文件合法性，不执行任务 (Dry-Run)               |
 |          | `--system-check`  | Flag    | 执行环境完整性自检（见下方输出规范）                     |
@@ -504,9 +528,9 @@ pipeline:
 | **处理器** (frame_enhancer) | `--frame-enhancer-model` | String | 模型选择 (enum: real_esrgan_x2, real_esrgan_x2_fp16, real_esrgan_x4, real_esrgan_x4_fp16, real_esrgan_x8, real_esrgan_x8_fp16, real_hatgan_x4) |
 |          | `--frame-enhancer-enhance-factor` | Float | 增强因子 (0-1, 默认 0.8) |
 
-> **注意**: 快捷模式参数与 `--config` 互斥。使用快捷参数时，系统将应用 `default_task_settings` 中的默认值。
+> **注意**: 快捷模式参数与 `--task-config` 互斥。使用快捷参数时，系统将应用 `default_task_settings` 中的默认值。
 
-> **注意**: 处理器参数标志由 `ProcessorParamRegistry` 元数据注册表动态生成，确保参数定义与代码实现保持同步。所有处理器参数均不包含 `--task-config` 标志。
+> **注意**: 处理器参数标志**并非静态表格**——由 `ProcessorParamRegistry` 元数据注册表在启动时**动态生成**（`--{processor}-{param}` kebab-case 规则），确保参数定义与代码实现保持同步。下表仅为 4 个内置处理器当前注册参数的**示例快照**，实际可用标志以 `FaceFusionCpp --help` 输出为准。所有处理器参数均不包含 `--task-config` 标志。
 
 #### 3.5.4 `--system-check` 输出规范
 系统自检结果支持两种输出格式，便于人工查看与脚本集成：
@@ -580,9 +604,8 @@ Result: 0 FAIL, 1 WARN
 *   **Tile 分块处理策略**:
     *   **问题背景**: 高分辨率图像 (如 4K) 直接推理会导致显存溢出 (OOM)。
     *   **解决方案**: 将输入帧切分为固定大小的瓦片 (Tiles)，逐块推理后合并。
-    *   **参数**:
-        *   `tile_size`: 瓦片尺寸 `[width, height, overlap]`，默认 `[512, 512, 32]`
-        *   `model_scale`: 模型放大倍数 (x2/x4/x8)
+    *   **实现位置**: `src/domain/frame/enhancer/impl/frame_enhancer_impl.*`（`create_tile_frames` / `merge_tile_frames`）。
+    *   **参数**: `tile_size` 与 `model_scale` 为 **FrameEnhancer 内部构造参数**（默认 `[512, 512, 32]` 与模型放大倍数），**未暴露为 TaskConfig 配置字段**；TaskConfig 仅可通过 `params.model` 选择模型（x2/x4/x8 由模型隐含决定）。
     *   **处理流程**:
         1.  **切分 (create_tile_frames)**: 按 `tile_size` 将输入帧切分为重叠瓦片。
         2.  **逐块推理**: 对每个瓦片单独进行超分辨率推理。
@@ -658,22 +681,29 @@ graph LR
 
 ### 5.3 错误处理与恢复 (Error Handling & Recovery)
 
-#### 5.3.1 错误码定义 (Error Codes) - *Planned*
-> **注意**: 当前版本尚未完全实装下列错误码，仅作为设计规范参考。实际运行时以标准异常日志为准。
+#### 5.3.1 错误码定义 (Error Codes)
+> **注意**: 错误码已实装于 `src/app/config/config_types.ixx`（`enum class ErrorCode`）。下表为完整定义（含泛型 `E100/E200/E300/E400` 与文档后补的新码 E104/E204/E205/E206）。
 
 系统采用统一的错误码规范：`Exxx` (E + 3位数字)，按模块划分区间。
 
 | Code          | Category    | Description                | Recommended Action     |
 | :------------ | :---------- | :------------------------- | :--------------------- |
 | **E100-E199** | **System**  | **系统级基础设施错误**     | **重启/人工介入**      |
+| E100          | System      | 通用系统错误               | 查看日志定位           |
 | E101          | Resource    | Out of Memory (OOM)        | 降低并发数或Batch Size |
 | E102          | Device      | CUDA Device Not Found/Lost | 检查显卡驱动及硬件     |
 | E103          | Thread      | Worker Thread Deadlock     | 重启服务               |
+| E104          | Device      | GPU Context Lost           | 检查驱动/重启          |
 | **E200-E299** | **Config**  | **配置与初始化错误**       | **修正配置后重启**     |
+| E200          | Config      | 通用配置错误               | 查看错误消息           |
 | E201          | Schema      | YAML Format Invalid        | 检查配置文件语法       |
 | E202          | Value       | Parameter Out of Range     | 修正参数值             |
 | E203          | Path        | Config File Not Found      | 检查路径               |
+| E204          | Version     | Config Version Mismatch    | 升级配置 schema        |
+| E205          | Field       | Required Field Missing     | 补充必填字段           |
+| E206          | Path        | Invalid Path               | 检查路径合法性         |
 | **E300-E399** | **Model**   | **模型资源错误**           | **检查Assets目录**     |
+| E300          | Model       | 通用模型错误               | 查看错误消息           |
 | E301          | Load        | Model Load Failed          | 检查模型文件损坏/版本  |
 | E302          | Missing     | Model File Missing         | 运行下载脚本           |
 | **E400-E499** | **Runtime** | **运行时/业务逻辑错误**    | **视策略(Skip/Fail)**  |
@@ -718,7 +748,7 @@ graph LR
     *   **退出条件**: 当 `State == Shutdown` 且 `Count == 0` 时，消费者收到结束信号（如 `pop` 返回 false）。
     *   **信号传递 (Propagation)**: 前级处理器的结束信号应自动触发下一级输入队列的 Shutdown，实现流水线的多米诺式自然闭合。
 
-### 5.8 数据序列化 (Data Serialization) - *Implementation Pending*
+### 5.8 数据序列化 (Data Serialization)
 *   **技术选型**: **FlatBuffers** (Google)。
 *   **关键依赖**: 本模块是 [Batch 模式](#421-流水线策略-pipeline-strategy) 高效运行的前置条件。
 *   **决策依据**:
@@ -729,18 +759,23 @@ graph LR
     *   使用 **C++20 `std::span`** 管理二进制视图，避免不必要的内存拷贝。
     *   定义 `FramePacket` Schema，包含 `Metadata` (Dims, Timestamp) 与 `Payload` (Raw Pixel Bytes / Tensor Data)。
     *   结合 `batch_buffer_mode: disk` 使用内存映射 (Memory Mapped File) 读写，减少系统调用开销。
+*   **实现状态**: ✅ **已实现**。`flatbuffers` 已列入 `vcpkg.json` 依赖，生成代码位于 `src/domain/face/schema/face_generated.h`，已在人脸数据结构序列化中实际使用。
 
 ### 5.9 断点续传 (Checkpointing)
 *   **启用条件**: `task_info.enable_resume: true` 时激活。
-*   **机制**: 长任务定期写入 `checkpoints/{task_id}.ckpt`。
-*   **Checkpoint 内容**:
-    *   `last_completed_frame_index`: 已成功处理的最后一帧索引。
-    *   `pipeline_state`: 各 Processor 的内部状态快照 (若有状态)。
-    *   `output_manifest`: 已生成的输出文件列表与校验和。
+*   **机制**: 长任务定期写入 `checkpoints/{task_id}.ckpt`（JSON 格式，由 `CheckpointManager` 实现）。
+*   **Checkpoint 内容**（与实现一致，`src/services/pipeline/checkpoint_manager.ixx`）:
+    *   `task_id`: 任务唯一标识。
+    *   `config_hash`: 任务配置的 SHA1 哈希（一致性校验，配置变更则恢复失效）。
+    *   `last_completed_frame`: 已成功处理的最后一帧索引。
+    *   `total_frames`: 视频总帧数。
+    *   `output_path` / `output_file_size`: 当前输出文件路径与大小（部分输出校验）。
+    *   `created_at` / `updated_at` / `version`: 时间戳与 Checkpoint 格式版本。
+    *   `checksum`: 序列化数据的 SHA1 校验和（完整性验证）。
 *   **恢复流程**:
     1.  启动时检测 `checkpoints/{task_id}.ckpt` 是否存在。
-    2.  校验 checkpoint 完整性 (校验和验证)。
-    3.  定位到 `last_completed_frame_index + 1`，跳过已处理帧。
+    2.  校验 checkpoint 完整性 (checksum 验证) 与配置一致性 (config_hash)。
+    3.  定位到 `last_completed_frame + 1`，跳过已处理帧。
     4.  继续执行剩余帧，追加写入输出文件。
 *   **清理策略**: 任务成功完成后自动删除对应 checkpoint 文件。
 
@@ -837,8 +872,8 @@ graph LR
 
 ## 6. 未来规划 (Future Roadmap)
 
-### 6.1 自动化配置校验 (Config Validation) - *部分实现*
-*   **当前状态**: 已在 [3.3 配置校验机制](#33-配置校验机制-config-validation-mechanism) 中实现基础校验。
+### 6.1 自动化配置校验 (Config Validation)
+*   **当前状态**: ✅ **已实现**。配置校验已完整实装（`src/app/config/config_validator.ixx`），支持启动时校验、任务提交时校验及 CLI `--validate` 离线校验，错误报告含 YAML Path 定位。
 *   **未来目标**: 引入 JSON Schema 进行声明式校验，支持配置迁移工具。
 
 ### 6.2 插件化处理器架构 (Plugin Architecture)
