@@ -68,23 +68,14 @@ void InSwapper::init() {
         }
     }
 
-    bool isFp16 = false;
-
     if (initializer->data_type() == onnx::TensorProto_DataType::TensorProto_DataType_FLOAT16) {
-        isFp16 = true;
-    }
-
-    if (!isFp16) {
-        if (initializer->float_data_size() > 0) {
-            m_initializer_array.assign(initializer->float_data().begin(),
-                                       initializer->float_data().end());
-        } else if (!initializer->raw_data().empty()) {
-            // Handle float data in raw_data
-            std::string rawData = initializer->raw_data();
-            auto data = reinterpret_cast<const float*>(rawData.data());
-            m_initializer_array.assign(data, data + rawData.size() / sizeof(float));
-        }
-    } else {
+        // FP16 initializers are stored as raw little-endian half-precision bytes; convert to FP32.
+        m_initializer_array = convert_fp16_raw_to_fp32(initializer->raw_data());
+    } else if (initializer->float_data_size() > 0) {
+        m_initializer_array.assign(initializer->float_data().begin(),
+                                   initializer->float_data().end());
+    } else if (!initializer->raw_data().empty()) {
+        // Handle float data in raw_data
         std::string rawData = initializer->raw_data();
         auto data = reinterpret_cast<const float*>(rawData.data());
         m_initializer_array.assign(data, data + rawData.size() / sizeof(float));

@@ -6,6 +6,7 @@
  */
 module;
 #include <cstdint>
+#include <string>
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <tuple>
@@ -180,5 +181,12 @@ void rotate_image_90n(const cv::Mat& src, cv::Mat& dst, int angle);
  * @return Color matched swapped crop
  */
 cv::Mat apply_color_match(const cv::Mat& target_crop, const cv::Mat& swapped_crop);
+
+/**
+ * @brief Convert raw little-endian IEEE 754 half-precision (FP16) bytes to FP32 values
+ * @param raw_data Raw FP16 byte buffer (2 bytes per value)
+ * @return Converted FP32 values, one per FP16 value
+ */
+std::vector<float> convert_fp16_raw_to_fp32(const std::string& raw_data);
 
 } // namespace domain::face::helper
