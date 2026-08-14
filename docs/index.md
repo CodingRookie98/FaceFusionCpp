@@ -4,7 +4,7 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DOC-INDEX-2026
-> **当前版本 (Version)**: V1.1.1
+> **当前版本 (Version)**: V1.1.4
 > **状态 (Status)**: 正式 (Official)
 > **权威性 (Authority)**: 规范 (Normative)
 > **所有者 (Owner)**: 王辉
@@ -15,6 +15,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.4** | 2026-08-14 | AI Agent | 王辉 | 登记新增架构设计文档 web_ui_design.md（Web 界面设计规格）。 |
 | **V1.1.3** | 2026-08-14 | AI Agent | 王辉 | 清理已实施完成的评估/计划文档：删除 docs/dev/evaluation、docs/dev/plan、docs/dev/zh/evaluation、docs/superpowers 全部文档及空目录，同步移除索引登记。 |
 | **V1.1.2** | 2026-08-14 | AI Agent | 王辉 | 登记新增评估文档 layers_doc_assessment.md（分层架构文档一致性评估报告）。 |
 | **V1.1.1** | 2026-08-13 | AI Agent | 王辉 | 登记新增评估文档 design_doc_assessment.md（功能设计文档完整性评估报告）。 |
@@ -77,6 +78,7 @@ docs/
 | :--- | :--- |
 | [design.md](./dev/zh/architecture/design.md) | 系统设计与原则（总纲） |
 | [layers.md](./dev/zh/architecture/layers.md) | 分层结构实现细节 |
+| [web_ui_design.md](./dev/zh/architecture/web_ui_design.md) | Web 界面设计规格（评审中） |
 
 **流程 (Process)**
 
