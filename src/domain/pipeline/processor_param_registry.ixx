@@ -28,7 +28,6 @@ enum class ParamType { String, Int, Float, Bool, Path };
 struct ParamMeta {
     std::string name;                               ///< Parameter name (snake_case)
     ParamType type;                                 ///< Value type
-    std::string default_value;                      ///< Default value (string representation)
     std::vector<std::string> allowed_values;        ///< Enum constraints (empty = unrestricted)
     std::string description;                        ///< Human-readable description
     std::optional<std::pair<double, double>> range; ///< Numeric range (Int/Float only)

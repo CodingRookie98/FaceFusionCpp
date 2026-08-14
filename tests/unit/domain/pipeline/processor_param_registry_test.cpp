@@ -28,8 +28,8 @@ TEST_F(ProcessorParamRegistryTest, RegisterAndFindProcessor) {
     ProcessorParamRegistry::instance().register_processor(
         {.name = name,
          .params = {
-             {"model", ParamType::String, "default_model", {"model_a", "model_b"}, "Model name"},
-             {"factor", ParamType::Float, "0.8", {}, "Blend factor", std::make_pair(0.0, 1.0)},
+             {"model", ParamType::String, {"model_a", "model_b"}, "Model name"},
+             {"factor", ParamType::Float, {}, "Blend factor", std::make_pair(0.0, 1.0)},
          }});
 
     auto* meta = ProcessorParamRegistry::instance().find(name);
@@ -38,7 +38,6 @@ TEST_F(ProcessorParamRegistryTest, RegisterAndFindProcessor) {
     EXPECT_EQ(meta->params.size(), 2u);
     EXPECT_EQ(meta->params[0].name, "model");
     EXPECT_EQ(meta->params[0].type, ParamType::String);
-    EXPECT_EQ(meta->params[0].default_value, "default_model");
     EXPECT_EQ(meta->params[0].allowed_values, (std::vector<std::string>{"model_a", "model_b"}));
     EXPECT_EQ(meta->params[1].name, "factor");
     EXPECT_EQ(meta->params[1].type, ParamType::Float);
@@ -73,11 +72,11 @@ TEST_F(ProcessorParamRegistryTest, ParamTypeVariants) {
     ProcessorParamRegistry::instance().register_processor(
         {.name = name,
          .params = {
-             {"str_param", ParamType::String, "hello", {"hello", "world"}, "A string"},
-             {"int_param", ParamType::Int, "42", {}, "An int", std::make_pair(0.0, 100.0)},
-             {"float_param", ParamType::Float, "0.5", {}, "A float", std::make_pair(0.0, 1.0)},
-             {"bool_param", ParamType::Bool, "false", {}, "A bool"},
-             {"path_param", ParamType::Path, "", {}, "A path"},
+             {"str_param", ParamType::String, {"hello", "world"}, "A string"},
+             {"int_param", ParamType::Int, {}, "An int", std::make_pair(0.0, 100.0)},
+             {"float_param", ParamType::Float, {}, "A float", std::make_pair(0.0, 1.0)},
+             {"bool_param", ParamType::Bool, {}, "A bool"},
+             {"path_param", ParamType::Path, {}, "A path"},
          }});
 
     auto* meta = ProcessorParamRegistry::instance().find(name);
@@ -94,7 +93,7 @@ TEST_F(ProcessorParamRegistryTest, RegistrarHelperRegisters) {
     std::string name = "test_registrar_" + std::to_string(rand());
     {
         ProcessorParamRegistrar registrar(
-            {.name = name, .params = {{"x", ParamType::Int, "0", {}, "An int"}}});
+            {.name = name, .params = {{"x", ParamType::Int, {}, "An int"}}});
     }
     // registrar goes out of scope, but registration should persist
     auto* meta = ProcessorParamRegistry::instance().find(name);

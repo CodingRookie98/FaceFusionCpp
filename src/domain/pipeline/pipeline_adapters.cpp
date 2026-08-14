@@ -23,19 +23,13 @@ namespace {
 static ProcessorParamRegistrar face_swapper_params_(ProcessorMeta{
     .name = "face_swapper",
     .params = {
-        {"model",
-         ParamType::String,
-         "inswapper_128_fp16",
-         {"inswapper_128", "inswapper_128_fp16"},
-         "Swap model name"},
+        {"model", ParamType::String, {"inswapper_128", "inswapper_128_fp16"}, "Swap model name"},
         {"face_selector_mode",
          ParamType::String,
-         "many",
          {"reference", "one", "many"},
          "Face selection mode"},
         {"reference_face_path",
          ParamType::Path,
-         "",
          {},
          "Reference face image (required if mode=reference)"},
     }});
@@ -45,39 +39,30 @@ static ProcessorParamRegistrar face_enhancer_params_(ProcessorMeta{
     .params = {
         {"model",
          ParamType::String,
-         "codeformer",
          {"codeformer", "gfpgan_1.2", "gfpgan_1.3", "gfpgan_1.4"},
          "Enhancer model"},
-        {"blend_factor",
-         ParamType::Float,
-         "0.8",
-         {},
-         "Blend factor [0.0, 1.0]",
-         std::make_pair(0.0, 1.0)},
+        {"blend_factor", ParamType::Float, {}, "Blend factor [0.0, 1.0]", std::make_pair(0.0, 1.0)},
         {"face_selector_mode",
          ParamType::String,
-         "many",
          {"reference", "one", "many"},
          "Face selection mode"},
-        {"reference_face_path", ParamType::Path, "", {}, "Reference face image"},
+        {"reference_face_path", ParamType::Path, {}, "Reference face image"},
     }});
 
 static ProcessorParamRegistrar expression_restorer_params_(ProcessorMeta{
     .name = "expression_restorer",
     .params = {
-        {"model", ParamType::String, "live_portrait", {"live_portrait"}, "Restorer model"},
+        {"model", ParamType::String, {"live_portrait"}, "Restorer model"},
         {"restore_factor",
          ParamType::Float,
-         "0.8",
          {},
          "Restore factor [0.0, 1.0]",
          std::make_pair(0.0, 1.0)},
         {"face_selector_mode",
          ParamType::String,
-         "many",
          {"reference", "one", "many"},
          "Face selection mode"},
-        {"reference_face_path", ParamType::Path, "", {}, "Reference face image"},
+        {"reference_face_path", ParamType::Path, {}, "Reference face image"},
     }});
 
 static ProcessorParamRegistrar frame_enhancer_params_(ProcessorMeta{
@@ -85,13 +70,11 @@ static ProcessorParamRegistrar frame_enhancer_params_(ProcessorMeta{
     .params = {
         {"model",
          ParamType::String,
-         "real_esrgan_x4",
          {"real_esrgan_x2", "real_esrgan_x2_fp16", "real_esrgan_x4", "real_esrgan_x4_fp16",
           "real_esrgan_x8", "real_esrgan_x8_fp16", "real_hatgan_x4"},
          "Frame enhancer model"},
         {"enhance_factor",
          ParamType::Float,
-         "0.8",
          {},
          "Enhance factor [0.0, 1.0]",
          std::make_pair(0.0, 1.0)},
