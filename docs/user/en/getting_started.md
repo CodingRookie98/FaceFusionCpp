@@ -66,7 +66,7 @@ You must install the following components and add them to your system PATH, or p
     ├── bin/                # Executables and DLLs
     ├── models/             # AI model files (.onnx)
     ├── resources/          # Font files, overlays, and masks
-    ├── FaceFusionCpp.exe   # Main application
+    ├── ffc.exe   # Main application
     └── ...
     ```
 
@@ -88,13 +88,13 @@ Open a terminal at the installation directory and run the command based on your 
 **Linux (Bash)**:
 
 ```bash
-./FaceFusionCpp -s source.jpg -t target.jpg -o output.jpg
+./ffc -s source.jpg -t target.jpg -o output.jpg
 ```
 
 **Windows (PowerShell)**:
 
 ```powershell
-.\FaceFusionCpp.exe -s source.jpg -t target.jpg -o output.jpg
+.\ffc.exe -s source.jpg -t target.jpg -o output.jpg
 ```
 
 **Parameter Explanation**:
@@ -122,13 +122,13 @@ When encountering environmental problems or before kicking off your first massiv
 **Linux (Bash)**:
 
 ```bash
-./FaceFusionCpp --system-check
+./ffc --system-check
 ```
 
 **Windows (PowerShell)**:
 
 ```powershell
-.\FaceFusionCpp.exe --system-check
+.\ffc.exe --system-check
 ```
 
 ---
@@ -137,7 +137,7 @@ When encountering environmental problems or before kicking off your first massiv
 
 If the application fails to start or crashes abruptly:
 
-* **"DLL not found"**: Ensure the `bin` directories for CUDA, cuDNN, and TensorRT have been added to your system PATH, or manually copy the required `.dll` files next to `FaceFusionCpp.exe`.
+* **"DLL not found"**: Ensure the `bin` directories for CUDA, cuDNN, and TensorRT have been added to your system PATH, or manually copy the required `.dll` files next to `ffc.exe`.
 * **"CUDA error"**: Update your NVIDIA graphics card driver to the newest version.
 * **"Model not found"**: Ensure the `models/` directory exists and houses the required `.onnx` files.
 

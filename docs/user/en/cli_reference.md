@@ -17,20 +17,20 @@
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
 
 
-The FaceFusionCpp executable provides a powerful command-line interface (CLI) for both quick tasks and complex production pipelines.
+The ffc executable provides a powerful command-line interface (CLI) for both quick tasks and complex production pipelines.
 
 **Usage Syntax**:
 
 **Linux (Bash)**:
 
 ```bash
-./FaceFusionCpp [Global Options] [Quick Mode Options | Task Config Mode]
+./ffc [Global Options] [Quick Mode Options | Task Config Mode]
 ```
 
 **Windows (PowerShell)**:
 
 ```powershell
-.\FaceFusionCpp.exe [Global Options] [Quick Mode Options | Task Config Mode]
+.\ffc.exe [Global Options] [Quick Mode Options | Task Config Mode]
 ```
 
 ---
@@ -113,13 +113,13 @@ For complex workflows or batch processing, use YAML.
 **Linux (Bash)**:
 
 ```bash
-./FaceFusionCpp --system-check --json
+./ffc --system-check --json
 ```
 
 **Windows (PowerShell)**:
 
 ```powershell
-.\FaceFusionCpp.exe --system-check --json
+.\ffc.exe --system-check --json
 ```
 Output Example:
 ```json
@@ -139,13 +139,13 @@ Validate your YAML before submitting long-running tasks:
 **Linux (Bash)**:
 
 ```bash
-./FaceFusionCpp -c my_complex_task.yaml --validate
+./ffc -c my_complex_task.yaml --validate
 ```
 
 **Windows (PowerShell)**:
 
 ```powershell
-.\FaceFusionCpp.exe -c my_complex_task.yaml --validate
+.\ffc.exe -c my_complex_task.yaml --validate
 ```
 
 ### 4.3 Basic Swap + Enhance
@@ -153,11 +153,11 @@ Validate your YAML before submitting long-running tasks:
 **Linux (Bash)**:
 
 ```bash
-./FaceFusionCpp -s face.jpg -t movie.mp4 -o out/ --processors face_swapper,face_enhancer
+./ffc -s face.jpg -t movie.mp4 -o out/ --processors face_swapper,face_enhancer
 ```
 
 **Windows (PowerShell)**:
 
 ```powershell
-.\FaceFusionCpp.exe -s face.jpg -t movie.mp4 -o out/ --processors face_swapper,face_enhancer
+.\ffc.exe -s face.jpg -t movie.mp4 -o out/ --processors face_swapper,face_enhancer
 ```

@@ -78,7 +78,7 @@ If running `e2e_image_single.yaml` in Debug mode:
 *   **Graceful Shutdown**: Handling `SIGINT` (Ctrl+C).
 
 ### System Tests
-*   **System Check**: `FaceFusionCpp --system-check`
+*   **System Check**: `ffc --system-check`
 *   **Config Validation**: Error reporting for invalid configs.
 *   **Resource Monitoring**: Memory leaks and VRAM usage.
 

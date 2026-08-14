@@ -209,7 +209,7 @@ python build.py --preset linux-release --action package
 # 产物目录结构
 # build/install/linux-x64-release/
 # ├── bin/
-# │   └── FaceFusionCpp
+# │   └── ffc
 # ├── config/
 # │   ├── app_config.yaml
 # │   └── task_config.yaml
@@ -224,7 +224,7 @@ python build.py --preset linux-release --action package
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            build/install/**/bin/FaceFusionCpp
+            build/install/**/bin/ffc
             build/install/**/bin/*.dll
           draft: false
           prerelease: ${{ contains(github.ref, 'rc') }}
@@ -265,7 +265,7 @@ vcpkg x-package-info <package>
 ls -la build/bin/linux-x64-debug/
 
 # 运行单个测试
-cd build/bin/linux-x64-debug && ./FaceFusionCpp_test --gtest_filter="*specific_test*"
+cd build/bin/linux-x64-debug && ./ffc_test --gtest_filter="*specific_test*"
 ```
 
 ### 5.3 失败处理策略

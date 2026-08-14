@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.30)
-project(FaceFusionCpp
+project(ffc
         VERSION 0.34.1
         DESCRIPTION "This project is the C++ version of the open-source project FaceFusion."
 )
@@ -35,7 +35,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_link_options(-static-libgcc -static-libstdc++)
 endif ()
 
-set(app_facefusioncpp "FaceFusionCpp")
+set(app_facefusioncpp "ffc")
 add_executable(${app_facefusioncpp})
 if (LINUX)
     set_target_properties(${app_facefusioncpp} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")

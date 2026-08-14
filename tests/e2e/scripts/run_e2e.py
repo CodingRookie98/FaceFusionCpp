@@ -58,8 +58,8 @@ def find_executable(provided_path: Path) -> Path:
     
     print(f"Executable not found at {provided_path}, searching in {project_root}/build/...")
     
-    candidates = list(project_root.glob("build/*/bin/FaceFusionCpp")) + \
-                 list(project_root.glob("build/*/bin/FaceFusionCpp.exe"))
+    candidates = list(project_root.glob("build/bin/*/ffc")) + \
+                 list(project_root.glob("build/bin/*/ffc.exe"))
                  
     if not candidates:
         return provided_path

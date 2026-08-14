@@ -72,13 +72,13 @@ FaceFusionCpp 基于模块化的流水线架构。核心处理单元称为 **Pro
 **Linux (Bash)**:
 
 ```bash
-./FaceFusionCpp -s source.jpg -t target.jpg -o output.png
+./ffc -s source.jpg -t target.jpg -o output.png
 ```
 
 **Windows (PowerShell)**:
 
 ```powershell
-.\FaceFusionCpp.exe -s source.jpg -t target.jpg -o output.png
+.\ffc.exe -s source.jpg -t target.jpg -o output.png
 ```
 *   **输入**: `-s` 与 `-t`均支持传入多个路径，以逗号分隔（或者在配置文件中配置列表）。
 *   **输出**: `output.png`。格式由输出文件扩展名决定。
@@ -89,13 +89,13 @@ FaceFusionCpp 基于模块化的流水线架构。核心处理单元称为 **Pro
 **Linux (Bash)**:
 
 ```bash
-./FaceFusionCpp -s source.jpg -t target.mp4 -o output.mp4
+./ffc -s source.jpg -t target.mp4 -o output.mp4
 ```
 
 **Windows (PowerShell)**:
 
 ```powershell
-.\FaceFusionCpp.exe -s source.jpg -t target.mp4 -o output.mp4
+.\ffc.exe -s source.jpg -t target.mp4 -o output.mp4
 ```
 *   **音频**: 默认情况下，目标视频的音频会复制到输出视频中。
 *   **性能**: 视频处理资源消耗较大。请参阅 [硬件指南](hardware_guide.md) 进行优化。
@@ -109,13 +109,13 @@ FaceFusionCpp 基于模块化的流水线架构。核心处理单元称为 **Pro
     **Linux (Bash)**:
 
     ```bash
-    ./FaceFusionCpp -c my_task.yaml
+    ./ffc -c my_task.yaml
     ```
 
     **Windows (PowerShell)**:
 
     ```powershell
-    .\FaceFusionCpp.exe -c my_task.yaml
+    .\ffc.exe -c my_task.yaml
     ```
 
 3. **目录输入**: 您可以在配置中的 `source_paths` 或 `target_paths` 指定目录路径。程序将处理该目录下所有有效的媒体文件。
@@ -136,13 +136,13 @@ FaceFusionCpp 的真正威力在于组合处理器。顺序很重要！
 **Linux (Bash)**:
 
 ```bash
-./FaceFusionCpp -s my_face.jpg -t target_video.mp4 -o result.mp4 --processors face_swapper,face_enhancer
+./ffc -s my_face.jpg -t target_video.mp4 -o result.mp4 --processors face_swapper,face_enhancer
 ```
 
 **Windows (PowerShell)**:
 
 ```powershell
-.\FaceFusionCpp.exe -s my_face.jpg -t target_video.mp4 -o result.mp4 --processors face_swapper,face_enhancer
+.\ffc.exe -s my_face.jpg -t target_video.mp4 -o result.mp4 --processors face_swapper,face_enhancer
 ```
 
 **或者用 YAML 配置文件**:
@@ -171,12 +171,12 @@ pipeline:
 
 **Linux (Bash)**:
 ```bash
-./FaceFusionCpp -c do_job.yaml
+./ffc -c do_job.yaml
 ```
 
 **Windows (PowerShell)**:
 ```powershell
-.\FaceFusionCpp.exe -c do_job.yaml
+.\ffc.exe -c do_job.yaml
 ```
 
 ### 高级流水线: 换脸 -> 表情还原 -> 增强 -> 放大

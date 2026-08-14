@@ -65,7 +65,7 @@
     ├── bin/                # 可执行文件和 DLL
     ├── models/             # AI 模型文件 (.onnx)
     ├── resources/          # 字体文件、遮罩等资源
-    ├── FaceFusionCpp.exe   # 主程序
+    ├── ffc.exe   # 主程序
     └── ...
     ```
 
@@ -86,13 +86,13 @@
 **Linux (Bash)**:
 
 ```bash
-./FaceFusionCpp -s source.jpg -t target.jpg -o output.jpg
+./ffc -s source.jpg -t target.jpg -o output.jpg
 ```
 
 **Windows (PowerShell)**:
 
 ```powershell
-.\FaceFusionCpp.exe -s source.jpg -t target.jpg -o output.jpg
+.\ffc.exe -s source.jpg -t target.jpg -o output.jpg
 ```
 
 **参数说明**:
@@ -118,13 +118,13 @@
 **Linux (Bash)**:
 
 ```bash
-./FaceFusionCpp --system-check
+./ffc --system-check
 ```
 
 **Windows (PowerShell)**:
 
 ```powershell
-.\FaceFusionCpp.exe --system-check
+.\ffc.exe --system-check
 ```
 
 ---
@@ -133,7 +133,7 @@
 
 如果程序启动失败或崩溃：
 
-*   **"DLL not found"**: 确保 CUDA, cuDNN 和 TensorRT 的 `bin` 目录已添加到系统 PATH，或者将所需的 `.dll` 文件复制到 `FaceFusionCpp.exe` 旁边。
+*   **"DLL not found"**: 确保 CUDA, cuDNN 和 TensorRT 的 `bin` 目录已添加到系统 PATH，或者将所需的 `.dll` 文件复制到 `ffc.exe` 旁边。
 *   **"CUDA error"**: 将 NVIDIA 显卡驱动更新到最新版本。
 *   **"Model not found"**: 确保 `models/` 目录存在并包含所需的 `.onnx` 文件。
 

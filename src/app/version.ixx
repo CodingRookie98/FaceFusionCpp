@@ -60,7 +60,7 @@ std::string get_banner();
 
 /**
  * @brief Get single-line version string for --version output
- * @return e.g., "FaceFusionCpp v0.33.0 (abc1234)"
+ * @return e.g., "ffc v0.33.0 (abc1234)"
  */
 std::string get_version_string();
 
