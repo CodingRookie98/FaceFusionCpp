@@ -13,6 +13,7 @@ add_dependencies(app_version update_version_info)
 target_link_libraries(app_version PRIVATE foundation_infrastructure)
 
 add_subdirectory(cli)
+add_subdirectory(web)
 
 target_sources(${app_facefusioncpp} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/face_fusion.cpp
@@ -23,4 +24,5 @@ target_link_libraries(${app_facefusioncpp} PRIVATE
         config_core
         app_cli
         app_version
+        app_web
 )

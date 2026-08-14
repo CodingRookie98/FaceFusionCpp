@@ -32,3 +32,14 @@ add_facefusion_test(config_validator_test
         config_core
         GTest::gmock
 )
+# Web server health payload tests
+add_facefusion_test(web_server_health_test
+    SOURCES
+        web_server_health_test.cpp
+    MAIN_LIB
+        GTest::gtest_main
+    LINK_LIBRARIES
+        app_web
+        app_version
+)
+target_compile_features(web_server_health_test PRIVATE cxx_std_20)
