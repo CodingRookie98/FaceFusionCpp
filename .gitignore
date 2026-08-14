@@ -102,3 +102,9 @@ opencode.jsonc
 .clangd
 # codegraph
 .codegraph/
+
+# Web UI frontend build output (synced by build.py --action web)
+assets/web/
+
+.agents/
+skills-lock.json
