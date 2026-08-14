@@ -9,6 +9,7 @@
     "cli11",
     "curl",
     "dp-thread-pool",
+    "drogon",
     {
       "name": "ffmpeg",
       "features": [
