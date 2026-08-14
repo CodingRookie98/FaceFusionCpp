@@ -228,8 +228,7 @@ TEST(BufferTest, ResizeNegativeSizeThrowsException)
 ### 6.3 覆盖率策略（风险驱动）
 
 - 覆盖率是**质量下限**，不是目标本身；优先覆盖高风险逻辑（算法、边界条件、错误处理、并发）。
-- 覆盖率评估与快照结果不写进“标准”，统一放在评估文档中：`docs/dev/evaluation/`。
-- 详细评估与当前快照见：`docs/dev/evaluation/C++_evaluation_unit_test_coverage.md`
+- 覆盖率评估与快照结果不写进“标准”，统一放在评估文档中（评估完成后归档清理，实施结论沉淀于对应设计文档修订历史）。
 
 ### 6.4 测试金字塔参考
 

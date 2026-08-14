@@ -15,6 +15,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.3** | 2026-08-14 | AI Agent | 王辉 | 清理已实施完成的评估/计划文档：删除 docs/dev/evaluation、docs/dev/plan、docs/dev/zh/evaluation、docs/superpowers 全部文档及空目录，同步移除索引登记。 |
 | **V1.1.2** | 2026-08-14 | AI Agent | 王辉 | 登记新增评估文档 layers_doc_assessment.md（分层架构文档一致性评估报告）。 |
 | **V1.1.1** | 2026-08-13 | AI Agent | 王辉 | 登记新增评估文档 design_doc_assessment.md（功能设计文档完整性评估报告）。 |
 | **V1.1.0** | 2026-08-13 | AI Agent | 王辉 | 合并 dev 分支后更新索引：删除 quality.md（并入 C++_quality_standard.md），新增 evaluation/plan/templates/superpowers/compiler_selection 等 18 篇文档。 |
@@ -94,30 +95,6 @@ docs/
 | [build.md](./dev/zh/guides/build.md) | 使用 `build.py` 脚本配置和构建 |
 | [compiler_selection.md](./dev/zh/guides/compiler_selection.md) | 编译器选型决策记录 (ADR) |
 
-**评估 (Evaluation)**
-
-| 文档 | 说明 |
-| :--- | :--- |
-| [design_doc_assessment.md](./dev/zh/evaluation/design_doc_assessment.md) | 功能设计文档评估报告（design.md 完整性/一致性审计） |
-| [layers_doc_assessment.md](./dev/zh/evaluation/layers_doc_assessment.md) | 分层架构文档评估报告（layers.md 目录结构/组件归属审计） |
-| [C++_evaluation_code_smells_and_tech_debt.md](./dev/zh/evaluation/C++_evaluation_code_smells_and_tech_debt.md) | 代码坏味道与技术债务评估报告 |
-
-**计划与任务 (Plan & Task)**
-
-| 文档 | 说明 |
-| :--- | :--- |
-| [cli-enhancement/IMPLEMENTATION_PLAN.md](./dev/plan/cli-enhancement/IMPLEMENTATION_PLAN.md) | CLI 增强实施计划 |
-| [fix-tech-debt/IMPLEMENTATION_PLAN.md](./dev/plan/fix-tech-debt/IMPLEMENTATION_PLAN.md) | 技术债务修复计划（P1） |
-| [fix-tech-debt-p2/IMPLEMENTATION_PLAN.md](./dev/plan/fix-tech-debt-p2/IMPLEMENTATION_PLAN.md) | 技术债务修复计划（阶段二） |
-| [fix-tech-debt/task/C++_task_01_concurrent_queue.md](./dev/plan/fix-tech-debt/task/C++_task_01_concurrent_queue.md) | 子任务：并发队列 |
-| [fix-tech-debt/task/C++_task_02_process_interface.md](./dev/plan/fix-tech-debt/task/C++_task_02_process_interface.md) | 子任务：处理器接口 |
-| [fix-tech-debt/task/C++_task_03_network_type_safety.md](./dev/plan/fix-tech-debt/task/C++_task_03_network_type_safety.md) | 子任务：网络类型安全 |
-| [fix-tech-debt/task/C++_task_04_enum_underlying_type.md](./dev/plan/fix-tech-debt/task/C++_task_04_enum_underlying_type.md) | 子任务：枚举底层类型 |
-| [fix-tech-debt/task/C++_task_05_rule_of_five.md](./dev/plan/fix-tech-debt/task/C++_task_05_rule_of_five.md) | 子任务：Rule of Five |
-| [fix-tech-debt/task/C++_task_06_make_shared_unique.md](./dev/plan/fix-tech-debt/task/C++_task_06_make_shared_unique.md) | 子任务：make_shared/make_unique |
-| [fix-tech-debt-p2/task/C++_task_07_shutdown_handler_pimpl.md](./dev/plan/fix-tech-debt-p2/task/C++_task_07_shutdown_handler_pimpl.md) | 子任务：shutdown handler PIMPL |
-| [fix-tech-debt-p2/task/C++_task_08_ffmpeg_raii.md](./dev/plan/fix-tech-debt-p2/task/C++_task_08_ffmpeg_raii.md) | 子任务：FFmpeg RAII 包装 |
-
 **模板 (Templates)**
 
 | 文档 | 说明 |
@@ -168,19 +145,6 @@ docs/
 | [issues/trt_myelin_crash.md](./dev/en/troubleshooting/issues/trt_myelin_crash.md) | TensorRT Myelin crash on exit |
 | [issues/video_timeout.md](./dev/en/troubleshooting/issues/video_timeout.md) | Video test timeout (strict memory) |
 | [issues/videowriter_dimensions.md](./dev/en/troubleshooting/issues/videowriter_dimensions.md) | Invalid frame dimensions (VideoWriter) |
-
-**Evaluation**
-
-| 文档 | 说明 |
-| :--- | :--- |
-| [C++_evaluation_architecture_compliance.md](./dev/evaluation/C++_evaluation_architecture_compliance.md) | Architecture compliance deep review |
-| [C++_evaluation_cpp20_architecture.md](./dev/evaluation/C++_evaluation_cpp20_architecture.md) | C++20 modular architecture analysis |
-
-**Superpowers Specs**
-
-| 文档 | 说明 |
-| :--- | :--- |
-| [2026-05-29-cli-enhancement-design.md](./superpowers/specs/2026-05-29-cli-enhancement-design.md) | CLI enhancement design spec |
 
 ---
 

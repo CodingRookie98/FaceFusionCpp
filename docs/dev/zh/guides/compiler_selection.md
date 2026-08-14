@@ -228,7 +228,5 @@ python build.py --action test --test-label integration
 
 ## 8. 相关文档
 
-- `docs/dev/evaluation/C++_evaluation_architecture_compliance.md` — 架构合规性复核报告
-- `docs/dev/evaluation/C++_evaluation_cpp20_architecture.md` — C++20 模块化架构分析
 - `AGENTS.md` — 项目开发规范
 - `vcpkg.json` — 依赖管理配置
