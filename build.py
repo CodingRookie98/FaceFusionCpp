@@ -158,6 +158,31 @@ def run_test(ctest_exe, preset, regex, label, env, project_root, build_dir):
         sys.exit(e.returncode)
 
 
+def run_web_build(project_root):
+    """Build the frontend (web/) and sync static assets to assets/web/."""
+    log("\n=== Action: web ===", "info")
+    web_dir = project_root / "web"
+    if not (web_dir / "package.json").exists():
+        log("web/ not found, skipping frontend build", "warning")
+        return
+
+    log("Installing frontend dependencies (npm ci)...", "info")
+    run_command(["npm", "ci"], env=None, cwd=web_dir)
+    log("Building frontend (npm run build)...", "info")
+    run_command(["npm", "run", "build"], env=None, cwd=web_dir)
+
+    dist_dir = web_dir / "dist"
+    if not dist_dir.exists():
+        log("Frontend build produced no dist/ directory", "error")
+        sys.exit(1)
+
+    target = project_root / "assets" / "web"
+    if target.exists():
+        shutil.rmtree(target)
+    shutil.copytree(dist_dir, target)
+    log(f"Web assets synced to {target}", "success")
+
+
 def run_install(cmake_exe, build_dir, env, project_root):
     log("\n=== Action: install ===", "info")
     cmd = [cmake_exe, "--install", str(build_dir)]
@@ -188,7 +213,7 @@ def main():
     parser.add_argument("--target", default="all", help="Build target")
     parser.add_argument(
         "--action",
-        choices=["configure", "build", "test", "install", "package"],
+        choices=["configure", "build", "test", "install", "package", "web"],
         default="build",
         help="Action to perform (default: build)",
     )
@@ -320,6 +345,9 @@ def main():
         run_build(cmake_exe, preset, "all", jobs, env, project_root)
 
         run_package(cpack_exe, build_dir, env)
+
+    elif args.action == "web":
+        run_web_build(project_root)
 
     log("\nOperation completed successfully!", "success")
 
