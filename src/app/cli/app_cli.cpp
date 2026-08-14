@@ -27,6 +27,7 @@ import app.cli.system_check;
 import app.version;
 import foundation.infrastructure.progress;
 import processor.param_registry;
+import app.web.server;
 
 namespace app::cli {
 
@@ -164,6 +165,25 @@ int App::run(int argc, char** argv) {
                    "(face_swapper,face_enhancer,expression_restorer,frame_enhancer)")
         ->excludes("--task-config");
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Web 模式选项 (Web UI Mode Options)
+    // 注意: 必须在快捷模式选项之后注册（excludes 引用的选项需已存在）
+    // ─────────────────────────────────────────────────────────────────────────
+    bool web_mode = false;
+    uint16_t web_port = 8000;
+    std::string web_host = "0.0.0.0";
+    std::string web_root = "assets/web";
+
+    app.add_flag("--web", web_mode, "Run the embedded web UI server")
+        ->excludes("--task-config")
+        ->excludes("--source")
+        ->excludes("--target")
+        ->excludes("--output")
+        ->excludes("--processors");
+    app.add_option("--web-port", web_port, "Web server port")->check(CLI::Range(1, 65535));
+    app.add_option("--web-host", web_host, "Web server bind host");
+    app.add_option("--web-root", web_root, "Frontend static assets root");
+
     // Register processor-specific CLI flags from metadata registry
     auto processor_params = register_processor_cli_params(app);
 
@@ -234,6 +254,8 @@ int App::run(int argc, char** argv) {
             if (has_config && exit_code == 0) {
                 exit_code = run_validate(task_config, *app_config);
             }
+        } else if (web_mode) {
+            exit_code = run_web_mode(web_host, web_port, web_root);
         } else if (!config_path.empty()) {
             exit_code = run_pipeline(config_path, *app_config);
         } else if (!source_paths.empty() && !target_paths.empty()) {
@@ -262,6 +284,15 @@ int App::run_system_check(bool json_output) {
         std::cout << format_text(report) << std::endl;
     }
     return report.fail_count > 0 ? 1 : 0;
+}
+
+int App::run_web_mode(const std::string& host, uint16_t port, const std::string& web_root) {
+    using foundation::infrastructure::logger::Logger;
+    Logger::get_instance()->info(
+        std::format("Web UI starting: http://{}:{}/ (web root: {})", host, port, web_root));
+
+    app::web::run_server({.host = host, .port = port, .web_root = web_root});
+    return 0;
 }
 
 int App::run_validate_from_file(const std::string& config_path,

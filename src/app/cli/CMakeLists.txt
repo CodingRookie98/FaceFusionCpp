@@ -22,6 +22,7 @@ target_link_libraries(app_cli
         foundation_media
         foundation_ai
         app_version
+        app_web
         indicators::indicators
         CLI11::CLI11
         nlohmann_json::nlohmann_json
