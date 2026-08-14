@@ -120,7 +120,7 @@ static ProcessorParamMap register_processor_cli_params(CLI::App& cli_app) {
 }
 
 int App::run(int argc, char** argv) {
-    CLI::App app{"FaceFusionCpp - Face processing pipeline"};
+    CLI::App app{"ffc (FaceFusionCpp) - Face processing pipeline"};
 
 #ifdef _WIN32
     argv = app.ensure_utf8(argv);
