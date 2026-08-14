@@ -2,6 +2,8 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <cmath>
+#include <cstdint>
+#include <string>
 
 import domain.face.helper;
 import domain.face;
@@ -18,6 +20,17 @@ void ExpectVectorsNear(const std::vector<float>& v1, const std::vector<float>& v
     for (size_t i = 0; i < v1.size(); ++i) {
         EXPECT_NEAR(v1[i], v2[i], abs_error) << "Vector mismatch at index " << i;
     }
+}
+
+// Build a raw little-endian FP16 byte string from uint16 bit patterns
+std::string MakeRawFp16(std::initializer_list<std::uint16_t> values) {
+    std::string bytes;
+    bytes.reserve(values.size() * 2);
+    for (const std::uint16_t value : values) {
+        bytes.push_back(static_cast<char>(value & 0xFF));
+        bytes.push_back(static_cast<char>((value >> 8) & 0xFF));
+    }
+    return bytes;
 }
 
 } // namespace
@@ -253,4 +266,68 @@ TEST_F(FaceHelperTest, RotateBoxBack) {
     EXPECT_FLOAT_EQ(res.y, 70.0f);
     EXPECT_FLOAT_EQ(res.width, 20.0f);
     EXPECT_FLOAT_EQ(res.height, 20.0f);
+}
+
+// --- FP16 to FP32 conversion tests ---
+
+TEST_F(FaceHelperTest, ConvertFp16ToFp32BasicValues) {
+    // 1.0 = 0x3C00, 0.5 = 0x3800, -2.0 = 0xC000, 0.25 = 0x3400
+    auto out = convert_fp16_raw_to_fp32(MakeRawFp16({0x3C00, 0x3800, 0xC000, 0x3400}));
+    ASSERT_EQ(out.size(), 4u);
+    EXPECT_FLOAT_EQ(out[0], 1.0f);
+    EXPECT_FLOAT_EQ(out[1], 0.5f);
+    EXPECT_FLOAT_EQ(out[2], -2.0f);
+    EXPECT_FLOAT_EQ(out[3], 0.25f);
+}
+
+TEST_F(FaceHelperTest, ConvertFp16ToFp32ZeroAndSign) {
+    auto out = convert_fp16_raw_to_fp32(MakeRawFp16({0x0000, 0x8000}));
+    ASSERT_EQ(out.size(), 2u);
+    EXPECT_FLOAT_EQ(out[0], 0.0f);
+    EXPECT_FALSE(std::signbit(out[0]));
+    EXPECT_FLOAT_EQ(out[1], 0.0f);
+    EXPECT_TRUE(std::signbit(out[1]));
+}
+
+TEST_F(FaceHelperTest, ConvertFp16ToFp32MaxNormal) {
+    // 65504 = 0x7BFF is the largest finite FP16 value
+    auto out = convert_fp16_raw_to_fp32(MakeRawFp16({0x7BFF}));
+    ASSERT_EQ(out.size(), 1u);
+    EXPECT_FLOAT_EQ(out[0], 65504.0f);
+}
+
+TEST_F(FaceHelperTest, ConvertFp16ToFp32Subnormal) {
+    // Smallest subnormal 0x0001 = 2^-24, largest subnormal 0x03FF ~ 6.0976e-5
+    auto out = convert_fp16_raw_to_fp32(MakeRawFp16({0x0001, 0x03FF}));
+    ASSERT_EQ(out.size(), 2u);
+    EXPECT_FLOAT_EQ(out[0], std::ldexp(1.0f, -24));
+    EXPECT_NEAR(out[1], 6.0975552e-5f, 1e-11);
+}
+
+TEST_F(FaceHelperTest, ConvertFp16ToFp32InfAndNaN) {
+    auto out = convert_fp16_raw_to_fp32(MakeRawFp16({0x7C00, 0xFC00, 0x7E00}));
+    ASSERT_EQ(out.size(), 3u);
+    EXPECT_TRUE(std::isinf(out[0]));
+    EXPECT_GT(out[0], 0.0f);
+    EXPECT_TRUE(std::isinf(out[1]));
+    EXPECT_LT(out[1], 0.0f);
+    EXPECT_TRUE(std::isnan(out[2]));
+}
+
+TEST_F(FaceHelperTest, ConvertFp16ToFp32ManyValues) {
+    // Simulate a 512x512 FP16 initializer filled with 1.0 (0x3C00)
+    std::string raw;
+    raw.reserve(static_cast<size_t>(512) * 512 * 2);
+    for (int i = 0; i < 512 * 512; ++i) {
+        raw.push_back(static_cast<char>(0x00));
+        raw.push_back(static_cast<char>(0x3C));
+    }
+    auto out = convert_fp16_raw_to_fp32(raw);
+    ASSERT_EQ(out.size(), static_cast<size_t>(512) * 512);
+    for (float v : out) { EXPECT_FLOAT_EQ(v, 1.0f); }
+}
+
+TEST_F(FaceHelperTest, ConvertFp16ToFp32EmptyInput) {
+    auto out = convert_fp16_raw_to_fp32("");
+    EXPECT_TRUE(out.empty());
 }
