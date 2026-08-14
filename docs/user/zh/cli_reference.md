@@ -47,6 +47,10 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 | `--system-check`| 无 | 运行环境自检 (CUDA, 库版本等)。 | `false` |
 | `--json` | 无 | 开启时，`--system-check` 的结果将以 JSON 格式输出。 | `false` |
 | `--validate` | 无 | 解析并校验配置合法性 (Dry-Run)，不执行任务。支持 YAML 文件和快捷模式参数校验。 | `false` |
+| `--web` | 无 | 启动内嵌 Web 界面服务（与快捷模式/任务配置模式互斥）。 | `false` |
+| `--web-port` | `<port>` | Web 服务端口。 | `8000` |
+| `--web-host` | `<host>` | Web 服务绑定地址。 | `0.0.0.0` |
+| `--web-root` | `<path>` | 前端静态资源根目录（开发调试可指向 `web/dist`）。 | `assets/web` |
 
 ---
 

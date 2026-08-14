@@ -47,6 +47,10 @@ These options control the base behavior of the application.
 | `--system-check` | None | Run environment self-check (CUDA, library versions). | `false` |
 | `--json` | None | If set, `--system-check` results will be output in JSON format. | `false` |
 | `--validate` | None | Parse and validate configuration file (Dry-Run) without executing. | `false` |
+| `--web` | None | Run the embedded Web UI server (exclusive with quick mode / task config mode). | `false` |
+| `--web-port` | `<port>` | Web server port. | `8000` |
+| `--web-host` | `<host>` | Web server bind host. | `0.0.0.0` |
+| `--web-root` | `<path>` | Frontend static assets root (point to `web/dist` for dev). | `assets/web` |
 
 ---
 
