@@ -132,4 +132,120 @@ void ApplyDefaultModels(TaskConfig& task, const DefaultModels& defaults) {
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// ApplyCliParamsToStep: 将快捷模式 CLI 参数（cli_params 原始字符串 map）
+// 转换为 step.params 的 typed variant（与 YAML 解析路径汇合）。
+// 注意：不能 import config.parser（物理库依赖方向为 parser→core），
+// 故枚举转换在此本地实现；CLI11 已预先校验合法值，此处为防御性处理。
+// ─────────────────────────────────────────────────────────────────────────
+namespace {
+
+std::optional<FaceSelectorMode> parse_cli_selector_mode(const std::string& mode) {
+    if (mode == "reference") return FaceSelectorMode::Reference;
+    if (mode == "one") return FaceSelectorMode::One;
+    if (mode == "many") return FaceSelectorMode::Many;
+    return std::nullopt;
+}
+
+std::optional<double> parse_cli_double(const std::string& s) {
+    if (s.empty()) return std::nullopt;
+    try {
+        return std::stod(s);
+    } catch (const std::exception&) { return std::nullopt; }
+}
+
+} // namespace
+
+Result<void, ConfigError> ApplyCliParamsToStep(PipelineStep& step) {
+    const auto& cli = step.cli_params;
+    if (cli.empty()) { return Result<void, ConfigError>::ok(); }
+
+    auto get = [&cli](const std::string& key) -> std::string {
+        auto it = cli.find(key);
+        return it != cli.end() ? it->second : std::string{};
+    };
+
+    auto apply_selector_mode = [&get](const char* path, const std::string& mode_str,
+                                      FaceSelectorMode& out) -> Result<void, ConfigError> {
+        if (mode_str.empty()) { return Result<void, ConfigError>::ok(); }
+        auto mode = parse_cli_selector_mode(mode_str);
+        if (!mode) {
+            return Result<void, ConfigError>::err(
+                ConfigError(ErrorCode::E202ParameterOutOfRange,
+                            "Invalid face_selector_mode: " + mode_str, path));
+        }
+        out = *mode;
+        return Result<void, ConfigError>::ok();
+    };
+
+    if (step.step == "face_swapper") {
+        FaceSwapperParams params;
+        params.model = get("model");
+        auto mode_r = apply_selector_mode("pipeline.step[face_swapper].face_selector_mode",
+                                          get("face_selector_mode"), params.face_selector_mode);
+        if (!mode_r) { return mode_r; }
+        auto ref = get("reference_face_path");
+        if (!ref.empty()) { params.reference_face_path = ref; }
+        step.params = std::move(params);
+    } else if (step.step == "face_enhancer") {
+        FaceEnhancerParams params;
+        params.model = get("model");
+        auto factor = get("blend_factor");
+        if (!factor.empty()) {
+            auto v = parse_cli_double(factor);
+            if (!v) {
+                return Result<void, ConfigError>::err(ConfigError(
+                    ErrorCode::E202ParameterOutOfRange, "Invalid blend_factor: " + factor,
+                    "pipeline.step[face_enhancer].blend_factor"));
+            }
+            params.blend_factor = *v;
+        }
+        auto mode_r = apply_selector_mode("pipeline.step[face_enhancer].face_selector_mode",
+                                          get("face_selector_mode"), params.face_selector_mode);
+        if (!mode_r) { return mode_r; }
+        auto ref = get("reference_face_path");
+        if (!ref.empty()) { params.reference_face_path = ref; }
+        step.params = std::move(params);
+    } else if (step.step == "expression_restorer") {
+        ExpressionRestorerParams params;
+        params.model = get("model");
+        auto factor = get("restore_factor");
+        if (!factor.empty()) {
+            auto v = parse_cli_double(factor);
+            if (!v) {
+                return Result<void, ConfigError>::err(ConfigError(
+                    ErrorCode::E202ParameterOutOfRange, "Invalid restore_factor: " + factor,
+                    "pipeline.step[expression_restorer].restore_factor"));
+            }
+            params.restore_factor = *v;
+        }
+        auto mode_r = apply_selector_mode("pipeline.step[expression_restorer].face_selector_mode",
+                                          get("face_selector_mode"), params.face_selector_mode);
+        if (!mode_r) { return mode_r; }
+        auto ref = get("reference_face_path");
+        if (!ref.empty()) { params.reference_face_path = ref; }
+        step.params = std::move(params);
+    } else if (step.step == "frame_enhancer") {
+        FrameEnhancerParams params;
+        params.model = get("model");
+        auto factor = get("enhance_factor");
+        if (!factor.empty()) {
+            auto v = parse_cli_double(factor);
+            if (!v) {
+                return Result<void, ConfigError>::err(ConfigError(
+                    ErrorCode::E202ParameterOutOfRange, "Invalid enhance_factor: " + factor,
+                    "pipeline.step[frame_enhancer].enhance_factor"));
+            }
+            params.enhance_factor = *v;
+        }
+        step.params = std::move(params);
+    } else {
+        // Unknown step type: cannot apply typed params, leave untouched
+        // (ConfigValidator rejects unknown processors before execution)
+        return Result<void, ConfigError>::ok();
+    }
+
+    return Result<void, ConfigError>::ok();
+}
+
 } // namespace config

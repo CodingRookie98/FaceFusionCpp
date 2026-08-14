@@ -34,4 +34,16 @@ export namespace config {
  */
 void ApplyDefaultModels(TaskConfig& task, const DefaultModels& defaults);
 
+/**
+ * @brief Apply explicit CLI parameter overrides to a pipeline step's typed params
+ *
+ * Quick mode CLI flags are collected into PipelineStep::cli_params (raw string map).
+ * This function converts them into the step's typed StepParams variant, following
+ * the same conversion rules as the YAML parser (ParsePipelineStep).
+ * Returns a ConfigError on invalid enum/numeric values (defensive; CLI11 pre-validates).
+ *
+ * @param step The pipeline step whose cli_params are applied to params
+ */
+[[nodiscard]] Result<void, ConfigError> ApplyCliParamsToStep(PipelineStep& step);
+
 } // namespace config
