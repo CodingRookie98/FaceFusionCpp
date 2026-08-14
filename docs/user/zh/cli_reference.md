@@ -2,17 +2,18 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-USER-ZH-CLI-2026
-> - **当前版本 (Version)**: V1.0.0
+> - **当前版本 (Version)**: V1.1.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-08-13
+> - **最后更新 (Last Updated)**: 2026-08-14
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-08-14 | AI Agent | 王辉 | 修复处理器参数默认值列与实际配置不符（face_enhancer/gfpgan_1.4、frame_enhancer/real_esrgan_x2_fp16），注明默认值来源；同步确认快捷模式处理器参数已生效。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
 
 
@@ -78,7 +79,7 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 | `face_swapper` | `model` | `--face-swapper-model` | String | `inswapper_128`, `inswapper_128_fp16` | `inswapper_128_fp16` |
 | `face_swapper` | `face_selector_mode` | `--face-swapper-face-selector-mode` | String | `reference`, `one`, `many` | `many` |
 | `face_swapper` | `reference_face_path` | `--face-swapper-reference-face-path` | Path | - | - |
-| `face_enhancer` | `model` | `--face-enhancer-model` | String | `codeformer`, `gfpgan_1.2`, `gfpgan_1.3`, `gfpgan_1.4` | `codeformer` |
+| `face_enhancer` | `model` | `--face-enhancer-model` | String | `codeformer`, `gfpgan_1.2`, `gfpgan_1.3`, `gfpgan_1.4` | `gfpgan_1.4` |
 | `face_enhancer` | `blend_factor` | `--face-enhancer-blend-factor` | Float | `[0.0, 1.0]` | `0.8` |
 | `face_enhancer` | `face_selector_mode` | `--face-enhancer-face-selector-mode` | String | `reference`, `one`, `many` | `many` |
 | `face_enhancer` | `reference_face_path` | `--face-enhancer-reference-face-path` | Path | - | - |
@@ -86,11 +87,12 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 | `expression_restorer` | `restore_factor` | `--expression-restorer-restore-factor` | Float | `[0.0, 1.0]` | `0.8` |
 | `expression_restorer` | `face_selector_mode` | `--expression-restorer-face-selector-mode` | String | `reference`, `one`, `many` | `many` |
 | `expression_restorer` | `reference_face_path` | `--expression-restorer-reference-face-path` | Path | - | - |
-| `frame_enhancer` | `model` | `--frame-enhancer-model` | String | `real_esrgan_x2`, `real_esrgan_x2_fp16`, `real_esrgan_x4`, `real_esrgan_x4_fp16`, `real_esrgan_x8`, `real_esrgan_x8_fp16`, `real_hatgan_x4` | `real_esrgan_x4` |
+| `frame_enhancer` | `model` | `--frame-enhancer-model` | String | `real_esrgan_x2`, `real_esrgan_x2_fp16`, `real_esrgan_x4`, `real_esrgan_x4_fp16`, `real_esrgan_x8`, `real_esrgan_x8_fp16`, `real_hatgan_x4` | `real_esrgan_x2_fp16` |
 | `frame_enhancer` | `enhance_factor` | `--frame-enhancer-enhance-factor` | Float | `[0.0, 1.0]` | `0.8` |
 
 > [!NOTE]
 > 处理器参数仅在快捷模式下生效。未指定的参数将使用上表中的默认值。
+> 上表默认值来源于 `app_config.yaml` 的 `default_models` 配置段，可通过修改该配置调整（无需改动命令行）。
 
 ---
 

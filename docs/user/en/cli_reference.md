@@ -2,17 +2,18 @@
 
 > **Document Control**
 > - **Document ID**: FFC-USER-EN-CLI-2026
-> - **Version**: V1.0.0
+> - **Version**: V1.1.0
 > - **Status**: Official
 > - **Authority**: Informative
 > - **Owner**: 王辉
 > - **Reviewer**: 王辉
-> - **Last Updated**: 2026-08-13
+> - **Last Updated**: 2026-08-14
 
 ## Revision History
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-08-14 | AI Agent | 王辉 | Added Processor Options section (sync with zh); fixed default values to match app_config.yaml (face_enhancer/gfpgan_1.4, frame_enhancer/real_esrgan_x2_fp16); noted defaults source. |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
 
 
@@ -65,7 +66,37 @@ Run tasks directly from the CLI. **Note**: Quick mode options are mutually exclu
 
 ---
 
-## 3. Task Configuration Mode
+## 3. Processor Options
+
+Processor parameter CLI flags are generated dynamically from parameter metadata, allowing fine-grained control of each processor in Quick Mode.
+
+**Naming Rule**: `--{processor-name}-{param-name}` (underscores become hyphens). For example, the `model` parameter of `face_swapper` maps to `--face-swapper-model`.
+
+**Exclusivity Rule**: All processor parameter flags are mutually exclusive with `--task-config`.
+
+| Processor | Parameter | CLI Flag | Type | Allowed Values | Default |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `face_swapper` | `model` | `--face-swapper-model` | String | `inswapper_128`, `inswapper_128_fp16` | `inswapper_128_fp16` |
+| `face_swapper` | `face_selector_mode` | `--face-swapper-face-selector-mode` | String | `reference`, `one`, `many` | `many` |
+| `face_swapper` | `reference_face_path` | `--face-swapper-reference-face-path` | Path | - | - |
+| `face_enhancer` | `model` | `--face-enhancer-model` | String | `codeformer`, `gfpgan_1.2`, `gfpgan_1.3`, `gfpgan_1.4` | `gfpgan_1.4` |
+| `face_enhancer` | `blend_factor` | `--face-enhancer-blend-factor` | Float | `[0.0, 1.0]` | `0.8` |
+| `face_enhancer` | `face_selector_mode` | `--face-enhancer-face-selector-mode` | String | `reference`, `one`, `many` | `many` |
+| `face_enhancer` | `reference_face_path` | `--face-enhancer-reference-face-path` | Path | - | - |
+| `expression_restorer` | `model` | `--expression-restorer-model` | String | `live_portrait` | `live_portrait` |
+| `expression_restorer` | `restore_factor` | `--expression-restorer-restore-factor` | Float | `[0.0, 1.0]` | `0.8` |
+| `expression_restorer` | `face_selector_mode` | `--expression-restorer-face-selector-mode` | String | `reference`, `one`, `many` | `many` |
+| `expression_restorer` | `reference_face_path` | `--expression-restorer-reference-face-path` | Path | - | - |
+| `frame_enhancer` | `model` | `--frame-enhancer-model` | String | `real_esrgan_x2`, `real_esrgan_x2_fp16`, `real_esrgan_x4`, `real_esrgan_x4_fp16`, `real_esrgan_x8`, `real_esrgan_x8_fp16`, `real_hatgan_x4` | `real_esrgan_x2_fp16` |
+| `frame_enhancer` | `enhance_factor` | `--frame-enhancer-enhance-factor` | Float | `[0.0, 1.0]` | `0.8` |
+
+> [!NOTE]
+> Processor parameters take effect only in Quick Mode. Unspecified parameters use the defaults above.
+> Defaults come from the `default_models` section of `app_config.yaml` and can be adjusted there (no CLI change required).
+
+---
+
+## 4. Task Configuration Mode
 
 For complex workflows or batch processing, use YAML.
 
@@ -75,7 +106,7 @@ For complex workflows or batch processing, use YAML.
 
 ---
 
-## 4. Examples & Advanced Usage
+## 5. Examples & Advanced Usage
 
 ### 4.1 Readiness Check (JSON Integration)
 
