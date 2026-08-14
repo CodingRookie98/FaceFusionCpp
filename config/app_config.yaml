@@ -1,5 +1,5 @@
 # FaceFusionCpp Application Configuration
-config_version: "0.34.0"
+config_version: "0.34.1"
 
 # --- Inference Infrastructure ---
 inference:
@@ -49,3 +49,27 @@ default_models:
 
 # --- System ---
 temp_directory: "./temp"
+
+# --- Default Task Settings (Optional) ---
+# 若 Task Config 中未显式指定，则回退使用此处的默认值。
+# 优先级: Task Config 显式值 > 此处默认值 > 代码硬编码默认值。
+# 字段名与 task_config.yaml 完全一致；仅在此显式定义的字段参与合并。
+default_task_settings:
+  io:
+    output:
+      video_encoder: "libx264"
+      video_quality: 80
+      prefix: "result_"
+      suffix: ""
+      image_format: "png"
+      conflict_policy: "error" # overwrite, rename, error
+      audio_policy: "copy"     # copy, skip
+  resource:
+    thread_count: 0      # 0 = auto (half of CPU cores)
+    max_queue_size: 20
+    execution_order: "sequential" # sequential, batch
+  face_analysis:
+    face_detector:
+      score_threshold: 0.5
+    face_recognizer:
+      similarity_threshold: 0.6

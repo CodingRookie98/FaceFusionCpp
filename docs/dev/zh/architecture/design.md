@@ -3,7 +3,7 @@
 > **文档标识**: FACE-FUSION-APP-ARCH
 > **密级**: 内部公开 (Internal Public)
 > **状态**: 正式 (Official)
-> **当前版本**: V3.2
+> **当前版本**: V3.3
 > **最后更新**: 2026-08-14
 
 ## 版本历史 (Version History)
@@ -22,6 +22,7 @@
 | V3.0 | 2026-08-13 | AI Agent | 依据 design_doc_assessment.md 评估结果全面修订：CLI 参数名修正 (--task-config)；FlatBuffers/错误码/配置校验标注已实现；补充 default_models/gpu_sample_interval_ms/max_frames 字段；对齐 Checkpoint/face_masker/FrameEnhancer 实现；标注 segment_duration_seconds WIP；明确 memory_strategy 级联语义 |
 | V3.1 | 2026-08-13 | AI Agent | 视频分段功能已实现 (feature/plan-video-segmentation)：segment_duration_seconds 接线至 runner_video ProcessVideoSegmented，移除 WIP 标注 |
 | V3.2 | 2026-08-14 | AI Agent | 依据 layers_doc_assessment.md 评估结果修正 §1.2 分层架构：5层 → 实际 4 层（移除虚构的 Platform 层），补充 Foundation 公共底座直连说明并链接 layers.md |
+| V3.3 | 2026-08-14 | AI Agent | 配置体系修复 (fix/config-validation)：config_version 统一 0.34.1；§3.3.1 启动/任务提交时版本校验已实装；max_frames 标注已接线；batch_buffer_mode / max_memory_usage / expression_restorer_* 标注 WIP 未实现 |
 
 ---
 
@@ -152,7 +153,7 @@ graph TD
 **Schema 参考**:
 ```yaml
 # Schema Version
-config_version: "0.34.0"
+config_version: "0.34.1"
 
 # 推理基础设施 (Inference Infrastructure)
 inference:
@@ -238,6 +239,8 @@ default_models:
   expression_restorer_feature: "live_portrait_feature_extractor"
   expression_restorer_motion: "live_portrait_motion_extractor"
   expression_restorer_generator: "live_portrait_generator"
+  # ⚠️ WIP: 上述 3 个 expression_restorer 模型字段当前未接线为独立配置，
+  #         流水线 Step 仅暴露单一 model 字段 (live_portrait)，由 runner 内部确定具体模型。
 
 # 临时文件管理 (Temp File Management)
 temp_directory: "./temp"
@@ -326,6 +329,7 @@ resource:
   # tolerant: 模型预加载并常驻 (默认，适合高频/显存充足)
   memory_strategy: "tolerant"
   # 最大处理帧数 (0: 全部处理；>0: 仅处理前 N 帧，用于调试/快速验证)
+  # ✅ 已接线: config_parser 已解析该字段，runner_video 按帧索引截断 (视频) / 帧计数截断 (图片)
   max_frames: 0
   # 处理顺序策略:
   # sequential: 顺序模式 (默认). 每一帧/图一次性经过流水线中所有处理器。
@@ -340,6 +344,7 @@ resource:
   # 批处理中间存储策略 (仅 execution_order=batch 时有效)
   # memory: 存入 RAM. 速度快，但长视频易 OOM.
   # disk: 存入临时磁盘文件. 速度较慢 (IO瓶颈)，但支持无限长视频.
+  # ⚠️ WIP: 该字段尚未实现 (解析未接线)，batch 模式中间结果当前仅存内存。
   batch_buffer_mode: "memory"
   # 注意:
   # 无论执行顺序如何，流水线均为链式处理 (S1结果 -> S2输入 -> S3)，而非原始帧独立处理模式。
@@ -466,9 +471,9 @@ pipeline:
 为在应用启动早期拦截配置错误，系统实现以下校验机制：
 
 #### 3.3.1 校验时机
-*   **启动时校验**: 应用启动时自动校验 `app_config.yaml`。
-*   **任务提交时校验**: 收到任务请求时校验 `task_config.yaml`。
-*   **CLI 显式校验**: 通过 `--validate` 参数进行离线校验（见 [3.5.3 CLI 参数](#353-参数规格)）。
+*   **启动时校验**: 应用启动时自动校验 `app_config.yaml`。✅ **已实装**: `load_app_config` 加载时校验 `config_version`（E204 拒绝启动）。
+*   **任务提交时校验**: 收到任务请求时校验 `task_config.yaml`。✅ **已实装**: `load_task_config` 加载时校验 `config_version`（E204 拒绝任务）。
+*   **CLI 显式校验**: 通过 `--validate` 参数进行离线校验（见 [3.5.3 CLI 参数](#353-参数规格)），执行完整字段校验（E202/E205/E206 等）。
 
 #### 3.3.2 错误报告格式
 校验失败时，错误消息必须包含 **问题路径 (YAML Path)** 以便快速定位：
@@ -742,7 +747,7 @@ graph LR
 ### 5.7 资源并发与流控 (Concurrency & Flow Control)
 *   **线程安全**: `ResourceManager` 必须实现线程安全，支持多线程并发访问模型实例。
 *   **自适应背压 (Adaptive Backpressure)**:
-    *   **基于配额 (Quota-based)**: 用户配置明确的 `resource.max_memory_usage` (e.g. 4GB)。
+    *   **基于配额 (Quota-based)**: 用户配置明确的 `resource.max_memory_usage` (e.g. 4GB)。⚠️ **WIP**: 该字段尚未实现（解析未接线），当前背压仅依赖有界队列容量。
     *   **流控机制**: 使用信号量 (`std::counting_semaphore`) 维护全局内存配额。
     *   防止生产者 (CPU Decode) 速度远大于消费者 (GPU Inference) 导致的 OOM，避免依赖 OS 动态内存查询带来的不稳定性。
 *   **队列生命周期管理 (Queue Lifecycle Management)**:

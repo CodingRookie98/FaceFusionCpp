@@ -616,8 +616,8 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSegmentedFrameCountConserved) {
     // No intermediate segment files may remain
     int segment_files = 0;
     for (const auto& entry : std::filesystem::directory_iterator(output_dir)) {
-        if (entry.path().extension() == ".mp4" &&
-            entry.path().filename().string().find("segment_") != std::string::npos) {
+        if (entry.path().extension() == ".mp4"
+            && entry.path().filename().string().find("segment_") != std::string::npos) {
             segment_files++;
         }
     }

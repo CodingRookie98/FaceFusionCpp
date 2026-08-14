@@ -225,10 +225,10 @@ TEST(ConfigParserTest, ParseSourceDirectory) {
     std::ofstream(temp_dir / "img2.jpg").close();
     std::ofstream(temp_dir / "note.txt").close(); // Should be ignored
 
-    // 3. YAML content (Must use current version 0.34.0)
+    // 3. YAML content (Must use current version 0.34.1)
     std::string path_str = temp_dir.generic_string(); // Use generic separators
     std::string yaml = R"(
-config_version: "0.34.0"
+config_version: "0.34.1"
 task_info:
   id: "test_dir_scan"
 io:
@@ -273,6 +273,140 @@ pipeline: []
 
     // Cleanup
     std::filesystem::remove_all(temp_dir);
+}
+
+// ============================================================================
+// TaskConfig max_frames 解析测试
+// ============================================================================
+
+TEST(TaskConfigParseTest, MaxFramesParsed) {
+    std::string yaml = R"(
+config_version: "0.34.1"
+task_info:
+  id: "test_max_frames"
+io:
+  source_paths: ["src.jpg"]
+  target_paths: ["tgt.jpg"]
+  output:
+    path: "out.jpg"
+resource:
+  max_frames: 100
+pipeline: []
+)";
+
+    auto result = parse_task_config_from_string(yaml);
+    ASSERT_TRUE(result.is_ok()) << (result.is_err() ? result.error().formatted() : "");
+    EXPECT_EQ(result.value().resource.max_frames, 100);
+}
+
+TEST(TaskConfigParseTest, MaxFramesDefaultZero) {
+    std::string yaml = R"(
+config_version: "0.34.1"
+task_info:
+  id: "test_max_frames_default"
+io:
+  source_paths: ["src.jpg"]
+  target_paths: ["tgt.jpg"]
+  output:
+    path: "out.jpg"
+pipeline: []
+)";
+
+    auto result = parse_task_config_from_string(yaml);
+    ASSERT_TRUE(result.is_ok()) << (result.is_err() ? result.error().formatted() : "");
+    EXPECT_EQ(result.value().resource.max_frames, 0);
+}
+
+// ============================================================================
+// load_task_config / load_app_config 版本校验测试
+// ============================================================================
+
+TEST(LoadTaskConfigTest, VersionMismatchRejected) {
+    auto temp_file = std::filesystem::temp_directory_path()
+                   / ("task_cfg_mismatch_" + std::to_string(std::rand()) + ".yaml");
+    {
+        std::ofstream f(temp_file);
+        f << R"(
+config_version: "0.34.0"
+task_info:
+  id: "test_version_mismatch"
+io:
+  source_paths: ["src.jpg"]
+  target_paths: ["tgt.jpg"]
+  output:
+    path: "out.jpg"
+pipeline: []
+)";
+    }
+
+    auto result = load_task_config(temp_file);
+    EXPECT_TRUE(result.is_err());
+    EXPECT_EQ(result.error().code, ErrorCode::E204ConfigVersionMismatch);
+    EXPECT_EQ(result.error().yaml_path, "config_version");
+
+    std::filesystem::remove(temp_file);
+}
+
+TEST(LoadTaskConfigTest, SupportedVersionAccepted) {
+    auto temp_file = std::filesystem::temp_directory_path()
+                   / ("task_cfg_ok_" + std::to_string(std::rand()) + ".yaml");
+    {
+        std::ofstream f(temp_file);
+        f << R"(
+config_version: "0.34.1"
+task_info:
+  id: "test_version_ok"
+io:
+  source_paths: ["src.jpg"]
+  target_paths: ["tgt.jpg"]
+  output:
+    path: "out.jpg"
+pipeline: []
+)";
+    }
+
+    auto result = load_task_config(temp_file);
+    EXPECT_TRUE(result.is_ok()) << (result.is_err() ? result.error().formatted() : "");
+
+    std::filesystem::remove(temp_file);
+}
+
+TEST(LoadAppConfigTest, VersionMismatchRejected) {
+    auto temp_file = std::filesystem::temp_directory_path()
+                   / ("app_cfg_mismatch_" + std::to_string(std::rand()) + ".yaml");
+    {
+        std::ofstream f(temp_file);
+        f << R"(
+config_version: "0.34.0"
+models:
+  path: "."
+)";
+    }
+
+    auto result = load_app_config(temp_file);
+    EXPECT_TRUE(result.is_err());
+    EXPECT_EQ(result.error().code, ErrorCode::E204ConfigVersionMismatch);
+    EXPECT_EQ(result.error().yaml_path, "config_version");
+
+    std::filesystem::remove(temp_file);
+}
+
+TEST(LoadAppConfigTest, SupportedVersionAccepted) {
+    auto temp_file = std::filesystem::temp_directory_path()
+                   / ("app_cfg_ok_" + std::to_string(std::rand()) + ".yaml");
+    {
+        std::ofstream f(temp_file);
+        f << R"(
+config_version: "0.34.1"
+models:
+  path: "."
+)";
+    }
+
+    auto result = load_app_config(temp_file);
+    EXPECT_TRUE(result.is_ok()) << (result.is_err() ? result.error().formatted() : "");
+
+    std::filesystem::remove(temp_file);
 }
 
 int main(int argc, char** argv) {

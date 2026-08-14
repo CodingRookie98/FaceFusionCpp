@@ -403,8 +403,9 @@ std::optional<config::AppConfig> App::load_app_config(const std::string& path,
         if (result.is_ok()) {
             config = std::move(result).value();
         } else {
-            Logger::get_instance()->warn("Failed to load app config, using defaults: "
-                                         + result.error().message);
+            // 配置文件存在但解析/版本校验失败: 拒绝启动 (design.md §3.3.1 启动时校验)
+            Logger::get_instance()->error("Failed to load app config: " + result.error().message);
+            return std::nullopt;
         }
     }
 

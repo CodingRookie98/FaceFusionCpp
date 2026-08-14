@@ -1,5 +1,5 @@
 # FaceFusionCpp Task Configuration
-config_version: "0.34.0"
+config_version: "0.34.1"
 
 # --- Task Metadata ---
 task_info:
@@ -37,12 +37,15 @@ resource:
   execution_order: "sequential"
   memory_strategy: "tolerant"
   segment_duration_seconds: 0 # 0 = no segmentation
+  max_frames: 0 # 0 = all frames; >0 = only process first N frames (debug/quick verify)
 
 # --- Face Analysis ---
 face_analysis:
   face_detector:
     models: ["yoloface", "retinaface", "scrfd"]
     score_threshold: 0.5
+  face_landmarker:
+    model: "2dfan4" # 2dfan4, peppa_wutz, face_landmarker_68_5
   face_recognizer:
     model: "arcface_w600k_r50"
     similarity_threshold: 0.6

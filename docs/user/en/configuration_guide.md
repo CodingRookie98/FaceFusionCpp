@@ -30,7 +30,7 @@ This file is usually located in the `config/` directory. It defines the runtime 
 ### Structure and Parameters (Beginner's Guide)
 
 ```yaml
-config_version: "0.34.0"
+config_version: "0.34.1"
 
 # --- Inference Infrastructure (Graphics Card Settings) ---
 inference:

@@ -465,7 +465,19 @@ Result<AppConfig> parse_app_config_from_string(const std::string& yaml_content) 
 Result<AppConfig> load_app_config(const std::filesystem::path& path) {
     auto content_r = detail::ReadFileContent(path);
     if (!content_r) { return Result<AppConfig>::err(content_r.error()); }
-    return parse_app_config_from_string(content_r.value());
+
+    auto parse_r = parse_app_config_from_string(content_r.value());
+    if (!parse_r) { return parse_r; }
+
+    // 版本校验: 启动时拒绝不兼容配置 (design.md §3.3.1 / §5.4)
+    if (parse_r.value().config_version != kSupportedConfigVersion) {
+        return Result<AppConfig>::err(
+            ConfigError(ErrorCode::E204ConfigVersionMismatch,
+                        "Unsupported config version: " + parse_r.value().config_version
+                            + " (supported: " + kSupportedConfigVersion + ")",
+                        "config_version"));
+    }
+    return parse_r;
 }
 
 // ============================================================================
@@ -596,6 +608,8 @@ Result<TaskConfig> ParseTaskConfigFromJson(const json& j) {
     config.resource.segment_duration_seconds =
         detail::GetInt(resource_j, "segment_duration_seconds", 0);
 
+    config.resource.max_frames = detail::GetInt(resource_j, "max_frames", 0);
+
     // face_analysis
     auto fa_j = detail::GetObject(j, "face_analysis");
 
@@ -652,7 +666,20 @@ Result<TaskConfig> parse_task_config_from_string(const std::string& yaml_content
 Result<TaskConfig> load_task_config(const std::filesystem::path& path) {
     auto content_r = detail::ReadFileContent(path);
     if (!content_r) { return Result<TaskConfig>::err(content_r.error()); }
-    return parse_task_config_from_string(content_r.value());
+
+    auto parse_r = parse_task_config_from_string(content_r.value());
+    if (!parse_r) { return parse_r; }
+
+    // 版本校验: 任务提交时拒绝不兼容配置 (design.md §3.3.1 / §5.4)
+    const auto& config = parse_r.value();
+    if (!config.config_version.empty() && config.config_version != kSupportedConfigVersion) {
+        return Result<TaskConfig>::err(
+            ConfigError(ErrorCode::E204ConfigVersionMismatch,
+                        "Unsupported config version: " + config.config_version
+                            + " (supported: " + kSupportedConfigVersion + ")",
+                        "config_version"));
+    }
+    return parse_r;
 }
 
 // ============================================================================

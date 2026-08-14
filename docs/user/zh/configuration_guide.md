@@ -30,7 +30,7 @@ FaceFusionCpp 采用灵活的 YAML 配置系统。主要的配置文件有两个
 ### 结构与参数 (小白必读)
 
 ```yaml
-config_version: "0.34.0"
+config_version: "0.34.1"
 
 # --- 推理基础设施 (显卡相关的设置) ---
 inference:

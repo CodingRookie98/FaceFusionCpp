@@ -228,8 +228,8 @@ struct VideoWriter::Impl {
             // demuxer 会因此把超出容器时长的尾帧标记为 AV_PKT_FLAG_DISCARD。
             // 注意: 需在 rescale 之前用 codec time_base 单位设置，rescale 会自动转换。
             if (packet->duration <= 0) {
-                packet->duration = av_rescale_q(1, av_inv_q(codec_ctx->framerate),
-                                                codec_ctx->time_base);
+                packet->duration =
+                    av_rescale_q(1, av_inv_q(codec_ctx->framerate), codec_ctx->time_base);
             }
 
             av_packet_rescale_ts(packet, codec_ctx->time_base, video_stream->time_base);

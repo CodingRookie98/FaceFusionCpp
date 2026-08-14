@@ -374,14 +374,14 @@ private:
             (max_frames > 0 && max_frames < total_frames) ? max_frames : total_frames;
 
         // Segment boundary in frames: segment_duration_seconds * fps
-        const int64_t segment_frames =
-            std::max<int64_t>(1, static_cast<int64_t>(std::llround(
-                                     task_config.resource.segment_duration_seconds * fps)));
+        const int64_t segment_frames = std::max<int64_t>(
+            1, static_cast<int64_t>(
+                   std::llround(task_config.resource.segment_duration_seconds * fps)));
         const int64_t segment_count = (effective_total + segment_frames - 1) / segment_frames;
 
-        Logger::get_instance()->info(std::format(
-            "[VideoRunner] Segmented processing: {} segments x {} frames (total {})",
-            segment_count, segment_frames, effective_total));
+        Logger::get_instance()->info(
+            std::format("[VideoRunner] Segmented processing: {} segments x {} frames (total {})",
+                        segment_count, segment_frames, effective_total));
 
         if (context.metrics_collector) {
             context.metrics_collector->set_total_frames(effective_total);
@@ -432,8 +432,7 @@ private:
 
             // Pipeline per segment (isolated lifecycle; model sessions stay cached)
             PipelineConfig pipeline_config;
-            pipeline_config.worker_thread_count =
-                task_config.resource.get_effective_thread_count();
+            pipeline_config.worker_thread_count = task_config.resource.get_effective_thread_count();
             pipeline_config.max_queue_size = task_config.resource.max_queue_size;
             auto pipeline = std::make_shared<Pipeline>(pipeline_config);
 
@@ -486,11 +485,10 @@ private:
                     seg_frame_count++;
                     if (progress_callback) {
                         auto now = std::chrono::steady_clock::now();
-                        double elapsed =
-                            std::chrono::duration<double>(now - start_time).count();
-                        double seg_fps = (elapsed > 0.0)
-                                             ? (static_cast<double>(seg_frame_count) / elapsed)
-                                             : 0.0;
+                        double elapsed = std::chrono::duration<double>(now - start_time).count();
+                        double seg_fps = (elapsed > 0.0) ?
+                                             (static_cast<double>(seg_frame_count) / elapsed) :
+                                             0.0;
                         progress.current_frame = seg_start + seg_frame_count;
                         progress.fps = seg_fps;
                         progress_callback(progress);
@@ -524,9 +522,8 @@ private:
 
             if (writer_error) {
                 timer.set_result("error:segment_writer_failed");
-                return config::Result<void, config::ConfigError>::err(
-                    config::ConfigError(config::ErrorCode::E406OutputWriteFailed,
-                                        writer_error_msg));
+                return config::Result<void, config::ConfigError>::err(config::ConfigError(
+                    config::ErrorCode::E406OutputWriteFailed, writer_error_msg));
             }
         }
 
@@ -574,9 +571,8 @@ private:
                 }
                 if (!final_writer.write_frame(seg_frame)) {
                     timer.set_result("error:final_writer_failed");
-                    return config::Result<void, config::ConfigError>::err(
-                        config::ConfigError(config::ErrorCode::E406OutputWriteFailed,
-                                            "Failed to write merged frame"));
+                    return config::Result<void, config::ConfigError>::err(config::ConfigError(
+                        config::ErrorCode::E406OutputWriteFailed, "Failed to write merged frame"));
                 }
             }
             seg_reader.close();
