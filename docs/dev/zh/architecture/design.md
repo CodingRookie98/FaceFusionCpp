@@ -3,8 +3,8 @@
 > **文档标识**: FACE-FUSION-APP-ARCH
 > **密级**: 内部公开 (Internal Public)
 > **状态**: 正式 (Official)
-> **当前版本**: V3.1
-> **最后更新**: 2026-08-13
+> **当前版本**: V3.2
+> **最后更新**: 2026-08-14
 
 ## 版本历史 (Version History)
 
@@ -21,6 +21,7 @@
 | V2.9 | 2026-08-13 | AI Agent | 依据文档治理规范更新文档控制信息并补齐修订历史                                                                                    |
 | V3.0 | 2026-08-13 | AI Agent | 依据 design_doc_assessment.md 评估结果全面修订：CLI 参数名修正 (--task-config)；FlatBuffers/错误码/配置校验标注已实现；补充 default_models/gpu_sample_interval_ms/max_frames 字段；对齐 Checkpoint/face_masker/FrameEnhancer 实现；标注 segment_duration_seconds WIP；明确 memory_strategy 级联语义 |
 | V3.1 | 2026-08-13 | AI Agent | 视频分段功能已实现 (feature/plan-video-segmentation)：segment_duration_seconds 接线至 runner_video ProcessVideoSegmented，移除 WIP 标注 |
+| V3.2 | 2026-08-14 | AI Agent | 依据 layers_doc_assessment.md 评估结果修正 §1.2 分层架构：5层 → 实际 4 层（移除虚构的 Platform 层），补充 Foundation 公共底座直连说明并链接 layers.md |
 
 ---
 
@@ -98,17 +99,18 @@
 本文档旨在规范 **FaceFusionCpp** 项目应用层 (Application Layer) 的架构设计、配置管理规范及核心业务流程。作为应用层开发的最高指导原则，本文档明确了静态环境与动态作业的边界，规定了工程化实现的约束条件，以确保系统的高可用性、可维护性及扩展性。
 
 ### 1.2 架构原则 (Architecture Principles)
-本设计严格遵循项目定义的 **5层分层架构 (5-Layered Architecture)**：
+本设计严格遵循项目定义的 **4层分层架构 (4-Layered Architecture)**：
 
 ```mermaid
 graph TD
     App[Application Layer] --> Svc[Services Layer]
     Svc --> Dom[Domain Layer]
-    Dom --> Plat[Platform Layer]
-    Plat --> Fdn[Foundation Layer]
+    Dom --> Fdn[Foundation Layer]
+    App -.->|公共底座直连| Fdn
+    Svc -.->|公共底座直连| Fdn
 ```
 
-*   **依赖单向性 (Unidirectional Dependency)**: 上层仅依赖下层，严禁反向依赖或跨层跳跃调用。
+*   **依赖单向性 (Unidirectional Dependency)**: 上层仅依赖下层，严禁反向依赖或跨层跳跃调用。Foundation 作为公共底座，允许任何上层直接依赖（实现细节见 [layers.md](./layers.md)）。
 *   **模块化 (Modularity)**: 基于 **C++20 Modules** (`.ixx` / `.cppm`) 构建，强制物理隔离接口与实现，子系统间仅通过明确定义的接口交互。
 
 ---

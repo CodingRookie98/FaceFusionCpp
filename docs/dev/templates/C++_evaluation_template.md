@@ -63,7 +63,7 @@
 | 检查项 | 评分点 | 状态 | 说明/扣分理由 (非满分必填) | 证据来源 |
 | :--- | :--- | :--- | :--- | :--- |
 | **构建粒度** | 避免"一模块一 Target" | ✅ / ⚠️ / ❌ | 检查 CMakeLists.txt 是否聚合了多个 .ixx 到一个 add_library | `src/CMakeLists.txt` 中 FILE_SET cxx_modules 配置 |
-| **分层架构** | 5层模型符合性 | ✅ / ⚠️ / ❌ | App -> Services -> Domain -> Platform -> Foundation | `src/app`, `src/services`, `src/domain`, `src/foundation` 目录结构验证 |
+| **分层架构** | 4层模型符合性 | ✅ / ⚠️ / ❌ | App -> Services -> Domain -> Foundation | `src/app`, `src/services`, `src/domain`, `src/foundation` 目录结构验证 |
 | **模块分类** | 模块类型正确 | ✅ / ⚠️ / ❌ | Public / Internal / Test 区分清晰 | grep 搜索 export/private 声明；检查 .test_support.ixx 文件 |
 | **2层模型** | Logical vs Physical | ✅ / ⚠️ / ❌ | 逻辑模块与物理库的映射是否合理 | 对比 .ixx 文件数量 vs CMakeLists.txt 中 add_library 数量 |
 
@@ -81,7 +81,7 @@
 
 | 检查项 | 评分点 | 状态 | 说明/扣分理由 (非满分必填) | 证据来源 |
 | :--- | :--- | :--- | :--- | :--- |
-| **依赖单向性** | 无反向依赖 | ✅ / ⚠️ / ❌ | 底层模块不依赖高层模块 | 检查 Foundation, Platform, Domain, Services 各层的 CMakeLists.txt target_link_libraries |
+| **依赖单向性** | 无反向依赖 | ✅ / ⚠️ / ❌ | 底层模块不依赖高层模块 | 检查 Foundation, Domain, Services, Application 各层的 CMakeLists.txt target_link_libraries |
 | **循环依赖** | 无循环引用 | ✅ / ⚠️ / ❌ | Ninja/CMake 未报告 Cycle | `python build.py --action configure` 输出，查找 "circular" 关键字 |
 | **依赖清晰度** | 依赖矩阵完整 | ✅ / ⚠️ / ❌ | 依赖关系是否直观清晰 | 绘制模块依赖图，与计划中的 Mermaid 图对比 |
 

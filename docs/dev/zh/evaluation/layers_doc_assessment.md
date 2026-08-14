@@ -1,11 +1,11 @@
 # 分层架构文档评估报告 (Layered Architecture Doc Assessment)
 
-本报告对 [layers.md](../architecture/layers.md)（5层架构实现细节，V1.0.0，中英文双语）及 [design.md](../architecture/design.md)（V3.1）§1.2 分层描述进行完整性与实现一致性评估。评估方式为逐节对照当前代码基线（`src/` 目录树、各层 `CMakeLists.txt` 依赖方向、代码符号 grep），识别架构文档与实际代码之间的偏差。**本报告状态为待审批，处置建议按 P0-P3 排序，批准后实施。**
+本报告对 [layers.md](../architecture/layers.md)（5层架构实现细节，V1.0.0，中英文双语）及 [design.md](../architecture/design.md)（V3.1）§1.2 分层描述进行完整性与实现一致性评估。评估方式为逐节对照当前代码基线（`src/` 目录树、各层 `CMakeLists.txt` 依赖方向、代码符号 grep），识别架构文档与实际代码之间的偏差。**本报告处置建议已按 P0-P3 顺序实施完毕（layers.md 中英文 V1.0.0 → V2.0.0 重构；design.md 中文 V3.1 → V3.2、英文 V2.9 → V2.10）。**
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-EVAL-LAYERS-2026
-> - **当前版本 (Version)**: V1.0.0
-> - **状态 (Status)**: 待审批 (Pending Review)
+> - **当前版本 (Version)**: V1.1.0
+> - **状态 (Status)**: 已实施 (Implemented)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
@@ -15,6 +15,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-08-14 | AI Agent | 王辉 | 处置建议已按 P0-P3 全部实施：layers.md 中英文重构为 4 层结构（V2.0.0），design.md 中英分层引用同步修正（zh V3.2 / en V2.10）；本报告状态更新为已实施。 |
 | **V1.0.0** | 2026-08-14 | AI Agent | 王辉 | 初版：基于代码基线完成 layers.md 与 design.md §1.2 分层一致性评估。 |
 
 ---

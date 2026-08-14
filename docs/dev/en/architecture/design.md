@@ -1,13 +1,13 @@
-# Application Layer Architecture Design (V2.9)
+# Application Layer Architecture Design (V2.10)
 
 > **Document Control**
 > - **Document ID**: FFC-DEV-EN-ARCH-DESIGN-2026
-> - **Version**: V2.9
+> - **Version**: V2.10
 > - **Status**: Official
 > - **Authority**: Normative
 > - **Owner**: 王辉
 > - **Reviewer**: 王辉
-> - **Last Updated**: 2026-08-13
+> - **Last Updated**: 2026-08-14
 
 ## Revision History
 
@@ -15,6 +15,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | V2.8 | 2026-02-05 | ArchTeam | - | Synced with zh design.md V2.8 |
 | **V2.9** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
+| **V2.10** | 2026-08-14 | AI Agent | 王辉 | Fixed layering references per layers_doc_assessment.md: 5-layer → actual 4-layer (removed fictitious Platform layer); `platform.fs` → foundation infrastructure file_system. |
 
 
 ## 1. Design Philosophy
@@ -24,7 +25,7 @@ FaceFusionCpp is a high-performance face swapping application and library design
 ### 1.1 Core Principles
 - **Performance First**: Native C++ implementation with TensorRT/CUDA acceleration.
 - **Asynchronous Pipeline**: Producer-consumer model with backpressure management.
-- **Strict Layering**: 5-layer architecture with unidirectional dependencies.
+- **Strict Layering**: 4-layer architecture with unidirectional dependencies.
 - **Developer Friendly**: Unified Python build script and clear documentation.
 
 ---
@@ -49,8 +50,8 @@ Specific to a single execution run:
 
 ## 3. Core Architecture
 
-### 3.1 5-Layer Dependency Rule
-`Application -> Services -> Domain -> Platform -> Foundation`
+### 3.1 4-Layer Dependency Rule
+`Application -> Services -> Domain -> Foundation`
 Refer to [Architecture Layers](../architecture/layers.md) for implementation details.
 
 ### 3.2 Pipeline Model
@@ -64,7 +65,7 @@ Implemented as a `std::queue` based producer-consumer system with:
 ## 4. Engineering Constraints
 
 ### 4.1 Path Resolution
-All internal paths are resolved relative to `FACEFUSION_HOME` using the `platform.fs` module to ensure portability between Windows (UNC paths) and Linux.
+All internal paths are resolved relative to `FACEFUSION_HOME` using the `file_system` module in `src/foundation/infrastructure/` to ensure portability between Windows (UNC paths) and Linux.
 
 ### 4.2 Resource Management (RAII)
 - No raw `new`/`delete`.
