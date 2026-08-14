@@ -59,8 +59,8 @@ python build.py --config Release --action install
 # 打包项目
 python build.py --config Release --action package
 
-# 仅构建主程序（无 --target 参数，全部目标由 --action build 构建）
-python build.py --action build
+# 仅构建主程序（target 名 = 二进制名 ffc）
+python build.py --target ffc
 
 # 清理构建目录并重新构建 (分步执行)
 python build.py --clean --action configure
