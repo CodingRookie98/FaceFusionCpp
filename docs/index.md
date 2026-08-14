@@ -9,12 +9,13 @@
 > **权威性 (Authority)**: 规范 (Normative)
 > **所有者 (Owner)**: 王辉
 > **审核人 (Reviewer)**: 王辉
-> **最后更新 (Last Updated)**: 2026-08-13
+> **最后更新 (Last Updated)**: 2026-08-14
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.2** | 2026-08-14 | AI Agent | 王辉 | 登记新增评估文档 layers_doc_assessment.md（分层架构文档一致性评估报告）。 |
 | **V1.1.1** | 2026-08-13 | AI Agent | 王辉 | 登记新增评估文档 design_doc_assessment.md（功能设计文档完整性评估报告）。 |
 | **V1.1.0** | 2026-08-13 | AI Agent | 王辉 | 合并 dev 分支后更新索引：删除 quality.md（并入 C++_quality_standard.md），新增 evaluation/plan/templates/superpowers/compiler_selection 等 18 篇文档。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范创建全局索引，收录全部 35 篇文档；修复全仓断链并统一文档目录结构。 |
@@ -98,6 +99,7 @@ docs/
 | 文档 | 说明 |
 | :--- | :--- |
 | [design_doc_assessment.md](./dev/zh/evaluation/design_doc_assessment.md) | 功能设计文档评估报告（design.md 完整性/一致性审计） |
+| [layers_doc_assessment.md](./dev/zh/evaluation/layers_doc_assessment.md) | 分层架构文档评估报告（layers.md 目录结构/组件归属审计） |
 | [C++_evaluation_code_smells_and_tech_debt.md](./dev/zh/evaluation/C++_evaluation_code_smells_and_tech_debt.md) | 代码坏味道与技术债务评估报告 |
 
 **计划与任务 (Plan & Task)**
