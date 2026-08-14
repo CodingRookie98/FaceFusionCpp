@@ -72,12 +72,12 @@ The simplest workflow imaginable.
 
 **Linux (Bash)**:
 ```bash
-./FaceFusionCpp -s source.jpg -t target.jpg -o output.png
+./ffc -s source.jpg -t target.jpg -o output.png
 ```
 
 **Windows (PowerShell)**:
 ```powershell
-.\FaceFusionCpp.exe -s source.jpg -t target.jpg -o output.png
+.\ffc.exe -s source.jpg -t target.jpg -o output.png
 ```
 
 * **Input**: Both `-s` and `-t` support passing multiple paths separated by commas (or via a list inside a config file).
@@ -89,12 +89,12 @@ The application will automatically multiplex video inputs.
 
 **Linux (Bash)**:
 ```bash
-./FaceFusionCpp -s source.jpg -t target.mp4 -o output.mp4
+./ffc -s source.jpg -t target.mp4 -o output.mp4
 ```
 
 **Windows (PowerShell)**:
 ```powershell
-.\FaceFusionCpp.exe -s source.jpg -t target.mp4 -o output.mp4
+.\ffc.exe -s source.jpg -t target.mp4 -o output.mp4
 ```
 
 * **Audio**: By default, the target video's audio track is perfectly copied over to the output video.
@@ -109,12 +109,12 @@ For processing multiple files or configuring complex pipelines, utilize configur
 
     **Linux (Bash)**:
     ```bash
-    ./FaceFusionCpp -c my_task.yaml
+    ./ffc -c my_task.yaml
     ```
 
     **Windows (PowerShell)**:
     ```powershell
-    .\FaceFusionCpp.exe -c my_task.yaml
+    .\ffc.exe -c my_task.yaml
     ```
 
 3. **Directory Inputs**: You can map directories inside `source_paths` or `target_paths` in the config. The program sweeps the folder and processes every valid media file.
@@ -136,12 +136,12 @@ This ensures the low-resolution face output from the swapper is passed into the 
 
 **Linux (Bash)**:
 ```bash
-./FaceFusionCpp -s my_face.jpg -t target_video.mp4 -o result.mp4 --processors face_swapper,face_enhancer
+./ffc -s my_face.jpg -t target_video.mp4 -o result.mp4 --processors face_swapper,face_enhancer
 ```
 
 **Windows (PowerShell)**:
 ```powershell
-.\FaceFusionCpp.exe -s my_face.jpg -t target_video.mp4 -o result.mp4 --processors face_swapper,face_enhancer
+.\ffc.exe -s my_face.jpg -t target_video.mp4 -o result.mp4 --processors face_swapper,face_enhancer
 ```
 
 **Or via YAML Configuration**:
@@ -173,12 +173,12 @@ And then run it:
 
 **Linux (Bash)**:
 ```bash
-./FaceFusionCpp -c do_job.yaml
+./ffc -c do_job.yaml
 ```
 
 **Windows (PowerShell)**:
 ```powershell
-.\FaceFusionCpp.exe -c do_job.yaml
+.\ffc.exe -c do_job.yaml
 ```
 
 ### Advanced Pipeline: Swap -> Restorer -> Face Enhance -> Frame Enhance

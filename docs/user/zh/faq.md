@@ -27,7 +27,7 @@
 
 ### Q: 启动提示找不到 "cudart64_12.dll" 或 "nvinfer.dll"。
 **A**: 请确保已安装 CUDA Toolkit (12.x) 和 TensorRT (10.x)，并将它们的 `bin` 目录添加到系统的 PATH 环境变量中。
-或者，将所需的 DLL 文件复制到 `FaceFusionCpp.exe` 所在的文件夹。
+或者，将所需的 DLL 文件复制到 `ffc.exe` 所在的文件夹。
 
 ### Q: 杀毒软件报毒。
 **A**: 这是一个常见的误报，因为该程序未经过数字签名。您可以将程序目录添加到杀毒软件的白名单中。
@@ -47,7 +47,7 @@ FaceFusionCpp 使用特定的错误代码来标识问题。分为四类：系统
         3.  减小 `max_queue_size` 或 `thread_count`。
 *   **E102: CUDA 设备未找到/丢失 (CUDA Device Not Found/Lost)**
     *   **原因**: 显卡驱动未安装、版本过低或硬件连接异常。
-    *   **解决方案**: 运行 `./FaceFusionCpp --system-check` 进行环境完整性自检。
+    *   **解决方案**: 运行 `./ffc --system-check` 进行环境完整性自检。
 *   **E103: 工作线程死锁 (Worker Thread Deadlock)**
     *   **原因**: 队列资源竞争或系统资源调度异常。
     *   **解决方案**: 重启程序。如果持续出现，尝试降低 `thread_count`。

@@ -29,7 +29,7 @@ This document addresses common installation issues, runtime errors, and performa
 ### Q: Startup complains about missing "cudart64_12.dll" or "nvinfer.dll"
 
 **A**: Ensure you have installed the CUDA Toolkit (12.x) and TensorRT (10.x), and added their `bin` directories to your system's PATH environment variable.
-Alternatively, copy the required DLL files directly next to `FaceFusionCpp.exe`.
+Alternatively, copy the required DLL files directly next to `ffc.exe`.
 
 ### Q: The antivirus software reports a virus
 
@@ -51,7 +51,7 @@ FaceFusionCpp uses specific error codes to identify issues. They fall into four 
     3. Decrease `max_queue_size` or `thread_count`.
 * **E102: CUDA Device Not Found/Lost**
   * **Reason**: Driver not installed, version too low, or hardware connection failure.
-  * **Solution**: Run `./FaceFusionCpp --system-check` for an environment integrity self-test.
+  * **Solution**: Run `./ffc --system-check` for an environment integrity self-test.
 * **E103: Worker Thread Deadlock**
   * **Reason**: Queue resource contention or abnormal system scheduling.
   * **Solution**: Restart the application. If this persists, try reducing `thread_count`.

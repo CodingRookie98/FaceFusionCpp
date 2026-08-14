@@ -506,7 +506,7 @@ pipeline:
 *   **元数据驱动 (Metadata-Driven)**: 处理器参数通过 ProcessorParamRegistry 元数据注册表自动生成 CLI 标志，确保参数定义的单一事实来源。
 
 #### 3.5.2 命令结构
-`FaceFusionCpp.exe [GLOBAL_OPTIONS] [TASK_OPTIONS] [PROCESSOR_FLAGS]`
+`ffc.exe [GLOBAL_OPTIONS] [TASK_OPTIONS] [PROCESSOR_FLAGS]`
 
 #### 3.5.3 参数规格
 
@@ -538,7 +538,7 @@ pipeline:
 
 > **注意**: 快捷模式参数与 `--task-config` 互斥。使用快捷参数时，系统将应用 `default_task_settings` 中的默认值。
 
-> **注意**: 处理器参数标志**并非静态表格**——由 `ProcessorParamRegistry` 元数据注册表在启动时**动态生成**（`--{processor}-{param}` kebab-case 规则），确保参数定义与代码实现保持同步。下表仅为 4 个内置处理器当前注册参数的**示例快照**，实际可用标志以 `FaceFusionCpp --help` 输出为准。所有处理器参数均不包含 `--task-config` 标志。
+> **注意**: 处理器参数标志**并非静态表格**——由 `ProcessorParamRegistry` 元数据注册表在启动时**动态生成**（`--{processor}-{param}` kebab-case 规则），确保参数定义与代码实现保持同步。下表仅为 4 个内置处理器当前注册参数的**示例快照**，实际可用标志以 `ffc --help` 输出为准。所有处理器参数均不包含 `--task-config` 标志。
 
 #### 3.5.4 `--system-check` 输出规范
 系统自检结果支持两种输出格式，便于人工查看与脚本集成：
@@ -672,7 +672,7 @@ graph LR
     *   默认为可执行文件所在目录的上一级 (假设结构为 `bin/` 和 `config/` 同级)。
     *   可通过环境变量 `FACEFUSION_HOME` 显式覆盖。
 *   **标准目录布局 (Standard Layout)**:
-    *   `bin/`: 可执行文件 (FaceFusionCpp)
+    *   `bin/`: 可执行文件 (ffc)
     *   `config/`: 配置文件 (`app_config.yaml`, `task_config.yaml`)
     *   `assets/`: 模型与资源
     *   `logs/`: 运行日志
