@@ -545,6 +545,15 @@ config::TaskConfig App::build_quick_task_config(const std::vector<std::string>& 
             }
         }
 
+        // Convert raw CLI params into typed step params (merges with the YAML path).
+        // CLI11 pre-validates values, so failure here is defensive only.
+        auto apply_r = config::ApplyCliParamsToStep(step);
+        if (!apply_r) {
+            foundation::infrastructure::logger::Logger::get_instance()->warn(
+                "Failed to apply CLI params for processor " + proc + ": "
+                + apply_r.error().message);
+        }
+
         task_config.pipeline.push_back(std::move(step));
     }
 

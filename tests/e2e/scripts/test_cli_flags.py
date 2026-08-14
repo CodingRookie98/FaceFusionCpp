@@ -40,8 +40,7 @@ def main():
         str(executable),
         "-s", source,
         "-t", target,
-        "-o", output_dir,
-        "--headless"
+        "-o", output_dir
     ]
     
     if run_cmd(cmd, "Shortcut Mode (-s -t -o)", cwd=cwd):

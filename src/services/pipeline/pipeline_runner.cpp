@@ -441,7 +441,7 @@ private:
                 }
             } else if (step.step == "frame_enhancer") {
                 if (!domain_ctx.frame_enhancer_factory) {
-                    std::string model_name = "real_esrgan_x4_plus";
+                    std::string model_name = "real_esrgan_x4";
                     if (const auto* params =
                             std::get_if<config::FrameEnhancerParams>(&step.params)) {
                         if (!params->model.empty()) { model_name = params->model; }
