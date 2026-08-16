@@ -43,3 +43,16 @@ add_facefusion_test(web_server_health_test
         app_version
 )
 target_compile_features(web_server_health_test PRIVATE cxx_std_20)
+# Web task manager tests
+add_facefusion_test(web_task_manager_test
+    SOURCES
+        web/task_manager_test.cpp
+    MAIN_LIB
+        GTest::gtest_main
+    LINK_LIBRARIES
+        app_web
+        config_core
+        services_pipeline
+        foundation_infrastructure
+)
+target_compile_features(web_task_manager_test PRIVATE cxx_std_20)
