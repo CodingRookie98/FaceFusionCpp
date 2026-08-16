@@ -7,18 +7,23 @@ target_sources(app_web
         web_server.ixx
         task_types.ixx
         task_manager.ixx
+        pipeline_executor.ixx
     PRIVATE
         web_server.cpp
         task_manager.cpp
+        pipeline_executor.cpp
 )
 
 find_package(Drogon CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 target_link_libraries(app_web
     PRIVATE
         app_version
         config_core
+        config_parser
         services_pipeline
         foundation_infrastructure
+        nlohmann_json::nlohmann_json
         Drogon::Drogon
 )

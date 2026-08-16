@@ -28,6 +28,8 @@ import app.version;
 import foundation.infrastructure.progress;
 import processor.param_registry;
 import app.web.server;
+import app.web.task_manager;
+import app.web.pipeline_executor;
 
 namespace app::cli {
 
@@ -255,7 +257,7 @@ int App::run(int argc, char** argv) {
                 exit_code = run_validate(task_config, *app_config);
             }
         } else if (web_mode) {
-            exit_code = run_web_mode(web_host, web_port, web_root);
+            exit_code = run_web_mode(web_host, web_port, web_root, *app_config);
         } else if (!config_path.empty()) {
             exit_code = run_pipeline(config_path, *app_config);
         } else if (!source_paths.empty() && !target_paths.empty()) {
@@ -286,12 +288,18 @@ int App::run_system_check(bool json_output) {
     return report.fail_count > 0 ? 1 : 0;
 }
 
-int App::run_web_mode(const std::string& host, uint16_t port, const std::string& web_root) {
+int App::run_web_mode(const std::string& host, uint16_t port, const std::string& web_root,
+                          const config::AppConfig& app_config) {
     using foundation::infrastructure::logger::Logger;
     Logger::get_instance()->info(
         std::format("Web UI starting: http://{}:{}/ (web root: {})", host, port, web_root));
 
-    app::web::run_server({.host = host, .port = port, .web_root = web_root});
+    // Wire the production task executor (PipelineRunner) into the task manager
+    auto executor = std::make_shared<app::web::PipelineTaskExecutor>(app_config);
+    auto tasks = std::make_shared<app::web::TaskManager>(executor);
+
+    app::web::run_server({.host = host, .port = port, .web_root = web_root},
+                         {.tasks = tasks, .app_config = &app_config});
     return 0;
 }
 
