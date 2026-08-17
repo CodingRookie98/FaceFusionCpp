@@ -35,6 +35,10 @@ public:
 using ProgressListener =
     std::function<void(const std::string& task_id, const TaskProgress& progress)>;
 
+/// Status change listener (called when a task reaches a terminal state)
+using StatusListener = std::function<void(const std::string& task_id, TaskStatus status,
+                                          const std::string& error_message)>;
+
 /// Task registry + serial worker thread
 class TaskManager {
 public:
@@ -60,6 +64,9 @@ public:
 
     /// Register a listener for progress updates (called from worker thread)
     void set_progress_listener(ProgressListener listener);
+
+    /// Register a listener for terminal status changes (called from worker thread)
+    void set_status_listener(StatusListener listener);
 
     /// Stop the worker thread (called on server shutdown)
     void shutdown();

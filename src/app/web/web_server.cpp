@@ -2,11 +2,16 @@ module;
 #include <string>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <memory>
+#include <mutex>
 #include <vector>
 #include <sstream>
 
 #include <drogon/drogon.h>
+#include <drogon/DrClassMap.h>
+#include <drogon/WebSocketController.h>
+#include <drogon/WebSocketConnection.h>
 #include <nlohmann/json.hpp>
 
 module app.web.server;
@@ -198,6 +203,100 @@ void serve_file(const std::filesystem::path& path, bool is_image,
     cb(resp);
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// WebSocket progress push controller
+// Endpoint: /ws/tasks/{task_id}/progress
+// ─────────────────────────────────────────────────────────────────────────
+
+class ProgressWSController : public drogon::WebSocketController<ProgressWSController> {
+public:
+    WS_PATH_LIST_BEGIN
+    WS_PATH_ADD("/ws/tasks/{task_id}/progress");
+    WS_PATH_LIST_END
+
+    static std::shared_ptr<TaskManager> tasks;
+    static std::mutex subs_mutex;
+    static std::map<std::string, std::vector<drogon::WebSocketConnectionPtr>> subscriptions;
+
+    static void broadcast_progress(const std::string& task_id, const TaskProgress& progress) {
+        json msg = {{"type", "progress"},
+                    {"frame", progress.current_frame},
+                    {"total", progress.total_frames},
+                    {"fps", progress.fps}};
+        broadcast(task_id, msg.dump());
+    }
+
+    static void broadcast_status(const std::string& task_id, TaskStatus status,
+                                 const std::string& error) {
+        json msg = {{"type", "status"}, {"status", status_to_string(status)}};
+        if (!error.empty()) { msg["message"] = error; }
+        broadcast(task_id, msg.dump());
+    }
+
+    void handleNewMessage(const drogon::WebSocketConnectionPtr&, std::string&&,
+                          const drogon::WebSocketMessageType&) override {
+        // Client messages are ignored in M2 (ping/pong is handled by drogon)
+    }
+
+    /// Extract task id from "/ws/tasks/<id>/progress".
+    /// (drogon regex WS routes do not populate getRoutingParameters())
+    static std::string task_id_from_path(const std::string& path) {
+        const std::string prefix = "/ws/tasks/";
+        const std::string suffix = "/progress";
+        if (path.rfind(prefix, 0) != 0 || path.size() <= prefix.size() + suffix.size()) {
+            return {};
+        }
+        if (path.compare(path.size() - suffix.size(), suffix.size(), suffix) != 0) {
+            return {};
+        }
+        return path.substr(prefix.size(), path.size() - prefix.size() - suffix.size());
+    }
+
+    void handleNewConnection(const drogon::HttpRequestPtr& req,
+                             const drogon::WebSocketConnectionPtr& wsConn) override {
+        auto task_id = task_id_from_path(req->path());
+        {
+            std::lock_guard lock(subs_mutex);
+            subscriptions[task_id].push_back(wsConn);
+        }
+        auto entry = tasks->get(task_id);
+        if (!entry) {
+            wsConn->send(json{{"type", "error"}, {"message", "task not found"}}.dump());
+            return;
+        }
+        wsConn->send(json{{"type", "status"}, {"status", status_to_string(entry->status)}}.dump());
+        if (entry->status == TaskStatus::Running || entry->status == TaskStatus::Queued) {
+            broadcast_progress(task_id, entry->progress);
+        }
+    }
+
+    void handleConnectionClosed(const drogon::WebSocketConnectionPtr& wsConn) override {
+        std::lock_guard lock(subs_mutex);
+        for (auto& [tid, conns] : subscriptions) { std::erase(conns, wsConn); }
+    }
+
+private:
+    static void broadcast(const std::string& task_id, const std::string& msg) {
+        std::lock_guard lock(subs_mutex);
+        auto it = subscriptions.find(task_id);
+        if (it == subscriptions.end()) { return; }
+        for (const auto& conn : it->second) {
+            if (conn->connected()) { conn->send(msg); }
+        }
+    }
+};
+
+std::shared_ptr<TaskManager> ProgressWSController::tasks;
+std::mutex ProgressWSController::subs_mutex;
+std::map<std::string, std::vector<drogon::WebSocketConnectionPtr>>
+    ProgressWSController::subscriptions;
+
+// Force odr-use so the drogon auto-creation machinery instantiates
+// DrObject::alloc_ (class registration) and the controller's pathRegistrator_
+// (route registration) at static-init time. Without an instance the compiler
+// never emits those template static members and the WS route stays unregistered.
+static ProgressWSController g_ws_controller_registrar;
+
 } // namespace
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -211,6 +310,27 @@ std::string health_json() {
 void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
     auto& app = drogon::app();
     auto tasks = deps.tasks;
+
+    // Wire WebSocket progress push.
+    // The module build skips static-init of template static members
+    // (DrObject::alloc_ / registrator_), so we create the controller instance
+    // explicitly and register it via DrClassMap before registering the route.
+    auto ws_instance = std::make_shared<ProgressWSController>();
+    drogon::DrClassMap::setSingleInstance(ws_instance);
+    ProgressWSController::tasks = tasks;
+    ProgressWSController::subscriptions.clear();
+    // Note: registerWebSocketController() matches exact paths only; parameterized
+    // routes must be registered via the regex API.
+    app.registerWebSocketControllerRegex("/ws/tasks/([0-9a-zA-Z_]+)/progress",
+                                         ProgressWSController::classTypeName());
+    tasks->set_progress_listener(
+        [](const std::string& task_id, const TaskProgress& progress) {
+            ProgressWSController::broadcast_progress(task_id, progress);
+        });
+    tasks->set_status_listener(
+        [](const std::string& task_id, TaskStatus status, const std::string& error) {
+            ProgressWSController::broadcast_status(task_id, status, error);
+        });
 
     app.addListener(options.host, options.port);
 

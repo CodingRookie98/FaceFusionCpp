@@ -70,13 +70,19 @@ struct TaskManager::Impl {
                 std::lock_guard lock(mutex);
                 auto it = tasks.find(task_id);
                 if (it != tasks.end()) {
-                    if (result_code == 0) {
-                        it->second.status = TaskStatus::Done;
-                        it->second.result_files = collect_result_files(it->second.config);
-                    } else {
-                        it->second.status = TaskStatus::Failed;
-                        it->second.error_message =
-                            "Task failed with error code " + std::to_string(result_code);
+                    // Cancelled wins over the executor result (user cancellation)
+                    if (it->second.status != TaskStatus::Cancelled) {
+                        if (result_code == 0) {
+                            it->second.status = TaskStatus::Done;
+                            it->second.result_files = collect_result_files(it->second.config);
+                        } else {
+                            it->second.status = TaskStatus::Failed;
+                            it->second.error_message =
+                                "Task failed with error code " + std::to_string(result_code);
+                        }
+                    }
+                    if (status_listener) {
+                        status_listener(task_id, it->second.status, it->second.error_message);
                     }
                 }
                 running_id.clear();
@@ -117,6 +123,7 @@ struct TaskManager::Impl {
     std::condition_variable stop_cv;
     bool stopping = false;
     ProgressListener listener;
+    StatusListener status_listener;
     std::thread worker;
 };
 
@@ -196,6 +203,11 @@ bool TaskManager::is_running() const {
 void TaskManager::set_progress_listener(ProgressListener listener) {
     std::lock_guard lock(m_impl->mutex);
     m_impl->listener = std::move(listener);
+}
+
+void TaskManager::set_status_listener(StatusListener listener) {
+    std::lock_guard lock(m_impl->mutex);
+    m_impl->status_listener = std::move(listener);
 }
 
 void TaskManager::shutdown() { m_impl->shutdown(); }
