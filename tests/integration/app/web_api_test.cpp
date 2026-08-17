@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <future>
+#include <random>
 #include <string>
 #include <thread>
 
@@ -23,14 +24,15 @@ namespace {
 
 // ctest runs each gtest case as a separate process; derive a per-process
 // port to avoid TIME_WAIT bind conflicts between cases.
-#ifdef _WIN32
-#include <process.h>
-#define FFC_GETPID _getpid
-#else
-#include <unistd.h>
-#define FFC_GETPID getpid
-#endif
-const uint16_t kTestPort = static_cast<uint16_t>(18080 + (FFC_GETPID() % 1000));
+// ctest runs each gtest case as a separate process; pick a random port to
+// avoid TIME_WAIT/PID-reuse bind conflicts (fixed 1808x ports flaked).
+static uint16_t RandomTestPort() {
+    auto seed = static_cast<unsigned>(
+        std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    std::mt19937 gen(seed);
+    return static_cast<uint16_t>(20000 + (gen() % 20000)); // 20000-39999
+}
+const uint16_t kTestPort = RandomTestPort();
 const std::string kBaseUrl = "http://127.0.0.1:" + std::to_string(kTestPort);
 const std::string kOutputDir = "web_api_test_output";
 

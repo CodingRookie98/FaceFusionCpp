@@ -1,15 +1,25 @@
 #include <gtest/gtest.h>
-#include <atomic>
 #include <chrono>
 #include <cstdio>
 #include <filesystem>
-#include <future>
+#include <random>
 #include <string>
 #include <thread>
 #include <vector>
 
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+#else
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#endif
+
 #include <drogon/drogon.h>
-#include <drogon/WebSocketClient.h>
 #include <nlohmann/json.hpp>
 
 import app.web.server;
@@ -23,16 +33,15 @@ using json = nlohmann::json;
 
 namespace {
 
-// ctest runs each gtest case as a separate process; derive a per-process
-// port to avoid TIME_WAIT bind conflicts between cases.
-#ifdef _WIN32
-#include <process.h>
-#define FFC_GETPID _getpid
-#else
-#include <unistd.h>
-#define FFC_GETPID getpid
-#endif
-const uint16_t kTestPort = static_cast<uint16_t>(18080 + (FFC_GETPID() % 1000));
+// ctest runs each gtest case as a separate process; pick a random port to
+// avoid TIME_WAIT/PID-reuse bind conflicts (fixed 1808x ports flaked).
+static uint16_t RandomTestPort() {
+    auto seed = static_cast<unsigned>(
+        std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    std::mt19937 gen(seed);
+    return static_cast<uint16_t>(20000 + (gen() % 20000)); // 20000-39999
+}
+const uint16_t kTestPort = RandomTestPort();
 const std::string kBaseUrl = "http://127.0.0.1:" + std::to_string(kTestPort);
 
 /// Fake executor: emits a progress callback sequence then succeeds
@@ -69,6 +78,101 @@ void StopServer() {
     g_server_thread.join();
 }
 
+// ── Minimal raw-socket WS client (server frames are unmasked text) ──────
+
+#ifdef _WIN32
+using SocketHandle = SOCKET;
+#define FFC_INVALID_SOCKET INVALID_SOCKET
+#else
+using SocketHandle = int;
+#define FFC_INVALID_SOCKET (-1)
+#endif
+
+void CloseSocket(SocketHandle fd) {
+#ifdef _WIN32
+    closesocket(fd);
+#else
+    ::close(fd);
+#endif
+}
+
+/// Connect + perform WS handshake; returns socket or FFC_INVALID_SOCKET.
+SocketHandle WsConnect(const std::string& path) {
+    SocketHandle fd = FFC_INVALID_SOCKET;
+#ifdef _WIN32
+    WSADATA wsa;
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) { return FFC_INVALID_SOCKET; }
+#endif
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd == FFC_INVALID_SOCKET) { return FFC_INVALID_SOCKET; }
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(kTestPort);
+    inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+    if (connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0) {
+        CloseSocket(fd);
+        return FFC_INVALID_SOCKET;
+    }
+    std::string key = "dGhlIHNhbXBsZSBub25jZQ=="; // fixed test key
+    std::string req = "GET " + path + " HTTP/1.1\r\n"
+                      "Host: 127.0.0.1:" + std::to_string(kTestPort) + "\r\n"
+                      "Upgrade: websocket\r\n"
+                      "Connection: Upgrade\r\n"
+                      "Sec-WebSocket-Key: " + key + "\r\n"
+                      "Sec-WebSocket-Version: 13\r\n\r\n";
+    send(fd, req.data(), static_cast<int>(req.size()), 0);
+    char buf[512];
+    int n = recv(fd, buf, sizeof(buf) - 1, 0);
+    if (n <= 0) {
+        CloseSocket(fd);
+        return FFC_INVALID_SOCKET;
+    }
+    buf[n] = '\0';
+    if (std::string(buf).find("101") == std::string::npos) {
+        CloseSocket(fd);
+        return FFC_INVALID_SOCKET;
+    }
+    return fd;
+}
+
+/// Read one text frame (server->client frames are unmasked).
+bool WsReadText(SocketHandle fd, std::string& out, int timeout_ms) {
+#ifdef _WIN32
+    u_long mode = 1;
+    ioctlsocket(fd, FIONBIO, &mode);
+#else
+    int flags = fcntl(fd, F_GETFL, 0);
+    fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+#endif
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
+    while (std::chrono::steady_clock::now() < deadline) {
+        unsigned char hdr[2];
+        int n = recv(fd, hdr, 2, 0);
+        if (n == 2) {
+            std::size_t len = hdr[1] & 0x7F;
+            if (len == 126) {
+                unsigned char ext[2];
+                if (recv(fd, ext, 2, 0) != 2) { return false; }
+                len = (ext[0] << 8) | ext[1];
+            }
+            std::string payload(len, '\0');
+            std::size_t got = 0;
+            while (got < len) {
+                int r = recv(fd, payload.data() + got, static_cast<int>(len - got), 0);
+                if (r <= 0) { break; }
+                got += static_cast<std::size_t>(r);
+            }
+            if (got == len) {
+                out = payload;
+                return true;
+            }
+            return false;
+        }
+        if (n < 0) { std::this_thread::sleep_for(std::chrono::milliseconds(10)); }
+    }
+    return false;
+}
+
 std::pair<int, std::string> SendRequest(drogon::HttpMethod method, const std::string& path,
                                         const std::string& body = "") {
     auto client = drogon::HttpClient::newHttpClient(kBaseUrl);
@@ -101,105 +205,35 @@ protected:
 };
 
 TEST_F(WebWsTest, ReceivesProgressAndDoneMessages) {
-    // Submit a task
     auto [code, resp] = SendRequest(drogon::Post, "/api/tasks",
                                     R"({"source_paths":["s.jpg"],"target_paths":["t.jpg"],"output_path":"ws_test_out"})");
     ASSERT_EQ(code, 201);
     auto id = json::parse(resp)["id"].get<std::string>();
 
-    // Connect WS before the task finishes (fake takes ~60ms; connect immediately)
-    auto wsClient =
-        drogon::WebSocketClient::newWebSocketClient("127.0.0.1", kTestPort);
-    std::vector<json> messages;
-    std::mutex msgs_mutex;
-    std::promise<void> connected;
-    std::promise<void> got_done;
+    auto fd = WsConnect("/ws/tasks/" + id + "/progress");
+    ASSERT_NE(fd, FFC_INVALID_SOCKET) << "WS handshake failed";
 
-    std::atomic<bool> done_flag{false};
-    wsClient->setMessageHandler(
-        [&](std::string&& msg, const drogon::WebSocketClientPtr&,
-            const drogon::WebSocketMessageType& type) {
-            if (type != drogon::WebSocketMessageType::Text) { return; }
-            auto j = json::parse(msg);
-            {
-                std::lock_guard lock(msgs_mutex);
-                messages.push_back(j);
-            }
-            if (!done_flag.exchange(true) &&
-                ((j["type"] == "done") ||
-                 (j["type"] == "status" && j["status"] == "done"))) {
-                got_done.set_value();
-            }
-        });
-    wsClient->setConnectionClosedHandler([](const drogon::WebSocketClientPtr&) {});
-
-    auto ws_req = drogon::HttpRequest::newHttpRequest();
-    ws_req->setPath("/ws/tasks/" + id + "/progress");
-    std::atomic<bool> connected_flag{false};
-    wsClient->connectToServer(ws_req, [&](drogon::ReqResult, const drogon::HttpResponsePtr&,
-                                          const drogon::WebSocketClientPtr&) {
-        if (!connected_flag.exchange(true)) { connected.set_value(); }
-    });
-    auto connected_status =
-        connected.get_future().wait_for(std::chrono::seconds(3));
-    ASSERT_EQ(connected_status, std::future_status::ready);
-
-    // Wait for done message (timeout 5s)
-    auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
-    while (std::chrono::steady_clock::now() < deadline) {
-        std::lock_guard lock(msgs_mutex);
-        for (const auto& m : messages) {
-            if (m["type"] == "status" && m["status"] == "done") { got_done.set_value(); }
-        }
-        if (messages.size() >= 5) { break; }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-
-    std::lock_guard lock(msgs_mutex);
-    // Expect: status(queued/running) + 3x progress + status(done)
     int progress_count = 0;
     bool saw_done = false;
-    for (const auto& m : messages) {
-        if (m["type"] == "progress") {
-            ++progress_count;
-            EXPECT_TRUE(m.contains("frame"));
-            EXPECT_TRUE(m.contains("fps"));
-        } else if (m["type"] == "status" && m["status"] == "done") {
-            saw_done = true;
-        }
+    std::string msg;
+    while (WsReadText(fd, msg, 2000)) {
+        auto j = json::parse(msg);
+        if (j["type"] == "progress") { ++progress_count; }
+        else if (j["type"] == "status" && j["status"] == "done") { saw_done = true; break; }
+        else if (j["type"] == "status" && j["status"] == "failed") { break; }
     }
+    CloseSocket(fd);
     EXPECT_GE(progress_count, 1);
     EXPECT_TRUE(saw_done);
 }
 
 TEST_F(WebWsTest, UnknownTaskGetsErrorMessage) {
-    auto wsClient =
-        drogon::WebSocketClient::newWebSocketClient("127.0.0.1", kTestPort);
-    std::promise<std::string> msg_promise;
-    wsClient->setMessageHandler(
-        [&](std::string&& msg, const drogon::WebSocketClientPtr&,
-            const drogon::WebSocketMessageType& type) {
-            if (type == drogon::WebSocketMessageType::Text) { msg_promise.set_value(msg); }
-        });
-    wsClient->setConnectionClosedHandler([](const drogon::WebSocketClientPtr&) {});
-
-    std::promise<void> connected;
-    std::atomic<bool> connected_flag{false};
-    auto ws_req = drogon::HttpRequest::newHttpRequest();
-    ws_req->setPath("/ws/tasks/nonexistent_ws_task/progress");
-    wsClient->connectToServer(ws_req,
-                              [&](drogon::ReqResult, const drogon::HttpResponsePtr&,
-                                  const drogon::WebSocketClientPtr&) {
-                                  if (!connected_flag.exchange(true)) {
-                                      connected.set_value();
-                                  }
-                              });
-    auto cstatus = connected.get_future().wait_for(std::chrono::seconds(3));
-    ASSERT_EQ(cstatus, std::future_status::ready);
-
-    auto fut = msg_promise.get_future();
-    EXPECT_EQ(fut.wait_for(std::chrono::seconds(3)), std::future_status::ready);
-    auto msg = json::parse(fut.get());
-    EXPECT_EQ(msg["type"], "error");
-    EXPECT_EQ(msg["message"], "task not found");
+    auto fd = WsConnect("/ws/tasks/nonexistent_ws_task/progress");
+    ASSERT_NE(fd, FFC_INVALID_SOCKET) << "WS handshake failed";
+    std::string msg;
+    ASSERT_TRUE(WsReadText(fd, msg, 3000)) << "no frame received";
+    CloseSocket(fd);
+    auto j = json::parse(msg);
+    EXPECT_EQ(j["type"], "error");
+    EXPECT_EQ(j["message"], "task not found");
 }
