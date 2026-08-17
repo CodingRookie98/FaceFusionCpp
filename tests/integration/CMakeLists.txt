@@ -44,6 +44,20 @@ target_compile_features(web_server_tests PRIVATE cxx_std_20)
 find_package(nlohmann_json CONFIG REQUIRED)
 
 add_facefusion_test(
+    web_ws_tests
+    SOURCES
+        app/web_ws_test.cpp
+    MAIN_LIB
+        GTest::gtest_main
+    LINK_LIBRARIES
+        app_web
+        config_core
+        services_pipeline
+        nlohmann_json::nlohmann_json
+)
+target_compile_features(web_ws_tests PRIVATE cxx_std_20)
+
+add_facefusion_test(
     web_api_tests
     SOURCES
         app/web_api_test.cpp
