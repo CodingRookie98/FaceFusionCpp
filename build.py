@@ -183,6 +183,105 @@ def run_web_build(project_root):
     log(f"Web assets synced to {target}", "success")
 
 
+def _is_port_in_use(host, port):
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.5)
+        return s.connect_ex((host, port)) == 0
+
+
+def _wait_for_health(host, port, timeout=30):
+    import time
+    import urllib.request
+
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(
+                f"http://{host}:{port}/api/health", timeout=1
+            ) as resp:
+                if resp.status == 200:
+                    return True
+        except OSError:
+            time.sleep(0.5)
+    return False
+
+
+def run_dev(project_root, preset, env, web_port):
+    """Start the C++ web backend + Vite dev server for local development.
+
+    Launches `ffc --web` in the build bin dir (background), waits for
+    /api/health, then starts `vite dev` in the foreground. The backend is
+    terminated when vite exits (Ctrl-C or otherwise).
+    """
+    log("\n=== Action: dev ===", "info")
+
+    exe_name = "ffc.exe" if platform.system() == "Windows" else "ffc"
+    bin_dir_name = preset
+    if (
+        platform.system() == "Linux"
+        and preset.startswith("linux-")
+        and "x64" not in preset
+    ):
+        bin_dir_name = preset.replace("linux-", "linux-x64-")
+    bin_dir = project_root / "build" / "bin" / bin_dir_name
+    exe = bin_dir / exe_name
+
+    if not exe.exists():
+        log(
+            f"Executable not found at {exe}. Run 'python build.py --action build' first.",
+            "error",
+        )
+        sys.exit(1)
+
+    host = "127.0.0.1"
+    if _is_port_in_use(host, web_port):
+        log(
+            f"Port {host}:{web_port} is already in use. "
+            "A previous `ffc --web` instance may still be running; stop it first "
+            f"(e.g. `ss -tlnp | grep {web_port}` / Task Manager) to avoid "
+            "hitting stale code on the old instance.",
+            "error",
+        )
+        sys.exit(1)
+
+    # NODE_ENV=production makes npm skip devDependencies; neutralize for dev.
+    web_env = env.copy()
+    web_env.pop("NODE_ENV", None)
+    # Keep Vite's proxy in sync with the backend port/host (vite.config.ts reads these).
+    web_env["FFC_WEB_PORT"] = str(web_port)
+    web_env["FFC_WEB_HOST"] = host
+
+    backend = subprocess.Popen(
+        [str(exe), "--web", "--web-port", str(web_port), "--web-host", host],
+        cwd=str(bin_dir),
+        env=web_env,
+    )
+    try:
+        if not _wait_for_health(host, web_port):
+            log(
+                f"Backend did not become ready on {host}:{web_port} within timeout.",
+                "error",
+            )
+            sys.exit(1)
+        log(f"Backend ready: http://{host}:{web_port}/ (Ctrl-C to stop)", "success")
+
+        web_dir = project_root / "web"
+        if not (web_dir / "package.json").exists():
+            log("web/ not found; cannot start Vite dev server", "error")
+            sys.exit(1)
+        log("Starting Vite dev server...", "info")
+        run_command(["npm", "run", "dev"], env=web_env, cwd=web_dir, exit_on_error=False)
+    finally:
+        backend.terminate()
+        try:
+            backend.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            backend.kill()
+        log("Backend stopped.", "info")
+
+
 def run_install(cmake_exe, build_dir, env, project_root):
     log("\n=== Action: install ===", "info")
     cmd = [cmake_exe, "--install", str(build_dir)]
@@ -213,9 +312,15 @@ def main():
     parser.add_argument("--target", default="all", help="Build target")
     parser.add_argument(
         "--action",
-        choices=["configure", "build", "test", "install", "package", "web"],
+        choices=["configure", "build", "test", "install", "package", "web", "dev"],
         default="build",
         help="Action to perform (default: build)",
+    )
+    parser.add_argument(
+        "--web-port",
+        type=int,
+        default=8000,
+        help="Port for the dev web backend (action: dev; also honored by Vite via FFC_WEB_PORT)",
     )
     parser.add_argument("--preset", help="Override CMake preset")
     parser.add_argument(
@@ -348,6 +453,9 @@ def main():
 
     elif args.action == "web":
         run_web_build(project_root)
+
+    elif args.action == "dev":
+        run_dev(project_root, preset, env, args.web_port)
 
     log("\nOperation completed successfully!", "success")
 
