@@ -52,10 +52,16 @@ Common options:
 
 ### 2.2 Submit Task
 
-- **Source face paths**: one per line (or comma separated);
+- **Upload files**: upload buttons above source/target inputs support multi-file selection (image/video); uploaded paths are filled in automatically;
+- **Source face paths**: one per line (or comma separated); server-side paths are accepted too;
 - **Target media paths**: one per line, batch supported (multiple media in one task);
 - **Processors**: check `face_swapper`, `face_enhancer`, `expression_restorer`, `frame_enhancer`;
 - Output directory may be left empty (config defaults apply).
+
+### 2.3 Task List (Queue & Priority)
+
+- Queued tasks show **queue position** (#N, sorted by priority desc) and **priority** (P value, higher wins);
+- Use `↑`/`↓` buttons to raise/lower priority of queued tasks; running tasks cannot be reprioritized.
 
 ### 2.3 Task Detail
 
@@ -72,6 +78,8 @@ Common options:
 | `GET` | `/api/tasks` | Task list |
 | `GET` | `/api/tasks/{id}` | Task detail (incl. media/result URLs) |
 | `POST` | `/api/tasks/{id}/cancel` | Cancel task |
+| `POST` | `/api/tasks/{id}/priority` | Set priority (queued tasks only) |
+| `POST` | `/api/upload` | Upload file (binary body + `X-File-Name` header) |
 | `GET` | `/api/tasks/{id}/result` | Result files |
 | `WS` | `/ws/tasks/{id}/progress` | Live progress push |
 | `GET` | `/media/{task_id}/{kind}/{name}` | Media/result file access (whitelist) |

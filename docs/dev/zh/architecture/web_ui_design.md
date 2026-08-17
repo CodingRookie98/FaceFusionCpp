@@ -244,7 +244,7 @@ web/src/
 
 1. **M1 骨架**：vcpkg 引入 Drogon、`app.web` 模块（静态托管 `--web-root` + /api/health）、CLI `--web` 入口、前端空壳工程（Vite+React+TS）、build.py --action web； ✅ **已完成**（2026-08-14，分支 feature/plan-web-ui-m1）
 2. **M2 任务闭环 + 基础预览**：REST 任务提交/查询/取消、WebSocket 进度推送、任务创建/详情页、MediaPreview（F1）、CompareSlider（F2）、`/media/` 文件访问； ✅ **已完成**（2026-08-17，分支 feature/plan-web-ui-m2）
-3. **M3 批量 + 队列**：TaskScheduler 队列与优先级（F4）、批量素材上传与提交（F3）、队列 UI 与优先级操作；
+3. **M3 批量 + 队列**：TaskScheduler 队列与优先级（F4）、批量素材上传与提交（F3）、队列 UI 与优先级操作； ✅ **已完成**（2026-08-17，分支 feature/plan-web-ui-m3）
 4. **M4 视频帧 + 人脸选择**：FrameExtractor（F5 前端截帧）、FaceSelector 与 `/api/faces` 检测标注（F6）、参考人脸上传、e2e 测试、用户文档；
 5. **M5 打磨**：大文件分片上传、服务端抽帧 API（F5-B）、并发控制、国际化（i18n）、Playwright 测试。
 
