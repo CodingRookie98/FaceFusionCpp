@@ -25,8 +25,8 @@ namespace {
 // ctest runs each gtest case as a separate process; pick a random port to
 // avoid TIME_WAIT/PID-reuse bind conflicts (fixed 1808x ports flaked).
 static uint16_t RandomTestPort() {
-    auto seed = static_cast<unsigned>(
-        std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    auto seed =
+        static_cast<unsigned>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
     std::mt19937 gen(seed);
     return static_cast<uint16_t>(20000 + (gen() % 20000)); // 20000-39999
 }

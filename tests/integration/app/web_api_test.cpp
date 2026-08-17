@@ -27,8 +27,8 @@ namespace {
 // ctest runs each gtest case as a separate process; pick a random port to
 // avoid TIME_WAIT/PID-reuse bind conflicts (fixed 1808x ports flaked).
 static uint16_t RandomTestPort() {
-    auto seed = static_cast<unsigned>(
-        std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    auto seed =
+        static_cast<unsigned>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
     std::mt19937 gen(seed);
     return static_cast<uint16_t>(20000 + (gen() % 20000)); // 20000-39999
 }
@@ -39,11 +39,10 @@ const std::string kOutputDir = "web_api_test_output";
 /// Fake executor: creates an output file (simulates a finished task)
 class FakeExecutor : public ITaskExecutor {
 public:
-    int run(const config::TaskConfig& config, const services::pipeline::ProgressCallback& cb) override {
+    int run(const config::TaskConfig& config,
+            const services::pipeline::ProgressCallback& cb) override {
         if (block.load()) {
-            while (!cancelled.load()) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(5));
-            }
+            while (!cancelled.load()) { std::this_thread::sleep_for(std::chrono::milliseconds(5)); }
             return 2;
         }
         std::filesystem::create_directories(config.io.output.path);
@@ -68,8 +67,21 @@ void StartServer() {
     g_executor = std::make_shared<FakeExecutor>();
     g_tasks = std::make_shared<TaskManager>(g_executor);
     g_server_thread = std::thread([]() {
-        run_server({.host = "127.0.0.1", .port = kTestPort, .web_root = ""},
-                   {.tasks = g_tasks, .app_config = nullptr});
+        run_server(
+            {.host = "127.0.0.1", .port = kTestPort, .web_root = ""},
+            {.tasks = g_tasks, .app_config = nullptr, .detect_faces = [](const std::string& path) {
+                 if (path.find("test_face_detect.jpg") != std::string::npos) {
+                     DetectedFaceInfo face;
+                     face.index = 0;
+                     face.box = {10.0F, 20.0F, 80.0F, 90.0F};
+                     face.score = 0.95F;
+                     face.gender = "female";
+                     face.age_range = {20, 30};
+                     face.kps = {{30.0F, 40.0F}, {70.0F, 40.0F}};
+                     return std::vector<DetectedFaceInfo>{face};
+                 }
+                 return std::vector<DetectedFaceInfo>{};
+             }});
     });
     std::this_thread::sleep_for(std::chrono::milliseconds(800));
 }
@@ -123,8 +135,9 @@ protected:
 
 TEST_F(WebApiTest, SubmitListDetailResultFlow) {
     // 1. Submit
-    auto created = SubmitTask(R"({"source_paths":["src.jpg"],"target_paths":["tgt.jpg"],"output_path":")"
-                              + kOutputDir + R"(","processors":["face_swapper"]})");
+    auto created =
+        SubmitTask(R"({"source_paths":["src.jpg"],"target_paths":["tgt.jpg"],"output_path":")"
+                   + kOutputDir + R"(","processors":["face_swapper"]})");
     std::string id = created["id"].get<std::string>();
     EXPECT_FALSE(id.empty());
 
@@ -168,8 +181,9 @@ TEST_F(WebApiTest, SubmitListDetailResultFlow) {
 }
 
 TEST_F(WebApiTest, MediaEndpointServesResultFile) {
-    auto created = SubmitTask(R"({"source_paths":["src.jpg"],"target_paths":["tgt.jpg"],"output_path":")"
-                              + kOutputDir + R"(","processors":["face_swapper"]})");
+    auto created =
+        SubmitTask(R"({"source_paths":["src.jpg"],"target_paths":["tgt.jpg"],"output_path":")"
+                   + kOutputDir + R"(","processors":["face_swapper"]})");
     std::string id = created["id"].get<std::string>();
     auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
     std::string status;
@@ -208,8 +222,9 @@ TEST_F(WebApiTest, InvalidRequestsRejected) {
 }
 
 TEST_F(WebApiTest, CancelQueuedTask) {
-    auto created = SubmitTask(R"({"source_paths":["s.jpg"],"target_paths":["t.jpg"],"output_path":")"
-                              + kOutputDir + R"(","processors":["face_swapper"]})");
+    auto created =
+        SubmitTask(R"({"source_paths":["s.jpg"],"target_paths":["t.jpg"],"output_path":")"
+                   + kOutputDir + R"(","processors":["face_swapper"]})");
     std::string id = created["id"].get<std::string>();
     auto [code, resp] = SendRequest(drogon::Post, "/api/tasks/" + id + "/cancel");
     EXPECT_EQ(code, 200);
@@ -278,12 +293,13 @@ TEST_F(WebApiTest, PriorityEndpointWorks) {
     }
     ASSERT_TRUE(g_tasks->is_running());
 
-    auto created = SubmitTask(R"({"source_paths":["s.jpg"],"target_paths":["t.jpg"],"output_path":")"
-                              + kOutputDir + R"(","processors":["face_swapper"]})");
+    auto created =
+        SubmitTask(R"({"source_paths":["s.jpg"],"target_paths":["t.jpg"],"output_path":")"
+                   + kOutputDir + R"(","processors":["face_swapper"]})");
     std::string id = created["id"].get<std::string>();
 
-    auto [code, resp] = SendRequest(drogon::Post, "/api/tasks/" + id + "/priority",
-                                    R"({"priority": 7})");
+    auto [code, resp] =
+        SendRequest(drogon::Post, "/api/tasks/" + id + "/priority", R"({"priority": 7})");
     EXPECT_EQ(code, 200);
     auto body = json::parse(resp);
     ASSERT_TRUE(body.contains("ok"));
@@ -298,7 +314,8 @@ TEST_F(WebApiTest, PriorityEndpointWorks) {
     }
 
     // Bad payloads
-    auto [b1, r1] = SendRequest(drogon::Post, "/api/tasks/" + id + "/priority", R"({"priority":"x"})");
+    auto [b1, r1] =
+        SendRequest(drogon::Post, "/api/tasks/" + id + "/priority", R"({"priority":"x"})");
     EXPECT_EQ(b1, 400);
     auto [b2, r2] = SendRequest(drogon::Post, "/api/tasks/no_such/priority", R"({"priority":1})");
     EXPECT_EQ(b2, 404);
@@ -309,3 +326,56 @@ TEST_F(WebApiTest, PriorityEndpointWorks) {
     g_tasks->cancel(id);
 }
 
+TEST_F(WebApiTest, DetectFacesPostAndGet) {
+    // Create a temporary dummy file to detect
+    std::ofstream("test_face_detect.jpg") << "fake_image_content";
+
+    // 1. POST /api/faces with JSON body
+    auto [code1, resp1] =
+        SendRequest(drogon::Post, "/api/faces", R"({"image_path": "test_face_detect.jpg"})");
+    EXPECT_EQ(code1, 200);
+    auto body1 = json::parse(resp1);
+    EXPECT_EQ(body1["image"], "test_face_detect.jpg");
+    ASSERT_TRUE(body1["faces"].is_array());
+    ASSERT_EQ(body1["faces"].size(), 1);
+    EXPECT_EQ(body1["faces"][0]["index"], 0);
+    EXPECT_FLOAT_EQ(body1["faces"][0]["box"]["x"], 10.0F);
+    EXPECT_FLOAT_EQ(body1["faces"][0]["box"]["y"], 20.0F);
+    EXPECT_FLOAT_EQ(body1["faces"][0]["box"]["width"], 80.0F);
+    EXPECT_FLOAT_EQ(body1["faces"][0]["box"]["height"], 90.0F);
+    EXPECT_FLOAT_EQ(body1["faces"][0]["score"], 0.95F);
+    EXPECT_EQ(body1["faces"][0]["gender"], "female");
+    EXPECT_EQ(body1["faces"][0]["age_range"][0], 20);
+    EXPECT_EQ(body1["faces"][0]["age_range"][1], 30);
+    ASSERT_EQ(body1["faces"][0]["kps"].size(), 2);
+    EXPECT_FLOAT_EQ(body1["faces"][0]["kps"][0]["x"], 30.0F);
+    EXPECT_FLOAT_EQ(body1["faces"][0]["kps"][0]["y"], 40.0F);
+
+    // 2. GET /api/faces?image=test_face_detect.jpg
+    auto [code2, resp2] = SendRequest(drogon::Get, "/api/faces?image=test_face_detect.jpg");
+    EXPECT_EQ(code2, 200);
+    auto body2 = json::parse(resp2);
+    EXPECT_EQ(body2["image"], "test_face_detect.jpg");
+    ASSERT_EQ(body2["faces"].size(), 1);
+
+    // 3. Error cases
+    // Bad request: missing image parameter
+    auto [code3, _3] = SendRequest(drogon::Post, "/api/faces", R"({})");
+    EXPECT_EQ(code3, 400);
+
+    // Bad request: invalid JSON
+    auto [code4, _4] = SendRequest(drogon::Post, "/api/faces", "{invalid");
+    EXPECT_EQ(code4, 400);
+
+    // Bad request: path traversal
+    auto [code5, _5] =
+        SendRequest(drogon::Post, "/api/faces", R"({"image_path": "../outside.jpg"})");
+    EXPECT_EQ(code5, 400);
+
+    // Not found: non-existent file
+    auto [code6, _6] =
+        SendRequest(drogon::Post, "/api/faces", R"({"image_path": "non_existent.jpg"})");
+    EXPECT_EQ(code6, 404);
+
+    std::filesystem::remove("test_face_detect.jpg");
+}

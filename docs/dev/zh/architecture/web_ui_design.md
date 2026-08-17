@@ -2,17 +2,18 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-ARCH-WEBUI-2026
-> - **当前版本 (Version)**: V0.2.0（草稿，待评审）
-> - **状态 (Status)**: 评审中 (In Review)
+> - **当前版本 (Version)**: V0.3.0
+> - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-08-14
+> - **最后更新 (Last Updated)**: 2026-08-17
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V0.3.0** | 2026-08-17 | AI Agent | 王辉 | M4 落地：实现 FrameExtractor 视频截帧、FaceSelector 人脸点选、/api/faces 检测标注与参考人脸配置。 |
 | **V0.2.0** | 2026-08-14 | AI Agent | 王辉 | 整合用户确认的 6 项功能需求（F1-F6）：预览/对比/批量/队列优先级/视频帧/人脸选择；新增 `--web-root` 开发调试解耦机制、TaskScheduler 队列模型、/api/faces 与 /media/ API；里程碑扩展为 M1-M5。 |
 | **V0.1.0** | 2026-08-14 | AI Agent | 王辉 | 依据设计讨论创建：确认部署形态、技术栈、构建集成、HTTP Server 与进度推送选型。 |
 
@@ -245,7 +246,7 @@ web/src/
 1. **M1 骨架**：vcpkg 引入 Drogon、`app.web` 模块（静态托管 `--web-root` + /api/health）、CLI `--web` 入口、前端空壳工程（Vite+React+TS）、build.py --action web； ✅ **已完成**（2026-08-14，分支 feature/plan-web-ui-m1）
 2. **M2 任务闭环 + 基础预览**：REST 任务提交/查询/取消、WebSocket 进度推送、任务创建/详情页、MediaPreview（F1）、CompareSlider（F2）、`/media/` 文件访问； ✅ **已完成**（2026-08-17，分支 feature/plan-web-ui-m2）
 3. **M3 批量 + 队列**：TaskScheduler 队列与优先级（F4）、批量素材上传与提交（F3）、队列 UI 与优先级操作； ✅ **已完成**（2026-08-17，分支 feature/plan-web-ui-m3）
-4. **M4 视频帧 + 人脸选择**：FrameExtractor（F5 前端截帧）、FaceSelector 与 `/api/faces` 检测标注（F6）、参考人脸上传、e2e 测试、用户文档；
+4. **M4 视频帧 + 人脸选择**：FrameExtractor（F5 前端截帧）、FaceSelector 与 `/api/faces` 检测标注（F6）、参考人脸上传、e2e 测试、用户文档； ✅ **已完成**（2026-08-17，分支 feature/plan-web-ui-m4）
 5. **M5 打磨**：大文件分片上传、服务端抽帧 API（F5-B）、并发控制、国际化（i18n）、Playwright 测试。
 
 > 设计评审通过后，由 writing-plans 流程生成详细实施计划（含分支、TDD 任务分解）。

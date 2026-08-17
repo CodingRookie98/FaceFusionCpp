@@ -289,7 +289,7 @@ int App::run_system_check(bool json_output) {
 }
 
 int App::run_web_mode(const std::string& host, uint16_t port, const std::string& web_root,
-                          const config::AppConfig& app_config) {
+                      const config::AppConfig& app_config) {
     using foundation::infrastructure::logger::Logger;
     Logger::get_instance()->info(
         std::format("Web UI starting: http://{}:{}/ (web root: {})", host, port, web_root));

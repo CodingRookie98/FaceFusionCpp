@@ -105,6 +105,9 @@ opencode.jsonc
 
 # Web UI frontend build output (synced by build.py --action web)
 assets/web/
+temp/
+web_test_output/
+web_api_test_output/
 
 .agents/
 skills-lock.json

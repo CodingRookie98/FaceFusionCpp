@@ -30,9 +30,7 @@ struct TaskManager::Impl {
         int best_priority = std::numeric_limits<int>::min();
         for (auto it = queue.begin(); it != queue.end(); ++it) {
             auto eit = tasks.find(*it);
-            if (eit == tasks.end() || eit->second.status != TaskStatus::Queued) {
-                continue;
-            }
+            if (eit == tasks.end() || eit->second.status != TaskStatus::Queued) { continue; }
             if (best == queue.end() || eit->second.priority > best_priority) {
                 best = it;
                 best_priority = eit->second.priority;
@@ -78,19 +76,19 @@ struct TaskManager::Impl {
                 if (it == tasks.end()) { continue; }
                 // Run with progress callback wiring (defensive: executor must not throw)
                 try {
-                    result_code = executor->run(
-                        it->second.config,
-                        [this, task_id](const services::pipeline::TaskProgress& p) {
-                            TaskProgress snap;
-                            snap.current_frame = p.current_frame;
-                            snap.total_frames = p.total_frames;
-                            snap.fps = p.fps;
-                            std::lock_guard lock(mutex);
-                            auto it = tasks.find(task_id);
-                            if (it == tasks.end()) { return; }
-                            it->second.progress = snap;
-                            if (listener) { listener(task_id, snap); }
-                        });
+                    result_code =
+                        executor->run(it->second.config,
+                                      [this, task_id](const services::pipeline::TaskProgress& p) {
+                                          TaskProgress snap;
+                                          snap.current_frame = p.current_frame;
+                                          snap.total_frames = p.total_frames;
+                                          snap.fps = p.fps;
+                                          std::lock_guard lock(mutex);
+                                          auto it = tasks.find(task_id);
+                                          if (it == tasks.end()) { return; }
+                                          it->second.progress = snap;
+                                          if (listener) { listener(task_id, snap); }
+                                      });
                 } catch (const std::exception& e) {
                     result_code = 1;
                     std::lock_guard lock(mutex);
@@ -160,8 +158,8 @@ struct TaskManager::Impl {
     std::thread worker;
 };
 
-TaskManager::TaskManager(std::shared_ptr<ITaskExecutor> executor)
-    : m_impl(std::make_unique<Impl>(std::move(executor))) {}
+TaskManager::TaskManager(std::shared_ptr<ITaskExecutor> executor) :
+    m_impl(std::make_unique<Impl>(std::move(executor))) {}
 
 TaskManager::~TaskManager() = default;
 
@@ -187,9 +185,7 @@ std::string TaskManager::submit(config::TaskConfig config, int priority) {
 bool TaskManager::set_priority(const std::string& id, int priority) {
     std::lock_guard lock(m_impl->mutex);
     auto it = m_impl->tasks.find(id);
-    if (it == m_impl->tasks.end() || it->second.status != TaskStatus::Queued) {
-        return false;
-    }
+    if (it == m_impl->tasks.end() || it->second.status != TaskStatus::Queued) { return false; }
     it->second.priority = priority;
     return true;
 }
@@ -199,15 +195,12 @@ bool TaskManager::cancel(const std::string& id) {
     auto it = m_impl->tasks.find(id);
     if (it == m_impl->tasks.end()) { return false; }
     switch (it->second.status) {
-    case TaskStatus::Queued:
-        it->second.status = TaskStatus::Cancelled;
-        return true;
+    case TaskStatus::Queued: it->second.status = TaskStatus::Cancelled; return true;
     case TaskStatus::Running:
         it->second.status = TaskStatus::Cancelled;
         m_impl->executor->cancel();
         return true;
-    default:
-        return true; // already terminal; no-op
+    default: return true; // already terminal; no-op
     }
 }
 
@@ -242,7 +235,9 @@ std::vector<TaskSummary> TaskManager::list() const {
         if (a->priority != b->priority) { return a->priority > b->priority; }
         return a->created_at < b->created_at;
     });
-    for (std::size_t i = 0; i < queued.size(); ++i) { queued[i]->queue_position = static_cast<int>(i + 1); }
+    for (std::size_t i = 0; i < queued.size(); ++i) {
+        queued[i]->queue_position = static_cast<int>(i + 1);
+    }
 
     // Newest first (stable across clock granularity)
     std::stable_sort(out.begin(), out.end(), [](const TaskSummary& a, const TaskSummary& b) {
@@ -266,6 +261,8 @@ void TaskManager::set_status_listener(StatusListener listener) {
     m_impl->status_listener = std::move(listener);
 }
 
-void TaskManager::shutdown() { m_impl->shutdown(); }
+void TaskManager::shutdown() {
+    m_impl->shutdown();
+}
 
 } // namespace app::web

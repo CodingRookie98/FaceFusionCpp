@@ -127,6 +127,36 @@ def main() -> int:
             assert "priority" in t and "queue_position" in t
         print("[PASS] list includes priority/queue_position")
 
+        # detect faces POST endpoint
+        code, body = http("POST", f"{base}/api/faces", {
+            "image_path": upload["path"],
+        })
+        assert code == 200, f"faces detect failed: {code} {body}"
+        faces_res = json.loads(body)
+        assert "faces" in faces_res and faces_res["image"] == upload["path"]
+        print("[PASS] /api/faces POST")
+
+        # detect faces GET endpoint
+        code, body = http("GET", f"{base}/api/faces?image={upload['path']}")
+        assert code == 200
+        assert "faces" in json.loads(body)
+        print("[PASS] /api/faces GET")
+
+        # submit with reference face selector mode
+        code, body = http("POST", f"{base}/api/tasks", {
+            "source_paths": [upload["path"]],
+            "target_paths": [upload["path"]],
+            "processors": ["face_swapper"],
+            "processor_params": {
+                "face_swapper": {
+                    "face_selector_mode": "reference",
+                    "reference_face_path": upload["path"],
+                },
+            },
+        })
+        assert code == 201
+        print("[PASS] submit with reference face selector mode")
+
         print("\nAll web API tests passed!")
         return 0
     finally:
