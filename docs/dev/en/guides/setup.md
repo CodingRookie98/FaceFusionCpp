@@ -2,17 +2,18 @@
 
 > **Document Control**
 > - **Document ID**: FFC-DEV-EN-GUIDE-SETUP-2026
-> - **Version**: V1.0.0
+> - **Version**: V1.1.0
 > - **Status**: Official
 > - **Authority**: Informative
 > - **Owner**: 王辉
 > - **Reviewer**: 王辉
-> - **Last Updated**: 2026-08-13
+> - **Last Updated**: 2026-08-17
 
 ## Revision History
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-08-17 | AI Agent | 王辉 | Added Web Development section: `build.py --action dev`, `FFC_WEB_PORT`/`FFC_WEB_HOST`, WebSocket auto-reconnect. |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
 
 
@@ -63,6 +64,21 @@ python build.py --action build
 ```bash
 python build.py --action test
 ```
+
+#### Web Development (dev)
+One command starts both the C++ web backend (`ffc --web`) and the Vite
+dev server with hot reload, keeps Vite's proxy in sync with the backend
+port, pre-checks port conflicts, and cleans up the backend on exit:
+
+```bash
+python build.py --action dev [--web-port 8000]
+```
+
+The Vite proxy target is configurable via `FFC_WEB_PORT` (default `8000`)
+and `FFC_WEB_HOST` (default `127.0.0.1`) environment variables; keep them
+consistent with `ffc --web --web-port <port>`. The frontend WebSocket
+client auto-reconnects with exponential backoff (1s -> 30s cap), so a
+backend restart no longer requires a manual page refresh.
 
 ## 3. CMake Presets
 

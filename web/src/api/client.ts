@@ -49,7 +49,31 @@ export const api = {
   },
 };
 
-/** Subscribe to task progress via WebSocket; returns an unsubscribe fn. */
+/**
+ * Compute WebSocket reconnect delay with exponential backoff.
+ * @param attempt zero-based reconnect attempt count (resets to 0 on success)
+ * @param baseMs base delay for the first attempt
+ * @param maxMs upper bound for the delay
+ * @returns delay in milliseconds (min(baseMs * 2^attempt, maxMs))
+ */
+export function computeReconnectDelay(
+  attempt: number,
+  baseMs = 1000,
+  maxMs = 30000,
+): number {
+  const delay = baseMs * 2 ** attempt;
+  return Math.min(delay, maxMs);
+}
+
+/**
+ * Subscribe to task progress via WebSocket; returns an unsubscribe fn.
+ *
+ * Auto-reconnects on close/error with exponential backoff (1s -> 30s cap).
+ * After a successful connection the backoff resets, and the server's
+ * connection handler replays current status + progress on (re)connect, so
+ * no separate state refetch is needed. Calling the returned fn stops
+ * reconnection permanently.
+ */
 export function subscribeProgress(
   taskId: string,
   onMessage: (msg: WsMessage) => void,
@@ -58,13 +82,39 @@ export function subscribeProgress(
   const host = window.location.hostname;
   const port = window.location.port || (protocol === 'wss' ? '443' : '80');
   // Dev mode proxies /ws to the C++ server (see vite.config.ts)
-  const ws = new WebSocket(`${protocol}://${host}:${port}/ws/tasks/${taskId}/progress`);
-  ws.onmessage = (ev) => {
-    try {
-      onMessage(JSON.parse(ev.data as string) as WsMessage);
-    } catch {
-      /* ignore malformed frames */
-    }
+  let closed = false;
+  let attempt = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let ws: WebSocket | null = null;
+
+  const connect = () => {
+    ws = new WebSocket(`${protocol}://${host}:${port}/ws/tasks/${taskId}/progress`);
+    ws.onopen = () => {
+      // connection established: reset backoff
+      attempt = 0;
+    };
+    ws.onmessage = (ev) => {
+      try {
+        onMessage(JSON.parse(ev.data as string) as WsMessage);
+      } catch {
+        /* ignore malformed frames */
+      }
+    };
+    ws.onerror = () => {
+      // close() fires onclose, which is the single reconnect trigger
+      ws?.close();
+    };
+    ws.onclose = () => {
+      if (closed) return;
+      const delay = computeReconnectDelay(attempt++);
+      timer = setTimeout(connect, delay);
+    };
   };
-  return () => ws.close();
+
+  connect();
+  return () => {
+    closed = true;
+    if (timer !== undefined) clearTimeout(timer);
+    ws?.close();
+  };
 }

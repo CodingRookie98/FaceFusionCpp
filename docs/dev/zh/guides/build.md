@@ -2,17 +2,18 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-GUIDE-BUILD-2026
-> - **当前版本 (Version)**: V1.0.0
+> - **当前版本 (Version)**: V1.1.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-08-13
+> - **最后更新 (Last Updated)**: 2026-08-17
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-08-17 | AI Agent | 王辉 | 增补 `--action dev` 一键启动 Web 开发环境、`--web-port` 参数与 `FFC_WEB_PORT` 环境变量联动说明。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
 
 
@@ -59,6 +60,12 @@ python build.py --config Release --action install
 # 打包项目
 python build.py --config Release --action package
 
+# 构建前端产物并同步至 assets/web（供 install 打包）
+python build.py --action web
+
+# 一键启动 Web 开发环境（自动起后端 ffc --web + Vite dev，Ctrl-C 退出并清理后端）
+python build.py --action dev [--web-port 8000]
+
 # 仅构建主程序（target 名 = 二进制名 ffc）
 python build.py --target ffc
 
@@ -74,7 +81,8 @@ python build.py --action build
 | 参数 | 说明 | 可选值 | 默认值 |
 | :--- | :--- | :--- | :--- |
 | `--config` | 构建配置类型 | `Debug`, `Release` | `Debug` |
-| `--action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (先构建后测试)<br>`install` (安装)<br>`package` (打包) | `build` |
+| `--action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (先构建后测试)<br>`install` (安装)<br>`package` (打包)<br>`web` (构建前端并同步)<br>`dev` (一键启动 Web 开发环境) | `build` |
+| `--web-port` | Web 后端端口（`--action dev` 使用，并注入 `FFC_WEB_PORT` 供 Vite 代理联动） | 1-65535 | `8000` |
 | `--target` | 构建或测试目标 | `all` 或具体名称 | `all` |
 | `--test-regex` | 测试筛选正则 (传递给 `ctest -R`) | 正则表达式 | `None` (默认使用 `--target` 当作筛选若非 `all`) |
 | `--test-label` | 测试标签筛选 (传递给 `ctest -L`) | `unit`, `integration`, `benchmark` | `None` |
