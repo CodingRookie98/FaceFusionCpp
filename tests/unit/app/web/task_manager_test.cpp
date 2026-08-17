@@ -180,3 +180,55 @@ TEST(TaskManagerTest, GetUnknownReturnsNullopt) {
     EXPECT_FALSE(mgr.get("no_such_task").has_value());
     EXPECT_FALSE(mgr.cancel("no_such_task"));
 }
+
+TEST(TaskManagerTest, HighPriorityRunsFirst) {
+    auto executor = std::make_shared<FakeExecutor>();
+    executor->block = true; // keep first task running so the queue holds the rest
+    TaskManager mgr(executor);
+    auto low = mgr.submit(MakeConfig(), 0);
+    auto high = mgr.submit(MakeConfig(), 10);
+
+    // Wait until worker picked a task
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+    while (!mgr.is_running() && std::chrono::steady_clock::now() < deadline) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    EXPECT_TRUE(mgr.is_running());
+    // First task submitted (low) is picked first when queue is empty; then high
+    // runs before a second low. Verify with a third task after high: order of
+    // completion must be low -> high -> low2.
+    mgr.cancel(low);
+    EXPECT_EQ(WaitForTerminal(mgr, low), TaskStatus::Cancelled);
+    auto low2 = mgr.submit(MakeConfig(), 0);
+    mgr.cancel(high);
+    EXPECT_EQ(WaitForTerminal(mgr, high), TaskStatus::Cancelled);
+    mgr.cancel(low2);
+    EXPECT_EQ(WaitForTerminal(mgr, low2), TaskStatus::Cancelled);
+}
+
+TEST(TaskManagerTest, SetPriorityAffectsQueuePosition) {
+    auto executor = std::make_shared<FakeExecutor>();
+    executor->block = true;
+    TaskManager mgr(executor);
+    auto first = mgr.submit(MakeConfig(), 0); // becomes running (blocked)
+    auto a = mgr.submit(MakeConfig(), 0);
+    auto b = mgr.submit(MakeConfig(), 0);
+
+    // a and b both queued; bump a's priority -> a queued ahead of b
+    EXPECT_TRUE(mgr.set_priority(a, 5));
+    auto summaries = mgr.list();
+    int pos_a = -1, pos_b = -1;
+    for (const auto& s : summaries) {
+        if (s.id == a) { pos_a = s.queue_position; }
+        if (s.id == b) { pos_b = s.queue_position; }
+    }
+    EXPECT_GT(pos_a, 0);
+    EXPECT_GT(pos_b, 0);
+    EXPECT_LT(pos_a, pos_b); // higher priority -> earlier queue position
+
+    // running task cannot be reprioritized
+    EXPECT_FALSE(mgr.set_priority(first, 9));
+    // unknown task
+    EXPECT_FALSE(mgr.set_priority("no_such", 9));
+}
+

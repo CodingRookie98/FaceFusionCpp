@@ -4,6 +4,7 @@ module;
 #include <condition_variable>
 #include <deque>
 #include <filesystem>
+#include <limits>
 #include <map>
 #include <mutex>
 #include <thread>
@@ -22,15 +23,47 @@ struct TaskManager::Impl {
 
     ~Impl() { shutdown(); }
 
+    /// Pick the highest-priority queued task (FIFO among equal priorities)
+    static std::string pick_next(const std::map<std::string, TaskEntry>& tasks,
+                                 std::deque<std::string>& queue) {
+        auto best = queue.end();
+        int best_priority = std::numeric_limits<int>::min();
+        for (auto it = queue.begin(); it != queue.end(); ++it) {
+            auto eit = tasks.find(*it);
+            if (eit == tasks.end() || eit->second.status != TaskStatus::Queued) {
+                continue;
+            }
+            if (best == queue.end() || eit->second.priority > best_priority) {
+                best = it;
+                best_priority = eit->second.priority;
+            }
+        }
+        if (best == queue.end()) { return {}; }
+        std::string id = *best;
+        queue.erase(best);
+        return id;
+    }
+
     void worker_loop() {
         for (;;) {
             std::string task_id;
             {
                 std::unique_lock lock(mutex);
-                stop_cv.wait(lock, [this] { return !queue.empty() || stopping; });
-                if (stopping && queue.empty()) { return; }
-                task_id = queue.front();
-                queue.pop_front();
+                // Wait until there is a runnable (queued) task or shutdown.
+                // Cancelled tasks may stay in the queue; they must not wake us.
+                stop_cv.wait(lock, [this] {
+                    if (stopping) { return true; }
+                    for (const auto& qid : queue) {
+                        auto it = tasks.find(qid);
+                        if (it != tasks.end() && it->second.status == TaskStatus::Queued) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+                if (stopping) { return; }
+                task_id = pick_next(tasks, queue);
+                if (task_id.empty()) { continue; }
                 auto it = tasks.find(task_id);
                 if (it == tasks.end() || it->second.status != TaskStatus::Queued) {
                     continue; // cancelled while queued
@@ -132,7 +165,7 @@ TaskManager::TaskManager(std::shared_ptr<ITaskExecutor> executor)
 
 TaskManager::~TaskManager() = default;
 
-std::string TaskManager::submit(config::TaskConfig config) {
+std::string TaskManager::submit(config::TaskConfig config, int priority) {
     std::string uuid = foundation::infrastructure::core_utils::random::generate_uuid();
     std::replace(uuid.begin(), uuid.end(), '-', '_');
 
@@ -140,6 +173,7 @@ std::string TaskManager::submit(config::TaskConfig config) {
     entry.id = uuid;
     entry.config = std::move(config);
     entry.created_at = std::chrono::system_clock::now();
+    entry.priority = priority;
 
     {
         std::lock_guard lock(m_impl->mutex);
@@ -148,6 +182,16 @@ std::string TaskManager::submit(config::TaskConfig config) {
     }
     m_impl->stop_cv.notify_all();
     return uuid;
+}
+
+bool TaskManager::set_priority(const std::string& id, int priority) {
+    std::lock_guard lock(m_impl->mutex);
+    auto it = m_impl->tasks.find(id);
+    if (it == m_impl->tasks.end() || it->second.status != TaskStatus::Queued) {
+        return false;
+    }
+    it->second.priority = priority;
+    return true;
 }
 
 bool TaskManager::cancel(const std::string& id) {
@@ -186,8 +230,20 @@ std::vector<TaskSummary> TaskManager::list() const {
         s.error_message = entry.error_message;
         s.media_count = entry.config.io.target_paths.size();
         s.created_at = entry.created_at;
+        s.priority = entry.priority;
         out.push_back(std::move(s));
     }
+    // Queue position: 1-based rank among queued tasks by (priority desc, created_at asc)
+    std::vector<TaskSummary*> queued;
+    for (auto& s : out) {
+        if (s.status == TaskStatus::Queued) { queued.push_back(&s); }
+    }
+    std::sort(queued.begin(), queued.end(), [](const TaskSummary* a, const TaskSummary* b) {
+        if (a->priority != b->priority) { return a->priority > b->priority; }
+        return a->created_at < b->created_at;
+    });
+    for (std::size_t i = 0; i < queued.size(); ++i) { queued[i]->queue_position = static_cast<int>(i + 1); }
+
     // Newest first (stable across clock granularity)
     std::stable_sort(out.begin(), out.end(), [](const TaskSummary& a, const TaskSummary& b) {
         return a.created_at > b.created_at;
