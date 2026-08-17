@@ -112,9 +112,7 @@ def run_test(ctest_exe, preset, regex, label, env, project_root, build_dir):
     log("\n=== Action: test ===", "info")
 
     if label == "e2e":
-        exe_name = (
-            "FaceFusionCpp.exe" if platform.system() == "Windows" else "FaceFusionCpp"
-        )
+        exe_name = "ffc.exe" if platform.system() == "Windows" else "ffc"
         # Determine the bin directory based on the preset name (which corresponds to the build/bin/{preset} structure)
         bin_dir_name = build_dir.name
         executable = project_root / "build" / "bin" / bin_dir_name / exe_name
