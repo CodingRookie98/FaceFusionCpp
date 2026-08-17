@@ -4,20 +4,48 @@
 #include <filesystem>
 #include <fstream>
 #include <future>
+#include <random>
 #include <string>
 #include <thread>
 
 #include <drogon/drogon.h>
 
 import app.web.server;
+import app.web.task_manager;
 import app.version;
+import config.task;
+import services.pipeline.runner;
 
 using namespace app::web;
 
 namespace {
 
-constexpr uint16_t kTestPort = 18081;
+// ctest runs each gtest case as a separate process; derive a per-process
+// port to avoid TIME_WAIT bind conflicts between cases.
+// ctest runs each gtest case as a separate process; pick a random port to
+// avoid TIME_WAIT/PID-reuse bind conflicts (fixed 1808x ports flaked).
+static uint16_t RandomTestPort() {
+    auto seed = static_cast<unsigned>(
+        std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    std::mt19937 gen(seed);
+    return static_cast<uint16_t>(20000 + (gen() % 20000)); // 20000-39999
+}
+const uint16_t kTestPort = RandomTestPort();
 const std::string kBaseUrl = "http://127.0.0.1:" + std::to_string(kTestPort);
+
+/// Minimal fake executor: reports progress then succeeds
+class FakeExecutor : public ITaskExecutor {
+public:
+    int run(const config::TaskConfig&, const services::pipeline::ProgressCallback& cb) override {
+        services::pipeline::TaskProgress p;
+        p.current_frame = 1;
+        p.total_frames = 1;
+        p.fps = 30.0;
+        cb(p);
+        return 0;
+    }
+    void cancel() override {}
+};
 
 std::filesystem::path CreateTempWebRoot() {
     auto dir = std::filesystem::temp_directory_path() / "ffc_web_test";
@@ -27,8 +55,10 @@ std::filesystem::path CreateTempWebRoot() {
 }
 
 std::thread StartServerInThread(const std::string& web_root) {
-    std::thread server_thread([web_root]() {
-        run_server({.host = "127.0.0.1", .port = kTestPort, .web_root = web_root});
+    auto tasks = std::make_shared<TaskManager>(std::make_shared<FakeExecutor>());
+    std::thread server_thread([web_root, tasks]() {
+        run_server({.host = "127.0.0.1", .port = kTestPort, .web_root = web_root},
+                   {.tasks = tasks, .app_config = nullptr});
     });
     std::this_thread::sleep_for(std::chrono::milliseconds(800));
     return server_thread;

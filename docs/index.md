@@ -4,7 +4,7 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DOC-INDEX-2026
-> **当前版本 (Version)**: V1.1.4
+> **当前版本 (Version)**: V1.1.5
 > **状态 (Status)**: 正式 (Official)
 > **权威性 (Authority)**: 规范 (Normative)
 > **所有者 (Owner)**: 王辉
@@ -15,6 +15,8 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.5** | 2026-08-17 | AI Agent | 王辉 | 登记 Web 界面使用指南（zh/en）与设计规格状态更新。 |
+| **V1.1.5** | 2026-08-17 | AI Agent | 王辉 | 登记 Web 界面使用指南（zh/en）。 |
 | **V1.1.4** | 2026-08-14 | AI Agent | 王辉 | 登记新增架构设计文档 web_ui_design.md（Web 界面设计规格）。 |
 | **V1.1.3** | 2026-08-14 | AI Agent | 王辉 | 清理已实施完成的评估/计划文档：删除 docs/dev/evaluation、docs/dev/plan、docs/dev/zh/evaluation、docs/superpowers 全部文档及空目录，同步移除索引登记。 |
 | **V1.1.2** | 2026-08-14 | AI Agent | 王辉 | 登记新增评估文档 layers_doc_assessment.md（分层架构文档一致性评估报告）。 |
@@ -52,6 +54,7 @@ docs/
 | :--- | :--- |
 | [getting_started.md](./user/zh/getting_started.md) | 快速上手：环境初探与首次运行 |
 | [user_guide.md](./user/zh/user_guide.md) | 功能介绍与操作指南 |
+| [web_guide.md](./user/zh/web_guide.md) | Web 界面使用指南 |
 | [configuration_guide.md](./user/zh/configuration_guide.md) | 核心配置参数说明 (`app_config.yaml`, `task_config.yaml`) |
 | [cli_reference.md](./user/zh/cli_reference.md) | 命令行参数详解 |
 | [hardware_guide.md](./user/zh/hardware_guide.md) | 硬件性能优化建议 |
@@ -63,6 +66,7 @@ docs/
 | :--- | :--- |
 | [getting_started.md](./user/en/getting_started.md) | Quick start: setup and first run |
 | [user_guide.md](./user/en/user_guide.md) | Feature introduction and operation guide |
+| [web_guide.md](./user/en/web_guide.md) | Web UI Guide |
 | [configuration_guide.md](./user/en/configuration_guide.md) | Core configuration parameters (`app_config.yaml`, `task_config.yaml`) |
 | [cli_reference.md](./user/en/cli_reference.md) | Command-line arguments reference |
 | [hardware_guide.md](./user/en/hardware_guide.md) | Hardware performance optimization advice |
@@ -78,7 +82,7 @@ docs/
 | :--- | :--- |
 | [design.md](./dev/zh/architecture/design.md) | 系统设计与原则（总纲） |
 | [layers.md](./dev/zh/architecture/layers.md) | 分层结构实现细节 |
-| [web_ui_design.md](./dev/zh/architecture/web_ui_design.md) | Web 界面设计规格（评审中） |
+| [web_ui_design.md](./dev/zh/architecture/web_ui_design.md) | Web 界面设计规格（M1/M2 已完成） |
 
 **流程 (Process)**
 
