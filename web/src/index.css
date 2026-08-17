@@ -7,30 +7,201 @@
 body {
   margin: 0;
   min-width: 320px;
+  background: #f6f7f9;
+  color: #1a1a1a;
 }
 
 .app {
-  max-width: 960px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1.5rem 2rem;
+}
+
+.app-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
 }
 
 .app-header h1 {
-  margin-bottom: 0.25rem;
+  margin: 0;
+  font-size: 1.4rem;
 }
 
 .subtitle {
   color: #888;
-  margin-top: 0;
+  font-size: 0.9rem;
+  margin: 0;
 }
 
-.status-card {
+.nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.nav button {
   border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 1rem 1.5rem;
-  margin-top: 1rem;
+  background: #fff;
+  border-radius: 6px;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.nav button.active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.card {
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  background: #fff;
+  margin-bottom: 1rem;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+}
+
+.form-row label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.form-row input,
+.form-row textarea,
+.form-row select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.btn {
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.2rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+table.tasks {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+table.tasks th,
+table.tasks td {
+  border-bottom: 1px solid #eee;
+  padding: 0.55rem 0.6rem;
+  text-align: left;
+}
+
+.status-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.15rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.status-done {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-running {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-queued {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.status-failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-cancelled {
+  background: #e5e7eb;
+  color: #374151;
 }
 
 .error {
-  color: #e5484d;
+  color: #dc2626;
+  font-size: 0.85rem;
+}
+
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0.5rem 0;
+}
+
+.progress-track {
+  flex: 1;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #2563eb;
+  transition: width 0.2s ease;
+}
+
+.progress-text {
+  font-size: 0.8rem;
+  color: #555;
+  min-width: 9rem;
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.compare-grid figure {
+  margin: 0;
+}
+
+.compare-grid img {
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.compare-grid figcaption {
+  font-size: 0.8rem;
+  color: #777;
+  text-align: center;
+  margin-top: 0.3rem;
 }

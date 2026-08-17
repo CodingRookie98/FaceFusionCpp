@@ -1,40 +1,63 @@
 import { useEffect, useState } from 'react';
+import { api } from './api/client';
+import TaskCreatePage from './pages/TaskCreatePage';
+import TaskListPage from './pages/TaskListPage';
+import TaskDetailPage from './pages/TaskDetailPage';
 
-interface HealthResponse {
-  status: string;
-  version: string;
-}
+type View =
+  | { name: 'create' }
+  | { name: 'list' }
+  | { name: 'detail'; taskId: string };
 
 export default function App() {
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<View>({ name: 'list' });
+  const [backend, setBackend] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/health')
-      .then((res) => res.json())
-      .then((data: HealthResponse) => setHealth(data))
-      .catch((err: Error) => setError(err.message));
+    api
+      .health()
+      .then((h) => setBackend(`${h.status} v${h.version}`))
+      .catch(() => setBackend('offline'));
   }, []);
 
   return (
     <div className="app">
       <header className="app-header">
         <h1>ffc Web UI</h1>
-        <p className="subtitle">FaceFusionCpp Web Interface (M1 skeleton)</p>
+        <p className="subtitle">
+          FaceFusionCpp · 后端状态: <strong>{backend ?? '检测中...'}</strong>
+        </p>
+        <nav className="nav">
+          <button
+            className={view.name === 'list' ? 'active' : ''}
+            onClick={() => setView({ name: 'list' })}
+          >
+            任务列表
+          </button>
+          <button
+            className={view.name === 'create' ? 'active' : ''}
+            onClick={() => setView({ name: 'create' })}
+          >
+            提交任务
+          </button>
+        </nav>
       </header>
-      <main className="app-main">
-        <section className="status-card">
-          <h2>后端状态</h2>
-          {error && <p className="error">连接失败: {error}</p>}
-          {health ? (
-            <p>
-              状态: <strong>{health.status}</strong> ｜ 版本:{' '}
-              <strong>{health.version}</strong>
-            </p>
-          ) : (
-            !error && <p>正在连接后端（请先运行 ffc --web）...</p>
-          )}
-        </section>
+
+      <main>
+        {view.name === 'create' && (
+          <TaskCreatePage
+            onSubmitted={(taskId) => setView({ name: 'detail', taskId })}
+          />
+        )}
+        {view.name === 'list' && (
+          <TaskListPage onSelect={(taskId) => setView({ name: 'detail', taskId })} />
+        )}
+        {view.name === 'detail' && (
+          <TaskDetailPage
+            taskId={view.taskId}
+            onBack={() => setView({ name: 'list' })}
+          />
+        )}
       </main>
     </div>
   );
