@@ -2,8 +2,8 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-PLAN-WEBDEVTOOLING-2026
-> - **当前版本 (Version)**: V1.0.0
-> - **状态 (Status)**: 待审批 (Pending Approval)
+> - **当前版本 (Version)**: V1.1.0
+> - **状态 (Status)**: 已完成 (Completed)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-08-17 | AI Agent | 王辉 | 三个任务全部完成并验证：Task 1 vite 端口可配（FFC_WEB_PORT/FFC_WEB_HOST）、Task 2 WS 自动重连（vitest 9/9 + tsc + build 通过）、Task 3 build.py --action dev（端口冲突预检/FFC_WEB_PORT 联动/退出清理，实测通过）；文档已同步（build.md/setup.md zh+en/web_ui_design.md）。 |
 | **V1.0.0** | 2026-08-17 | AI Agent | 王辉 | 依据 Web UI 开发体验排查结论创建：修复端口硬编码、WS 无自动重连、无一键启动三大痛点。 |
 
 ---

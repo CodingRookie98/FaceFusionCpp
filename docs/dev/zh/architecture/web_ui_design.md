@@ -2,7 +2,7 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-ARCH-WEBUI-2026
-> - **当前版本 (Version)**: V0.3.0
+> - **当前版本 (Version)**: V0.3.1
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V0.3.1** | 2026-08-17 | AI Agent | 王辉 | 更新 5.2 开发与生产：新增 `build.py --action dev` 一键启动、`FFC_WEB_PORT`/`FFC_WEB_HOST` 端口可配、前端 WebSocket 自动重连（指数退避）。 |
 | **V0.3.0** | 2026-08-17 | AI Agent | 王辉 | M4 落地：实现 FrameExtractor 视频截帧、FaceSelector 人脸点选、/api/faces 检测标注与参考人脸配置。 |
 | **V0.2.0** | 2026-08-14 | AI Agent | 王辉 | 整合用户确认的 6 项功能需求（F1-F6）：预览/对比/批量/队列优先级/视频帧/人脸选择；新增 `--web-root` 开发调试解耦机制、TaskScheduler 队列模型、/api/faces 与 /media/ API；里程碑扩展为 M1-M5。 |
 | **V0.1.0** | 2026-08-14 | AI Agent | 王辉 | 依据设计讨论创建：确认部署形态、技术栈、构建集成、HTTP Server 与进度推送选型。 |
@@ -197,9 +198,11 @@ web/src/
 
 ### 5.2 开发与生产
 
-- 开发：`vite dev`（`web/` 内）→ 代理 `/api`、`/ws` 到本地 C++ 服务（`--web-port 8000`）；
-- 集成调试：`vite build` → `./ffc --web --web-root web/dist` 直接托管产物，免拷贝；
-- 生产：`vite build` → 由 `build.py --action web` 同步至 `assets/web/` → Drogon 默认托管。
+- **一键启动（推荐）**：`python build.py --action dev [--web-port 8000]` — 自动在 `build/bin/<preset>` 下启动 `ffc --web`，等待 `/api/health` 就绪后启动 Vite dev（热更新）；后端端口经 `FFC_WEB_PORT`/`FFC_WEB_HOST` 注入，Vite 代理自动联动；后端端口被占用时打印明确错误提示；Ctrl-C 退出自动清理后端进程（不留残留）；
+- **手动开发**：`vite dev`（`web/` 内）→ 代理 `/api`、`/ws` 到本地 C++ 服务；代理目标由 `FFC_WEB_PORT`（默认 `8000`）/`FFC_WEB_HOST`（默认 `127.0.0.1`）环境变量控制，`ffc --web --web-port <port>` 需保持一致；
+- **前端断线恢复**：WebSocket 客户端自动重连（指数退避 1s→30s，连接成功后重置），后端重启后前端无需手动刷新，重连后服务端补发当前状态与进度；
+- **集成调试**：`vite build` → `./ffc --web --web-root web/dist` 直接托管产物，免拷贝；
+- **生产**：`vite build` → 由 `build.py --action web` 同步至 `assets/web/` → Drogon 默认托管。
 
 ### 5.3 上传策略
 
