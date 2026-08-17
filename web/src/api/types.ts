@@ -13,6 +13,8 @@ export interface TaskSummary {
   progress: TaskProgress;
   error_message: string;
   media_count: number;
+  priority: number;
+  queue_position: number;
 }
 
 export interface TaskResultFile {

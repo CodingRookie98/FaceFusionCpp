@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../api/client';
 import type { CreateTaskRequest } from '../api/types';
+import FileUploader from '../components/FileUploader';
 
 interface Props {
   onSubmitted: (taskId: string) => void;
@@ -62,6 +63,7 @@ export default function TaskCreatePage({ onSubmitted }: Props) {
       <h2>提交任务</h2>
       <div className="form-row">
         <label>源人脸图片路径（每行一个，或逗号分隔）</label>
+        <FileUploader accept="image/*" onUploaded={(paths) => setSourceText((prev) => [prev, ...paths].filter(Boolean).join('\n'))} />
         <textarea
           rows={3}
           value={sourceText}
@@ -71,6 +73,7 @@ export default function TaskCreatePage({ onSubmitted }: Props) {
       </div>
       <div className="form-row">
         <label>目标图片/视频路径（每行一个）</label>
+        <FileUploader accept="image/*,video/*" onUploaded={(paths) => setTargetText((prev) => [prev, ...paths].filter(Boolean).join('\n'))} />
         <textarea
           rows={3}
           value={targetText}

@@ -48,7 +48,12 @@ public:
     TaskManager& operator=(const TaskManager&) = delete;
 
     /// Enqueue a task; returns the new task id
-    std::string submit(config::TaskConfig config);
+    /// @param priority higher value = scheduled earlier (FIFO among equals)
+    std::string submit(config::TaskConfig config, int priority = 0);
+
+    /// Change the priority of a queued task (no-op for running/terminal)
+    /// @return false if the task does not exist or is not queued
+    bool set_priority(const std::string& id, int priority);
 
     /// Cancel a queued/running task; returns false if task not found
     bool cancel(const std::string& id);

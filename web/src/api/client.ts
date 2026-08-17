@@ -25,6 +25,23 @@ export const api = {
     request<{ ok: boolean }>(`/api/tasks/${id}/cancel`, { method: 'POST' }),
   getResult: (id: string) =>
     request<{ files: { name: string; url: string }[] }>(`/api/tasks/${id}/result`),
+  setPriority: (id: string, priority: number) =>
+    request<{ ok: boolean; priority: number }>(`/api/tasks/${id}/priority`, {
+      method: 'POST',
+      body: JSON.stringify({ priority }),
+    }),
+  uploadFile: async (file: File): Promise<{ path: string; name: string; size: number }> => {
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      headers: { 'X-File-Name': file.name },
+      body: file,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`);
+    }
+    return res.json() as Promise<{ path: string; name: string; size: number }>;
+  },
 };
 
 /** Subscribe to task progress via WebSocket; returns an unsubscribe fn. */

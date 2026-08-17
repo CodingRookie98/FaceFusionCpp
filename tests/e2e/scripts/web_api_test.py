@@ -94,6 +94,39 @@ def main() -> int:
         assert code == 404
         print("[PASS] unknown task -> 404")
 
+        # upload a file
+        upload_data = b"e2e-upload-bytes"
+        req = urllib.request.Request(
+            f"{base}/api/upload", data=upload_data, method="POST")
+        req.add_header("X-File-Name", "e2e_sample.jpg")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            assert resp.status == 201, f"upload failed: {resp.status}"
+            upload = json.loads(resp.read().decode())
+        assert upload["name"] == "e2e_sample.jpg" and upload["size"] == len(upload_data)
+        print("[PASS] upload -> " + upload["path"])
+
+        # submit with the uploaded path
+        code, body = http("POST", f"{base}/api/tasks", {
+            "source_paths": [upload["path"]],
+            "target_paths": [upload["path"]],
+        })
+        assert code == 201
+        task2_id = json.loads(body)["id"]
+        print("[PASS] submit with uploaded path -> " + task2_id[:8] + "...")
+
+        # priority endpoint (task may already be terminal; accept 200 or 409)
+        code, body = http("POST", f"{base}/api/tasks/{task2_id}/priority",
+                          {"priority": 3})
+        assert code in (200, 409), f"priority failed: {code} {body}"
+        print(f"[PASS] set priority -> {code}")
+
+        # list carries priority/queue_position fields
+        code, body = http("GET", f"{base}/api/tasks")
+        assert code == 200
+        for t in json.loads(body):
+            assert "priority" in t and "queue_position" in t
+        print("[PASS] list includes priority/queue_position")
+
         print("\nAll web API tests passed!")
         return 0
     finally:

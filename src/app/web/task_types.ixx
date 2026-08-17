@@ -35,6 +35,7 @@ struct TaskEntry {
     std::string error_message;
     std::vector<std::string> result_files; ///< Result file names inside output dir
     std::chrono::system_clock::time_point created_at;
+    int priority = 0; ///< Higher value = higher scheduling priority
 };
 
 /// Lightweight task summary for list endpoints
@@ -45,6 +46,8 @@ struct TaskSummary {
     std::string error_message;
     std::size_t media_count = 0; ///< Number of target media
     std::chrono::system_clock::time_point created_at;
+    int priority = 0;          ///< Higher value = higher scheduling priority
+    int queue_position = -1;   ///< 1-based position among queued tasks (-1 if not queued)
 };
 
 } // namespace app::web

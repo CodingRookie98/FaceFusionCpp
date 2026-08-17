@@ -41,6 +41,17 @@ export default function TaskListPage({ onSelect }: Props) {
     }
   };
 
+  const bumpPriority = async (id: string, delta: number) => {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+    try {
+      await api.setPriority(id, task.priority + delta);
+      refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const percent = (t: TaskSummary) =>
     t.progress.total_frames > 0
       ? (t.progress.current_frame / t.progress.total_frames) * 100
@@ -60,6 +71,7 @@ export default function TaskListPage({ onSelect }: Props) {
           <tr>
             <th>ID</th>
             <th>状态</th>
+            <th>队列</th>
             <th>进度</th>
             <th>素材数</th>
             <th>操作</th>
@@ -87,8 +99,39 @@ export default function TaskListPage({ onSelect }: Props) {
                   </span>
                 )}
               </td>
-              <td>{t.media_count}</td>
               <td>
+                {t.status === 'queued' ? (
+                  <span title="优先级（数值大优先）">
+                    #{t.queue_position} · P{t.priority}
+                  </span>
+                ) : t.status === 'running' ? (
+                  '执行中'
+                ) : (
+                  '—'
+                )}
+              </td>
+              <td>{t.media_count}</td>
+              <td style={{ whiteSpace: 'nowrap' }}>
+                {t.status === 'queued' && (
+                  <>
+                    <button
+                      className="btn"
+                      style={{ marginRight: '0.4rem' }}
+                      onClick={() => bumpPriority(t.id, 1)}
+                      title="提升优先级"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      className="btn"
+                      style={{ marginRight: '0.4rem' }}
+                      onClick={() => bumpPriority(t.id, -1)}
+                      title="降低优先级"
+                    >
+                      ↓
+                    </button>
+                  </>
+                )}
                 {(t.status === 'queued' || t.status === 'running') && (
                   <button className="btn btn-danger" onClick={() => cancel(t.id)}>
                     取消
@@ -99,7 +142,7 @@ export default function TaskListPage({ onSelect }: Props) {
           ))}
           {tasks.length === 0 && (
             <tr>
-              <td colSpan={5} style={{ color: '#888' }}>
+              <td colSpan={6} style={{ color: '#888' }}>
                 暂无任务
               </td>
             </tr>
