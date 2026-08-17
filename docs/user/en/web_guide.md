@@ -2,7 +2,7 @@
 
 > **Document Control**
 > - **Document ID**: FFC-USER-EN-WEBUI-2026
-> - **Version**: V1.0.0
+> - **Version**: V1.1.0
 > - **Status**: Official
 > - **Authority**: Informative
 > - **Owner**: 王辉
@@ -13,6 +13,7 @@
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-08-17 | AI Agent | 王辉 | Added M4 video frame extraction (FrameExtractor), face detection & selection (FaceSelector), and reference face options. |
 | **V1.0.0** | 2026-08-17 | AI Agent | 王辉 | Initial Web UI guide (M2: task lifecycle + preview). |
 
 ## 1. Starting the Web UI
@@ -46,22 +47,21 @@ Common options:
 
 ### 2.1 Task List
 
-- All tasks with ID, status, progress and media count;
+- All tasks with ID, status, progress, media count, priority and queue position;
 - Auto-refreshes every 3 seconds; running tasks show a live progress bar;
-- Cancel queued/running tasks.
+- Cancel queued/running tasks, or raise/lower priority of queued tasks.
 
 ### 2.2 Submit Task
 
 - **Upload files**: upload buttons above source/target inputs support multi-file selection (image/video); uploaded paths are filled in automatically;
-- **Source face paths**: one per line (or comma separated); server-side paths are accepted too;
-- **Target media paths**: one per line, batch supported (multiple media in one task);
-- **Processors**: check `face_swapper`, `face_enhancer`, `expression_restorer`, `frame_enhancer`;
+- **📹 Video Frame Extractor (FrameExtractor)**: Expand tool panel, pick a local video, scrub and fine-tune playback time (±0.1s / ±1s), and capture the current frame as an input path;
+- **👤 Face Detection & Selection (FaceSelector)**: Click "🔍 Detect Source Faces" to run `/api/faces`, displaying detected face bounding boxes that can be clicked to select specific faces;
+- **Face Selector Mode**:
+  - **Many**: Replaces all detected faces in the target media;
+  - **One**: Replaces only the highest-confidence face;
+  - **Reference**: Matches against a reference face image or selected face from the source;
+- **Processors**: Check `face_swapper`, `face_enhancer`, `expression_restorer`, `frame_enhancer`;
 - Output directory may be left empty (config defaults apply).
-
-### 2.3 Task List (Queue & Priority)
-
-- Queued tasks show **queue position** (#N, sorted by priority desc) and **priority** (P value, higher wins);
-- Use `↑`/`↓` buttons to raise/lower priority of queued tasks; running tasks cannot be reprioritized.
 
 ### 2.3 Task Detail
 
@@ -74,12 +74,13 @@ Common options:
 | Method | Path | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/health` | Health check (with version) |
-| `POST` | `/api/tasks` | Submit task (JSON: source_paths/target_paths/output_path/processors) |
+| `POST` | `/api/tasks` | Submit task (JSON: source_paths/target_paths/output_path/processors/processor_params) |
 | `GET` | `/api/tasks` | Task list |
 | `GET` | `/api/tasks/{id}` | Task detail (incl. media/result URLs) |
 | `POST` | `/api/tasks/{id}/cancel` | Cancel task |
 | `POST` | `/api/tasks/{id}/priority` | Set priority (queued tasks only) |
 | `POST` | `/api/upload` | Upload file (binary body + `X-File-Name` header) |
+| `POST`/`GET` | `/api/faces` | Image face detection & annotation (bounding boxes, score, age/gender, landmarks) |
 | `GET` | `/api/tasks/{id}/result` | Result files |
 | `WS` | `/ws/tasks/{id}/progress` | Live progress push |
 | `GET` | `/media/{task_id}/{kind}/{name}` | Media/result file access (whitelist) |

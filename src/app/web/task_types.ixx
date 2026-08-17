@@ -46,8 +46,38 @@ struct TaskSummary {
     std::string error_message;
     std::size_t media_count = 0; ///< Number of target media
     std::chrono::system_clock::time_point created_at;
-    int priority = 0;          ///< Higher value = higher scheduling priority
-    int queue_position = -1;   ///< 1-based position among queued tasks (-1 if not queued)
+    int priority = 0;        ///< Higher value = higher scheduling priority
+    int queue_position = -1; ///< 1-based position among queued tasks (-1 if not queued)
+};
+
+/// Bounding box of a face (coordinates relative to image pixels)
+struct FaceBox {
+    float x = 0.0F;
+    float y = 0.0F;
+    float width = 0.0F;
+    float height = 0.0F;
+};
+
+/// 2D landmark point
+struct FacePoint {
+    float x = 0.0F;
+    float y = 0.0F;
+};
+
+/// Detected face info for API response
+struct DetectedFaceInfo {
+    int index = 0;
+    FaceBox box;
+    float score = 0.0F;
+    std::string gender;
+    std::pair<int, int> age_range{0, 0};
+    std::vector<FacePoint> kps;
+};
+
+/// Face detection result for an image
+struct FaceDetectionResult {
+    std::string image_path;
+    std::vector<DetectedFaceInfo> faces;
 };
 
 } // namespace app::web

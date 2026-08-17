@@ -17,8 +17,8 @@ struct PipelineTaskExecutor::Impl {
     std::shared_ptr<services::pipeline::PipelineRunner> runner;
 };
 
-PipelineTaskExecutor::PipelineTaskExecutor(const config::AppConfig& app_config)
-    : m_impl(std::make_unique<Impl>(app_config)) {}
+PipelineTaskExecutor::PipelineTaskExecutor(const config::AppConfig& app_config) :
+    m_impl(std::make_unique<Impl>(app_config)) {}
 
 PipelineTaskExecutor::~PipelineTaskExecutor() = default;
 

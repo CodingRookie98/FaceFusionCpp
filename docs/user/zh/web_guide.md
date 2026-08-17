@@ -2,7 +2,7 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-USER-ZH-WEBUI-2026
-> - **当前版本 (Version)**: V1.0.0
+> - **当前版本 (Version)**: V1.1.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-08-17 | AI Agent | 王辉 | 增补 M4 视频帧截取（FrameExtractor）、人脸检测标注（FaceSelector）与参考人脸配置说明。 |
 | **V1.0.0** | 2026-08-17 | AI Agent | 王辉 | 创建 Web 界面使用指南（M2：任务闭环 + 预览）。 |
 
 ## 1. 启动 Web 界面
@@ -46,22 +47,21 @@
 
 ### 2.1 任务列表
 
-- 展示全部任务（ID、状态、进度、素材数）；
+- 展示全部任务（ID、状态、进度、素材数、优先级、排队位置）；
 - 每 3 秒自动刷新；运行中的任务显示实时进度条；
-- 支持取消排队/运行中的任务。
+- 支持取消排队/运行中的任务，支持提升/降低排队任务的优先级。
 
 ### 2.2 提交任务
 
 - **上传文件**：源/目标输入框上方提供上传按钮，支持多文件选择（图片/视频），上传后自动填入服务端路径；
-- **源人脸图片路径**：每行一个（或逗号分隔），也可直接填写服务端已有路径；
-- **目标图片/视频路径**：每行一个，支持批量（单任务多素材）；
+- **📹 视频帧提取工具 (FrameExtractor)**：展开工具面板，选择本地视频后可自由拖动进度条、微调时间点（±0.1s / ±1s），一键截取当前视频帧并上传为素材路径；
+- **👤 人脸检测与点选 (FaceSelector)**：点击“🔍 检测源图人脸”，系统调用 `/api/faces` 检测人脸并可视化叠加检测框，点击即可直接选中特定人脸；
+- **人脸选择策略 (Face Selector Mode)**：
+  - **全部人脸 (Many)**：默认替换目标画面中检测到的所有面孔；
+  - **单个最高分人脸 (One)**：仅替换画面中检测置信度最高的单个人脸；
+  - **参考人脸比对 (Reference)**：可指定参考人脸路径或从源图中点选，仅替换与参考人脸相似度最高的面孔；
 - **处理器**：勾选 `face_swapper`、`face_enhancer`、`expression_restorer`、`frame_enhancer`；
 - 输出目录可留空（使用默认配置）。
-
-### 2.3 任务列表（队列与优先级）
-
-- 排队中的任务显示**队列位置**（#N，按优先级从高到低）与**优先级**（P 值，数值大优先）；
-- 通过 `↑`/`↓` 按钮提升/降低排队中任务的优先级；执行中任务不可调整。
 
 ### 2.3 任务详情
 
@@ -74,12 +74,13 @@
 | 方法 | 路径 | 说明 |
 | :--- | :--- | :--- |
 | `GET` | `/api/health` | 健康检查（含版本） |
-| `POST` | `/api/tasks` | 提交任务（JSON：source_paths/target_paths/output_path/processors） |
+| `POST` | `/api/tasks` | 提交任务（JSON：source_paths/target_paths/output_path/processors/processor_params） |
 | `GET` | `/api/tasks` | 任务列表 |
 | `GET` | `/api/tasks/{id}` | 任务详情（含素材/结果 URL） |
 | `POST` | `/api/tasks/{id}/cancel` | 取消任务 |
 | `POST` | `/api/tasks/{id}/priority` | 修改优先级（仅排队中任务） |
 | `POST` | `/api/upload` | 上传文件（二进制 body + `X-File-Name` 头） |
+| `POST`/`GET` | `/api/faces` | 图像人脸检测与标注（返回人脸框、置信度、年龄/性别、关键点） |
 | `GET` | `/api/tasks/{id}/result` | 结果文件列表 |
 | `WS` | `/ws/tasks/{id}/progress` | 实时进度推送 |
 | `GET` | `/media/{task_id}/{kind}/{name}` | 素材/结果文件访问（白名单） |

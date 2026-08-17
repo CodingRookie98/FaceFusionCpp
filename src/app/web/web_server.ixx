@@ -8,20 +8,28 @@ module;
 #include <string>
 #include <cstdint>
 #include <memory>
+#include <functional>
 
 export module app.web.server;
 
 import app.web.task_manager;
+import app.web.task_types;
 import config.app;
 
 export namespace app::web {
 
 /**
+ * @brief Hook for detecting faces in an image
+ */
+using FaceDetectorFunc =
+    std::function<std::vector<DetectedFaceInfo>(const std::string& image_path)>;
+
+/**
  * @brief Options for the embedded web server
  */
 struct WebServerOptions {
-    std::string host = "0.0.0.0"; ///< Bind address
-    uint16_t port = 8000;         ///< Listen port
+    std::string host = "0.0.0.0";        ///< Bind address
+    uint16_t port = 8000;                ///< Listen port
     std::string web_root = "assets/web"; ///< Frontend static assets root
 };
 
@@ -29,8 +37,10 @@ struct WebServerOptions {
  * @brief Dependencies required by the web server
  */
 struct WebServerDeps {
-    std::shared_ptr<TaskManager> tasks;      ///< Task registry (required)
-    const config::AppConfig* app_config = nullptr; ///< For merging task defaults (may be null in tests)
+    std::shared_ptr<TaskManager> tasks; ///< Task registry (required)
+    const config::AppConfig* app_config =
+        nullptr;                             ///< For merging task defaults (may be null in tests)
+    FaceDetectorFunc detect_faces = nullptr; ///< Optional custom face detection provider
 };
 
 /**

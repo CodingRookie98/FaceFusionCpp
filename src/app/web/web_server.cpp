@@ -49,9 +49,7 @@ std::string status_to_string(TaskStatus status) {
 }
 
 json progress_to_json(const TaskProgress& p) {
-    return {{"current_frame", p.current_frame},
-            {"total_frames", p.total_frames},
-            {"fps", p.fps}};
+    return {{"current_frame", p.current_frame}, {"total_frames", p.total_frames}, {"fps", p.fps}};
 }
 
 json task_summary_to_json(const TaskSummary& s) {
@@ -93,6 +91,19 @@ json task_entry_to_json(const TaskEntry& e) {
             {"priority", e.priority}};
 }
 
+json detected_face_to_json(const DetectedFaceInfo& f) {
+    json kps = json::array();
+    for (const auto& pt : f.kps) { kps.push_back({{"x", pt.x}, {"y", pt.y}}); }
+    json j = {
+        {"index", f.index},
+        {"box", {{"x", f.box.x}, {"y", f.box.y}, {"width", f.box.width}, {"height", f.box.height}}},
+        {"score", f.score},
+        {"gender", f.gender},
+        {"age_range", {f.age_range.first, f.age_range.second}},
+        {"kps", kps}};
+    return j;
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // TaskConfig parsing from POST body
 // ─────────────────────────────────────────────────────────────────────────
@@ -102,39 +113,54 @@ bool parse_task_config(const json& body, config::TaskConfig& out, std::string& e
     out.task_info.id = "web_task";
 
     // io.source_paths
-    if (!body.contains("source_paths") || !body["source_paths"].is_array() ||
-        body["source_paths"].empty()) {
+    if (!body.contains("source_paths") || !body["source_paths"].is_array()
+        || body["source_paths"].empty()) {
         err = "source_paths (non-empty array) is required";
         return false;
     }
     for (const auto& p : body["source_paths"]) {
-        if (!p.is_string()) { err = "source_paths entries must be strings"; return false; }
+        if (!p.is_string()) {
+            err = "source_paths entries must be strings";
+            return false;
+        }
         out.io.source_paths.push_back(p.get<std::string>());
     }
 
     // io.target_paths
-    if (!body.contains("target_paths") || !body["target_paths"].is_array() ||
-        body["target_paths"].empty()) {
+    if (!body.contains("target_paths") || !body["target_paths"].is_array()
+        || body["target_paths"].empty()) {
         err = "target_paths (non-empty array) is required";
         return false;
     }
     for (const auto& p : body["target_paths"]) {
-        if (!p.is_string()) { err = "target_paths entries must be strings"; return false; }
+        if (!p.is_string()) {
+            err = "target_paths entries must be strings";
+            return false;
+        }
         out.io.target_paths.push_back(p.get<std::string>());
     }
 
     // io.output.path
     if (body.contains("output_path")) {
-        if (!body["output_path"].is_string()) { err = "output_path must be a string"; return false; }
+        if (!body["output_path"].is_string()) {
+            err = "output_path must be a string";
+            return false;
+        }
         out.io.output.path = body["output_path"].get<std::string>();
     }
 
     // pipeline processors + params
     std::vector<std::string> processors;
     if (body.contains("processors")) {
-        if (!body["processors"].is_array()) { err = "processors must be an array"; return false; }
+        if (!body["processors"].is_array()) {
+            err = "processors must be an array";
+            return false;
+        }
         for (const auto& p : body["processors"]) {
-            if (!p.is_string()) { err = "processors entries must be strings"; return false; }
+            if (!p.is_string()) {
+                err = "processors entries must be strings";
+                return false;
+            }
             processors.push_back(p.get<std::string>());
         }
     }
@@ -143,13 +169,15 @@ bool parse_task_config(const json& body, config::TaskConfig& out, std::string& e
     std::map<std::string, std::map<std::string, std::string>> params;
     if (body.contains("processor_params")) {
         const auto& pp = body["processor_params"];
-        if (!pp.is_object()) { err = "processor_params must be an object"; return false; }
+        if (!pp.is_object()) {
+            err = "processor_params must be an object";
+            return false;
+        }
         for (auto it = pp.begin(); it != pp.end(); ++it) {
             if (!it.value().is_object()) { continue; }
             for (auto pit = it.value().begin(); pit != it.value().end(); ++pit) {
-                params[it.key()][pit.key()] = pit.value().is_string() ?
-                                                  pit.value().get<std::string>() :
-                                                  pit.value().dump();
+                params[it.key()][pit.key()] =
+                    pit.value().is_string() ? pit.value().get<std::string>() : pit.value().dump();
             }
         }
     }
@@ -163,7 +191,10 @@ bool parse_task_config(const json& body, config::TaskConfig& out, std::string& e
             for (const auto& [k, v] : it->second) { step.cli_params[k] = v; }
         }
         auto apply_r = config::ApplyCliParamsToStep(step);
-        if (!apply_r) { err = apply_r.error().message; return false; }
+        if (!apply_r) {
+            err = apply_r.error().message;
+            return false;
+        }
         out.pipeline.push_back(std::move(step));
     }
     return true;
@@ -190,8 +221,7 @@ bool is_path_within(const std::filesystem::path& file, const std::filesystem::pa
     auto dir_canon = std::filesystem::weakly_canonical(dir, ec);
     if (ec) { return false; }
     auto rel = file_canon.lexically_relative(dir_canon);
-    return !rel.empty() && rel.native()[0] != '.' &&
-           rel.native().find("..") == std::string::npos;
+    return !rel.empty() && rel.native()[0] != '.' && rel.native().find("..") == std::string::npos;
 }
 
 void serve_file(const std::filesystem::path& path, bool is_image,
@@ -206,8 +236,11 @@ void serve_file(const std::filesystem::path& path, bool is_image,
     ss << in.rdbuf();
     auto resp = drogon::HttpResponse::newHttpResponse();
     resp->setBody(ss.str());
-    if (is_image) { resp->setContentTypeCode(drogon::CT_IMAGE_PNG); }
-    else { resp->setContentTypeCode(drogon::CT_APPLICATION_OCTET_STREAM); }
+    if (is_image) {
+        resp->setContentTypeCode(drogon::CT_IMAGE_PNG);
+    } else {
+        resp->setContentTypeCode(drogon::CT_APPLICATION_OCTET_STREAM);
+    }
     cb(resp);
 }
 
@@ -254,9 +287,7 @@ public:
         if (path.rfind(prefix, 0) != 0 || path.size() <= prefix.size() + suffix.size()) {
             return {};
         }
-        if (path.compare(path.size() - suffix.size(), suffix.size(), suffix) != 0) {
-            return {};
-        }
+        if (path.compare(path.size() - suffix.size(), suffix.size(), suffix) != 0) { return {}; }
         return path.substr(prefix.size(), path.size() - prefix.size() - suffix.size());
     }
 
@@ -318,9 +349,10 @@ std::string health_json() {
 void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
     auto& app = drogon::app();
     auto tasks = deps.tasks;
-    const std::string temp_dir = deps.app_config != nullptr && !deps.app_config->temp_directory.empty()
-                                     ? deps.app_config->temp_directory
-                                     : "./temp";
+    const std::string temp_dir =
+        deps.app_config != nullptr && !deps.app_config->temp_directory.empty() ?
+            deps.app_config->temp_directory :
+            "./temp";
 
     // Wire WebSocket progress push.
     // The module build skips static-init of template static members
@@ -334,10 +366,9 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
     // routes must be registered via the regex API.
     app.registerWebSocketControllerRegex("/ws/tasks/([0-9a-zA-Z_]+)/progress",
                                          ProgressWSController::classTypeName());
-    tasks->set_progress_listener(
-        [](const std::string& task_id, const TaskProgress& progress) {
-            ProgressWSController::broadcast_progress(task_id, progress);
-        });
+    tasks->set_progress_listener([](const std::string& task_id, const TaskProgress& progress) {
+        ProgressWSController::broadcast_progress(task_id, progress);
+    });
     tasks->set_status_listener(
         [](const std::string& task_id, TaskStatus status, const std::string& error) {
             ProgressWSController::broadcast_status(task_id, status, error);
@@ -357,12 +388,61 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
                         {drogon::Get});
 
     // POST /api/tasks
-    app.registerHandler(
-        "/api/tasks",
-        [tasks](const drogon::HttpRequestPtr& req,
-                std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
-            auto resp = drogon::HttpResponse::newHttpResponse();
-            resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+    app.registerHandler("/api/tasks",
+                        [tasks](const drogon::HttpRequestPtr& req,
+                                std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
+                            auto resp = drogon::HttpResponse::newHttpResponse();
+                            resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+                            json body;
+                            try {
+                                body = json::parse(req->getBody());
+                            } catch (const std::exception&) {
+                                resp->setStatusCode(drogon::k400BadRequest);
+                                resp->setBody(json{{"error", "invalid JSON body"}}.dump());
+                                cb(resp);
+                                return;
+                            }
+                            config::TaskConfig task_config;
+                            std::string err;
+                            if (!parse_task_config(body, task_config, err)) {
+                                resp->setStatusCode(drogon::k400BadRequest);
+                                resp->setBody(json{{"error", err}}.dump());
+                                cb(resp);
+                                return;
+                            }
+                            auto id = tasks->submit(std::move(task_config));
+                            resp->setStatusCode(drogon::k201Created);
+                            resp->setBody(json{{"id", id}, {"status", "queued"}}.dump());
+                            cb(resp);
+                        },
+                        {drogon::Post});
+
+    // GET /api/tasks
+    app.registerHandler("/api/tasks",
+                        [tasks](const drogon::HttpRequestPtr&,
+                                std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
+                            json arr = json::array();
+                            for (const auto& s : tasks->list()) {
+                                arr.push_back(task_summary_to_json(s));
+                            }
+                            auto resp = drogon::HttpResponse::newHttpResponse();
+                            resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+                            resp->setBody(arr.dump());
+                            cb(resp);
+                        },
+                        {drogon::Get});
+
+    // GET / POST /api/faces
+    auto handle_faces = [deps](const drogon::HttpRequestPtr& req,
+                               std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
+        auto resp = drogon::HttpResponse::newHttpResponse();
+        resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+
+        std::string image_path;
+        if (req->method() == drogon::Get) {
+            image_path = req->getParameter("image");
+            if (image_path.empty()) { image_path = req->getParameter("image_path"); }
+        } else if (req->method() == drogon::Post) {
             json body;
             try {
                 body = json::parse(req->getBody());
@@ -372,34 +452,45 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
                 cb(resp);
                 return;
             }
-            config::TaskConfig task_config;
-            std::string err;
-            if (!parse_task_config(body, task_config, err)) {
-                resp->setStatusCode(drogon::k400BadRequest);
-                resp->setBody(json{{"error", err}}.dump());
-                cb(resp);
-                return;
+            if (body.contains("image_path") && body["image_path"].is_string()) {
+                image_path = body["image_path"].get<std::string>();
+            } else if (body.contains("image") && body["image"].is_string()) {
+                image_path = body["image"].get<std::string>();
             }
-            auto id = tasks->submit(std::move(task_config));
-            resp->setStatusCode(drogon::k201Created);
-            resp->setBody(json{{"id", id}, {"status", "queued"}}.dump());
-            cb(resp);
-        },
-        {drogon::Post});
+        }
 
-    // GET /api/tasks
-    app.registerHandler(
-        "/api/tasks",
-        [tasks](const drogon::HttpRequestPtr&,
-                std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
-            json arr = json::array();
-            for (const auto& s : tasks->list()) { arr.push_back(task_summary_to_json(s)); }
-            auto resp = drogon::HttpResponse::newHttpResponse();
-            resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
-            resp->setBody(arr.dump());
+        if (image_path.empty()) {
+            resp->setStatusCode(drogon::k400BadRequest);
+            resp->setBody(json{{"error", "image_path parameter is required"}}.dump());
             cb(resp);
-        },
-        {drogon::Get});
+            return;
+        }
+
+        if (image_path == "." || image_path == ".." || image_path.find("../") != std::string::npos
+            || image_path.find("..\\") != std::string::npos) {
+            resp->setStatusCode(drogon::k400BadRequest);
+            resp->setBody(json{{"error", "invalid image path"}}.dump());
+            cb(resp);
+            return;
+        }
+
+        if (!std::filesystem::exists(image_path)) {
+            resp->setStatusCode(drogon::k404NotFound);
+            resp->setBody(json{{"error", "image file not found"}}.dump());
+            cb(resp);
+            return;
+        }
+
+        std::vector<DetectedFaceInfo> faces;
+        if (deps.detect_faces) { faces = deps.detect_faces(image_path); }
+
+        json faces_arr = json::array();
+        for (const auto& f : faces) { faces_arr.push_back(detected_face_to_json(f)); }
+
+        resp->setBody(json{{"image", image_path}, {"faces", faces_arr}}.dump());
+        cb(resp);
+    };
+    app.registerHandler("/api/faces", handle_faces, {drogon::Get, drogon::Post});
 
     // POST /api/upload (binary body + X-File-Name header)
     app.registerHandler(
@@ -411,9 +502,9 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             auto raw_name = req->getHeader("X-File-Name");
             // Reject any path separators / traversal outright (defense in depth:
             // do NOT normalize via filename(), which would silently rewrite them).
-            if (raw_name.empty() || raw_name == "." || raw_name == ".." ||
-                raw_name.find('/') != std::string::npos ||
-                raw_name.find('\\') != std::string::npos) {
+            if (raw_name.empty() || raw_name == "." || raw_name == ".."
+                || raw_name.find('/') != std::string::npos
+                || raw_name.find('\\') != std::string::npos) {
                 resp->setStatusCode(drogon::k400BadRequest);
                 resp->setBody(json{{"error", "invalid file name"}}.dump());
                 cb(resp);
@@ -429,8 +520,8 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             }
             std::error_code ec;
             std::filesystem::create_directories(temp_dir, ec);
-            auto stamp = std::to_string(
-                std::chrono::system_clock::now().time_since_epoch().count());
+            auto stamp =
+                std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
             auto out_path = std::filesystem::path(temp_dir) / (stamp + "_" + clean_name);
             std::ofstream out(out_path, std::ios::binary);
             if (!out) {
@@ -442,10 +533,9 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             out.write(body.data(), static_cast<std::streamsize>(body.size()));
             out.close();
             resp->setStatusCode(drogon::k201Created);
-            resp->setBody(json{{"path", out_path.string()},
-                               {"name", clean_name},
-                               {"size", body.size()}}
-                              .dump());
+            resp->setBody(
+                json{{"path", out_path.string()}, {"name", clean_name}, {"size", body.size()}}
+                    .dump());
             cb(resp);
         },
         {drogon::Post});
@@ -493,37 +583,35 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
         {drogon::Post});
 
     // GET /api/tasks/{task_id}
-    app.registerHandler(
-        "/api/tasks/{task_id}",
-        [tasks](const drogon::HttpRequestPtr& req,
-                std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
-            auto task_id = path_param(req, 0);
-            auto resp = drogon::HttpResponse::newHttpResponse();
-            resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
-            auto entry = tasks->get(task_id);
-            if (!entry) {
-                resp->setStatusCode(drogon::k404NotFound);
-                resp->setBody(json{{"error", "task not found"}}.dump());
-                cb(resp);
-                return;
-            }
-            resp->setBody(task_entry_to_json(*entry).dump());
-            cb(resp);
-        },
-        {drogon::Get});
+    app.registerHandler("/api/tasks/{task_id}",
+                        [tasks](const drogon::HttpRequestPtr& req,
+                                std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
+                            auto task_id = path_param(req, 0);
+                            auto resp = drogon::HttpResponse::newHttpResponse();
+                            resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+                            auto entry = tasks->get(task_id);
+                            if (!entry) {
+                                resp->setStatusCode(drogon::k404NotFound);
+                                resp->setBody(json{{"error", "task not found"}}.dump());
+                                cb(resp);
+                                return;
+                            }
+                            resp->setBody(task_entry_to_json(*entry).dump());
+                            cb(resp);
+                        },
+                        {drogon::Get});
 
     // POST /api/tasks/{task_id}/cancel
-    app.registerHandler(
-        "/api/tasks/{task_id}/cancel",
-        [tasks](const drogon::HttpRequestPtr& req,
-                std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
-            auto task_id = path_param(req, 0);
-            auto resp = drogon::HttpResponse::newHttpResponse();
-            resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
-            resp->setBody(json{{"ok", tasks->cancel(task_id)}}.dump());
-            cb(resp);
-        },
-        {drogon::Post});
+    app.registerHandler("/api/tasks/{task_id}/cancel",
+                        [tasks](const drogon::HttpRequestPtr& req,
+                                std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
+                            auto task_id = path_param(req, 0);
+                            auto resp = drogon::HttpResponse::newHttpResponse();
+                            resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+                            resp->setBody(json{{"ok", tasks->cancel(task_id)}}.dump());
+                            cb(resp);
+                        },
+                        {drogon::Post});
 
     // GET /api/tasks/{task_id}/result
     app.registerHandler(
@@ -571,7 +659,9 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             bool is_image = false;
             if (kind == "source") {
                 std::size_t idx = 0;
-                try { idx = std::stoul(name); } catch (...) { idx = static_cast<std::size_t>(-1); }
+                try {
+                    idx = std::stoul(name);
+                } catch (...) { idx = static_cast<std::size_t>(-1); }
                 if (idx >= entry->config.io.source_paths.size()) {
                     resp->setStatusCode(drogon::k404NotFound);
                     resp->setBody(json{{"error", "invalid index"}}.dump());
@@ -582,7 +672,9 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
                 is_image = true;
             } else if (kind == "target") {
                 std::size_t idx = 0;
-                try { idx = std::stoul(name); } catch (...) { idx = static_cast<std::size_t>(-1); }
+                try {
+                    idx = std::stoul(name);
+                } catch (...) { idx = static_cast<std::size_t>(-1); }
                 if (idx >= entry->config.io.target_paths.size()) {
                     resp->setStatusCode(drogon::k404NotFound);
                     resp->setBody(json{{"error", "invalid index"}}.dump());
@@ -592,8 +684,8 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
                 file_path = entry->config.io.target_paths[idx];
                 is_image = true;
             } else if (kind == "result") {
-                if (name.find('/') != std::string::npos || name.find("\\") != std::string::npos ||
-                    name == ".." || name == ".") {
+                if (name.find('/') != std::string::npos || name.find("\\") != std::string::npos
+                    || name == ".." || name == ".") {
                     resp->setStatusCode(drogon::k404NotFound);
                     resp->setBody(json{{"error", "invalid file name"}}.dump());
                     cb(resp);
@@ -609,8 +701,9 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             }
 
             // Whitelist check: result files must live inside the task output dir
-            if (kind == "result" &&
-                !is_path_within(file_path, std::filesystem::path(entry->config.io.output.path))) {
+            if (kind == "result"
+                && !is_path_within(file_path,
+                                   std::filesystem::path(entry->config.io.output.path))) {
                 resp->setStatusCode(drogon::k404NotFound);
                 resp->setBody(json{{"error", "forbidden"}}.dump());
                 cb(resp);

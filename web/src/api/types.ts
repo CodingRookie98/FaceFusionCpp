@@ -53,3 +53,31 @@ export interface WsStatusMessage {
 }
 
 export type WsMessage = WsProgressMessage | WsStatusMessage;
+
+export interface FaceBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface FacePoint {
+  x: number;
+  y: number;
+}
+
+export interface DetectedFace {
+  index: number;
+  box: FaceBox;
+  score: number;
+  gender?: string;
+  age_range?: [number, number];
+  kps?: FacePoint[];
+}
+
+export interface DetectFacesResponse {
+  image: string;
+  faces: DetectedFace[];
+}
+
+export type FaceSelectorMode = 'many' | 'one' | 'reference';

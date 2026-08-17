@@ -1,4 +1,4 @@
-import type { CreateTaskRequest, TaskDetail, TaskSummary, WsMessage } from './types';
+import type { CreateTaskRequest, DetectFacesResponse, TaskDetail, TaskSummary, WsMessage } from './types';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -29,6 +29,11 @@ export const api = {
     request<{ ok: boolean; priority: number }>(`/api/tasks/${id}/priority`, {
       method: 'POST',
       body: JSON.stringify({ priority }),
+    }),
+  detectFaces: (imagePath: string) =>
+    request<DetectFacesResponse>('/api/faces', {
+      method: 'POST',
+      body: JSON.stringify({ image_path: imagePath }),
     }),
   uploadFile: async (file: File): Promise<{ path: string; name: string; size: number }> => {
     const res = await fetch('/api/upload', {

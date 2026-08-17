@@ -211,6 +211,12 @@ TEST(TaskManagerTest, SetPriorityAffectsQueuePosition) {
     executor->block = true;
     TaskManager mgr(executor);
     auto first = mgr.submit(MakeConfig(), 0); // becomes running (blocked)
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+    while (!mgr.is_running() && std::chrono::steady_clock::now() < deadline) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    EXPECT_TRUE(mgr.is_running());
+
     auto a = mgr.submit(MakeConfig(), 0);
     auto b = mgr.submit(MakeConfig(), 0);
 
@@ -231,4 +237,3 @@ TEST(TaskManagerTest, SetPriorityAffectsQueuePosition) {
     // unknown task
     EXPECT_FALSE(mgr.set_priority("no_such", 9));
 }
-

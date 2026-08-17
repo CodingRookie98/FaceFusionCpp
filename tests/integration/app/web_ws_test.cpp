@@ -36,8 +36,8 @@ namespace {
 // ctest runs each gtest case as a separate process; pick a random port to
 // avoid TIME_WAIT/PID-reuse bind conflicts (fixed 1808x ports flaked).
 static uint16_t RandomTestPort() {
-    auto seed = static_cast<unsigned>(
-        std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    auto seed =
+        static_cast<unsigned>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
     std::mt19937 gen(seed);
     return static_cast<uint16_t>(20000 + (gen() % 20000)); // 20000-39999
 }
@@ -114,11 +114,16 @@ SocketHandle WsConnect(const std::string& path) {
         return FFC_INVALID_SOCKET;
     }
     std::string key = "dGhlIHNhbXBsZSBub25jZQ=="; // fixed test key
-    std::string req = "GET " + path + " HTTP/1.1\r\n"
-                      "Host: 127.0.0.1:" + std::to_string(kTestPort) + "\r\n"
+    std::string req = "GET " + path
+                    + " HTTP/1.1\r\n"
+                      "Host: 127.0.0.1:"
+                    + std::to_string(kTestPort)
+                    + "\r\n"
                       "Upgrade: websocket\r\n"
                       "Connection: Upgrade\r\n"
-                      "Sec-WebSocket-Key: " + key + "\r\n"
+                      "Sec-WebSocket-Key: "
+                    + key
+                    + "\r\n"
                       "Sec-WebSocket-Version: 13\r\n\r\n";
     send(fd, req.data(), static_cast<int>(req.size()), 0);
     char buf[512];
@@ -205,8 +210,9 @@ protected:
 };
 
 TEST_F(WebWsTest, ReceivesProgressAndDoneMessages) {
-    auto [code, resp] = SendRequest(drogon::Post, "/api/tasks",
-                                    R"({"source_paths":["s.jpg"],"target_paths":["t.jpg"],"output_path":"ws_test_out"})");
+    auto [code, resp] = SendRequest(
+        drogon::Post, "/api/tasks",
+        R"({"source_paths":["s.jpg"],"target_paths":["t.jpg"],"output_path":"ws_test_out"})");
     ASSERT_EQ(code, 201);
     auto id = json::parse(resp)["id"].get<std::string>();
 
@@ -218,9 +224,14 @@ TEST_F(WebWsTest, ReceivesProgressAndDoneMessages) {
     std::string msg;
     while (WsReadText(fd, msg, 2000)) {
         auto j = json::parse(msg);
-        if (j["type"] == "progress") { ++progress_count; }
-        else if (j["type"] == "status" && j["status"] == "done") { saw_done = true; break; }
-        else if (j["type"] == "status" && j["status"] == "failed") { break; }
+        if (j["type"] == "progress") {
+            ++progress_count;
+        } else if (j["type"] == "status" && j["status"] == "done") {
+            saw_done = true;
+            break;
+        } else if (j["type"] == "status" && j["status"] == "failed") {
+            break;
+        }
     }
     CloseSocket(fd);
     EXPECT_GE(progress_count, 1);
