@@ -40,6 +40,12 @@ const std::string kOutputDir = "web_api_test_output";
 class FakeExecutor : public ITaskExecutor {
 public:
     int run(const config::TaskConfig& config, const services::pipeline::ProgressCallback& cb) override {
+        if (block.load()) {
+            while (!cancelled.load()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            }
+            return 2;
+        }
         std::filesystem::create_directories(config.io.output.path);
         std::ofstream(std::filesystem::path(config.io.output.path) / "result.png") << "fake-image";
         services::pipeline::TaskProgress p;
@@ -49,14 +55,18 @@ public:
         cb(p);
         return 0;
     }
-    void cancel() override {}
+    void cancel() override { cancelled.store(true); }
+    std::atomic<bool> block{false};
+    std::atomic<bool> cancelled{false};
 };
 
 std::shared_ptr<TaskManager> g_tasks;
+std::shared_ptr<FakeExecutor> g_executor;
 std::thread g_server_thread;
 
 void StartServer() {
-    g_tasks = std::make_shared<TaskManager>(std::make_shared<FakeExecutor>());
+    g_executor = std::make_shared<FakeExecutor>();
+    g_tasks = std::make_shared<TaskManager>(g_executor);
     g_server_thread = std::thread([]() {
         run_server({.host = "127.0.0.1", .port = kTestPort, .web_root = ""},
                    {.tasks = g_tasks, .app_config = nullptr});
@@ -209,3 +219,93 @@ TEST_F(WebApiTest, CancelQueuedTask) {
     auto status = json::parse(gresp)["status"].get<std::string>();
     EXPECT_TRUE(status == "cancelled" || status == "done");
 }
+TEST_F(WebApiTest, UploadStoresFile) {
+    // Upload with a binary body via raw HTTP helper (drogon client sets content type)
+    auto client = drogon::HttpClient::newHttpClient(kBaseUrl);
+    auto req = drogon::HttpRequest::newHttpRequest();
+    req->setMethod(drogon::Post);
+    req->setPath("/api/upload");
+    req->addHeader("X-File-Name", "test_upload.jpg");
+    req->setBody("fake-image-bytes");
+    std::pair<int, std::string> out;
+    std::promise<void> done;
+    client->sendRequest(req, [&](drogon::ReqResult, const drogon::HttpResponsePtr& resp) {
+        if (resp) {
+            out.first = resp->getStatusCode();
+            out.second = std::string(resp->getBody());
+        }
+        done.set_value();
+    });
+    done.get_future().wait();
+    EXPECT_EQ(out.first, 201);
+    auto body = json::parse(out.second);
+    EXPECT_EQ(body["name"], "test_upload.jpg");
+    EXPECT_EQ(body["size"], 16);
+    auto path = std::filesystem::path(body["path"].get<std::string>());
+    EXPECT_TRUE(std::filesystem::exists(path));
+    std::filesystem::remove(path);
+}
+
+TEST_F(WebApiTest, UploadRejectsBadFileName) {
+    auto client = drogon::HttpClient::newHttpClient(kBaseUrl);
+    auto req = drogon::HttpRequest::newHttpRequest();
+    req->setMethod(drogon::Post);
+    req->setPath("/api/upload");
+    req->addHeader("X-File-Name", "../evil.jpg");
+    req->setBody("x");
+    std::pair<int, std::string> out;
+    std::promise<void> done;
+    client->sendRequest(req, [&](drogon::ReqResult, const drogon::HttpResponsePtr& resp) {
+        if (resp) {
+            out.first = resp->getStatusCode();
+            out.second = std::string(resp->getBody());
+        }
+        done.set_value();
+    });
+    done.get_future().wait();
+    EXPECT_EQ(out.first, 400);
+}
+
+TEST_F(WebApiTest, PriorityEndpointWorks) {
+    // Block the executor so the first task stays running and later tasks queue
+    g_executor->block.store(true);
+    auto first = SubmitTask(R"({"source_paths":["s.jpg"],"target_paths":["t.jpg"],"output_path":")"
+                            + kOutputDir + R"(","processors":["face_swapper"]})");
+    // Wait until first task is running so the next one queues
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+    while (!g_tasks->is_running() && std::chrono::steady_clock::now() < deadline) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    ASSERT_TRUE(g_tasks->is_running());
+
+    auto created = SubmitTask(R"({"source_paths":["s.jpg"],"target_paths":["t.jpg"],"output_path":")"
+                              + kOutputDir + R"(","processors":["face_swapper"]})");
+    std::string id = created["id"].get<std::string>();
+
+    auto [code, resp] = SendRequest(drogon::Post, "/api/tasks/" + id + "/priority",
+                                    R"({"priority": 7})");
+    EXPECT_EQ(code, 200);
+    auto body = json::parse(resp);
+    ASSERT_TRUE(body.contains("ok"));
+    EXPECT_EQ(body["ok"], true);
+    EXPECT_EQ(body["priority"], 7);
+
+    // List reflects priority
+    auto [lcode, lresp] = SendRequest(drogon::Get, "/api/tasks");
+    auto list = json::parse(lresp);
+    for (const auto& t : list) {
+        if (t["id"] == id) { EXPECT_EQ(t["priority"], 7); }
+    }
+
+    // Bad payloads
+    auto [b1, r1] = SendRequest(drogon::Post, "/api/tasks/" + id + "/priority", R"({"priority":"x"})");
+    EXPECT_EQ(b1, 400);
+    auto [b2, r2] = SendRequest(drogon::Post, "/api/tasks/no_such/priority", R"({"priority":1})");
+    EXPECT_EQ(b2, 404);
+
+    // Unblock and cancel so teardown is clean
+    g_executor->block.store(false);
+    g_tasks->cancel(first["id"].get<std::string>());
+    g_tasks->cancel(id);
+}
+

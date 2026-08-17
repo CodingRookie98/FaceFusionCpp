@@ -1,4 +1,5 @@
 module;
+#include <chrono>
 #include <string>
 #include <filesystem>
 #include <fstream>
@@ -13,6 +14,10 @@ module;
 #include <drogon/WebSocketController.h>
 #include <drogon/WebSocketConnection.h>
 #include <nlohmann/json.hpp>
+
+namespace {
+constexpr std::size_t kMaxUploadBytes = 512ULL * 1024 * 1024; // 512MB
+}
 
 module app.web.server;
 
@@ -54,7 +59,9 @@ json task_summary_to_json(const TaskSummary& s) {
             {"status", status_to_string(s.status)},
             {"progress", progress_to_json(s.progress)},
             {"error_message", s.error_message},
-            {"media_count", s.media_count}};
+            {"media_count", s.media_count},
+            {"priority", s.priority},
+            {"queue_position", s.queue_position}};
 }
 
 json task_entry_to_json(const TaskEntry& e) {
@@ -82,7 +89,8 @@ json task_entry_to_json(const TaskEntry& e) {
             {"error_message", e.error_message},
             {"output_path", e.config.io.output.path},
             {"media", media},
-            {"results", results}};
+            {"results", results},
+            {"priority", e.priority}};
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -310,6 +318,9 @@ std::string health_json() {
 void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
     auto& app = drogon::app();
     auto tasks = deps.tasks;
+    const std::string temp_dir = deps.app_config != nullptr && !deps.app_config->temp_directory.empty()
+                                     ? deps.app_config->temp_directory
+                                     : "./temp";
 
     // Wire WebSocket progress push.
     // The module build skips static-init of template static members
@@ -389,6 +400,97 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             cb(resp);
         },
         {drogon::Get});
+
+    // POST /api/upload (binary body + X-File-Name header)
+    app.registerHandler(
+        "/api/upload",
+        [tasks, temp_dir](const drogon::HttpRequestPtr& req,
+                          std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
+            auto resp = drogon::HttpResponse::newHttpResponse();
+            resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+            auto raw_name = req->getHeader("X-File-Name");
+            // Reject any path separators / traversal outright (defense in depth:
+            // do NOT normalize via filename(), which would silently rewrite them).
+            if (raw_name.empty() || raw_name == "." || raw_name == ".." ||
+                raw_name.find('/') != std::string::npos ||
+                raw_name.find('\\') != std::string::npos) {
+                resp->setStatusCode(drogon::k400BadRequest);
+                resp->setBody(json{{"error", "invalid file name"}}.dump());
+                cb(resp);
+                return;
+            }
+            auto clean_name = raw_name;
+            const auto& body = req->getBody();
+            if (body.size() > kMaxUploadBytes) {
+                resp->setStatusCode(drogon::k413RequestEntityTooLarge);
+                resp->setBody(json{{"error", "file too large (max 512MB)"}}.dump());
+                cb(resp);
+                return;
+            }
+            std::error_code ec;
+            std::filesystem::create_directories(temp_dir, ec);
+            auto stamp = std::to_string(
+                std::chrono::system_clock::now().time_since_epoch().count());
+            auto out_path = std::filesystem::path(temp_dir) / (stamp + "_" + clean_name);
+            std::ofstream out(out_path, std::ios::binary);
+            if (!out) {
+                resp->setStatusCode(drogon::k500InternalServerError);
+                resp->setBody(json{{"error", "failed to write upload"}}.dump());
+                cb(resp);
+                return;
+            }
+            out.write(body.data(), static_cast<std::streamsize>(body.size()));
+            out.close();
+            resp->setStatusCode(drogon::k201Created);
+            resp->setBody(json{{"path", out_path.string()},
+                               {"name", clean_name},
+                               {"size", body.size()}}
+                              .dump());
+            cb(resp);
+        },
+        {drogon::Post});
+
+    // POST /api/tasks/{task_id}/priority
+    app.registerHandler(
+        "/api/tasks/{task_id}/priority",
+        [tasks](const drogon::HttpRequestPtr& req,
+                std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
+            auto task_id = path_param(req, 0);
+            auto resp = drogon::HttpResponse::newHttpResponse();
+            resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+            auto entry = tasks->get(task_id);
+            if (!entry) {
+                resp->setStatusCode(drogon::k404NotFound);
+                resp->setBody(json{{"error", "task not found"}}.dump());
+                cb(resp);
+                return;
+            }
+            json body;
+            try {
+                body = json::parse(req->getBody());
+            } catch (const std::exception&) {
+                resp->setStatusCode(drogon::k400BadRequest);
+                resp->setBody(json{{"error", "invalid JSON body"}}.dump());
+                cb(resp);
+                return;
+            }
+            if (!body.contains("priority") || !body["priority"].is_number_integer()) {
+                resp->setStatusCode(drogon::k400BadRequest);
+                resp->setBody(json{{"error", "priority (integer) is required"}}.dump());
+                cb(resp);
+                return;
+            }
+            int priority = body["priority"].get<int>();
+            if (!tasks->set_priority(task_id, priority)) {
+                resp->setStatusCode(drogon::k409Conflict);
+                resp->setBody(json{{"error", "task is not queued"}}.dump());
+                cb(resp);
+                return;
+            }
+            resp->setBody(json{{"ok", true}, {"priority", priority}}.dump());
+            cb(resp);
+        },
+        {drogon::Post});
 
     // GET /api/tasks/{task_id}
     app.registerHandler(
