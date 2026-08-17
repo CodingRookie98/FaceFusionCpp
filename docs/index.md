@@ -4,7 +4,7 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DOC-INDEX-2026
-> **当前版本 (Version)**: V1.1.6
+> - **当前版本 (Version)**: V1.1.7
 > **状态 (Status)**: 正式 (Official)
 > **权威性 (Authority)**: 规范 (Normative)
 > **所有者 (Owner)**: 王辉
@@ -15,6 +15,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.7** | 2026-08-17 | AI Agent | 王辉 | 登记新增评估报告 web-ui-design-completion-review.md（Web UI M1-M4 完成度对抗性复核，待审批）。 |
 | **V1.1.6** | 2026-08-17 | AI Agent | 王辉 | 同步 M4 完成状态：更新 web_ui_design.md 与 web_guide.md（zh/en）。 |
 | **V1.1.5** | 2026-08-17 | AI Agent | 王辉 | 登记 Web 界面使用指南（zh/en）与设计规格状态更新。 |
 | **V1.1.4** | 2026-08-14 | AI Agent | 王辉 | 登记新增架构设计文档 web_ui_design.md（Web 界面设计规格）。 |
@@ -100,6 +101,12 @@ docs/
 | [setup.md](./dev/zh/guides/setup.md) | 技术构建环境搭建指南 |
 | [build.md](./dev/zh/guides/build.md) | 使用 `build.py` 脚本配置和构建 |
 | [compiler_selection.md](./dev/zh/guides/compiler_selection.md) | 编译器选型决策记录 (ADR) |
+
+**评估 (Evaluation)**
+
+| 文档 | 说明 |
+| :--- | :--- |
+| [web-ui-design-completion-review.md](./dev/zh/evaluation/web-ui-design-completion-review.md) | Web UI M1-M4 完成度对抗性复核报告（待审批） |
 
 **模板 (Templates)**
 
