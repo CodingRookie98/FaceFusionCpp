@@ -6,10 +6,12 @@ module;
 #include <atomic>
 #include <thread>
 #include <memory>
+#include <mutex>
 #include <CLI/CLI.hpp>
 #include <format>
 #include <filesystem>
 #include <sstream>
+#include <opencv2/opencv.hpp>
 
 module app.cli;
 
@@ -20,15 +22,23 @@ import services.pipeline.runner;
 import services.pipeline.shutdown;
 import foundation.infrastructure.logger;
 import foundation.infrastructure.core_utils;
+import foundation.ai.inference_session;
 import foundation.ai.inference_session_registry;
 import domain.ai.model_repository;
 import domain.face.model_registry;
+import domain.face;
+import domain.face.analyser;
+import domain.face.detector;
+import domain.face.recognizer;
+import domain.common;
+import domain.pipeline;
 import app.cli.system_check;
 import app.version;
 import foundation.infrastructure.progress;
 import processor.param_registry;
 import app.web.server;
 import app.web.task_manager;
+import app.web.task_types;
 import app.web.pipeline_executor;
 
 namespace app::cli {
@@ -294,12 +304,79 @@ int App::run_web_mode(const std::string& host, uint16_t port, const std::string&
     Logger::get_instance()->info(
         std::format("Web UI starting: http://{}:{}/ (web root: {})", host, port, web_root));
 
+    // Ensure builtin adapters are registered
+    domain::pipeline::register_builtin_adapters();
+
     // Wire the production task executor (PipelineRunner) into the task manager
     auto executor = std::make_shared<app::web::PipelineTaskExecutor>(app_config);
     auto tasks = std::make_shared<app::web::TaskManager>(executor);
 
+    // Production face detector hook backed by FaceAnalyser
+    auto detect_faces =
+        [app_config](const std::string& image_path) -> std::vector<app::web::DetectedFaceInfo> {
+        using foundation::infrastructure::logger::Logger;
+        try {
+            cv::Mat frame = cv::imread(image_path);
+            if (frame.empty()) {
+                Logger::get_instance()->warn(
+                    std::format("detect_faces: failed to read image: {}", image_path));
+                return {};
+            }
+
+            auto model_repo = domain::ai::model_repository::ModelRepository::get_instance();
+            domain::face::analyser::Options opts;
+            opts.inference_session_options =
+                foundation::ai::inference_session::Options::with_best_providers();
+            opts.model_paths.face_detector_yolo =
+                model_repo->ensure_model(app_config.default_models.face_detector);
+            opts.model_paths.face_recognizer_arcface =
+                model_repo->ensure_model(app_config.default_models.face_recognizer);
+            opts.face_detector_options.type = domain::face::detector::DetectorType::Yolo;
+            opts.face_recognizer_type =
+                domain::face::recognizer::FaceRecognizerType::ArcFaceW600kR50;
+
+            static std::mutex s_analyser_mutex;
+            static std::shared_ptr<domain::face::analyser::FaceAnalyser> s_analyser;
+            std::shared_ptr<domain::face::analyser::FaceAnalyser> analyser;
+            {
+                std::lock_guard lock(s_analyser_mutex);
+                if (!s_analyser) {
+                    s_analyser = std::make_shared<domain::face::analyser::FaceAnalyser>(opts);
+                }
+                analyser = s_analyser;
+            }
+
+            auto faces = analyser->get_many_faces(
+                frame, domain::face::analyser::FaceAnalysisType::Detection
+                           | domain::face::analyser::FaceAnalysisType::Landmark);
+
+            std::vector<app::web::DetectedFaceInfo> results;
+            results.reserve(faces.size());
+            for (std::size_t i = 0; i < faces.size(); ++i) {
+                const auto& f = faces[i];
+                app::web::DetectedFaceInfo info;
+                info.index = static_cast<int>(i);
+                info.box = {f.box().x, f.box().y, f.box().width, f.box().height};
+                info.score = f.detector_score();
+                info.gender =
+                    (f.gender() == domain::common::types::Gender::Female) ? "female" : "male";
+                info.age_range = {static_cast<int>(f.age_range().min),
+                                  static_cast<int>(f.age_range().max)};
+                for (const auto& pt : f.kps()) { info.kps.push_back({pt.x, pt.y}); }
+                results.push_back(std::move(info));
+            }
+            return results;
+        } catch (const std::exception& e) {
+            Logger::get_instance()->error(std::format("detect_faces exception: {}", e.what()));
+            return {};
+        } catch (...) {
+            Logger::get_instance()->error("detect_faces unknown exception");
+            return {};
+        }
+    };
+
     app::web::run_server({.host = host, .port = port, .web_root = web_root},
-                         {.tasks = tasks, .app_config = &app_config});
+                         {.tasks = tasks, .app_config = &app_config, .detect_faces = detect_faces});
     return 0;
 }
 

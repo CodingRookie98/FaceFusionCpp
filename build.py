@@ -164,10 +164,13 @@ def run_web_build(project_root):
         log("web/ not found, skipping frontend build", "warning")
         return
 
+    web_env = os.environ.copy()
+    web_env.pop("NODE_ENV", None)
+
     log("Installing frontend dependencies (npm ci)...", "info")
-    run_command(["npm", "ci"], env=None, cwd=web_dir)
+    run_command(["npm", "ci", "--include=dev"], env=web_env, cwd=web_dir)
     log("Building frontend (npm run build)...", "info")
-    run_command(["npm", "run", "build"], env=None, cwd=web_dir)
+    run_command(["npm", "run", "build"], env=web_env, cwd=web_dir)
 
     dist_dir = web_dir / "dist"
     if not dist_dir.exists():

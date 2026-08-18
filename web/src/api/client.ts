@@ -1,4 +1,12 @@
-import type { CreateTaskRequest, DetectFacesResponse, TaskDetail, TaskSummary, WsMessage } from './types';
+import type {
+  CreateTaskRequest,
+  DetectFacesResponse,
+  ProcessorMeta,
+  TaskDetail,
+  TaskProgressResponse,
+  TaskSummary,
+  WsMessage,
+} from './types';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -14,8 +22,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   health: () => request<{ status: string; version: string }>('/api/health'),
+  listProcessors: () => request<ProcessorMeta[]>('/api/processors'),
   listTasks: () => request<TaskSummary[]>('/api/tasks'),
   getTask: (id: string) => request<TaskDetail>(`/api/tasks/${id}`),
+  getProgress: (id: string) =>
+    request<TaskProgressResponse>(`/api/tasks/${id}/progress`),
   submitTask: (body: CreateTaskRequest) =>
     request<{ id: string; status: string }>('/api/tasks', {
       method: 'POST',

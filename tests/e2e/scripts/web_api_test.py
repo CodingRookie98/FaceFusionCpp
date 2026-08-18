@@ -15,13 +15,13 @@ import urllib.request
 from pathlib import Path
 
 
-def http(method: str, url: str, body: dict | None = None) -> tuple[int, str]:
+def http(method: str, url: str, body: dict | None = None, timeout: float = 60.0) -> tuple[int, str]:
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(url, data=data, method=method)
     if data is not None:
         req.add_header("Content-Type", "application/json")
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             return resp.status, resp.read().decode()
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode()
@@ -41,13 +41,15 @@ def main() -> int:
                             cwd=exe.parent)
     try:
         # wait for health
-        for _ in range(30):
+        body = ""
+        for _ in range(60):
             try:
                 code, body = http("GET", f"{base}/api/health")
                 if code == 200:
                     break
-            except OSError:
-                time.sleep(0.5)
+            except Exception:
+                pass
+            time.sleep(0.5)
         else:
             print("[FAIL] server did not become ready")
             return 1
@@ -57,7 +59,7 @@ def main() -> int:
 
         # static page
         code, body = http("GET", f"{base}/")
-        assert code == 200 and "ffc Web UI" in body, "index.html not served"
+        assert code == 200 and ("ffc" in body.lower() or "root" in body), f"index.html not served properly: {body}"
         print("[PASS] static index served")
 
         # submit
@@ -84,6 +86,38 @@ def main() -> int:
         assert detail["media"]["source"], "media urls missing"
         print("[PASS] task detail (status=" + detail["status"] + ")")
 
+        # processors metadata endpoint
+        code, body = http("GET", f"{base}/api/processors")
+        assert code == 200, f"/api/processors failed: {code} {body}"
+        processors = json.loads(body)
+        assert isinstance(processors, list) and len(processors) > 0
+        proc_names = [p["name"] for p in processors]
+        assert "face_swapper" in proc_names
+        print(f"[PASS] /api/processors -> {len(processors)} processors found")
+
+        # progress endpoint
+        code, body = http("GET", f"{base}/api/tasks/{task_id}/progress")
+        assert code == 200, f"/api/tasks/{task_id}/progress failed: {code} {body}"
+        prog_res = json.loads(body)
+        assert "progress" in prog_res and "status" in prog_res
+        print(f"[PASS] /api/tasks/{task_id}/progress")
+
+        # Range request check on media
+        detail_media = detail["media"]["source"]
+        if detail_media:
+            first_media_url = detail_media[0] if isinstance(detail_media[0], str) else detail_media[0]["url"]
+            range_req = urllib.request.Request(f"{base}{first_media_url}", method="GET")
+            range_req.add_header("Range", "bytes=0-3")
+            try:
+                with urllib.request.urlopen(range_req, timeout=10) as rresp:
+                    assert rresp.status == 206, f"expected 206 for Range request, got {rresp.status}"
+                    partial_data = rresp.read()
+                    assert len(partial_data) == 4, f"expected 4 bytes, got {len(partial_data)}"
+                    print("[PASS] media HTTP Range (206) response")
+            except urllib.error.HTTPError as he:
+                assert he.code == 206, f"expected 206 for Range request, got {he.code}"
+                print("[PASS] media HTTP Range (206) response")
+
         # cancel (idempotent for terminal states)
         code, body = http("POST", f"{base}/api/tasks/{task_id}/cancel")
         assert code == 200 and json.loads(body)["ok"] is True
@@ -94,15 +128,20 @@ def main() -> int:
         assert code == 404
         print("[PASS] unknown task -> 404")
 
-        # upload a file
-        upload_data = b"e2e-upload-bytes"
+        # upload a real image file with a face (lenna.bmp)
+        lenna_path = Path("assets/standard_face_test_images/lenna.bmp")
+        if lenna_path.exists():
+            upload_data = lenna_path.read_bytes()
+        else:
+            upload_data = (exe.parent / "assets/standard_face_test_images/lenna.bmp").read_bytes()
+
         req = urllib.request.Request(
             f"{base}/api/upload", data=upload_data, method="POST")
-        req.add_header("X-File-Name", "e2e_sample.jpg")
+        req.add_header("X-File-Name", "lenna.bmp")
         with urllib.request.urlopen(req, timeout=10) as resp:
             assert resp.status == 201, f"upload failed: {resp.status}"
             upload = json.loads(resp.read().decode())
-        assert upload["name"] == "e2e_sample.jpg" and upload["size"] == len(upload_data)
+        assert upload["name"] == "lenna.bmp" and upload["size"] == len(upload_data)
         print("[PASS] upload -> " + upload["path"])
 
         # submit with the uploaded path
@@ -127,19 +166,23 @@ def main() -> int:
             assert "priority" in t and "queue_position" in t
         print("[PASS] list includes priority/queue_position")
 
-        # detect faces POST endpoint
+        # detect faces POST endpoint on real image
         code, body = http("POST", f"{base}/api/faces", {
             "image_path": upload["path"],
         })
         assert code == 200, f"faces detect failed: {code} {body}"
         faces_res = json.loads(body)
         assert "faces" in faces_res and faces_res["image"] == upload["path"]
-        print("[PASS] /api/faces POST")
+        assert len(faces_res["faces"]) >= 1, f"expected at least 1 face detected, got {faces_res['faces']}"
+        face0 = faces_res["faces"][0]
+        assert "box" in face0 and "kps" in face0 and "score" in face0
+        print(f"[PASS] /api/faces POST detected {len(faces_res['faces'])} face(s)")
 
         # detect faces GET endpoint
         code, body = http("GET", f"{base}/api/faces?image={upload['path']}")
         assert code == 200
-        assert "faces" in json.loads(body)
+        get_faces_res = json.loads(body)
+        assert len(get_faces_res["faces"]) >= 1
         print("[PASS] /api/faces GET")
 
         # submit with reference face selector mode

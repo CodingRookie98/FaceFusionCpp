@@ -2,17 +2,18 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-ARCH-WEBUI-2026
-> - **当前版本 (Version)**: V0.3.1
+> - **当前版本 (Version)**: V0.3.2
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-08-17
+> - **最后更新 (Last Updated)**: 2026-08-18
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V0.3.2** | 2026-08-18 | AI Agent | 王辉 | 依据复核报告完成修复：修正 priority 调度语义（数值大优先）、落地 /api/processors 与 /api/tasks/{id}/progress 接口、落地视频 Range 与生产人脸检测注入。 |
 | **V0.3.1** | 2026-08-17 | AI Agent | 王辉 | 更新 5.2 开发与生产：新增 `build.py --action dev` 一键启动、`FFC_WEB_PORT`/`FFC_WEB_HOST` 端口可配、前端 WebSocket 自动重连（指数退避）。 |
 | **V0.3.0** | 2026-08-17 | AI Agent | 王辉 | M4 落地：实现 FrameExtractor 视频截帧、FaceSelector 人脸点选、/api/faces 检测标注与参考人脸配置。 |
 | **V0.2.0** | 2026-08-14 | AI Agent | 王辉 | 整合用户确认的 6 项功能需求（F1-F6）：预览/对比/批量/队列优先级/视频帧/人脸选择；新增 `--web-root` 开发调试解耦机制、TaskScheduler 队列模型、/api/faces 与 /media/ API；里程碑扩展为 M1-M5。 |
@@ -151,7 +152,7 @@ PipelineRunner（复用现有实现）
 
 ```
 TaskScheduler（app.web 层新增，或 services 层复用扩展）
-├── 队列模型: FIFO + priority（int，数值小优先；默认 0）
+├── 队列模型: FIFO + priority（int，数值大优先；默认 0）
 ├── 调度策略: 单 GPU 单任务执行，其余排队等待
 ├── 优先级变更: POST /api/tasks/{id}/priority → 队列重排
 └── 状态机: queued → running → done / cancelled / failed
