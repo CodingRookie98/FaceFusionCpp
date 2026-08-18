@@ -81,3 +81,23 @@ export interface DetectFacesResponse {
 }
 
 export type FaceSelectorMode = 'many' | 'one' | 'reference';
+
+export interface ParamMeta {
+  name: string;
+  type: 'string' | 'int' | 'float' | 'bool' | 'path';
+  description?: string;
+  allowed_values?: string[];
+  range?: [number, number];
+}
+
+export interface ProcessorMeta {
+  name: string;
+  params: ParamMeta[];
+}
+
+export interface TaskProgressResponse {
+  id: string;
+  status: TaskStatus;
+  progress: TaskProgress;
+  error_message?: string;
+}

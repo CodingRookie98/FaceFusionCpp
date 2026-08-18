@@ -54,11 +54,17 @@ std::string health_json();
  *
  * Routes:
  *  - GET  /api/health               -> health_json()
+ *  - GET  /api/processors           -> processor list and parameter metadata
  *  - POST /api/tasks                -> submit task
  *  - GET  /api/tasks                -> task list
  *  - GET  /api/tasks/{id}           -> task detail (incl. media/result URLs)
+ *  - GET  /api/tasks/{id}/progress  -> task progress query
+ *  - POST /api/tasks/{id}/priority  -> adjust queue priority
  *  - POST /api/tasks/{id}/cancel    -> cancel task
  *  - GET  /api/tasks/{id}/result    -> result files
+ *  - POST /api/upload               -> file upload
+ *  - GET/POST /api/faces            -> face detection & landmarking
+ *  - GET  /media/{id}/{kind}/{name} -> media file serving (Range/video support)
  *  - WS   /ws/tasks/{id}/progress   -> progress push
  *  - GET  /                         -> static files from web_root (if exists)
  */

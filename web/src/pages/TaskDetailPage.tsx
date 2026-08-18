@@ -100,11 +100,19 @@ export default function TaskDetailPage({ taskId, onBack }: Props) {
           <h3>处理前后对比</h3>
           <div className="compare-grid">
             <figure>
-              <img src={firstTarget} alt="处理前" />
+              {/\.(mp4|mov|avi|mkv|webm)$/i.test(firstTarget) ? (
+                <video controls src={firstTarget} style={{ maxWidth: '100%' }} />
+              ) : (
+                <img src={firstTarget} alt="处理前" />
+              )}
               <figcaption>处理前（目标素材）</figcaption>
             </figure>
             <figure>
-              <img src={firstResult.url} alt="处理后" />
+              {/\.(mp4|mov|avi|mkv|webm)$/i.test(firstResult.name) ? (
+                <video controls src={firstResult.url} style={{ maxWidth: '100%' }} />
+              ) : (
+                <img src={firstResult.url} alt="处理后" />
+              )}
               <figcaption>处理后（结果）</figcaption>
             </figure>
           </div>

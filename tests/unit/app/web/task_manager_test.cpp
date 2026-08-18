@@ -104,11 +104,17 @@ TEST(TaskManagerTest, ExecutorRunsToDoneAndCollectsResults) {
 
 TEST(TaskManagerTest, CancelsQueuedTask) {
     auto executor = std::make_shared<FakeExecutor>();
+    executor->block = true;
     TaskManager mgr(executor);
-    auto id = mgr.submit(MakeConfig());
-    EXPECT_TRUE(mgr.cancel(id));
-    EXPECT_EQ(WaitForTerminal(mgr, id), TaskStatus::Cancelled);
-    EXPECT_FALSE(executor->cancelled.load()); // never started
+    auto id1 = mgr.submit(MakeConfig());
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+    while (!mgr.is_running() && std::chrono::steady_clock::now() < deadline) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    auto id2 = mgr.submit(MakeConfig());
+    EXPECT_TRUE(mgr.cancel(id2));
+    EXPECT_EQ(WaitForTerminal(mgr, id2), TaskStatus::Cancelled);
+    mgr.cancel(id1);
 }
 
 TEST(TaskManagerTest, CancelsRunningTask) {

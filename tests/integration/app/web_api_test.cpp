@@ -41,6 +41,7 @@ class FakeExecutor : public ITaskExecutor {
 public:
     int run(const config::TaskConfig& config,
             const services::pipeline::ProgressCallback& cb) override {
+        cancelled.store(false);
         if (block.load()) {
             while (!cancelled.load()) { std::this_thread::sleep_for(std::chrono::milliseconds(5)); }
             return 2;
@@ -378,4 +379,84 @@ TEST_F(WebApiTest, DetectFacesPostAndGet) {
     EXPECT_EQ(code6, 404);
 
     std::filesystem::remove("test_face_detect.jpg");
+}
+
+TEST_F(WebApiTest, ProcessorsEndpointReturnsMeta) {
+    auto [code, resp] = SendRequest(drogon::Get, "/api/processors");
+    EXPECT_EQ(code, 200);
+    auto body = json::parse(resp);
+    ASSERT_TRUE(body.is_array());
+    ASSERT_FALSE(body.empty());
+
+    bool found_swapper = false;
+    for (const auto& proc : body) {
+        ASSERT_TRUE(proc.contains("name"));
+        ASSERT_TRUE(proc.contains("params"));
+        if (proc["name"] == "face_swapper") {
+            found_swapper = true;
+            EXPECT_TRUE(proc["params"].is_array());
+        }
+    }
+    EXPECT_TRUE(found_swapper);
+}
+
+TEST_F(WebApiTest, TaskProgressEndpointWorks) {
+    auto created =
+        SubmitTask(R"({"source_paths":["s.jpg"],"target_paths":["t.jpg"],"output_path":")"
+                   + kOutputDir + R"(","processors":["face_swapper"]})");
+    std::string id = created["id"].get<std::string>();
+
+    auto [code, resp] = SendRequest(drogon::Get, "/api/tasks/" + id + "/progress");
+    EXPECT_EQ(code, 200);
+    auto body = json::parse(resp);
+    EXPECT_EQ(body["id"], id);
+    ASSERT_TRUE(body.contains("status"));
+    ASSERT_TRUE(body.contains("progress"));
+    EXPECT_TRUE(body["progress"].contains("current_frame"));
+    EXPECT_TRUE(body["progress"].contains("total_frames"));
+    EXPECT_TRUE(body["progress"].contains("fps"));
+
+    // 404 on invalid task id
+    auto [code404, _] = SendRequest(drogon::Get, "/api/tasks/non_existent_id/progress");
+    EXPECT_EQ(code404, 404);
+}
+
+TEST_F(WebApiTest, MediaEndpointSupportsRangeAndVideo) {
+    std::filesystem::create_directories(kOutputDir);
+    std::string test_file = (std::filesystem::path(kOutputDir) / "sample_video.mp4").string();
+    {
+        std::ofstream out(test_file, std::ios::binary);
+        out << "0123456789ABCDEF"; // 16 bytes
+    }
+
+    auto created =
+        SubmitTask(R"({"source_paths":["s.jpg"],"target_paths":["t.jpg"],"output_path":")"
+                   + kOutputDir + R"(","processors":["face_swapper"]})");
+    std::string id = created["id"].get<std::string>();
+
+    // Test standard GET /media/{id}/result/sample_video.mp4
+    auto [code1, resp1] = SendRequest(drogon::Get, "/media/" + id + "/result/sample_video.mp4");
+    EXPECT_EQ(code1, 200);
+    EXPECT_EQ(resp1.size(), 16);
+
+    // Test HTTP Range GET (Range: bytes=0-3)
+    auto client = drogon::HttpClient::newHttpClient(kBaseUrl);
+    auto req = drogon::HttpRequest::newHttpRequest();
+    req->setMethod(drogon::Get);
+    req->setPath("/media/" + id + "/result/sample_video.mp4");
+    req->addHeader("Range", "bytes=0-3");
+    std::pair<int, std::string> out;
+    std::promise<void> done;
+    client->sendRequest(req, [&](drogon::ReqResult, const drogon::HttpResponsePtr& resp) {
+        if (resp) {
+            out.first = resp->getStatusCode();
+            out.second = std::string(resp->getBody());
+        }
+        done.set_value();
+    });
+    done.get_future().wait();
+    EXPECT_EQ(out.first, 206); // 206 Partial Content
+    EXPECT_EQ(out.second, "0123");
+
+    std::filesystem::remove(test_file);
 }

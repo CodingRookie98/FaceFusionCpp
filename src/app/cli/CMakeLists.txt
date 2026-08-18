@@ -9,6 +9,7 @@ target_sources(app_cli
         system_check.cpp
 )
 
+find_package(OpenCV REQUIRED)
 find_package(indicators CONFIG REQUIRED)
 find_package(CLI11 CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
@@ -18,11 +19,16 @@ target_link_libraries(app_cli
         config_core
         config_parser
         services_pipeline
+        domain_pipeline
+        domain_face
+        domain_face_analyser
+        domain_ai
         foundation_infrastructure
         foundation_media
         foundation_ai
         app_version
         app_web
+        ${OpenCV_LIBS}
         indicators::indicators
         CLI11::CLI11
         nlohmann_json::nlohmann_json

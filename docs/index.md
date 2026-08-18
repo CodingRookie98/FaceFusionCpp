@@ -4,22 +4,22 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DOC-INDEX-2026
-> - **当前版本 (Version)**: V1.1.7
+> - **当前版本 (Version)**: V1.1.8
 > **状态 (Status)**: 正式 (Official)
 > **权威性 (Authority)**: 规范 (Normative)
 > **所有者 (Owner)**: 王辉
 > **审核人 (Reviewer)**: 王辉
-> **最后更新 (Last Updated)**: 2026-08-17
+> **最后更新 (Last Updated)**: 2026-08-18
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.8** | 2026-08-18 | AI Agent | 王辉 | 登记新增英文设计文档 web_ui_design.md（Web UI Design Specification）。 |
 | **V1.1.7** | 2026-08-17 | AI Agent | 王辉 | 登记新增评估报告 web-ui-design-completion-review.md（Web UI M1-M4 完成度对抗性复核，待审批）。 |
 | **V1.1.6** | 2026-08-17 | AI Agent | 王辉 | 同步 M4 完成状态：更新 web_ui_design.md 与 web_guide.md（zh/en）。 |
 | **V1.1.5** | 2026-08-17 | AI Agent | 王辉 | 登记 Web 界面使用指南（zh/en）与设计规格状态更新。 |
 | **V1.1.4** | 2026-08-14 | AI Agent | 王辉 | 登记新增架构设计文档 web_ui_design.md（Web 界面设计规格）。 |
-| **V1.1.3** | 2026-08-14 | AI Agent | 王辉 | 清理已实施完成的评估/计划文档：删除 docs/dev/evaluation、docs/dev/plan、docs/dev/zh/evaluation、docs/superpowers 全部文档及空目录，同步移除索引登记。 |
 | **V1.1.2** | 2026-08-14 | AI Agent | 王辉 | 登记新增评估文档 layers_doc_assessment.md（分层架构文档一致性评估报告）。 |
 | **V1.1.1** | 2026-08-13 | AI Agent | 王辉 | 登记新增评估文档 design_doc_assessment.md（功能设计文档完整性评估报告）。 |
 | **V1.1.0** | 2026-08-13 | AI Agent | 王辉 | 合并 dev 分支后更新索引：删除 quality.md（并入 C++_quality_standard.md），新增 evaluation/plan/templates/superpowers/compiler_selection 等 18 篇文档。 |
@@ -134,6 +134,7 @@ docs/
 | :--- | :--- |
 | [design.md](./dev/en/architecture/design.md) | System design and principles (overview) |
 | [layers.md](./dev/en/architecture/layers.md) | Layered architecture implementation details |
+| [web_ui_design.md](./dev/en/architecture/web_ui_design.md) | Web UI design specification |
 
 **Process**
 

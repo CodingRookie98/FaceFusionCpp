@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import type { CreateTaskRequest, DetectedFace, FaceSelectorMode } from '../api/types';
+import type { CreateTaskRequest, DetectedFace, FaceSelectorMode, ProcessorMeta } from '../api/types';
 import FileUploader from '../components/FileUploader';
 import FaceSelector from '../components/FaceSelector';
 import FrameExtractor from '../components/FrameExtractor';
@@ -9,13 +9,15 @@ interface Props {
   onSubmitted: (taskId: string) => void;
 }
 
-const PROCESSORS = ['face_swapper', 'face_enhancer', 'expression_restorer', 'frame_enhancer'];
+const DEFAULT_PROCESSORS = ['face_swapper', 'face_enhancer', 'expression_restorer', 'frame_enhancer'];
 
 export default function TaskCreatePage({ onSubmitted }: Props) {
   const [sourceText, setSourceText] = useState('');
   const [targetText, setTargetText] = useState('');
   const [output, setOutput] = useState('');
+  const [availableProcessors, setAvailableProcessors] = useState<ProcessorMeta[]>([]);
   const [processors, setProcessors] = useState<string[]>(['face_swapper']);
+  const [processorParams, setProcessorParams] = useState<Record<string, Record<string, string | number>>>({});
   const [faceSelectorMode, setFaceSelectorMode] = useState<FaceSelectorMode>('many');
   const [referenceFacePath, setReferenceFacePath] = useState('');
   const [selectedFaceIndex, setSelectedFaceIndex] = useState<number | null>(null);
@@ -27,10 +29,33 @@ export default function TaskCreatePage({ onSubmitted }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    api
+      .listProcessors()
+      .then((data) => {
+        if (data && data.length > 0) {
+          setAvailableProcessors(data);
+        }
+      })
+      .catch(() => {
+        // Fallback gracefully to default processors if endpoint unreachable
+      });
+  }, []);
+
   const toggleProcessor = (p: string) => {
     setProcessors((prev) =>
       prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p],
     );
+  };
+
+  const setParamValue = (procName: string, paramName: string, value: string | number) => {
+    setProcessorParams((prev) => ({
+      ...prev,
+      [procName]: {
+        ...(prev[procName] || {}),
+        [paramName]: value,
+      },
+    }));
   };
 
   const splitLines = (text: string) =>
@@ -78,9 +103,23 @@ export default function TaskCreatePage({ onSubmitted }: Props) {
       return;
     }
 
-    const processor_params: Record<string, Record<string, string | number>> = {};
+    const mergedParams: Record<string, Record<string, string | number>> = {
+      ...processorParams,
+    };
+
     if (processors.includes('face_swapper')) {
-      processor_params['face_swapper'] = {
+      mergedParams['face_swapper'] = {
+        ...(mergedParams['face_swapper'] || {}),
+        face_selector_mode: faceSelectorMode,
+        ...(faceSelectorMode === 'reference' && referenceFacePath.trim()
+          ? { reference_face_path: referenceFacePath.trim() }
+          : {}),
+      };
+    }
+
+    if (processors.includes('face_enhancer')) {
+      mergedParams['face_enhancer'] = {
+        ...(mergedParams['face_enhancer'] || {}),
         face_selector_mode: faceSelectorMode,
         ...(faceSelectorMode === 'reference' && referenceFacePath.trim()
           ? { reference_face_path: referenceFacePath.trim() }
@@ -93,7 +132,7 @@ export default function TaskCreatePage({ onSubmitted }: Props) {
       target_paths,
       processors,
       ...(output.trim() ? { output_path: output.trim() } : {}),
-      ...(Object.keys(processor_params).length > 0 ? { processor_params } : {}),
+      ...(Object.keys(mergedParams).length > 0 ? { processor_params: mergedParams } : {}),
     };
 
     setBusy(true);
@@ -108,6 +147,10 @@ export default function TaskCreatePage({ onSubmitted }: Props) {
   };
 
   const firstSource = splitLines(sourceText)[0] || '';
+  const displayProcessors =
+    availableProcessors.length > 0
+      ? availableProcessors.map((p) => p.name)
+      : DEFAULT_PROCESSORS;
 
   return (
     <div className="card">
@@ -138,27 +181,13 @@ export default function TaskCreatePage({ onSubmitted }: Props) {
 
       {/* 源素材输入 */}
       <div className="form-row">
-        <label>源人脸图片路径（每行一个，或逗号分隔）</label>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <FileUploader
-            accept="image/*"
-            onUploaded={(paths) =>
-              setSourceText((prev) => [prev, ...paths].filter(Boolean).join('\n'))
-            }
-          />
-          {firstSource && (
-            <button
-              type="button"
-              className="btn-small"
-              onClick={() => {
-                setDetectImagePath(firstSource);
-                setShowFaceDetector(true);
-              }}
-            >
-              🔍 检测源图人脸
-            </button>
-          )}
-        </div>
+        <label>源图片路径（每行一个）</label>
+        <FileUploader
+          accept="image/*"
+          onUploaded={(paths) =>
+            setSourceText((prev) => [prev, ...paths].filter(Boolean).join('\n'))
+          }
+        />
         <textarea
           rows={3}
           value={sourceText}
@@ -167,25 +196,48 @@ export default function TaskCreatePage({ onSubmitted }: Props) {
         />
       </div>
 
-      {/* 人脸检测标注与点选面板 */}
-      {showFaceDetector && (
-        <div className="collapsible-box">
-          <div
-            className="collapsible-header"
-            onClick={() => setShowFaceDetector((prev) => !prev)}
-          >
-            <span>👤 人脸检测与点选标注 (FaceSelector)</span>
-            <span>收起 ▲</span>
-          </div>
+      {/* 人脸检测标注与点选工具面板 */}
+      <div className="collapsible-box">
+        <div
+          className="collapsible-header"
+          onClick={() => {
+            if (!showFaceDetector && !detectImagePath) {
+              setDetectImagePath(firstSource);
+            }
+            setShowFaceDetector((prev) => !prev);
+          }}
+        >
+          <span>👤 人脸检测与点选工具 (FaceSelector)</span>
+          <span>{showFaceDetector ? '收起 ▲' : '展开 ▼'}</span>
+        </div>
+        {showFaceDetector && (
           <div className="collapsible-body">
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <p style={{ fontSize: '0.8rem', color: '#666', marginTop: 0 }}>
+              输入或选择图片进行人脸检测，在交互画布上点选作为替换源或参考人脸。
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.8rem', alignItems: 'center' }}>
               <input
                 type="text"
-                placeholder="输入待检测图片路径"
+                placeholder="检测图片路径，例如 assets/standard_face_test_images/lenna.bmp"
                 value={detectImagePath}
                 onChange={(e) => setDetectImagePath(e.target.value)}
                 style={{ flex: 1 }}
               />
+              <FileUploader
+                accept="image/*"
+                onUploaded={(paths) => {
+                  if (paths[0]) setDetectImagePath(paths[0]);
+                }}
+              />
+              {firstSource && detectImagePath !== firstSource && (
+                <button
+                  className="btn"
+                  style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
+                  onClick={() => setDetectImagePath(firstSource)}
+                >
+                  使用源图 1
+                </button>
+              )}
             </div>
             <FaceSelector
               imagePath={detectImagePath}
@@ -193,8 +245,8 @@ export default function TaskCreatePage({ onSubmitted }: Props) {
               onSelectFace={handleFaceSelected}
             />
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* 目标素材输入 */}
       <div className="form-row">
@@ -285,11 +337,11 @@ export default function TaskCreatePage({ onSubmitted }: Props) {
         />
       </div>
 
-      {/* 处理器选择 */}
+      {/* 处理器选择与动态参数配置 */}
       <div className="form-row">
-        <label>处理器</label>
-        <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
-          {PROCESSORS.map((p) => (
+        <label>处理器与参数 (Processors & Params)</label>
+        <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+          {displayProcessors.map((p) => (
             <label key={p} style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
               <input
                 type="checkbox"
@@ -300,6 +352,85 @@ export default function TaskCreatePage({ onSubmitted }: Props) {
             </label>
           ))}
         </div>
+
+        {/* 动态渲染已选处理器的可用参数表单 */}
+        {availableProcessors
+          .filter((p) => processors.includes(p.name))
+          .map((proc) => {
+            const visibleParams = proc.params.filter(
+              (pm) => pm.name !== 'face_selector_mode' && pm.name !== 'reference_face_path',
+            );
+            if (visibleParams.length === 0) return null;
+            return (
+              <div
+                key={proc.name}
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '6px',
+                  padding: '0.6rem 0.8rem',
+                  marginBottom: '0.5rem',
+                }}
+              >
+                <strong style={{ fontSize: '0.85rem', color: '#334155' }}>
+                  {proc.name} 参数
+                </strong>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem', marginTop: '0.4rem' }}>
+                  {visibleParams.map((param) => (
+                    <div key={param.name} style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                        {param.name} {param.description ? `(${param.description})` : ''}
+                      </span>
+                      {param.allowed_values && param.allowed_values.length > 0 ? (
+                        <select
+                          value={
+                            (processorParams[proc.name]?.[param.name] as string) ||
+                            param.allowed_values[0]
+                          }
+                          onChange={(e) => setParamValue(proc.name, param.name, e.target.value)}
+                          style={{ padding: '0.2rem 0.4rem', fontSize: '0.8rem' }}
+                        >
+                          {param.allowed_values.map((v) => (
+                            <option key={v} value={v}>
+                              {v}
+                            </option>
+                          ))}
+                        </select>
+                      ) : param.type === 'float' || param.type === 'int' ? (
+                        <input
+                          type="number"
+                          step={param.type === 'float' ? '0.05' : '1'}
+                          min={param.range ? param.range[0] : undefined}
+                          max={param.range ? param.range[1] : undefined}
+                          value={processorParams[proc.name]?.[param.name] ?? ''}
+                          placeholder={
+                            param.range ? `[${param.range[0]}, ${param.range[1]}]` : ''
+                          }
+                          onChange={(e) =>
+                            setParamValue(
+                              proc.name,
+                              param.name,
+                              param.type === 'float'
+                                ? parseFloat(e.target.value) || 0
+                                : parseInt(e.target.value, 10) || 0,
+                            )
+                          }
+                          style={{ width: '120px', padding: '0.2rem 0.4rem', fontSize: '0.8rem' }}
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          value={(processorParams[proc.name]?.[param.name] as string) || ''}
+                          onChange={(e) => setParamValue(proc.name, param.name, e.target.value)}
+                          style={{ padding: '0.2rem 0.4rem', fontSize: '0.8rem' }}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
       </div>
 
       {error && <p className="error">{error}</p>}

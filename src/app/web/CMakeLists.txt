@@ -23,6 +23,7 @@ target_link_libraries(app_web
         config_core
         config_parser
         services_pipeline
+        domain_pipeline
         foundation_infrastructure
         nlohmann_json::nlohmann_json
         Drogon::Drogon
