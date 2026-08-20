@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PipelineEditor } from './PipelineEditor';
@@ -55,8 +54,8 @@ describe('PipelineEditor Component', () => {
     cancelTask: vi.fn(),
     bumpPriority: vi.fn(),
     refreshTasks: vi.fn(),
-    activeSource: undefined,
-    activeTarget: undefined,
+    activeSource: { id: 's1', name: 'Lenna', path: 'lenna.bmp', type: 'image' },
+    activeTarget: { id: 't1', name: 'Girl', path: 'girl.bmp', type: 'image' },
     ...overrides,
   });
 

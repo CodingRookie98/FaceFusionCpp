@@ -13,6 +13,7 @@ module;
 #include <drogon/DrClassMap.h>
 #include <drogon/WebSocketController.h>
 #include <drogon/WebSocketConnection.h>
+#include <drogon/utils/Utilities.h>
 #include <nlohmann/json.hpp>
 
 namespace {
@@ -611,17 +612,23 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             auto resp = drogon::HttpResponse::newHttpResponse();
             resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
             auto raw_name = req->getHeader("X-File-Name");
+            if (raw_name.empty()) {
+                resp->setStatusCode(drogon::k400BadRequest);
+                resp->setBody(json{{"error", "missing X-File-Name header"}}.dump());
+                cb(resp);
+                return;
+            }
+            auto clean_name = drogon::utils::urlDecode(raw_name);
             // Reject any path separators / traversal outright (defense in depth:
             // do NOT normalize via filename(), which would silently rewrite them).
-            if (raw_name.empty() || raw_name == "." || raw_name == ".."
-                || raw_name.find('/') != std::string::npos
-                || raw_name.find('\\') != std::string::npos) {
+            if (clean_name.empty() || clean_name == "." || clean_name == ".."
+                || clean_name.find('/') != std::string::npos
+                || clean_name.find('\\') != std::string::npos) {
                 resp->setStatusCode(drogon::k400BadRequest);
                 resp->setBody(json{{"error", "invalid file name"}}.dump());
                 cb(resp);
                 return;
             }
-            auto clean_name = raw_name;
             const auto& body = req->getBody();
             if (body.size() > kMaxUploadBytes) {
                 resp->setStatusCode(drogon::k413RequestEntityTooLarge);

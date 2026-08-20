@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { TelemetryHUD } from './TelemetryHUD';
@@ -40,6 +39,7 @@ describe('TelemetryHUD Component', () => {
         priority: 0,
         queue_position: 0,
         media_count: 1,
+        error_message: '',
         progress: { current_frame: 45, total_frames: 100, fps: 28.5 },
       },
     ],
@@ -53,8 +53,8 @@ describe('TelemetryHUD Component', () => {
     cancelTask: vi.fn(),
     bumpPriority: vi.fn(),
     refreshTasks: vi.fn(),
-    activeSource: undefined,
-    activeTarget: undefined,
+    activeSource: { id: 's1', name: 'Lenna', path: 'lenna.bmp', type: 'image' },
+    activeTarget: { id: 't1', name: 'Girl', path: 'girl.bmp', type: 'image' },
     ...overrides,
   });
 

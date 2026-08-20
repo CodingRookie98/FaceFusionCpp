@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { HistoryModal } from './HistoryModal';
@@ -12,6 +11,7 @@ describe('HistoryModal Component', () => {
       priority: 2,
       queue_position: 0,
       media_count: 2,
+      error_message: '',
       progress: { current_frame: 100, total_frames: 100, fps: 30 },
     },
     {
@@ -20,8 +20,8 @@ describe('HistoryModal Component', () => {
       priority: 0,
       queue_position: 0,
       media_count: 1,
-      progress: { current_frame: 10, total_frames: 100, fps: 0 },
       error_message: 'Model missing',
+      progress: { current_frame: 10, total_frames: 100, fps: 0 },
     },
   ];
 

@@ -49,7 +49,7 @@ export const api = {
   uploadFile: async (file: File): Promise<{ path: string; name: string; size: number }> => {
     const res = await fetch('/api/upload', {
       method: 'POST',
-      headers: { 'X-File-Name': file.name },
+      headers: { 'X-File-Name': encodeURIComponent(file.name) },
       body: file,
     });
     if (!res.ok) {

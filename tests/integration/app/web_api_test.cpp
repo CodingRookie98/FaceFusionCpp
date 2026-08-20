@@ -282,6 +282,33 @@ TEST_F(WebApiTest, UploadRejectsBadFileName) {
     EXPECT_EQ(out.first, 400);
 }
 
+TEST_F(WebApiTest, UploadHandlesNonAsciiUrlEncodedFileName) {
+    auto client = drogon::HttpClient::newHttpClient(kBaseUrl);
+    auto req = drogon::HttpRequest::newHttpRequest();
+    req->setPath("/api/upload");
+    req->setMethod(drogon::Post);
+    // URL-encoded UTF-8 filename for "我的头像_测试.jpg"
+    std::string encoded_name = "%E6%88%91%E7%9A%84%E5%A4%B4%E5%83%8F_%E6%B5%8B%E8%AF%95.jpg";
+    req->addHeader("X-File-Name", encoded_name);
+    req->setBody("binary_photo_data_123");
+    std::pair<int, std::string> out;
+    std::promise<void> done;
+    client->sendRequest(req, [&](drogon::ReqResult, const drogon::HttpResponsePtr& resp) {
+        if (resp) {
+            out.first = resp->getStatusCode();
+            out.second = std::string(resp->getBody());
+        }
+        done.set_value();
+    });
+    done.get_future().wait();
+    EXPECT_EQ(out.first, 201);
+    auto res = json::parse(out.second);
+    EXPECT_EQ(res["name"], "我的头像_测试.jpg");
+    EXPECT_EQ(res["size"], 21);
+    EXPECT_TRUE(std::filesystem::exists(res["path"].get<std::string>()));
+    std::filesystem::remove(res["path"].get<std::string>());
+}
+
 TEST_F(WebApiTest, PriorityEndpointWorks) {
     // Block the executor so the first task stays running and later tasks queue
     g_executor->block.store(true);

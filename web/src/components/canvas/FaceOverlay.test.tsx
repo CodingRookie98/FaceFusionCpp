@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { FaceOverlay } from './FaceOverlay';
@@ -11,14 +10,14 @@ describe('FaceOverlay Component', () => {
       box: { x: 100, y: 100, width: 200, height: 200 },
       score: 0.95,
       gender: 'female',
-      age_range: '26',
+      age_range: [20, 30],
     },
     {
       index: 1,
       box: { x: 400, y: 150, width: 200, height: 250 },
       score: 0.88,
       gender: 'male',
-      age_range: '32',
+      age_range: [30, 40],
     },
   ];
 
