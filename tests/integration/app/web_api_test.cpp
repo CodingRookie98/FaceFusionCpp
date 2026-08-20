@@ -536,4 +536,90 @@ TEST_F(WebApiTest, PipelineStepsValidation) {
         "pipeline_steps": [{"step": "non_existent_processor"}]
     })");
     EXPECT_EQ(c3, 400);
+
+    // 4. pipeline_steps with invalid selector mode
+    auto [c4, r4] = SendRequest(drogon::Post, "/api/tasks", R"({
+        "source_paths": ["s.jpg"],
+        "target_paths": ["t.jpg"],
+        "pipeline_steps": [{
+            "step": "face_swapper",
+            "params": {"face_selector_mode": "illegal_mode"}
+        }]
+    })");
+    EXPECT_EQ(c4, 400);
+}
+
+TEST_F(WebApiTest, SubmitTaskWithAllFourProcessors) {
+    std::string payload = R"({
+        "source_paths": ["s.jpg"],
+        "target_paths": ["t.jpg"],
+        "output_path": ")"
+                        + kOutputDir + R"(",
+        "pipeline_steps": [
+            {
+                "step": "face_swapper",
+                "name": "电影级换脸",
+                "enabled": true,
+                "params": {
+                    "model": "inswapper_128",
+                    "face_selector_mode": "many"
+                }
+            },
+            {
+                "step": "face_enhancer",
+                "name": "GFPGAN增强",
+                "enabled": true,
+                "params": {
+                    "model": "gfpgan_1.4",
+                    "blend_factor": 0.9,
+                    "face_selector_mode": "many"
+                }
+            },
+            {
+                "step": "expression_restorer",
+                "name": "微表情修复",
+                "enabled": true,
+                "params": {
+                    "model": "live_portrait",
+                    "restore_factor": 0.7,
+                    "face_selector_mode": "many"
+                }
+            },
+            {
+                "step": "frame_enhancer",
+                "name": "超分放大",
+                "enabled": true,
+                "params": {
+                    "model": "real_esrgan_x4",
+                    "enhance_factor": 1.0
+                }
+            }
+        ]
+    })";
+
+    auto [code, resp] = SendRequest(drogon::Post, "/api/tasks", payload);
+    ASSERT_EQ(code, 201);
+    auto created = json::parse(resp);
+    EXPECT_TRUE(created.contains("id"));
+    EXPECT_EQ(created["status"], "queued");
+
+    std::string id = created["id"].get<std::string>();
+    auto [dcode, dresp] = SendRequest(drogon::Get, "/api/tasks/" + id);
+    ASSERT_EQ(dcode, 200);
+}
+
+TEST_F(WebApiTest, FaceDetectionErrorHandling) {
+    // Non-existent image path -> 404 Not Found
+    auto [code, resp] = SendRequest(drogon::Post, "/api/faces", R"({
+        "image_path": "non_existent_file_path_123456.jpg"
+    })");
+    EXPECT_EQ(code, 404);
+
+    // Empty body -> 400 Bad Request
+    auto [code2, resp2] = SendRequest(drogon::Post, "/api/faces", "");
+    EXPECT_EQ(code2, 400);
+
+    // GET without query parameter -> 400 Bad Request
+    auto [code3, resp3] = SendRequest(drogon::Get, "/api/faces");
+    EXPECT_EQ(code3, 400);
 }

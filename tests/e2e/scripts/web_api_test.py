@@ -200,6 +200,63 @@ def main() -> int:
         assert code == 201
         print("[PASS] submit with reference face selector mode")
 
+        # submit with structured multi-instance pipeline_steps
+        code, body = http("POST", f"{base}/api/tasks", {
+            "source_paths": [upload["path"]],
+            "target_paths": [upload["path"]],
+            "pipeline_steps": [
+                {
+                    "step": "face_swapper",
+                    "name": "主角换脸",
+                    "enabled": True,
+                    "params": {
+                        "model": "inswapper_128",
+                        "face_selector_mode": "reference",
+                        "reference_face_path": upload["path"],
+                    },
+                },
+                {
+                    "step": "face_swapper",
+                    "name": "配角换脸",
+                    "enabled": True,
+                    "params": {
+                        "model": "inswapper_128",
+                        "face_selector_mode": "one",
+                    },
+                },
+                {
+                    "step": "face_enhancer",
+                    "name": "面部高清修复",
+                    "enabled": True,
+                    "params": {
+                        "model": "codeformer",
+                        "blend_factor": 0.85,
+                    },
+                },
+            ],
+        })
+        assert code == 201, f"multi-instance submit failed: {code} {body}"
+        multi_step_id = json.loads(body)["id"]
+        print(f"[PASS] submit with multi-instance pipeline_steps -> {multi_step_id[:8]}...")
+
+        # verify structured pipeline_steps validation rejection
+        code, body = http("POST", f"{base}/api/tasks", {
+            "source_paths": [upload["path"]],
+            "target_paths": [upload["path"]],
+            "pipeline_steps": [
+                {"step": "unsupported_processor_xyz"},
+            ],
+        })
+        assert code == 400, f"expected 400 for unknown processor, got {code}"
+        print("[PASS] invalid pipeline_step rejected with 400")
+
+        # verify non-existent face detection rejected
+        code, body = http("POST", f"{base}/api/faces", {
+            "image_path": "non_existent_xyz_123.jpg",
+        })
+        assert code == 404, f"expected 404 for invalid face detect path, got {code}"
+        print("[PASS] invalid face detection rejected with 404")
+
         print("\nAll web API tests passed!")
         return 0
     finally:
@@ -212,3 +269,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
