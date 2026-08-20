@@ -31,10 +31,24 @@ export interface TaskDetail extends TaskSummary {
   results: TaskResultFile[];
 }
 
+export interface PipelineStepConfig {
+  id: string;
+  step: string;
+  name?: string;
+  enabled: boolean;
+  params: Record<string, string | number | boolean>;
+}
+
 export interface CreateTaskRequest {
   source_paths: string[];
   target_paths: string[];
   output_path?: string;
+  pipeline_steps?: Array<{
+    step: string;
+    name?: string;
+    enabled?: boolean;
+    params?: Record<string, string | number | boolean>;
+  }>;
   processors?: string[];
   processor_params?: Record<string, Record<string, string | number>>;
 }

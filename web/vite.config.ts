@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 // https://vite.dev/config/
 // 后端地址可经环境变量配置：FFC_WEB_HOST（默认 127.0.0.1）、FFC_WEB_PORT（默认 8000），
@@ -8,7 +9,7 @@ const webHost = process.env.FFC_WEB_HOST ?? '127.0.0.1';
 const webPort = process.env.FFC_WEB_PORT ?? '8000';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   server: {
     port: 5173,
     proxy: {

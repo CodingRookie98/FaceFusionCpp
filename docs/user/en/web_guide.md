@@ -2,17 +2,18 @@
 
 > **Document Control**
 > - **Document ID**: FFC-USER-EN-WEBUI-2026
-> - **Version**: V1.2.0
+> - **Version**: V2.0.0
 > - **Status**: Official
 > - **Authority**: Informative
 > - **Owner**: 王辉
 > - **Reviewer**: 王辉
-> - **Last Updated**: 2026-08-18
+> - **Last Updated**: 2026-08-20
 
 ## Revision History
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| **V2.0.0** | 2026-08-20 | AI Agent | 王辉 | Completely overhauled for Studio Workbench: 3-column responsive layout, multi-instance dynamic pipeline, WYSIWYG face overlay, split-slider/loupe comparison matrix, and live telemetry HUD. |
 | **V1.2.0** | 2026-08-18 | AI Agent | 王辉 | Added dynamic processor parameters, video Range streaming playback, /api/processors, /api/tasks/{id}/progress, and one-click dev mode. |
 | **V1.1.0** | 2026-08-17 | AI Agent | 王辉 | Added M4 video frame extraction (FrameExtractor), face detection & selection (FaceSelector), and reference face options. |
 | **V1.0.0** | 2026-08-17 | AI Agent | 王辉 | Initial Web UI guide (M2: task lifecycle + preview). |
@@ -44,55 +45,45 @@ Common options:
 > [!NOTE]
 > `--web` is mutually exclusive with quick mode (`-s/-t/-o`) and task config mode (`-c`).
 
-## 2. Pages
+## 2. Studio Workbench Overview
 
-### 2.1 Task List
+Web UI V2 provides an integrated, darkroom-styled **Deep Studio Dark single-page workbench**:
 
-- All tasks with ID, status, progress, media count, priority and queue position;
-- Auto-refreshes every 3 seconds; running tasks show a live progress bar;
-- Cancel queued/running tasks, or raise/lower priority of queued tasks (higher integer value = higher priority).
+### 2.1 Left Sidebar: Asset Pool
+- **Source Faces**: Drag and drop or upload multiple face portraits, with built-in standard test samples (Lenna / Male Avatar);
+- **Target Media**: Upload target images or videos, automatically projected onto the central viewport;
+- **Video Scrubbing**: Quick frame extraction from local videos into the asset pool.
 
-### 2.2 Submit Task
+### 2.2 Center: Viewport Canvas & Comparison Stage
+- **WYSIWYG Face Mapping**: Automatic face detection overlay with confidence score, gender, and age; click any face box to bind it as a Reference Face;
+- **Multi-Modal Comparison Matrix**:
+  - **Annotation Canvas**: Interactive face selection and bounding box inspection;
+  - **Split Slider**: Smooth Before / After comparison slider;
+  - **Detail Loupe**: 2.5x high-magnification floating loupe to examine blending edges and skin texture;
+  - **Synced Video**: Synchronized playback of original and processed video files.
 
-- **Upload files**: upload buttons above source/target inputs support multi-file selection (image/video); uploaded paths are filled in automatically;
-- **📹 Video Frame Extractor (FrameExtractor)**: Expand tool panel, pick a local video, scrub and fine-tune playback time (±0.1s / ±1s), and capture the current frame as an input path;
-- **👤 Face Detection & Selection (FaceSelector)**: Click "🔍 Detect Source Faces" to run `/api/faces`, displaying detected face bounding boxes that can be clicked to select specific faces;
-- **Face Selector Mode**:
-  - **Many**: Replaces all detected faces in the target media;
-  - **One**: Replaces only the highest-confidence face;
-  - **Reference**: Matches against a reference face image or selected face from the source;
-- **Processors & Dynamic Parameters**:
-  - Check `face_swapper`, `face_enhancer`, `expression_restorer`, `frame_enhancer`;
-  - Selected processors dynamically render form controls based on metadata from `/api/processors` (e.g., model selection, `blend_factor`, `restore_factor`, `enhance_factor`);
-- Output directory may be left empty (config defaults apply).
+### 2.3 Right Sidebar: Dynamic Pipeline Editor
+- **Official Presets**: One-click switching for Fast Swap, HD Portrait, Multi-Face Swap, and Cinematic Remaster;
+- **Multi-Instance Pipeline**: Mount multiple instances of any processor (e.g. multiple `face_swapper` steps with independent reference faces);
+- **Interactive Tuning**: Model dropdowns, selection strategy switches, and live numeric sliders for blend factors.
 
-### 2.3 Task Detail
+### 2.4 Bottom Dock: Telemetry HUD
+- **Real-Time Telemetry**: Active task status, current frame / total frames, live inference FPS;
+- **Queue Scheduler**: Queue positions, priority controls (higher value = earlier execution), and task cancellation;
+- **History Drawer**: Access past completed runs and reload them into the studio workbench with one click.
 
-- Live progress via WebSocket (frame count, FPS);
-- Cancel task;
-- On completion: **before/after comparison** (side-by-side / slider for images, native `<video>` with Range streaming for videos) and downloadable result files.
-
-## 3. API Summary
+## 3. REST API Summary
 
 | Method | Path | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/health` | Health check (with version and status) |
-| `GET` | `/api/processors` | List of available processors and parameter schemas |
-| `POST` | `/api/tasks` | Submit task (JSON: source_paths/target_paths/output_path/processors/processor_params) |
-| `GET` | `/api/tasks` | Task list (with priority and queue position) |
-| `GET` | `/api/tasks/{id}` | Task detail (incl. media/result URLs) |
-| `GET` | `/api/tasks/{id}/progress` | Current task progress snapshot (WS disconnect compensation) |
-| `POST` | `/api/tasks/{id}/cancel` | Cancel task |
-| `POST` | `/api/tasks/{id}/priority` | Set priority (queued tasks only) |
-| `POST` | `/api/upload` | Upload file (binary body + `X-File-Name` header) |
-| `POST`/`GET` | `/api/faces` | Image face detection & annotation (bounding boxes, score, age/gender, landmarks) |
-| `GET` | `/api/tasks/{id}/result` | Result files |
-| `WS` | `/ws/tasks/{id}/progress` | Live progress push |
-| `GET` | `/media/{task_id}/{kind}/{name}` | Media/result file access (supports HTTP Range / 206 video streaming) |
-
-## 4. Development
-
-- **One-click development**: `python build.py --action dev [--web-port 8000]` (launches backend and Vite HMR dev server);
-- **Frontend dev**: `cd web && npm run dev` (Vite dev server :5173, HMR; API/WS proxied to `ffc --web` on :8000);
-- **Integration debug**: `npm run build` then `./ffc --web --web-root web/dist`;
-- **Rebuild frontend assets**: `python build.py --action web`.
+| `GET` | `/api/health` | Service health check and version info |
+| `GET` | `/api/processors` | List available processors and parameter schemas |
+| `POST` | `/api/tasks` | Create task with structured `pipeline_steps` array |
+| `GET` | `/api/tasks` | List all tasks with queue status and progress |
+| `GET` | `/api/tasks/{id}` | Task details and output file URLs |
+| `POST` | `/api/tasks/{id}/cancel` | Cancel a queued or running task |
+| `POST` | `/api/tasks/{id}/priority` | Update task queue priority |
+| `GET` | `/api/tasks/{id}/progress` | Query latest task progress |
+| `POST` | `/api/faces` | Detect faces and keypoints on an image |
+| `POST` | `/api/upload` | Upload media files to temporary directory |
+| `GET` | `/media/...` | Serve static media and processed outputs (Range supported) |
