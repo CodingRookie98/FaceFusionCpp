@@ -11,6 +11,7 @@ import subprocess
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -256,6 +257,31 @@ def main() -> int:
         })
         assert code == 404, f"expected 404 for invalid face detect path, got {code}"
         print("[PASS] invalid face detection rejected with 404")
+
+        # verify /api/preview serves uploaded image
+        preview_req = urllib.request.Request(f"{base}/api/preview?path={upload['path']}", method="GET")
+        with urllib.request.urlopen(preview_req, timeout=10) as r:
+            assert r.status == 200, f"preview failed: {r.status}"
+            content = r.read()
+            assert len(content) > 0
+        print("[PASS] /api/preview serves media successfully")
+
+        # verify upload above 1MB (e.g. 2MB video/image target)
+        large_body = b"X" * (2 * 1024 * 1024)
+        req = urllib.request.Request(
+            f"{base}/api/upload",
+            data=large_body,
+            headers={
+                "Content-Type": "application/octet-stream",
+                "X-File-Name": urllib.parse.quote("large_target.mp4"),
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            assert r.status == 201
+            up_large = json.loads(r.read().decode("utf-8"))
+            assert up_large["size"] == 2 * 1024 * 1024
+        print("[PASS] upload >1MB (2MB target) succeeded without 413")
 
         print("\nAll web API tests passed!")
         return 0

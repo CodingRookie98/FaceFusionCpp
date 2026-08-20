@@ -650,3 +650,60 @@ TEST_F(WebApiTest, FaceDetectionErrorHandling) {
     auto [code3, resp3] = SendRequest(drogon::Get, "/api/faces");
     EXPECT_EQ(code3, 400);
 }
+
+TEST_F(WebApiTest, PreviewEndpointWorks) {
+    // 1. Create a dummy test file
+    std::filesystem::create_directories("./temp");
+    std::string test_file = "./temp/preview_test_sample.txt";
+    {
+        std::ofstream out(test_file);
+        out << "preview_sample_content";
+    }
+
+    // 2. Request preview
+    auto [code, resp] = SendRequest(drogon::Get, "/api/preview?path=" + test_file);
+    EXPECT_EQ(code, 200);
+    EXPECT_EQ(resp, "preview_sample_content");
+
+    // 3. Traversal rejection
+    auto [c2, r2] = SendRequest(drogon::Get, "/api/preview?path=../secret.txt");
+    EXPECT_EQ(c2, 400);
+
+    // 4. Missing path param
+    auto [c3, r3] = SendRequest(drogon::Get, "/api/preview");
+    EXPECT_EQ(c3, 400);
+
+    // 5. File not found
+    auto [c4, r4] = SendRequest(drogon::Get, "/api/preview?path=./temp/not_existing_file.xyz");
+    EXPECT_EQ(c4, 404);
+
+    std::filesystem::remove(test_file);
+}
+
+TEST_F(WebApiTest, LargeUploadSucceedsAbove1MB) {
+    auto client = drogon::HttpClient::newHttpClient(kBaseUrl);
+    auto req = drogon::HttpRequest::newHttpRequest();
+    req->setPath("/api/upload");
+    req->setMethod(drogon::Post);
+    req->addHeader("X-File-Name", "large_video_target.mp4");
+    // 2MB payload (> default Drogon 1MB limit)
+    std::string large_body(2 * 1024 * 1024, 'A');
+    req->setBody(std::move(large_body));
+
+    std::pair<int, std::string> out;
+    std::promise<void> done;
+    client->sendRequest(req, [&](drogon::ReqResult, const drogon::HttpResponsePtr& resp) {
+        if (resp) {
+            out.first = resp->getStatusCode();
+            out.second = std::string(resp->getBody());
+        }
+        done.set_value();
+    });
+    done.get_future().wait();
+
+    EXPECT_EQ(out.first, 201);
+    auto res = json::parse(out.second);
+    EXPECT_EQ(res["size"], 2 * 1024 * 1024);
+    EXPECT_TRUE(std::filesystem::exists(res["path"].get<std::string>()));
+    std::filesystem::remove(res["path"].get<std::string>());
+}

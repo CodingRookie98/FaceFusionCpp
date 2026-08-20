@@ -13,6 +13,7 @@ import { FaceOverlay } from './FaceOverlay';
 import { SplitSlider } from './SplitSlider';
 import { DetailLoupe } from './DetailLoupe';
 import type { StudioStore } from '../../store/studioState';
+import { getMediaPreviewUrl } from '../../store/studioState';
 import type { DetectedFace } from '../../api/types';
 
 interface ViewportCanvasProps {
@@ -66,7 +67,7 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
 
   // Result file for comparison
   const latestResult = activeTaskDetail?.results?.[0]?.url;
-  const originalUrl = activeTarget ? `/media/${activeTarget.path}` : '';
+  const originalUrl = getMediaPreviewUrl(activeTarget);
   const isVideo = activeTarget?.type === 'video';
 
   return (

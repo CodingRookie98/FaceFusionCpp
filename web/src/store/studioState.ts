@@ -160,6 +160,24 @@ export const OFFICIAL_PRESETS: PresetConfig[] = [
   },
 ];
 
+export function getMediaPreviewUrl(item?: MediaItem | null): string {
+  if (!item) return '';
+  if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('/media/')) {
+    return item.thumbnailUrl;
+  }
+  if (item.file) {
+    try {
+      return URL.createObjectURL(item.file);
+    } catch {
+      // fallback
+    }
+  }
+  if (item.path) {
+    return `/api/preview?path=${encodeURIComponent(item.path)}`;
+  }
+  return '';
+}
+
 export const SAMPLE_MEDIA: { sources: MediaItem[]; targets: MediaItem[] } = {
   sources: [
     {
@@ -167,14 +185,14 @@ export const SAMPLE_MEDIA: { sources: MediaItem[]; targets: MediaItem[] } = {
       path: 'assets/standard_face_test_images/lenna.bmp',
       name: 'Lenna (经典测试头像)',
       type: 'image',
-      thumbnailUrl: '/media/sample/lenna.bmp',
+      thumbnailUrl: `/api/preview?path=${encodeURIComponent('assets/standard_face_test_images/lenna.bmp')}`,
     },
     {
       id: 'sample-s2',
       path: 'assets/standard_face_test_images/avatar_man.png',
       name: 'Male Avatar (男士头像)',
       type: 'image',
-      thumbnailUrl: '/media/sample/avatar_man.png',
+      thumbnailUrl: `/api/preview?path=${encodeURIComponent('assets/standard_face_test_images/avatar_man.png')}`,
     },
   ],
   targets: [
@@ -183,14 +201,14 @@ export const SAMPLE_MEDIA: { sources: MediaItem[]; targets: MediaItem[] } = {
       path: 'assets/standard_face_test_images/girl.bmp',
       name: 'Girl (单人目标图)',
       type: 'image',
-      thumbnailUrl: '/media/sample/girl.bmp',
+      thumbnailUrl: `/api/preview?path=${encodeURIComponent('assets/standard_face_test_images/girl.bmp')}`,
     },
     {
       id: 'sample-t2',
       path: 'assets/standard_face_test_images/family.jpg',
       name: 'Family (多人合影目标图)',
       type: 'image',
-      thumbnailUrl: '/media/sample/family.jpg',
+      thumbnailUrl: `/api/preview?path=${encodeURIComponent('assets/standard_face_test_images/family.jpg')}`,
     },
   ],
 };

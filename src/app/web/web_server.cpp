@@ -17,7 +17,7 @@ module;
 #include <nlohmann/json.hpp>
 
 namespace {
-constexpr std::size_t kMaxUploadBytes = 512ULL * 1024 * 1024; // 512MB
+constexpr std::size_t kMaxUploadBytes = 1024ULL * 1024 * 1024; // 1GB
 }
 
 module app.web.server;
@@ -444,7 +444,59 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             ProgressWSController::broadcast_status(task_id, status, error);
         });
 
+    app.setClientMaxBodySize(kMaxUploadBytes);
+    app.setClientMaxMemoryBodySize(64ULL * 1024 * 1024);
+
     app.addListener(options.host, options.port);
+
+    // GET /api/preview?path=<encoded_path>
+    app.registerHandler("/api/preview",
+                        [](const drogon::HttpRequestPtr& req,
+                           std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
+                            auto path_param = req->getParameter("path");
+                            if (path_param.empty()) { path_param = req->getParameter("file"); }
+                            if (path_param.empty()) {
+                                auto resp = drogon::HttpResponse::newHttpResponse();
+                                resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+                                resp->setStatusCode(drogon::k400BadRequest);
+                                resp->setBody(json{{"error", "path parameter is required"}}.dump());
+                                cb(resp);
+                                return;
+                            }
+
+                            auto decoded_path = drogon::utils::urlDecode(path_param);
+                            if (decoded_path.find("..") != std::string::npos) {
+                                auto resp = drogon::HttpResponse::newHttpResponse();
+                                resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+                                resp->setStatusCode(drogon::k400BadRequest);
+                                resp->setBody(json{{"error", "invalid path"}}.dump());
+                                cb(resp);
+                                return;
+                            }
+
+                            std::filesystem::path target_file(decoded_path);
+                            if (!std::filesystem::exists(target_file)) {
+                                if (target_file.is_relative()) {
+                                    auto resolved = std::filesystem::current_path() / target_file;
+                                    if (std::filesystem::exists(resolved)) {
+                                        target_file = resolved;
+                                    }
+                                }
+                            }
+
+                            if (!std::filesystem::exists(target_file)
+                                || std::filesystem::is_directory(target_file)) {
+                                auto resp = drogon::HttpResponse::newHttpResponse();
+                                resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+                                resp->setStatusCode(drogon::k404NotFound);
+                                resp->setBody(json{{"error", "file not found"}}.dump());
+                                cb(resp);
+                                return;
+                            }
+
+                            serve_file(target_file, req, std::move(cb));
+                        },
+                        {drogon::Get});
 
     // GET /api/health
     app.registerHandler("/api/health",
@@ -632,7 +684,7 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             const auto& body = req->getBody();
             if (body.size() > kMaxUploadBytes) {
                 resp->setStatusCode(drogon::k413RequestEntityTooLarge);
-                resp->setBody(json{{"error", "file too large (max 512MB)"}}.dump());
+                resp->setBody(json{{"error", "file too large (max 1GB)"}}.dump());
                 cb(resp);
                 return;
             }

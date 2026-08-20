@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../api/client';
 import type { StudioStore, MediaItem } from '../../store/studioState';
-import { SAMPLE_MEDIA } from '../../store/studioState';
+import { SAMPLE_MEDIA, getMediaPreviewUrl } from '../../store/studioState';
 
 interface AssetPoolProps {
   store: StudioStore;
@@ -45,7 +45,7 @@ export const AssetPool: React.FC<AssetPoolProps> = ({ store }) => {
           path: res.path,
           name: file.name,
           type: file.type.startsWith('video') ? 'video' : 'image',
-          thumbnailUrl: `/media/${res.path}`,
+          thumbnailUrl: URL.createObjectURL(file),
           file,
         };
         if (isSource) {
@@ -148,7 +148,7 @@ export const AssetPool: React.FC<AssetPoolProps> = ({ store }) => {
               <div className="w-12 h-12 rounded bg-slate-950 flex-shrink-0 overflow-hidden relative border border-white/10 flex items-center justify-center">
                 {item.type === 'image' ? (
                   <img
-                    src={`/media/${item.path}`}
+                    src={getMediaPreviewUrl(item)}
                     alt={item.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
