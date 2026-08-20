@@ -460,3 +460,80 @@ TEST_F(WebApiTest, MediaEndpointSupportsRangeAndVideo) {
 
     std::filesystem::remove(test_file);
 }
+
+TEST_F(WebApiTest, SubmitTaskWithPipelineSteps) {
+    std::string payload = R"({
+        "source_paths": ["s1.jpg", "s2.jpg"],
+        "target_paths": ["t.jpg"],
+        "output_path": ")"
+                        + kOutputDir + R"(",
+        "pipeline_steps": [
+            {
+                "step": "face_swapper",
+                "name": "主角换脸",
+                "enabled": true,
+                "params": {
+                    "model": "inswapper_128",
+                    "face_selector_mode": "reference",
+                    "reference_face_path": "s1.jpg"
+                }
+            },
+            {
+                "step": "face_swapper",
+                "name": "配角换脸",
+                "enabled": true,
+                "params": {
+                    "model": "inswapper_128",
+                    "face_selector_mode": "reference",
+                    "reference_face_path": "s2.jpg"
+                }
+            },
+            {
+                "step": "face_enhancer",
+                "name": "高清细节增强",
+                "enabled": true,
+                "params": {
+                    "model": "codeformer",
+                    "blend_factor": 0.85,
+                    "face_selector_mode": "many"
+                }
+            }
+        ]
+    })";
+
+    auto [code, resp] = SendRequest(drogon::Post, "/api/tasks", payload);
+    ASSERT_EQ(code, 201);
+    auto created = json::parse(resp);
+    EXPECT_TRUE(created.contains("id"));
+    EXPECT_EQ(created["status"], "queued");
+
+    std::string id = created["id"].get<std::string>();
+    auto [dcode, dresp] = SendRequest(drogon::Get, "/api/tasks/" + id);
+    ASSERT_EQ(dcode, 200);
+}
+
+TEST_F(WebApiTest, PipelineStepsValidation) {
+    // 1. pipeline_steps not array
+    auto [c1, r1] = SendRequest(drogon::Post, "/api/tasks", R"({
+        "source_paths": ["s.jpg"],
+        "target_paths": ["t.jpg"],
+        "pipeline_steps": "not_an_array"
+    })");
+    EXPECT_EQ(c1, 400);
+
+    // 2. pipeline_steps entry missing 'step'
+    auto [c2, r2] = SendRequest(drogon::Post, "/api/tasks", R"({
+        "source_paths": ["s.jpg"],
+        "target_paths": ["t.jpg"],
+        "pipeline_steps": [{"name": "invalid_step"}]
+    })");
+    EXPECT_EQ(c2, 400);
+
+    // 3. pipeline_steps unknown processor step
+    auto [c3, r3] = SendRequest(drogon::Post, "/api/tasks", R"({
+        "source_paths": ["s.jpg"],
+        "target_paths": ["t.jpg"],
+        "pipeline_steps": [{"step": "non_existent_processor"}]
+    })");
+    EXPECT_EQ(c3, 400);
+}

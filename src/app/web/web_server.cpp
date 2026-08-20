@@ -150,7 +150,59 @@ bool parse_task_config(const json& body, config::TaskConfig& out, std::string& e
         out.io.output.path = body["output_path"].get<std::string>();
     }
 
-    // pipeline processors + params
+    // 1. New structured pipeline_steps support
+    if (body.contains("pipeline_steps")) {
+        if (!body["pipeline_steps"].is_array()) {
+            err = "pipeline_steps must be an array";
+            return false;
+        }
+        for (const auto& item : body["pipeline_steps"]) {
+            if (!item.is_object()) {
+                err = "pipeline_steps entry must be an object";
+                return false;
+            }
+            if (!item.contains("step") || !item["step"].is_string()) {
+                err = "pipeline_steps entry must contain a string 'step'";
+                return false;
+            }
+            config::PipelineStep step;
+            step.step = item["step"].get<std::string>();
+            if (!domain::processor::ProcessorParamRegistry::instance().find(step.step)) {
+                err = "Unknown processor step: " + step.step;
+                return false;
+            }
+            if (item.contains("name") && item["name"].is_string()) {
+                step.name = item["name"].get<std::string>();
+            } else {
+                step.name = step.step;
+            }
+            if (item.contains("enabled") && item["enabled"].is_boolean()) {
+                step.enabled = item["enabled"].get<bool>();
+            } else {
+                step.enabled = true;
+            }
+            if (item.contains("params") && item["params"].is_object()) {
+                for (auto pit = item["params"].begin(); pit != item["params"].end(); ++pit) {
+                    step.cli_params[pit.key()] = pit.value().is_string() ?
+                                                     pit.value().get<std::string>() :
+                                                     pit.value().dump();
+                }
+            }
+            auto apply_r = config::ApplyCliParamsToStep(step);
+            if (!apply_r) {
+                err = apply_r.error().message;
+                return false;
+            }
+            out.pipeline.push_back(std::move(step));
+        }
+        if (out.pipeline.empty()) {
+            err = "pipeline_steps must not be empty";
+            return false;
+        }
+        return true;
+    }
+
+    // 2. Legacy processors + processor_params fallback
     std::vector<std::string> processors;
     if (body.contains("processors")) {
         if (!body["processors"].is_array()) {
