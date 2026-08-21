@@ -2,8 +2,8 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-PLAN-WEBUI-V2-2026
-> - **当前版本 (Version)**: V1.1.0
-> - **状态 (Status)**: 已完成 (Completed)
+> - **当前版本 (Version)**: V1.2.0
+> - **状态 (Status)**: 进行中 (In Progress)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.2.0** | 2026-08-21 | AI Agent | 王辉 | 增补阶段 8：实现“添加到任务队列”CTA、左栏三 Tab（源素材/目标素材/任务队列）、任务卡片优先级升降级与取消、中间画布源素材/目标素材/任务全态联动预览。 |
 | **V1.1.0** | 2026-08-21 | AI Agent | 王辉 | 增补阶段 6 与阶段 7：实现多文件并发与拖拽上传、人脸多选/反选/全选/清空、处理结果独立预览与下载、C++ Web 全链路结构化日志及 Playwright E2E 自动化端到端测试。 |
 | **V1.0.0** | 2026-08-20 | AI Agent | 王辉 | 依据 Web UI 设计规格 V0.4.0 创建 Web UI V2 Studio 重构实施计划（3栏工作台、多实例动态管线、WYSIWYG 人脸映射、卷帘/放大镜多模态对比、HUD 调度与历史持久化）。 |
 
@@ -116,6 +117,21 @@
   - `web/e2e/studio.spec.ts` & `web/e2e/studio.live.spec.ts`: Playwright E2E 测试套件
 - **验收标准**: Playwright 11 项端到端测试全绿，C++ 262 项单元测试全绿。
 
+### 阶段 8: 任务队列面板、队列卡片优先级升降级与全态画布联动预览
+- **目标**: 
+  1. 将右侧管线“启动渲染任务”按钮改为“添加到任务队列”；
+  2. 左侧面板重构为 3 个一级 Tab（`源素材` / `目标素材` / `任务队列 (N)`）；
+  3. 任务队列面板渲染排队中、运行中、已完成、失败任务卡片，提供【⬆️ 提升优先级】、【⬇️ 降低优先级】、【✕ 取消任务】；
+  4. 中间主视口画布实现全态感知联动预览（源素材预览态、目标素材人脸点选态、任务队列结果/进度态）。
+- **文件**:
+  - `web/src/components/media/AssetPool.tsx`: 整合“任务队列”Tab 与队列列表渲染
+  - `web/src/components/pipeline/PipelineEditor.tsx`: 调整 CTA 文本为“添加到任务队列”
+  - `web/src/components/canvas/ViewportCanvas.tsx`: 增加源素材预览与任务队列多态预览适配
+  - `web/src/store/studioState.ts`: 增加 `activePreviewItem` 全态预览状态、任务升降级与取消 API 绑定
+  - `web/src/components/media/AssetPool.test.tsx` & `web/src/components/canvas/ViewportCanvas.test.tsx`: 单元测试
+  - `web/e2e/studio.live.spec.ts`: Playwright 全流程端到端测试
+- **验收标准**: Vitest 与 Playwright 测试全绿，源素材/目标素材/任务队列点击即时联动中间画布预览，任务优先级升降级与取消操作即时响应。
+
 ---
 
 ## 4. 实施状态跟踪
@@ -129,4 +145,5 @@
 | 阶段 5: 全链路质量验收 | 已完成 | AI Agent | 2026-08-20 |
 | 阶段 6: 多文件与人脸多选增强 | 已完成 | AI Agent | 2026-08-21 |
 | 阶段 7: 全链路日志与 E2E 测试 | 已完成 | AI Agent | 2026-08-21 |
+| 阶段 8: 任务队列与全态画布预览 | 进行中 | AI Agent | 2026-08-21 |
 
