@@ -162,15 +162,19 @@ export const OFFICIAL_PRESETS: PresetConfig[] = [
 
 export function getMediaPreviewUrl(item?: MediaItem | null): string {
   if (!item) return '';
-  if (item.thumbnailUrl && !item.thumbnailUrl.startsWith('/media/')) {
-    return item.thumbnailUrl;
-  }
   if (item.file) {
     try {
       return URL.createObjectURL(item.file);
     } catch {
       // fallback
     }
+  }
+  if (
+    item.thumbnailUrl &&
+    !item.thumbnailUrl.startsWith('blob:') &&
+    !item.thumbnailUrl.startsWith('/media/')
+  ) {
+    return item.thumbnailUrl;
   }
   if (item.path) {
     return `/api/preview?path=${encodeURIComponent(item.path)}`;
@@ -234,32 +238,38 @@ export const SAMPLE_MEDIA: { sources: MediaItem[]; targets: MediaItem[] } = {
   ],
 };
 
-const sanitizeSources = (items: MediaItem[]): MediaItem[] => {
-  return items.map((item) => {
-    if (item.path === 'assets/standard_face_test_images/avatar_man.png') {
-      return {
-        ...item,
-        path: 'assets/standard_face_test_images/man.bmp',
-        name: 'Man (男士肖像)',
-        thumbnailUrl: `/api/preview?path=${encodeURIComponent('assets/standard_face_test_images/man.bmp')}`,
-      };
-    }
-    return item;
-  });
+export const sanitizeMediaItem = (item: MediaItem): MediaItem => {
+  let path = item.path;
+  let name = item.name;
+  let thumbnailUrl = item.thumbnailUrl;
+
+  if (path === 'assets/standard_face_test_images/avatar_man.png') {
+    path = 'assets/standard_face_test_images/man.bmp';
+    name = 'Man (男士肖像)';
+  } else if (path === 'assets/standard_face_test_images/family.jpg') {
+    path = 'assets/standard_face_test_images/woman.jpg';
+    name = 'Woman (女士目标图)';
+  }
+
+  // Clean out dead blob URLs or legacy /media/ URLs
+  if (!thumbnailUrl || thumbnailUrl.startsWith('blob:') || thumbnailUrl.startsWith('/media/')) {
+    thumbnailUrl = path ? `/api/preview?path=${encodeURIComponent(path)}` : undefined;
+  }
+
+  return {
+    ...item,
+    path,
+    name,
+    thumbnailUrl,
+  };
 };
 
-const sanitizeTargets = (items: MediaItem[]): MediaItem[] => {
-  return items.map((item) => {
-    if (item.path === 'assets/standard_face_test_images/family.jpg') {
-      return {
-        ...item,
-        path: 'assets/standard_face_test_images/woman.jpg',
-        name: 'Woman (女士目标图)',
-        thumbnailUrl: `/api/preview?path=${encodeURIComponent('assets/standard_face_test_images/woman.jpg')}`,
-      };
-    }
-    return item;
-  });
+export const sanitizeSources = (items: MediaItem[]): MediaItem[] => {
+  return Array.isArray(items) ? items.map(sanitizeMediaItem) : [];
+};
+
+export const sanitizeTargets = (items: MediaItem[]): MediaItem[] => {
+  return Array.isArray(items) ? items.map(sanitizeMediaItem) : [];
 };
 
 const STORAGE_KEY_SOURCES = 'ffc_studio_sources_v2';
@@ -333,13 +343,33 @@ export function useStudioStore() {
   // Persistence
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY_SOURCES, JSON.stringify(sources));
+      const cleanSources = sources.map((s) => ({
+        id: s.id,
+        path: s.path,
+        name: s.name,
+        type: s.type,
+        thumbnailUrl:
+          s.thumbnailUrl && !s.thumbnailUrl.startsWith('blob:')
+            ? s.thumbnailUrl
+            : `/api/preview?path=${encodeURIComponent(s.path)}`,
+      }));
+      localStorage.setItem(STORAGE_KEY_SOURCES, JSON.stringify(cleanSources));
     } catch {}
   }, [sources]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY_TARGETS, JSON.stringify(targets));
+      const cleanTargets = targets.map((t) => ({
+        id: t.id,
+        path: t.path,
+        name: t.name,
+        type: t.type,
+        thumbnailUrl:
+          t.thumbnailUrl && !t.thumbnailUrl.startsWith('blob:')
+            ? t.thumbnailUrl
+            : `/api/preview?path=${encodeURIComponent(t.path)}`,
+      }));
+      localStorage.setItem(STORAGE_KEY_TARGETS, JSON.stringify(cleanTargets));
     } catch {}
   }, [targets]);
 
@@ -511,7 +541,7 @@ export function useStudioStore() {
       setDetectedFaces([]);
       setSelectedFaceIndices([]);
     }
-  }, [activeTarget, runFaceDetection]);
+  }, [activeTarget?.id, activeTarget?.path, runFaceDetection]);
 
   // Actions
   const addSource = (item: MediaItem) => {

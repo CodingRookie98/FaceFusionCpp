@@ -3,7 +3,7 @@
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-PLAN-WEBUI-V2-2026
 > - **当前版本 (Version)**: V1.3.0
-> - **状态 (Status)**: 进行中 (In Progress)
+> - **状态 (Status)**: 已完成 (Completed)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
@@ -160,4 +160,4 @@
 | 阶段 6: 多文件与人脸多选增强 | 已完成 | AI Agent | 2026-08-21 |
 | 阶段 7: 全链路日志与 E2E 测试 | 已完成 | AI Agent | 2026-08-21 |
 | 阶段 8: 任务队列与全态画布预览 | 已完成 | AI Agent | 2026-08-21 |
-| 阶段 9: 素材预览生命周期与人脸感知恢复 | 进行中 | AI Agent | 2026-08-21 |
+| 阶段 9: 素材预览生命周期与人脸感知恢复 | 已完成 | AI Agent | 2026-08-21 |
