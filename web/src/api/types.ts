@@ -11,10 +11,12 @@ export interface TaskSummary {
   id: string;
   status: TaskStatus;
   progress: TaskProgress;
-  error_message: string;
-  media_count: number;
+  error_message?: string;
+  error?: string;
+  created_at?: string;
+  media_count?: number;
   priority: number;
-  queue_position: number;
+  queue_position?: number;
 }
 
 export interface TaskResultFile {
@@ -36,7 +38,7 @@ export interface PipelineStepConfig {
   step: string;
   name?: string;
   enabled: boolean;
-  params: Record<string, string | number | boolean>;
+  params: Record<string, string | number | boolean | number[] | undefined>;
 }
 
 export interface CreateTaskRequest {
@@ -47,7 +49,7 @@ export interface CreateTaskRequest {
     step: string;
     name?: string;
     enabled?: boolean;
-    params?: Record<string, string | number | boolean>;
+    params?: Record<string, string | number | boolean | number[] | undefined>;
   }>;
   processors?: string[];
   processor_params?: Record<string, Record<string, string | number>>;

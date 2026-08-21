@@ -10,13 +10,15 @@ import {
   RotateCcw,
   Eye,
   Download,
+  Activity,
+  Clock,
+  AlertCircle,
 } from 'lucide-react';
 import { FaceOverlay } from './FaceOverlay';
 import { SplitSlider } from './SplitSlider';
 import { DetailLoupe } from './DetailLoupe';
 import type { StudioStore } from '../../store/studioState';
 import { getMediaPreviewUrl } from '../../store/studioState';
-import type { DetectedFace } from '../../api/types';
 
 interface ViewportCanvasProps {
   store: StudioStore;
@@ -24,7 +26,9 @@ interface ViewportCanvasProps {
 
 export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
   const {
+    activeSource,
     activeTarget,
+    activePreviewTarget = 'target',
     detectedFaces,
     selectedFaceIndices,
     toggleFaceSelection,
@@ -34,6 +38,8 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
     runFaceDetection,
     viewportMode,
     setViewportMode,
+    tasks,
+    activeTaskId,
     activeTaskDetail,
   } = store;
 
@@ -64,6 +70,26 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
     });
   };
 
+  const formatTaskId = (id?: string | null) => {
+    if (!id) return '';
+    return id.length > 12 ? `#${id.slice(-8)}` : `#${id}`;
+  };
+
+  // Determine current active display media based on omni-preview target
+  const isSourceMode = activePreviewTarget === 'source';
+  const isTaskMode = activePreviewTarget === 'task';
+  const displayMedia = isSourceMode ? activeSource : activeTarget;
+  const originalUrl = getMediaPreviewUrl(displayMedia);
+  const isVideo = displayMedia?.type === 'video';
+
+  // Selected task in queue mode
+  const currentTask = tasks.find((t) => t.id === activeTaskId) || (activeTaskDetail?.id === activeTaskId ? activeTaskDetail : null);
+  const isTaskPending = currentTask?.status === 'queued';
+  const isTaskRunning = currentTask?.status === 'running' || activeTaskDetail?.status === 'running';
+  const isTaskDone = currentTask?.status === 'done' || activeTaskDetail?.status === 'done';
+  const isTaskFailed = currentTask?.status === 'failed';
+  const isTaskCancelled = currentTask?.status === 'cancelled';
+
   // Result file for comparison: match against current activeTarget if multiple results exist
   const pathStem =
     activeTarget?.path?.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, '').toLowerCase() || '';
@@ -83,8 +109,6 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
 
   const latestResult = matchingResult?.url;
   const latestResultName = matchingResult?.name;
-  const originalUrl = getMediaPreviewUrl(activeTarget);
-  const isVideo = activeTarget?.type === 'video';
 
   return (
     <div
@@ -104,7 +128,7 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
             }`}
           >
             <Crosshair className="w-3.5 h-3.5" />
-            <span>标注画布</span>
+            <span>{isSourceMode ? '源素材画布' : isTaskMode ? '任务视口' : '标注画布'}</span>
           </button>
 
           <button
@@ -141,7 +165,7 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
 
           <button
             onClick={() => setViewportMode('loupe')}
-            disabled={!latestResult && !activeTarget}
+            disabled={!latestResult && !displayMedia}
             className={`px-3 py-1 text-xs rounded-md font-medium flex items-center gap-1.5 transition-colors ${
               viewportMode === 'loupe'
                 ? 'bg-blue-600 text-white shadow-sm'
@@ -155,17 +179,41 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
 
         {/* Center: Info Badge */}
         <div className="text-xs text-slate-400 flex items-center gap-2 overflow-hidden truncate mx-2 min-w-0 flex-1 justify-center">
-          {activeTarget && (
+          {isSourceMode && activeSource && (
+            <span className="font-mono bg-blue-950/80 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30 truncate max-w-[220px]">
+              源素材: {activeSource.name}
+            </span>
+          )}
+
+          {isTaskMode && currentTask && (
+            <span className="font-mono bg-indigo-950/80 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30 truncate max-w-[220px]">
+              任务: {formatTaskId(currentTask.id)} (
+              {isTaskRunning
+                ? '处理中'
+                : isTaskPending
+                ? `排队 P${currentTask.priority}`
+                : isTaskDone
+                ? '完成'
+                : isTaskFailed
+                ? '失败'
+                : '已取消'}
+              )
+            </span>
+          )}
+
+          {!isSourceMode && !isTaskMode && activeTarget && (
             <span className="font-mono bg-slate-900 px-2 py-0.5 rounded border border-white/5 truncate max-w-[200px]">
               目标: {activeTarget.name}
             </span>
           )}
-          {isDetectingFaces && (
+
+          {!isSourceMode && !isTaskMode && isDetectingFaces && (
             <span className="text-cyan-400 flex items-center gap-1 animate-pulse flex-shrink-0">
               <Sparkles className="w-3 h-3 animate-spin" /> 检测人脸中...
             </span>
           )}
-          {detectedFaces.length > 0 && !isDetectingFaces && (
+
+          {!isSourceMode && !isTaskMode && detectedFaces.length > 0 && !isDetectingFaces && (
             <div className="flex items-center gap-1.5 bg-slate-900/90 px-2 py-0.5 rounded border border-white/10 text-xs flex-shrink-0">
               <span className="text-emerald-400 font-medium">✓ {detectedFaces.length} 张人脸</span>
               <span className="text-white/20">|</span>
@@ -192,6 +240,7 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
               </button>
             </div>
           )}
+
           {latestResult && activeTaskDetail?.status === 'done' && (
             <span className="text-emerald-400 font-mono bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30 flex items-center gap-1 flex-shrink-0 truncate max-w-[220px]">
               ✓ 已生成: {latestResultName || 'result'}
@@ -213,7 +262,7 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
             </a>
           )}
 
-          {activeTarget?.type === 'image' && (
+          {!isSourceMode && !isTaskMode && activeTarget?.type === 'image' && (
             <button
               onClick={() => runFaceDetection(activeTarget.path)}
               disabled={isDetectingFaces}
@@ -274,9 +323,9 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
             zoomLevel={2.8}
           />
         ) : (
-          /* Normal Canvas Viewport with FaceOverlay */
+          /* Normal Canvas Viewport (Omni Perception) */
           <div className="relative w-full h-full max-h-[calc(100vh-180px)] flex items-center justify-center rounded-lg shadow-2xl overflow-hidden border border-white/10 bg-black/40">
-            {activeTarget ? (
+            {displayMedia ? (
               isVideo ? (
                 <video
                   src={originalUrl}
@@ -292,7 +341,8 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
                     onLoad={handleImageLoad}
                     className="max-h-[calc(100vh-220px)] max-w-full object-contain block rounded"
                   />
-                  {naturalSize.width > 0 && (
+                  {/* Face overlay only shown in target media mode */}
+                  {!isSourceMode && !isTaskMode && naturalSize.width > 0 && (
                     <FaceOverlay
                       faces={detectedFaces}
                       imageWidth={naturalSize.width}
@@ -301,12 +351,90 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
                       onToggleFace={toggleFaceSelection}
                     />
                   )}
+
+                  {/* Task Running Progress HUD Overlay */}
+                  {isTaskMode && isTaskRunning && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-3 p-6 text-center z-10 rounded">
+                      <Activity className="w-8 h-8 text-cyan-400 animate-pulse" />
+                      <div className="text-sm font-semibold text-slate-100">
+                        正在处理任务 {formatTaskId(activeTaskId)}
+                      </div>
+                      {activeTaskDetail?.progress && (
+                        <>
+                          <div className="w-64 bg-slate-800 h-2 rounded-full overflow-hidden border border-white/10">
+                            <div
+                              className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full transition-all duration-300"
+                              style={{
+                                width: `${Math.round(
+                                  (activeTaskDetail.progress.current_frame /
+                                    Math.max(activeTaskDetail.progress.total_frames, 1)) *
+                                    100
+                                )}%`,
+                              }}
+                            />
+                          </div>
+                          <div className="text-xs text-slate-400 font-mono flex items-center gap-2">
+                            <span>
+                              {activeTaskDetail.progress.current_frame} /{' '}
+                              {activeTaskDetail.progress.total_frames} 帧 (
+                              {Math.round(
+                                (activeTaskDetail.progress.current_frame /
+                                  Math.max(activeTaskDetail.progress.total_frames, 1)) *
+                                  100
+                              )}
+                              %)
+                            </span>
+                            {activeTaskDetail.progress.fps > 0 && (
+                              <span>| {activeTaskDetail.progress.fps.toFixed(1)} FPS</span>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Task Pending in Queue HUD Overlay */}
+                  {isTaskMode && isTaskPending && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-3 p-6 text-center z-10 rounded">
+                      <Clock className="w-8 h-8 text-amber-400 animate-bounce" />
+                      <div className="text-sm font-semibold text-slate-100">
+                        任务排队中... {formatTaskId(activeTaskId)}
+                      </div>
+                      <div className="text-xs text-amber-300/90 font-mono bg-amber-950/80 px-3 py-1 rounded-full border border-amber-500/30">
+                        调度优先级: P{currentTask?.priority ?? 0}
+                      </div>
+                      <span className="text-[11px] text-slate-400">
+                        后台推理引擎就绪后将按优先级自动分配执行
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Task Failed / Cancelled HUD Overlay */}
+                  {isTaskMode && (isTaskFailed || isTaskCancelled) && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-3 p-6 text-center z-10 rounded">
+                      <AlertCircle className={`w-8 h-8 ${isTaskFailed ? 'text-rose-400' : 'text-slate-400'}`} />
+                      <div className="text-sm font-semibold text-slate-100">
+                        {isTaskFailed ? '任务执行失败' : '任务已取消'}
+                      </div>
+                      {currentTask?.error && (
+                        <div className="text-xs text-rose-300 max-w-sm bg-rose-950/80 p-2 rounded border border-rose-500/30 font-mono">
+                          {currentTask.error}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )
             ) : (
               <div className="p-12 text-center text-slate-500 flex flex-col items-center gap-3">
                 <Layers className="w-12 h-12 opacity-30" />
-                <p className="text-sm">暂无目标素材，请在左侧素材池中上传或选择测试样张</p>
+                <p className="text-sm">
+                  {isSourceMode
+                    ? '暂无源素材，请在左侧素材池中上传'
+                    : isTaskMode
+                    ? '暂无选中的任务'
+                    : '暂无目标素材，请在左侧素材池中上传或选择测试样张'}
+                </p>
               </div>
             )}
           </div>

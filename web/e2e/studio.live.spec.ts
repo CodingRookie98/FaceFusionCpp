@@ -66,7 +66,7 @@ test.describe('FaceFusionCpp Studio - Live C++ Backend Integration E2E Tests', (
 
   test('4. Live Task Submission & Real Job Lifecycle Flow', async ({ page }) => {
     // Select Source face
-    const sourceTabBtn = page.getByRole('button', { name: /源人脸/i });
+    const sourceTabBtn = page.getByRole('button', { name: /源素材/i });
     await sourceTabBtn.click();
     await page.getByText('Lenna (经典测试头像)').click();
 
@@ -79,7 +79,7 @@ test.describe('FaceFusionCpp Studio - Live C++ Backend Integration E2E Tests', (
     await page.getByRole('button', { name: /极速单人换脸/i }).click();
 
     // Click Run Task (sends live POST /api/tasks to Drogon C++ server)
-    const runBtn = page.getByRole('button', { name: /启动渲染任务/i });
+    const runBtn = page.getByRole('button', { name: /添加到任务队列/i });
     await expect(runBtn).toBeVisible();
     await runBtn.click();
 

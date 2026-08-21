@@ -12,8 +12,10 @@ describe('PipelineEditor Component', () => {
     setSelectedSourceId: vi.fn(),
     setSelectedTargetId: vi.fn(),
     addSource: vi.fn(),
+    addSources: vi.fn(),
     removeSource: vi.fn(),
     addTarget: vi.fn(),
+    addTargets: vi.fn(),
     removeTarget: vi.fn(),
     steps: [
       {
@@ -36,6 +38,11 @@ describe('PipelineEditor Component', () => {
     activeBindingStepId: null,
     setActiveBindingStepId: vi.fn(),
     detectedFaces: [],
+    selectedFaceIndices: [],
+    setSelectedFaceIndices: vi.fn(),
+    toggleFaceSelection: vi.fn(),
+    selectAllFaces: vi.fn(),
+    clearFaceSelection: vi.fn(),
     isDetectingFaces: false,
     runFaceDetection: vi.fn(),
     bindReferenceFaceToActiveStep: vi.fn(),
@@ -56,6 +63,13 @@ describe('PipelineEditor Component', () => {
     refreshTasks: vi.fn(),
     activeSource: { id: 's1', name: 'Lenna', path: 'lenna.bmp', type: 'image' },
     activeTarget: { id: 't1', name: 'Girl', path: 'girl.bmp', type: 'image' },
+    activePreviewTarget: 'target',
+    setActivePreviewTarget: vi.fn(),
+    activeTab: 'sources',
+    setActiveTab: vi.fn(),
+    selectSourceForPreview: vi.fn(),
+    selectTargetForPreview: vi.fn(),
+    selectTaskForPreview: vi.fn(),
     ...overrides,
   });
 
@@ -65,7 +79,7 @@ describe('PipelineEditor Component', () => {
 
     expect(screen.getByText(/1\/1 激活/i)).toBeDefined();
     expect(screen.getByDisplayValue('Face Swapper #1')).toBeDefined();
-    expect(screen.getByText(/🚀 启动渲染任务/i)).toBeDefined();
+    expect(screen.getByText(/➕ 添加到任务队列/i)).toBeDefined();
   });
 
   it('opens add step menu and triggers addStep', () => {
@@ -80,11 +94,11 @@ describe('PipelineEditor Component', () => {
     expect(store.addStep).toHaveBeenCalledWith('face_enhancer');
   });
 
-  it('triggers submitJob when clicking Start Run CTA', () => {
+  it('triggers submitJob when clicking Add to Queue CTA', () => {
     const store = createMockStore();
     render(<PipelineEditor store={store} />);
 
-    const submitBtn = screen.getByText(/🚀 启动渲染任务/i);
+    const submitBtn = screen.getByText(/➕ 添加到任务队列/i);
     fireEvent.click(submitBtn);
     expect(store.submitJob).toHaveBeenCalled();
   });

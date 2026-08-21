@@ -326,6 +326,10 @@ export function useStudioStore() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [backendStatus, setBackendStatus] = useState<string>('connecting');
 
+  // 5. Omni-preview target & Left Tab
+  const [activePreviewTarget, setActivePreviewTarget] = useState<'source' | 'target' | 'task'>('target');
+  const [activeTab, setActiveTab] = useState<'sources' | 'targets' | 'queue'>('sources');
+
   // Persistence
   useEffect(() => {
     try {
@@ -713,6 +717,8 @@ export function useStudioStore() {
     try {
       const res = await api.submitTask(payload);
       setActiveTaskId(res.id);
+      setActivePreviewTarget('task');
+      setActiveTab('queue');
       refreshTasks();
     } catch (e) {
       setErrorMsg(e instanceof Error ? e.message : String(e));
@@ -739,6 +745,21 @@ export function useStudioStore() {
     } catch (e) {
       setErrorMsg(e instanceof Error ? e.message : String(e));
     }
+  };
+
+  const selectSourceForPreview = (id: string) => {
+    setSelectedSourceId(id);
+    setActivePreviewTarget('source');
+  };
+
+  const selectTargetForPreview = (id: string) => {
+    setSelectedTargetId(id);
+    setActivePreviewTarget('target');
+  };
+
+  const selectTaskForPreview = (taskId: string) => {
+    setActiveTaskId(taskId);
+    setActivePreviewTarget('task');
   };
 
   return {
@@ -789,6 +810,13 @@ export function useStudioStore() {
     refreshTasks,
     activeSource,
     activeTarget,
+    activePreviewTarget,
+    setActivePreviewTarget,
+    activeTab,
+    setActiveTab,
+    selectSourceForPreview,
+    selectTargetForPreview,
+    selectTaskForPreview,
   };
 }
 

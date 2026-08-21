@@ -139,11 +139,13 @@ test.describe('FaceFusionCpp Studio - Comprehensive E2E Tests', () => {
 
   test('2. Asset Pool: switch tabs and select media items', async ({ page }) => {
     // 1. Check Source faces
-    const sourceTabBtn = page.getByRole('button', { name: /源人脸/i });
-    const targetTabBtn = page.getByRole('button', { name: /目标素材/i });
+    const sourceTabBtn = page.getByRole('button', { name: /^源素材/i });
+    const targetTabBtn = page.getByRole('button', { name: /^目标素材/i });
+    const queueTabBtn = page.getByRole('button', { name: /^任务队列/i });
 
     await expect(sourceTabBtn).toBeVisible();
     await expect(targetTabBtn).toBeVisible();
+    await expect(queueTabBtn).toBeVisible();
 
     // Verify sample sources (Lenna, Man, Barbara)
     await expect(page.getByText('Lenna (经典测试头像)')).toBeVisible();
@@ -160,6 +162,11 @@ test.describe('FaceFusionCpp Studio - Comprehensive E2E Tests', () => {
 
     // Click on Woman
     await page.getByText('Woman (女士目标图)', { exact: true }).click();
+
+    // Switch to Queue tab
+    await queueTabBtn.click();
+    await expect(page.getByText('#mock-001', { exact: true })).toBeVisible();
+    await expect(page.getByText('任务: #mock-001 (完成)')).toBeVisible();
   });
 
   test('3. Pipeline Editor: switch presets and configure processors', async ({ page }) => {
@@ -261,8 +268,8 @@ test.describe('FaceFusionCpp Studio - Comprehensive E2E Tests', () => {
     await expect(page.getByText('历史任务与成果记录')).not.toBeVisible();
   });
 
-  test('7. Task Submission Flow', async ({ page }) => {
-    const runBtn = page.getByRole('button', { name: /启动渲染任务/i });
+  test('7. Task Submission Flow & Queue Enqueue', async ({ page }) => {
+    const runBtn = page.getByRole('button', { name: /添加到任务队列/i });
     await expect(runBtn).toBeVisible();
     await runBtn.click();
 

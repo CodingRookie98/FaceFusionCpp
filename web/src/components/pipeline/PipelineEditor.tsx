@@ -152,7 +152,7 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({ store }) => {
           className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:opacity-50 text-white rounded-lg font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all hover:shadow-blue-500/40 active:scale-[0.98] cursor-pointer"
         >
           <Play className="w-4 h-4 fill-white" />
-          <span>{isSubmitting ? '正在提交任务...' : '🚀 启动渲染任务 (Start Run)'}</span>
+          <span>{isSubmitting ? '正在加入队列...' : '➕ 添加到任务队列 (Add to Queue)'}</span>
         </button>
       </div>
     </div>
