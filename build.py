@@ -158,19 +158,26 @@ def run_test(ctest_exe, preset, regex, label, env, project_root, build_dir):
 
 def run_web_build(project_root):
     """Build the frontend (web/) and sync static assets to assets/web/."""
-    log("\n=== Action: web ===", "info")
+    log("\n=== Building Web Frontend (web/) ===", "info")
     web_dir = project_root / "web"
     if not (web_dir / "package.json").exists():
         log("web/ not found, skipping frontend build", "warning")
         return
 
+    npm_exe = "npm.cmd" if platform.system() == "Windows" else "npm"
+    if not shutil.which(npm_exe) and not shutil.which("npm"):
+        log("npm not found in PATH, skipping frontend build", "warning")
+        return
+
     web_env = os.environ.copy()
     web_env.pop("NODE_ENV", None)
 
-    log("Installing frontend dependencies (npm ci)...", "info")
-    run_command(["npm", "ci", "--include=dev"], env=web_env, cwd=web_dir)
+    if not (web_dir / "node_modules").exists():
+        log("Installing frontend dependencies (npm ci)...", "info")
+        run_command([npm_exe, "ci", "--include=dev"], env=web_env, cwd=web_dir)
+
     log("Building frontend (npm run build)...", "info")
-    run_command(["npm", "run", "build"], env=web_env, cwd=web_dir)
+    run_command([npm_exe, "run", "build"], env=web_env, cwd=web_dir)
 
     dist_dir = web_dir / "dist"
     if not dist_dir.exists():
@@ -341,6 +348,13 @@ def main():
         help="Skip the build step when action is test",
     )
     parser.add_argument(
+        "--no-web",
+        "--skip-web",
+        action="store_true",
+        dest="no_web",
+        help="Skip building the frontend (web/) during build/package actions",
+    )
+    parser.add_argument(
         "-j",
         "--jobs",
         type=int,
@@ -422,6 +436,8 @@ def main():
     elif args.action == "build":
         ensure_configured(cmake_exe, preset, env, project_root, extra_cmake_args)
         run_build(cmake_exe, preset, args.target, jobs, env, project_root)
+        if not args.no_web:
+            run_web_build(project_root)
 
     elif args.action == "test":
         if not args.no_build:
@@ -449,6 +465,8 @@ def main():
 
         log("Running build before packaging...", "info")
         run_build(cmake_exe, preset, "all", jobs, env, project_root)
+        if not args.no_web:
+            run_web_build(project_root)
 
         run_package(cpack_exe, build_dir, env)
 

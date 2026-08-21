@@ -2,17 +2,18 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-GUIDE-BUILD-2026
-> - **当前版本 (Version)**: V1.1.0
+> - **当前版本 (Version)**: V1.2.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-08-17
+> - **最后更新 (Last Updated)**: 2026-08-21
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.2.0** | 2026-08-21 | AI Agent | 王辉 | 将 Web 前端构建 (`web/` -> `assets/web/`) 默认集成至 `--action build` 与 `--action package`，并增补 `--no-web` (`--skip-web`) 快速跳过前端参数。 |
 | **V1.1.0** | 2026-08-17 | AI Agent | 王辉 | 增补 `--action dev` 一键启动 Web 开发环境、`--web-port` 参数与 `FFC_WEB_PORT` 环境变量联动说明。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
 
@@ -30,15 +31,18 @@ python build.py --action configure
 # (可选) 若计划运行测试，需开启测试支持
 # python build.py --action configure --enable-tests
 
-# 2. 构建 Debug 版本 (默认动作)
+# 2. 构建 Debug 版本 (默认动作，自动编译 C++ 与 Web 前端)
 python build.py
 ```
 
 ## 2. 常用命令
 
 ```bash
-# 仅构建 Release 版本
+# 构建 Release 版本 (含 C++ 与 Web 前端)
 python build.py --config Release --action build
+
+# 仅构建 C++，跳过前端构建 (开发调试提速)
+python build.py --action build --no-web
 
 # 测试准备：必须先开启测试支持
 python build.py --action configure --enable-tests
@@ -57,10 +61,10 @@ python build.py --action test --no-build --test-regex "face"
 # 安装项目
 python build.py --config Release --action install
 
-# 打包项目
+# 打包项目 (自动构建 C++ 与 Web 前端并打成发布包)
 python build.py --config Release --action package
 
-# 构建前端产物并同步至 assets/web（供 install 打包）
+# 独立构建前端产物并同步至 assets/web
 python build.py --action web
 
 # 一键启动 Web 开发环境（自动起后端 ffc --web + Vite dev，Ctrl-C 退出并清理后端）
@@ -81,7 +85,8 @@ python build.py --action build
 | 参数 | 说明 | 可选值 | 默认值 |
 | :--- | :--- | :--- | :--- |
 | `--config` | 构建配置类型 | `Debug`, `Release` | `Debug` |
-| `--action` | 执行的操作 | `configure` (仅配置)<br>`build` (仅构建)<br>`test` (先构建后测试)<br>`install` (安装)<br>`package` (打包)<br>`web` (构建前端并同步)<br>`dev` (一键启动 Web 开发环境) | `build` |
+| `--action` | 执行的操作 | `configure` (仅配置)<br>`build` (构建 C++ 及 Web 前端)<br>`test` (先构建后测试)<br>`install` (安装)<br>`package` (构建并打包发布包)<br>`web` (独立构建前端并同步)<br>`dev` (一键启动 Web 开发环境) | `build` |
+| `--no-web` / `--skip-web` | 跳过 Web 前端构建 (仅构建 C++ 目标，加快编译) | `[flag]` | `False` |
 | `--web-port` | Web 后端端口（`--action dev` 使用，并注入 `FFC_WEB_PORT` 供 Vite 代理联动） | 1-65535 | `8000` |
 | `--target` | 构建或测试目标 | `all` 或具体名称 | `all` |
 | `--test-regex` | 测试筛选正则 (传递给 `ctest -R`) | 正则表达式 | `None` (默认使用 `--target` 当作筛选若非 `all`) |
