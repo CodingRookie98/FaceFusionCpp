@@ -2,7 +2,7 @@
 
 > **Document Control Information**
 > - **Document ID**: FFC-DEV-EN-ARCH-WEBUI-2026
-> - **Current Version**: V0.5.0
+> - **Current Version**: V0.5.1
 > - **Status**: Official
 > - **Authority**: Informative
 > - **Owner**: Hui Wang
@@ -13,11 +13,11 @@
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| **V0.5.1** | 2026-08-21 | AI Agent | Hui Wang | Specified media preview lifecycle persistence (smart Blob fallback to backend /api/preview, localStorage sanitization) and automatic face detection recovery upon page reload. |
 | **V0.5.0** | 2026-08-21 | AI Agent | Hui Wang | Upgraded task queue & omni-preview architecture: renamed submit CTA to "Add to Task Queue", left sidebar 3-tab layout (Source Assets / Target Media / Task Queue), priority up/down & cancel actions on task cards, and omni canvas preview for source/target/queue items. |
 | **V0.4.1** | 2026-08-21 | AI Agent | Hui Wang | Added multi-file concurrent & drag-and-drop uploads, multi-face selection/toggle with batch controls, standalone result preview with download action, C++ Web structured logging, and Playwright E2E test suite. |
 | **V0.4.0** | 2026-08-20 | AI Agent | Hui Wang | Completely redesigned for Studio Workbench: Deep Studio Dark single-page layout, dynamic multi-instance processor pipeline, WYSIWYG face mapping, split-slider/loupe comparison matrix, telemetry HUD, and /api/tasks pipeline_steps. |
 | **V0.3.2** | 2026-08-18 | AI Agent | Hui Wang | Fixed review gaps: corrected priority scheduling semantics (higher value = higher priority), added /api/processors and /api/tasks/{id}/progress endpoints, implemented video Range playback and production face detection injection. |
-| **V0.3.1** | 2026-08-17 | AI Agent | Hui Wang | Added `build.py --action dev` one-click startup, configurable `FFC_WEB_PORT`/`FFC_WEB_HOST`, and frontend WebSocket auto-reconnect with exponential backoff. |
 
 ---
 

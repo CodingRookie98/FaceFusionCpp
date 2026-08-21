@@ -2,8 +2,8 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-PLAN-WEBUI-V2-2026
-> - **当前版本 (Version)**: V1.2.0
-> - **状态 (Status)**: 已完成 (Completed)
+> - **当前版本 (Version)**: V1.3.0
+> - **状态 (Status)**: 进行中 (In Progress)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.3.0** | 2026-08-21 | AI Agent | 王辉 | 增补阶段 9：素材预览生命周期持久化（解决页面刷新后 Blob URL 失效问题、智能回落 /api/preview、localStorage 清洗）与页面刷新后人脸自动感知恢复。 |
 | **V1.2.0** | 2026-08-21 | AI Agent | 王辉 | 增补阶段 8：实现“添加到任务队列”CTA、左栏三 Tab（源素材/目标素材/任务队列）、任务卡片优先级升降级与取消、中间画布源素材/目标素材/任务全态联动预览。 |
 | **V1.1.0** | 2026-08-21 | AI Agent | 王辉 | 增补阶段 6 与阶段 7：实现多文件并发与拖拽上传、人脸多选/反选/全选/清空、处理结果独立预览与下载、C++ Web 全链路结构化日志及 Playwright E2E 自动化端到端测试。 |
 | **V1.0.0** | 2026-08-20 | AI Agent | 王辉 | 依据 Web UI 设计规格 V0.4.0 创建 Web UI V2 Studio 重构实施计划（3栏工作台、多实例动态管线、WYSIWYG 人脸映射、卷帘/放大镜多模态对比、HUD 调度与历史持久化）。 |
@@ -132,6 +133,19 @@
   - `web/e2e/studio.live.spec.ts`: Playwright 全流程端到端测试
 - **验收标准**: Vitest 与 Playwright 测试全绿，源素材/目标素材/任务队列点击即时联动中间画布预览，任务优先级升降级与取消操作即时响应。
 
+### 阶段 9: 素材预览生命周期持久化与自动人脸感知恢复
+- **目标**: 彻底消除页面刷新后上传素材预览空白的问题，实现 Blob 临时链接与后端 `/api/preview` 静态源的平滑回落，并在页面刷新挂载后自动感知恢复目标素材的人脸检测框标注。
+- **任务清单**:
+  1. **素材预览智能回落**: 在 `getMediaPreviewUrl` 中优先检查本地有效 `file` 对象，当处于刷新后状态或 `thumbnailUrl` 带有失效 `blob:` 标识时，自动回退至后端 `/api/preview?path=${encodeURIComponent(item.path)}`。
+  2. **状态清洗与持久化**: 在 `sanitizeSources`、`sanitizeTargets` 以及写入 `localStorage` 时，清洗掉临时 `blob:` 链接，确保存储的数据具备跨页面刷新可用性。
+  3. **人脸检测自动感知恢复**: 在 `useStudioStore` 初始加载/目标素材挂载时，若当前存在选中的目标素材且人脸列表为空，自动向后端发起静默人脸检测，无需用户二次操作。
+  4. **单元测试与回归**: 编写针对页面刷新后持久化恢复、Blob 链接失效降级与自动人脸恢复的单元测试用例。
+- **涉及文件**:
+  - `web/src/store/studioState.ts`: `getMediaPreviewUrl` 智能降级、`sanitizeSources`/`sanitizeTargets` 清洗、自动感知人脸检测触发
+  - `web/src/store/studioState.test.ts`: 编写持久化与回退机制单元测试
+  - `web/src/components/canvas/ViewportCanvas.tsx`: 验证刷新后画布渲染
+- **验收标准**: 页面刷新后，上传的源素材/目标素材缩略图与画布视图均能正常从 `/api/preview` 加载显示，当前选中的目标素材自动恢复人脸框检测，Vitest 与 E2E 测试全部通过。
+
 ---
 
 ## 4. 实施状态跟踪
@@ -146,4 +160,4 @@
 | 阶段 6: 多文件与人脸多选增强 | 已完成 | AI Agent | 2026-08-21 |
 | 阶段 7: 全链路日志与 E2E 测试 | 已完成 | AI Agent | 2026-08-21 |
 | 阶段 8: 任务队列与全态画布预览 | 已完成 | AI Agent | 2026-08-21 |
-
+| 阶段 9: 素材预览生命周期与人脸感知恢复 | 进行中 | AI Agent | 2026-08-21 |
