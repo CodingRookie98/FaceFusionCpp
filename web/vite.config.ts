@@ -13,8 +13,9 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // 开发模式：API 与 WebSocket 请求代理到 C++ 服务（ffc --web）
+      // 开发模式：API 与 WebSocket 与媒体请求代理到 C++ 服务（ffc --web）
       '/api': { target: `http://${webHost}:${webPort}`, changeOrigin: true },
+      '/media': { target: `http://${webHost}:${webPort}`, changeOrigin: true },
       '/ws': { target: `ws://${webHost}:${webPort}`, ws: true },
     },
   },
