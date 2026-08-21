@@ -36,22 +36,32 @@ test.describe('FaceFusionCpp Studio - Live C++ Backend Integration E2E Tests', (
     await expect(canvasImg).toBeVisible();
   });
 
-  test('3. Live Face Detection on Target Image', async ({ page }) => {
+  test('3. Live Face Detection on Target Image & Face Selection Toggle', async ({ page }) => {
     const targetTabBtn = page.getByRole('button', { name: /目标素材/i });
     await targetTabBtn.click();
     await page.getByText('Girl (单人目标图)', { exact: true }).click();
 
-    // Click on "重新检测" (triggers live POST /api/faces)
-    const detectBtn = page.getByRole('button', { name: /重新检测/i });
-    if (await detectBtn.isVisible()) {
-      await detectBtn.click();
-      // Wait for detection to complete
-      await page.waitForTimeout(1000);
-    }
-
     // Verify canvas displays target
     const canvasImg = page.locator('img[alt="Target Canvas"]');
     await expect(canvasImg).toBeVisible();
+
+    // Wait for live face detection to complete (automatic on target selection)
+    const selectedBadge = page.getByText(/已选 #1/i);
+    await expect(selectedBadge).toBeVisible({ timeout: 10000 });
+
+    // Click to toggle/deselect
+    await selectedBadge.click();
+    await expect(page.getByText(/未选 #1/i)).toBeVisible();
+
+    // Click "全选" toolbar button
+    const selectAllBtn = page.getByRole('button', { name: '全选' });
+    await selectAllBtn.click();
+    await expect(page.getByText(/已选 #1/i)).toBeVisible();
+
+    // Click "清空" toolbar button
+    const clearBtn = page.getByRole('button', { name: '清空' });
+    await clearBtn.click();
+    await expect(page.getByText(/未选 #1/i)).toBeVisible();
   });
 
   test('4. Live Task Submission & Real Job Lifecycle Flow', async ({ page }) => {

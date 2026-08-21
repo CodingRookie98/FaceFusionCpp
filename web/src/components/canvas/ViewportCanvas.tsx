@@ -26,16 +26,18 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
   const {
     activeTarget,
     detectedFaces,
+    selectedFaceIndices,
+    toggleFaceSelection,
+    selectAllFaces,
+    clearFaceSelection,
     isDetectingFaces,
     runFaceDetection,
-    bindReferenceFaceToActiveStep,
     viewportMode,
     setViewportMode,
     activeTaskDetail,
   } = store;
 
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [selectedFaceIndex, setSelectedFaceIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [naturalSize, setNaturalSize] = useState<{ width: number; height: number }>({
@@ -60,11 +62,6 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
       width: target.naturalWidth,
       height: target.naturalHeight,
     });
-  };
-
-  const handleFaceClick = (face: DetectedFace) => {
-    setSelectedFaceIndex(face.index);
-    bindReferenceFaceToActiveStep(face, activeTarget?.path);
   };
 
   // Result file for comparison: match against current activeTarget if multiple results exist
@@ -169,9 +166,31 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
             </span>
           )}
           {detectedFaces.length > 0 && !isDetectingFaces && (
-            <span className="text-emerald-400 flex items-center gap-1 flex-shrink-0">
-              ✓ 检测到 {detectedFaces.length} 张人脸
-            </span>
+            <div className="flex items-center gap-1.5 bg-slate-900/90 px-2 py-0.5 rounded border border-white/10 text-xs flex-shrink-0">
+              <span className="text-emerald-400 font-medium">✓ {detectedFaces.length} 张人脸</span>
+              <span className="text-white/20">|</span>
+              <span
+                className={
+                  selectedFaceIndices.length > 0 ? 'text-rose-400 font-semibold' : 'text-slate-400'
+                }
+              >
+                已选 {selectedFaceIndices.length}/{detectedFaces.length}
+              </span>
+              <button
+                onClick={selectAllFaces}
+                className="px-1.5 py-0.5 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-200 rounded transition-colors"
+                title="全选所有人脸"
+              >
+                全选
+              </button>
+              <button
+                onClick={clearFaceSelection}
+                className="px-1.5 py-0.5 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-200 rounded transition-colors"
+                title="清空人脸选择"
+              >
+                清空
+              </button>
+            </div>
           )}
           {latestResult && activeTaskDetail?.status === 'done' && (
             <span className="text-emerald-400 font-mono bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30 flex items-center gap-1 flex-shrink-0 truncate max-w-[220px]">
@@ -278,8 +297,8 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
                       faces={detectedFaces}
                       imageWidth={naturalSize.width}
                       imageHeight={naturalSize.height}
-                      selectedFaceIndex={selectedFaceIndex}
-                      onSelectFace={handleFaceClick}
+                      selectedFaceIndices={selectedFaceIndices}
+                      onToggleFace={toggleFaceSelection}
                     />
                   )}
                 </div>

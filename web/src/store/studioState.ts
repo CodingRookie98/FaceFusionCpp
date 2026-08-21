@@ -313,6 +313,7 @@ export function useStudioStore() {
 
   // 3. Canvas State & Detected Faces
   const [detectedFaces, setDetectedFaces] = useState<DetectedFace[]>([]);
+  const [selectedFaceIndices, setSelectedFaceIndices] = useState<number[]>([]);
   const [isDetectingFaces, setIsDetectingFaces] = useState(false);
   const [viewportMode, setViewportMode] = useState<'canvas' | 'compare' | 'loupe' | 'result'>('canvas');
   const [compareSplitPos, setCompareSplitPos] = useState<number>(50); // percentage 0-100
@@ -483,12 +484,16 @@ export function useStudioStore() {
       .then((res) => {
         if (res && res.faces) {
           setDetectedFaces(res.faces);
+          // By default, select all detected faces
+          setSelectedFaceIndices(res.faces.map((f) => f.index));
         } else {
           setDetectedFaces([]);
+          setSelectedFaceIndices([]);
         }
       })
       .catch(() => {
         setDetectedFaces([]);
+        setSelectedFaceIndices([]);
       })
       .finally(() => {
         setIsDetectingFaces(false);
@@ -500,6 +505,7 @@ export function useStudioStore() {
       runFaceDetection(activeTarget.path);
     } else {
       setDetectedFaces([]);
+      setSelectedFaceIndices([]);
     }
   }, [activeTarget, runFaceDetection]);
 
@@ -592,6 +598,60 @@ export function useStudioStore() {
       copy.splice(targetIdx, 0, item);
       return copy;
     });
+  };
+
+  const syncFaceSelectionToSteps = (
+    indices: number[],
+    faces: DetectedFace[],
+    sourceOrTargetPath?: string
+  ) => {
+    const targetStepId = activeBindingStepId || steps.find((s) => s.step === 'face_swapper')?.id;
+    if (!targetStepId) return;
+
+    if (indices.length === 1) {
+      const face = faces.find((f) => f.index === indices[0]);
+      if (face) {
+        bindReferenceFaceToActiveStep(face, sourceOrTargetPath);
+      }
+    } else {
+      // Multiple faces or none: set face_selector_mode to many
+      setSteps((prev) =>
+        prev.map((s) =>
+          s.id === targetStepId
+            ? {
+                ...s,
+                params: {
+                  ...s.params,
+                  face_selector_mode: 'many',
+                  selected_face_indices: indices,
+                },
+              }
+            : s
+        )
+      );
+    }
+  };
+
+  const toggleFaceSelection = (faceOrIndex: number | DetectedFace) => {
+    const faceIndex = typeof faceOrIndex === 'number' ? faceOrIndex : faceOrIndex.index;
+    setSelectedFaceIndices((prev) => {
+      const next = prev.includes(faceIndex)
+        ? prev.filter((idx) => idx !== faceIndex)
+        : [...prev, faceIndex].sort((a, b) => a - b);
+      syncFaceSelectionToSteps(next, detectedFaces, activeTarget?.path);
+      return next;
+    });
+  };
+
+  const selectAllFaces = () => {
+    const all = detectedFaces.map((f) => f.index);
+    setSelectedFaceIndices(all);
+    syncFaceSelectionToSteps(all, detectedFaces, activeTarget?.path);
+  };
+
+  const clearFaceSelection = () => {
+    setSelectedFaceIndices([]);
+    syncFaceSelectionToSteps([], detectedFaces, activeTarget?.path);
   };
 
   const bindReferenceFaceToActiveStep = (face: DetectedFace, sourcePath?: string) => {
@@ -704,6 +764,11 @@ export function useStudioStore() {
     activeBindingStepId,
     setActiveBindingStepId,
     detectedFaces,
+    selectedFaceIndices,
+    setSelectedFaceIndices,
+    toggleFaceSelection,
+    selectAllFaces,
+    clearFaceSelection,
     isDetectingFaces,
     runFaceDetection,
     bindReferenceFaceToActiveStep,

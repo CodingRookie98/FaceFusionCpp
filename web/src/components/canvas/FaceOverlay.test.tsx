@@ -21,60 +21,82 @@ describe('FaceOverlay Component', () => {
     },
   ];
 
-  it('renders bounding boxes with correct relative percentages', () => {
-    const onSelect = vi.fn();
+  it('renders bounding boxes with correct relative percentages and info', () => {
+    const onToggle = vi.fn();
     const { container } = render(
       <FaceOverlay
         faces={mockFaces}
         imageWidth={1000}
         imageHeight={1000}
-        selectedFaceIndex={null}
-        onSelectFace={onSelect}
+        selectedFaceIndices={[0]}
+        onToggleFace={onToggle}
       />
     );
 
     const faceBoxes = container.querySelectorAll('.border-2');
     expect(faceBoxes).toHaveLength(2);
 
-    expect(screen.getByText('#1')).toBeDefined();
+    expect(screen.getByText(/#1/)).toBeDefined();
     expect(screen.getByText(/95%/i)).toBeDefined();
     expect(screen.getByText(/♀/i)).toBeDefined();
 
-    expect(screen.getByText('#2')).toBeDefined();
+    expect(screen.getByText(/#2/)).toBeDefined();
     expect(screen.getByText(/88%/i)).toBeDefined();
     expect(screen.getByText(/♂/i)).toBeDefined();
   });
 
-  it('triggers onSelectFace callback when clicked', () => {
-    const onSelect = vi.fn();
+  it('displays selected and unselected status labels on face boxes', () => {
+    const onToggle = vi.fn();
     render(
       <FaceOverlay
         faces={mockFaces}
         imageWidth={1000}
         imageHeight={1000}
-        selectedFaceIndex={null}
-        onSelectFace={onSelect}
+        selectedFaceIndices={[0]}
+        onToggleFace={onToggle}
       />
     );
 
-    const faceTag = screen.getByText('#1');
-    fireEvent.click(faceTag);
-    expect(onSelect).toHaveBeenCalledWith(mockFaces[0]);
+    expect(screen.getByText(/已选 #1/i)).toBeDefined();
+    expect(screen.getByText(/未选 #2/i)).toBeDefined();
   });
 
-  it('highlights selected face with rose color scheme', () => {
-    const onSelect = vi.fn();
+  it('triggers onToggleFace callback when clicking a face box to toggle selection', () => {
+    const onToggle = vi.fn();
+    render(
+      <FaceOverlay
+        faces={mockFaces}
+        imageWidth={1000}
+        imageHeight={1000}
+        selectedFaceIndices={[0]}
+        onToggleFace={onToggle}
+      />
+    );
+
+    const face1 = screen.getByText(/已选 #1/i);
+    fireEvent.click(face1);
+    expect(onToggle).toHaveBeenCalledWith(0);
+
+    const face2 = screen.getByText(/未选 #2/i);
+    fireEvent.click(face2);
+    expect(onToggle).toHaveBeenCalledWith(1);
+  });
+
+  it('supports selecting multiple faces simultaneously with rose highlight color scheme', () => {
+    const onToggle = vi.fn();
     const { container } = render(
       <FaceOverlay
         faces={mockFaces}
         imageWidth={1000}
         imageHeight={1000}
-        selectedFaceIndex={0}
-        onSelectFace={onSelect}
+        selectedFaceIndices={[0, 1]}
+        onToggleFace={onToggle}
       />
     );
 
-    const activeBox = container.querySelector('.border-rose-500');
-    expect(activeBox).not.toBeNull();
+    const activeBoxes = container.querySelectorAll('.border-rose-500');
+    expect(activeBoxes).toHaveLength(2);
+    expect(screen.getByText(/已选 #1/i)).toBeDefined();
+    expect(screen.getByText(/已选 #2/i)).toBeDefined();
   });
 });
