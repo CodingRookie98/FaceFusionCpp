@@ -3,6 +3,7 @@ module;
 #include <string>
 #include <filesystem>
 #include <fstream>
+#include <format>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -28,8 +29,11 @@ import app.web.task_types;
 import config.task;
 import config.merger;
 import processor.param_registry;
+import foundation.infrastructure.logger;
 
 namespace app::web {
+
+using Logger = foundation::infrastructure::logger::Logger;
 
 namespace {
 
@@ -38,17 +42,6 @@ using json = nlohmann::json;
 // ─────────────────────────────────────────────────────────────────────────
 // JSON serialization helpers
 // ─────────────────────────────────────────────────────────────────────────
-
-std::string status_to_string(TaskStatus status) {
-    switch (status) {
-    case TaskStatus::Queued: return "queued";
-    case TaskStatus::Running: return "running";
-    case TaskStatus::Done: return "done";
-    case TaskStatus::Failed: return "failed";
-    case TaskStatus::Cancelled: return "cancelled";
-    }
-    return "unknown";
-}
 
 json progress_to_json(const TaskProgress& p) {
     return {{"current_frame", p.current_frame}, {"total_frames", p.total_frames}, {"fps", p.fps}};
@@ -294,16 +287,36 @@ bool is_path_within(const std::filesystem::path& file, const std::filesystem::pa
     return !rel.empty() && rel.native()[0] != '.' && rel.native().find("..") == std::string::npos;
 }
 
+std::string get_mime_type(const std::filesystem::path& path) {
+    auto ext = path.extension().string();
+    std::transform(ext.begin(), ext.end(), ext.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    if (ext == ".jpg" || ext == ".jpeg") return "image/jpeg";
+    if (ext == ".png") return "image/png";
+    if (ext == ".bmp") return "image/bmp";
+    if (ext == ".webp") return "image/webp";
+    if (ext == ".gif") return "image/gif";
+    if (ext == ".mp4") return "video/mp4";
+    if (ext == ".mov") return "video/quicktime";
+    if (ext == ".webm") return "video/webm";
+    if (ext == ".mkv") return "video/x-matroska";
+    if (ext == ".avi") return "video/x-msvideo";
+    return "application/octet-stream";
+}
+
 void serve_file(const std::filesystem::path& path, const drogon::HttpRequestPtr& req,
                 std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
     std::error_code ec;
     auto abs_path = std::filesystem::absolute(path, ec);
     if (ec || !std::filesystem::exists(abs_path) || std::filesystem::is_directory(abs_path)) {
+        Logger::get_instance()->warn(
+            std::format("[WebServer] File not found or is directory: {}", path.string()));
         auto resp = drogon::HttpResponse::newNotFoundResponse();
         cb(resp);
         return;
     }
 
+    std::string mime = get_mime_type(abs_path);
     std::string range_header = req ? req->getHeader("Range") : "";
     if (range_header.empty() && req) { range_header = req->getHeader("range"); }
     if (!range_header.empty() && range_header.starts_with("bytes=")) {
@@ -319,17 +332,25 @@ void serve_file(const std::filesystem::path& path, const drogon::HttpRequestPtr&
             if (!end_str.empty()) { end = std::stoull(end_str); }
             if (start <= end && start < file_size) {
                 std::size_t length = std::min(end + 1, file_size) - start;
+                Logger::get_instance()->trace(std::format(
+                    "[WebServer] Serving file range: {} [bytes {}-{}/{}] (mime={})",
+                    abs_path.filename().string(), start, start + length - 1, file_size, mime));
                 auto resp = drogon::HttpResponse::newFileResponse(
-                    abs_path.string(), start, length, false, "", drogon::CT_NONE, "", req);
+                    abs_path.string(), start, length, true, "", drogon::CT_CUSTOM, mime, req);
                 resp->addHeader("Accept-Ranges", "bytes");
+                resp->addHeader("Access-Control-Allow-Origin", "*");
                 cb(resp);
                 return;
             }
         }
     }
+    Logger::get_instance()->debug(
+        std::format("[WebServer] Serving complete file: {} (size={}, mime={})", abs_path.string(),
+                    std::filesystem::file_size(abs_path, ec), mime));
     auto resp =
-        drogon::HttpResponse::newFileResponse(abs_path.string(), "", drogon::CT_NONE, "", req);
+        drogon::HttpResponse::newFileResponse(abs_path.string(), "", drogon::CT_CUSTOM, mime, req);
     resp->addHeader("Accept-Ranges", "bytes");
+    resp->addHeader("Access-Control-Allow-Origin", "*");
     cb(resp);
 }
 
@@ -358,6 +379,9 @@ public:
 
     static void broadcast_status(const std::string& task_id, TaskStatus status,
                                  const std::string& error) {
+        Logger::get_instance()->info(std::format("[WS] Task {} status broadcast: status={}{}",
+                                                 task_id, status_to_string(status),
+                                                 error.empty() ? "" : (", error=" + error)));
         json msg = {{"type", "status"}, {"status", status_to_string(status)}};
         if (!error.empty()) { msg["message"] = error; }
         broadcast(task_id, msg.dump());
@@ -383,12 +407,17 @@ public:
     void handleNewConnection(const drogon::HttpRequestPtr& req,
                              const drogon::WebSocketConnectionPtr& wsConn) override {
         auto task_id = task_id_from_path(req->path());
+        Logger::get_instance()->info(
+            std::format("[WS] Client connected to task progress: task_id={}, client_ip={}", task_id,
+                        wsConn->peerAddr().toIpPort()));
         {
             std::lock_guard lock(subs_mutex);
             subscriptions[task_id].push_back(wsConn);
         }
         auto entry = tasks->get(task_id);
         if (!entry) {
+            Logger::get_instance()->warn(
+                std::format("[WS] Client subscribed to non-existent task: {}", task_id));
             wsConn->send(json{{"type", "error"}, {"message", "task not found"}}.dump());
             return;
         }
@@ -400,7 +429,14 @@ public:
 
     void handleConnectionClosed(const drogon::WebSocketConnectionPtr& wsConn) override {
         std::lock_guard lock(subs_mutex);
-        for (auto& [tid, conns] : subscriptions) { std::erase(conns, wsConn); }
+        for (auto& [tid, conns] : subscriptions) {
+            auto before = conns.size();
+            std::erase(conns, wsConn);
+            if (conns.size() < before) {
+                Logger::get_instance()->info(
+                    std::format("[WS] Client disconnected from task progress: task_id={}", tid));
+            }
+        }
     }
 
 private:
@@ -468,59 +504,73 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
 
     app.addListener(options.host, options.port);
 
+    Logger::get_instance()->info(std::format("[WebServer] Configured HTTP server on http://{}:{}",
+                                             options.host, options.port));
+    if (!options.web_root.empty()) {
+        Logger::get_instance()->info(
+            std::format("[WebServer] Static assets document root: {}", options.web_root));
+    }
+
     // GET /api/preview?path=<encoded_path>
-    app.registerHandler("/api/preview",
-                        [](const drogon::HttpRequestPtr& req,
-                           std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
-                            auto path_param = req->getParameter("path");
-                            if (path_param.empty()) { path_param = req->getParameter("file"); }
-                            if (path_param.empty()) {
-                                auto resp = drogon::HttpResponse::newHttpResponse();
-                                resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
-                                resp->setStatusCode(drogon::k400BadRequest);
-                                resp->setBody(json{{"error", "path parameter is required"}}.dump());
-                                cb(resp);
-                                return;
-                            }
+    app.registerHandler(
+        "/api/preview",
+        [](const drogon::HttpRequestPtr& req,
+           std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
+            auto path_param = req->getParameter("path");
+            if (path_param.empty()) { path_param = req->getParameter("file"); }
+            if (path_param.empty()) {
+                Logger::get_instance()->warn("[WebServer] GET /api/preview missing path parameter");
+                auto resp = drogon::HttpResponse::newHttpResponse();
+                resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+                resp->setStatusCode(drogon::k400BadRequest);
+                resp->setBody(json{{"error", "path parameter is required"}}.dump());
+                cb(resp);
+                return;
+            }
 
-                            auto decoded_path = drogon::utils::urlDecode(path_param);
-                            if (decoded_path.find("..") != std::string::npos) {
-                                auto resp = drogon::HttpResponse::newHttpResponse();
-                                resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
-                                resp->setStatusCode(drogon::k400BadRequest);
-                                resp->setBody(json{{"error", "invalid path"}}.dump());
-                                cb(resp);
-                                return;
-                            }
+            auto decoded_path = drogon::utils::urlDecode(path_param);
+            if (decoded_path.find("..") != std::string::npos) {
+                Logger::get_instance()->warn(std::format(
+                    "[WebServer] GET /api/preview rejected path traversal: {}", decoded_path));
+                auto resp = drogon::HttpResponse::newHttpResponse();
+                resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+                resp->setStatusCode(drogon::k400BadRequest);
+                resp->setBody(json{{"error", "invalid path"}}.dump());
+                cb(resp);
+                return;
+            }
 
-                            std::filesystem::path target_file(decoded_path);
-                            if (!std::filesystem::exists(target_file)) {
-                                if (target_file.is_relative()) {
-                                    auto resolved = std::filesystem::current_path() / target_file;
-                                    if (std::filesystem::exists(resolved)) {
-                                        target_file = resolved;
-                                    }
-                                }
-                            }
+            std::filesystem::path target_file(decoded_path);
+            if (!std::filesystem::exists(target_file)) {
+                if (target_file.is_relative()) {
+                    auto resolved = std::filesystem::current_path() / target_file;
+                    if (std::filesystem::exists(resolved)) { target_file = resolved; }
+                }
+            }
 
-                            if (!std::filesystem::exists(target_file)
-                                || std::filesystem::is_directory(target_file)) {
-                                auto resp = drogon::HttpResponse::newHttpResponse();
-                                resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
-                                resp->setStatusCode(drogon::k404NotFound);
-                                resp->setBody(json{{"error", "file not found"}}.dump());
-                                cb(resp);
-                                return;
-                            }
+            if (!std::filesystem::exists(target_file)
+                || std::filesystem::is_directory(target_file)) {
+                Logger::get_instance()->warn(std::format(
+                    "[WebServer] GET /api/preview file not found: {}", target_file.string()));
+                auto resp = drogon::HttpResponse::newHttpResponse();
+                resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+                resp->setStatusCode(drogon::k404NotFound);
+                resp->setBody(json{{"error", "file not found"}}.dump());
+                cb(resp);
+                return;
+            }
 
-                            serve_file(target_file, req, std::move(cb));
-                        },
-                        {drogon::Get});
+            Logger::get_instance()->debug(
+                std::format("[WebServer] GET /api/preview serving: {}", target_file.string()));
+            serve_file(target_file, req, std::move(cb));
+        },
+        {drogon::Get});
 
     // GET /api/health
     app.registerHandler("/api/health",
                         [](const drogon::HttpRequestPtr&,
                            std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
+                            Logger::get_instance()->debug("[WebServer] GET /api/health");
                             auto resp = drogon::HttpResponse::newHttpResponse();
                             resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
                             resp->setBody(health_json());
@@ -565,6 +615,8 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
                 proc["params"] = params;
                 arr.push_back(proc);
             }
+            Logger::get_instance()->debug(
+                std::format("[WebServer] GET /api/processors returning {} processors", arr.size()));
             resp->setBody(arr.dump());
             cb(resp);
         },
@@ -579,7 +631,9 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
                             json body;
                             try {
                                 body = json::parse(req->getBody());
-                            } catch (const std::exception&) {
+                            } catch (const std::exception& e) {
+                                Logger::get_instance()->warn(std::format(
+                                    "[WebServer] POST /api/tasks invalid JSON: {}", e.what()));
                                 resp->setStatusCode(drogon::k400BadRequest);
                                 resp->setBody(json{{"error", "invalid JSON body"}}.dump());
                                 cb(resp);
@@ -588,12 +642,16 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
                             config::TaskConfig task_config;
                             std::string err;
                             if (!parse_task_config(body, task_config, err)) {
+                                Logger::get_instance()->warn(std::format(
+                                    "[WebServer] POST /api/tasks validation/parse error: {}", err));
                                 resp->setStatusCode(drogon::k400BadRequest);
                                 resp->setBody(json{{"error", err}}.dump());
                                 cb(resp);
                                 return;
                             }
                             auto id = tasks->submit(std::move(task_config));
+                            Logger::get_instance()->info(
+                                std::format("[WebServer] POST /api/tasks created task: id={}", id));
                             resp->setStatusCode(drogon::k201Created);
                             resp->setBody(json{{"id", id}, {"status", "queued"}}.dump());
                             cb(resp);
@@ -604,10 +662,11 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
     app.registerHandler("/api/tasks",
                         [tasks](const drogon::HttpRequestPtr&,
                                 std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
+                            auto list = tasks->list();
+                            Logger::get_instance()->debug(std::format(
+                                "[WebServer] GET /api/tasks returning {} task(s)", list.size()));
                             json arr = json::array();
-                            for (const auto& s : tasks->list()) {
-                                arr.push_back(task_summary_to_json(s));
-                            }
+                            for (const auto& s : list) { arr.push_back(task_summary_to_json(s)); }
                             auto resp = drogon::HttpResponse::newHttpResponse();
                             resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
                             resp->setBody(arr.dump());
@@ -629,7 +688,9 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             json body;
             try {
                 body = json::parse(req->getBody());
-            } catch (const std::exception&) {
+            } catch (const std::exception& e) {
+                Logger::get_instance()->warn(
+                    std::format("[WebServer] /api/faces invalid JSON: {}", e.what()));
                 resp->setStatusCode(drogon::k400BadRequest);
                 resp->setBody(json{{"error", "invalid JSON body"}}.dump());
                 cb(resp);
@@ -643,6 +704,7 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
         }
 
         if (image_path.empty()) {
+            Logger::get_instance()->warn("[WebServer] /api/faces missing image_path");
             resp->setStatusCode(drogon::k400BadRequest);
             resp->setBody(json{{"error", "image_path parameter is required"}}.dump());
             cb(resp);
@@ -651,6 +713,8 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
 
         if (image_path == "." || image_path == ".." || image_path.find("../") != std::string::npos
             || image_path.find("..\\") != std::string::npos) {
+            Logger::get_instance()->warn(
+                std::format("[WebServer] /api/faces rejected invalid image path: {}", image_path));
             resp->setStatusCode(drogon::k400BadRequest);
             resp->setBody(json{{"error", "invalid image path"}}.dump());
             cb(resp);
@@ -658,14 +722,22 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
         }
 
         if (!std::filesystem::exists(image_path)) {
+            Logger::get_instance()->warn(
+                std::format("[WebServer] /api/faces file not found: {}", image_path));
             resp->setStatusCode(drogon::k404NotFound);
             resp->setBody(json{{"error", "image file not found"}}.dump());
             cb(resp);
             return;
         }
 
+        Logger::get_instance()->info(
+            std::format("[WebServer] Face detection requested for: {}", image_path));
         std::vector<DetectedFaceInfo> faces;
         if (deps.detect_faces) { faces = deps.detect_faces(image_path); }
+
+        Logger::get_instance()->info(
+            std::format("[WebServer] Face detection completed for {}: detected {} face(s)",
+                        image_path, faces.size()));
 
         json faces_arr = json::array();
         for (const auto& f : faces) { faces_arr.push_back(detected_face_to_json(f)); }
@@ -684,6 +756,8 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
             auto raw_name = req->getHeader("X-File-Name");
             if (raw_name.empty()) {
+                Logger::get_instance()->warn(
+                    "[WebServer] POST /api/upload missing X-File-Name header");
                 resp->setStatusCode(drogon::k400BadRequest);
                 resp->setBody(json{{"error", "missing X-File-Name header"}}.dump());
                 cb(resp);
@@ -695,6 +769,8 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             if (clean_name.empty() || clean_name == "." || clean_name == ".."
                 || clean_name.find('/') != std::string::npos
                 || clean_name.find('\\') != std::string::npos) {
+                Logger::get_instance()->warn(std::format(
+                    "[WebServer] POST /api/upload rejected suspicious file name: {}", clean_name));
                 resp->setStatusCode(drogon::k400BadRequest);
                 resp->setBody(json{{"error", "invalid file name"}}.dump());
                 cb(resp);
@@ -702,6 +778,8 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             }
             const auto& body = req->getBody();
             if (body.size() > kMaxUploadBytes) {
+                Logger::get_instance()->warn(std::format(
+                    "[WebServer] POST /api/upload file too large: {} bytes", body.size()));
                 resp->setStatusCode(drogon::k413RequestEntityTooLarge);
                 resp->setBody(json{{"error", "file too large (max 1GB)"}}.dump());
                 cb(resp);
@@ -714,6 +792,8 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             auto out_path = std::filesystem::path(temp_dir) / (stamp + "_" + clean_name);
             std::ofstream out(out_path, std::ios::binary);
             if (!out) {
+                Logger::get_instance()->error(std::format(
+                    "[WebServer] POST /api/upload failed to write to {}", out_path.string()));
                 resp->setStatusCode(drogon::k500InternalServerError);
                 resp->setBody(json{{"error", "failed to write upload"}}.dump());
                 cb(resp);
@@ -721,6 +801,9 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             }
             out.write(body.data(), static_cast<std::streamsize>(body.size()));
             out.close();
+            Logger::get_instance()->info(std::format(
+                "[WebServer] POST /api/upload saved file: name={}, size={} bytes, path={}",
+                clean_name, body.size(), out_path.string()));
             resp->setStatusCode(drogon::k201Created);
             resp->setBody(
                 json{{"path", out_path.string()}, {"name", clean_name}, {"size", body.size()}}
@@ -739,6 +822,8 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
             auto entry = tasks->get(task_id);
             if (!entry) {
+                Logger::get_instance()->warn(
+                    std::format("[WebServer] POST /api/tasks/{}/priority task not found", task_id));
                 resp->setStatusCode(drogon::k404NotFound);
                 resp->setBody(json{{"error", "task not found"}}.dump());
                 cb(resp);
@@ -761,34 +846,44 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             }
             int priority = body["priority"].get<int>();
             if (!tasks->set_priority(task_id, priority)) {
+                Logger::get_instance()->warn(std::format(
+                    "[WebServer] POST /api/tasks/{}/priority failed (task status is not queued)",
+                    task_id));
                 resp->setStatusCode(drogon::k409Conflict);
                 resp->setBody(json{{"error", "task is not queued"}}.dump());
                 cb(resp);
                 return;
             }
+            Logger::get_instance()->info(std::format(
+                "[WebServer] POST /api/tasks/{}/priority set priority to {}", task_id, priority));
             resp->setBody(json{{"ok", true}, {"priority", priority}}.dump());
             cb(resp);
         },
         {drogon::Post});
 
     // GET /api/tasks/{task_id}
-    app.registerHandler("/api/tasks/{task_id}",
-                        [tasks](const drogon::HttpRequestPtr& req,
-                                std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
-                            auto task_id = path_param(req, 0);
-                            auto resp = drogon::HttpResponse::newHttpResponse();
-                            resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
-                            auto entry = tasks->get(task_id);
-                            if (!entry) {
-                                resp->setStatusCode(drogon::k404NotFound);
-                                resp->setBody(json{{"error", "task not found"}}.dump());
-                                cb(resp);
-                                return;
-                            }
-                            resp->setBody(task_entry_to_json(*entry).dump());
-                            cb(resp);
-                        },
-                        {drogon::Get});
+    app.registerHandler(
+        "/api/tasks/{task_id}",
+        [tasks](const drogon::HttpRequestPtr& req,
+                std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
+            auto task_id = path_param(req, 0);
+            auto resp = drogon::HttpResponse::newHttpResponse();
+            resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+            auto entry = tasks->get(task_id);
+            if (!entry) {
+                Logger::get_instance()->warn(
+                    std::format("[WebServer] GET /api/tasks/{} not found", task_id));
+                resp->setStatusCode(drogon::k404NotFound);
+                resp->setBody(json{{"error", "task not found"}}.dump());
+                cb(resp);
+                return;
+            }
+            Logger::get_instance()->debug(std::format("[WebServer] GET /api/tasks/{} -> status={}",
+                                                      task_id, status_to_string(entry->status)));
+            resp->setBody(task_entry_to_json(*entry).dump());
+            cb(resp);
+        },
+        {drogon::Get});
 
     // GET /api/tasks/{task_id}/progress
     app.registerHandler("/api/tasks/{task_id}/progress",
@@ -799,6 +894,8 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
                             resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
                             auto entry = tasks->get(task_id);
                             if (!entry) {
+                                Logger::get_instance()->warn(std::format(
+                                    "[WebServer] GET /api/tasks/{}/progress not found", task_id));
                                 resp->setStatusCode(drogon::k404NotFound);
                                 resp->setBody(json{{"error", "task not found"}}.dump());
                                 cb(resp);
@@ -818,9 +915,12 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
                         [tasks](const drogon::HttpRequestPtr& req,
                                 std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
                             auto task_id = path_param(req, 0);
+                            Logger::get_instance()->info(std::format(
+                                "[WebServer] POST /api/tasks/{}/cancel requested", task_id));
                             auto resp = drogon::HttpResponse::newHttpResponse();
                             resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
-                            resp->setBody(json{{"ok", tasks->cancel(task_id)}}.dump());
+                            bool ok = tasks->cancel(task_id);
+                            resp->setBody(json{{"ok", ok}}.dump());
                             cb(resp);
                         },
                         {drogon::Post});
@@ -835,6 +935,8 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
             auto entry = tasks->get(task_id);
             if (!entry) {
+                Logger::get_instance()->warn(
+                    std::format("[WebServer] GET /api/tasks/{}/result task not found", task_id));
                 resp->setStatusCode(drogon::k404NotFound);
                 resp->setBody(json{{"error", "task not found"}}.dump());
                 cb(resp);
@@ -844,6 +946,9 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             for (const auto& f : entry->result_files) {
                 files.push_back({{"name", f}, {"url", "/media/" + task_id + "/result/" + f}});
             }
+            Logger::get_instance()->debug(
+                std::format("[WebServer] GET /api/tasks/{}/result returning {} file(s)", task_id,
+                            files.size()));
             resp->setBody(json{{"files", files}}.dump());
             cb(resp);
         },
@@ -860,6 +965,8 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
 
             auto entry = tasks->get(task_id);
             if (!entry) {
+                Logger::get_instance()->warn(std::format(
+                    "[WebServer] GET /media/{}/{}/{} task not found", task_id, kind, name));
                 auto resp = drogon::HttpResponse::newHttpResponse();
                 resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
                 resp->setStatusCode(drogon::k404NotFound);
@@ -875,6 +982,9 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
                     idx = std::stoul(name);
                 } catch (...) { idx = static_cast<std::size_t>(-1); }
                 if (idx >= entry->config.io.source_paths.size()) {
+                    Logger::get_instance()->warn(
+                        std::format("[WebServer] GET /media/{}/source/{} invalid index (size={})",
+                                    task_id, name, entry->config.io.source_paths.size()));
                     auto resp = drogon::HttpResponse::newHttpResponse();
                     resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
                     resp->setStatusCode(drogon::k404NotFound);
@@ -889,6 +999,9 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
                     idx = std::stoul(name);
                 } catch (...) { idx = static_cast<std::size_t>(-1); }
                 if (idx >= entry->config.io.target_paths.size()) {
+                    Logger::get_instance()->warn(
+                        std::format("[WebServer] GET /media/{}/target/{} invalid index (size={})",
+                                    task_id, name, entry->config.io.target_paths.size()));
                     auto resp = drogon::HttpResponse::newHttpResponse();
                     resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
                     resp->setStatusCode(drogon::k404NotFound);
@@ -900,6 +1013,9 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             } else if (kind == "result") {
                 if (name.find('/') != std::string::npos || name.find("\\") != std::string::npos
                     || name == ".." || name == ".") {
+                    Logger::get_instance()->warn(
+                        std::format("[WebServer] GET /media/{}/result/{} rejected invalid filename",
+                                    task_id, name));
                     auto resp = drogon::HttpResponse::newHttpResponse();
                     resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
                     resp->setStatusCode(drogon::k404NotFound);
@@ -909,6 +1025,8 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
                 }
                 file_path = std::filesystem::path(entry->config.io.output.path) / name;
             } else {
+                Logger::get_instance()->warn(std::format(
+                    "[WebServer] GET /media/{}/{}/{} invalid media kind", task_id, kind, name));
                 auto resp = drogon::HttpResponse::newHttpResponse();
                 resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
                 resp->setStatusCode(drogon::k404NotFound);
@@ -921,6 +1039,9 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
             if (kind == "result"
                 && !is_path_within(file_path,
                                    std::filesystem::path(entry->config.io.output.path))) {
+                Logger::get_instance()->warn(std::format(
+                    "[WebServer] GET /media/{}/result/{} forbidden path traversal outside output dir",
+                    task_id, name));
                 auto resp = drogon::HttpResponse::newHttpResponse();
                 resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
                 resp->setStatusCode(drogon::k404NotFound);
@@ -929,6 +1050,9 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
                 return;
             }
             if (!std::filesystem::exists(file_path)) {
+                Logger::get_instance()->warn(
+                    std::format("[WebServer] GET /media/{}/{}/{} physical file not found: {}",
+                                task_id, kind, name, file_path.string()));
                 auto resp = drogon::HttpResponse::newHttpResponse();
                 resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
                 resp->setStatusCode(drogon::k404NotFound);
@@ -936,6 +1060,8 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
                 cb(resp);
                 return;
             }
+            Logger::get_instance()->debug(std::format("[WebServer] GET /media/{}/{}/{} -> {}",
+                                                      task_id, kind, name, file_path.string()));
             serve_file(file_path, req, std::move(cb));
         },
         {drogon::Get});
@@ -945,7 +1071,10 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
         app.setDocumentRoot(options.web_root);
     }
 
+    Logger::get_instance()->info(std::format(
+        "[WebServer] Drogon event loop starting on http://{}:{}", options.host, options.port));
     app.run();
+    Logger::get_instance()->info("[WebServer] Drogon event loop stopped");
 }
 
 } // namespace app::web

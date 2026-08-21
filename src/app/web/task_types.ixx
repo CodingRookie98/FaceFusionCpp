@@ -19,6 +19,17 @@ export namespace app::web {
 /// Web task lifecycle status
 enum class TaskStatus : std::uint8_t { Queued, Running, Done, Failed, Cancelled };
 
+constexpr const char* status_to_string(TaskStatus status) noexcept {
+    switch (status) {
+    case TaskStatus::Queued: return "queued";
+    case TaskStatus::Running: return "running";
+    case TaskStatus::Done: return "done";
+    case TaskStatus::Failed: return "failed";
+    case TaskStatus::Cancelled: return "cancelled";
+    }
+    return "unknown";
+}
+
 /// Progress snapshot exposed to API/WS clients
 struct TaskProgress {
     std::size_t current_frame = 0;

@@ -69,6 +69,7 @@ export const SplitSlider: React.FC<SplitSliderProps> = ({
       <div className="absolute inset-0 w-full h-full flex items-center justify-center">
         {isVideo ? (
           <video
+            key={resultUrl}
             ref={video2Ref}
             src={resultUrl}
             controls
@@ -77,6 +78,7 @@ export const SplitSlider: React.FC<SplitSliderProps> = ({
           />
         ) : (
           <img
+            key={resultUrl}
             src={resultUrl}
             alt="Processed"
             className="w-full h-full object-contain"
@@ -97,6 +99,7 @@ export const SplitSlider: React.FC<SplitSliderProps> = ({
       >
         {isVideo ? (
           <video
+            key={originalUrl}
             ref={video1Ref}
             src={originalUrl}
             controls
@@ -105,6 +108,7 @@ export const SplitSlider: React.FC<SplitSliderProps> = ({
           />
         ) : (
           <img
+            key={originalUrl}
             src={originalUrl}
             alt="Original"
             className="w-full h-full object-contain"

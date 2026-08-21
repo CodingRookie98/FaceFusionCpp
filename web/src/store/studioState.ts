@@ -509,6 +509,12 @@ export function useStudioStore() {
     setSelectedSourceId(item.id);
   };
 
+  const addSources = (items: MediaItem[]) => {
+    if (!items.length) return;
+    setSources((prev) => [...prev, ...items]);
+    setSelectedSourceId(items[items.length - 1].id);
+  };
+
   const removeSource = (id: string) => {
     setSources((prev) => prev.filter((s) => s.id !== id));
   };
@@ -516,6 +522,12 @@ export function useStudioStore() {
   const addTarget = (item: MediaItem) => {
     setTargets((prev) => [...prev, item]);
     setSelectedTargetId(item.id);
+  };
+
+  const addTargets = (items: MediaItem[]) => {
+    if (!items.length) return;
+    setTargets((prev) => [...prev, ...items]);
+    setSelectedTargetId(items[items.length - 1].id);
   };
 
   const removeTarget = (id: string) => {
@@ -677,8 +689,10 @@ export function useStudioStore() {
     setSelectedSourceId,
     setSelectedTargetId,
     addSource,
+    addSources,
     removeSource,
     addTarget,
+    addTargets,
     removeTarget,
     steps,
     availableProcessors,

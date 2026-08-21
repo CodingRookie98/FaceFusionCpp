@@ -11,7 +11,7 @@ test.describe('FaceFusionCpp Studio - Live C++ Backend Integration E2E Tests', (
   test('1. Live C++ Backend Health & Processors Metadata Integration', async ({ page }) => {
     // Verify telemetry HUD connects to real C++ core
     await expect(page.getByText('C++ Core:', { exact: false })).toBeVisible();
-    await expect(page.getByText('v0.34.1', { exact: false })).toBeVisible();
+    await expect(page.getByText('v0.34.1', { exact: false })).toBeVisible({ timeout: 10000 });
 
     // Verify processors loaded from backend in Pipeline Editor
     const addBtn = page.getByRole('button', { name: /添加步骤/i });

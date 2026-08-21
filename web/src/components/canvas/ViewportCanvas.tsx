@@ -68,11 +68,21 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
   };
 
   // Result file for comparison: match against current activeTarget if multiple results exist
-  const targetStem = activeTarget?.name?.replace(/\.[^/.]+$/, '') || '';
+  const pathStem =
+    activeTarget?.path?.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, '').toLowerCase() || '';
+  const nameClean = activeTarget?.name?.replace(/\.[^/.]+$/, '') || '';
+  const nameFirstWord = nameClean.split(/[\s(（]/)[0]?.toLowerCase() || '';
+
   const matchingResult =
-    activeTaskDetail?.results?.find(
-      (r) => targetStem && r.name.toLowerCase().includes(targetStem.toLowerCase())
-    ) || activeTaskDetail?.results?.[0];
+    activeTaskDetail?.results?.find((r) => {
+      const rName = r.name.toLowerCase();
+      if (pathStem && rName.includes(pathStem)) return true;
+      if (nameFirstWord && rName.includes(nameFirstWord)) return true;
+      if (nameClean && rName.includes(nameClean.toLowerCase())) return true;
+      return false;
+    }) ||
+    activeTaskDetail?.results?.[activeTaskDetail.results.length - 1] ||
+    activeTaskDetail?.results?.[0];
 
   const latestResult = matchingResult?.url;
   const latestResultName = matchingResult?.name;
@@ -219,6 +229,7 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
           <div className="relative w-full h-full max-h-[calc(100vh-180px)] flex items-center justify-center rounded-lg shadow-2xl overflow-hidden border border-emerald-500/20 bg-black/40">
             {isVideo ? (
               <video
+                key={latestResult}
                 src={latestResult}
                 controls
                 autoPlay
@@ -227,6 +238,7 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
             ) : (
               <div className="relative w-full h-full flex items-center justify-center">
                 <img
+                  key={latestResult}
                   src={latestResult}
                   alt="Processed Result"
                   className="w-full h-full object-contain block rounded"

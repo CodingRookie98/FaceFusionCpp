@@ -24,41 +24,95 @@ export const AssetPool: React.FC<AssetPoolProps> = ({ store }) => {
     setSelectedSourceId,
     setSelectedTargetId,
     addSource,
+    addSources,
     removeSource,
     addTarget,
+    addTargets,
     removeTarget,
   } = store;
 
   const [activeTab, setActiveTab] = useState<'sources' | 'targets'>('sources');
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, isSource: boolean) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    setIsUploading(true);
-    try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const res = await api.uploadFile(file);
-        const item: MediaItem = {
-          id: `media-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          path: res.path,
-          name: file.name,
-          type: file.type.startsWith('video') ? 'video' : 'image',
-          thumbnailUrl: URL.createObjectURL(file),
-          file,
-        };
-        if (isSource) {
-          addSource(item);
-        } else {
-          addTarget(item);
+  const uploadMultipleFiles = async (fileList: FileList | File[], isSource: boolean) => {
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
+
+    setUploadProgress({ current: 0, total: files.length });
+    const successfulItems: MediaItem[] = [];
+    const failedFiles: { name: string; error: string }[] = [];
+
+    // Process files with bounded concurrency or parallel upload
+    let completedCount = 0;
+    await Promise.all(
+      files.map(async (file) => {
+        try {
+          const res = await api.uploadFile(file);
+          const item: MediaItem = {
+            id: `media-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            path: res.path,
+            name: file.name,
+            type: file.type.startsWith('video') ? 'video' : 'image',
+            thumbnailUrl: URL.createObjectURL(file),
+            file,
+          };
+          successfulItems.push(item);
+        } catch (err) {
+          failedFiles.push({
+            name: file.name,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        } finally {
+          completedCount++;
+          setUploadProgress({ current: completedCount, total: files.length });
         }
+      })
+    );
+
+    if (successfulItems.length > 0) {
+      if (isSource) {
+        addSources(successfulItems);
+      } else {
+        addTargets(successfulItems);
       }
-    } catch (err) {
-      alert(err instanceof Error ? err.message : '上传失败');
-    } finally {
-      setIsUploading(false);
+    }
+
+    setUploadProgress(null);
+
+    if (failedFiles.length > 0) {
+      alert(
+        `上传完成：成功 ${successfulItems.length} 个，失败 ${failedFiles.length} 个：\n` +
+          failedFiles.map((f) => `• ${f.name}: ${f.error}`).join('\n')
+      );
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>, isSource: boolean) => {
+    if (e.target.files) {
+      uploadMultipleFiles(e.target.files, isSource);
       e.target.value = '';
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent, isSource: boolean) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      uploadMultipleFiles(e.dataTransfer.files, isSource);
     }
   };
 
@@ -110,18 +164,33 @@ export const AssetPool: React.FC<AssetPoolProps> = ({ store }) => {
 
       {/* Upload Dropzone / Button */}
       <div className="p-3 border-b border-white/5">
-        <label className="flex flex-col items-center justify-center border border-dashed border-white/20 hover:border-blue-500/80 bg-[#151d30]/60 hover:bg-[#151d30] rounded-lg p-3 cursor-pointer transition-all group">
-          <Upload className="w-5 h-5 text-slate-400 group-hover:text-blue-400 mb-1 transition-colors" />
-          <span className="text-xs text-slate-300 font-medium group-hover:text-white">
-            {isUploading ? '正在上传中...' : activeTab === 'sources' ? '上传源人脸图片' : '上传目标图片/视频'}
+        <label
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, activeTab === 'sources')}
+          className={`flex flex-col items-center justify-center border border-dashed rounded-lg p-3 cursor-pointer transition-all group ${
+            isDragging
+              ? 'border-blue-400 bg-blue-600/20 shadow-[0_0_15px_rgba(59,130,246,0.3)] scale-[1.02]'
+              : 'border-white/20 hover:border-blue-500/80 bg-[#151d30]/60 hover:bg-[#151d30]'
+          }`}
+        >
+          <Upload className={`w-5 h-5 mb-1 transition-colors ${isDragging ? 'text-blue-400 animate-bounce' : 'text-slate-400 group-hover:text-blue-400'}`} />
+          <span className="text-xs text-slate-300 font-medium group-hover:text-white text-center">
+            {uploadProgress
+              ? `正在上传 (${uploadProgress.current}/${uploadProgress.total})...`
+              : isDragging
+              ? '松开以批量导入素材'
+              : activeTab === 'sources'
+              ? '点击或拖拽上传多张源人脸'
+              : '点击或拖拽上传多份目标素材'}
           </span>
-          <span className="text-[10px] text-slate-500 mt-0.5">支持 JPG, PNG, BMP, MP4, MOV</span>
+          <span className="text-[10px] text-slate-500 mt-0.5">支持同时选中多个 JPG, PNG, BMP, MP4, MOV</span>
           <input
             type="file"
             multiple
             accept={activeTab === 'sources' ? 'image/*' : 'image/*,video/*'}
-            onChange={(e) => handleFileUpload(e, activeTab === 'sources')}
-            disabled={isUploading}
+            onChange={(e) => handleFileInputChange(e, activeTab === 'sources')}
+            disabled={uploadProgress !== null}
             className="hidden"
           />
         </label>

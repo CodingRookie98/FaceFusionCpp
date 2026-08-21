@@ -17,8 +17,10 @@ describe('AssetPool Component', () => {
     setSelectedSourceId: vi.fn(),
     setSelectedTargetId: vi.fn(),
     addSource: vi.fn(),
+    addSources: vi.fn(),
     removeSource: vi.fn(),
     addTarget: vi.fn(),
+    addTargets: vi.fn(),
     removeTarget: vi.fn(),
     steps: [],
     availableProcessors: [],
@@ -85,5 +87,21 @@ describe('AssetPool Component', () => {
     expect(sampleBtns.length).toBeGreaterThan(0);
     fireEvent.click(sampleBtns[0]);
     expect(store.addSource).toHaveBeenCalled();
+  });
+
+  it('handles multi-file drag and drop onto dropzone', async () => {
+    const store = createMockStore();
+    render(<AssetPool store={store} />);
+
+    const dropzone = screen.getByText(/点击或拖拽上传多张源人脸/i).closest('label');
+    expect(dropzone).toBeDefined();
+
+    if (dropzone) {
+      fireEvent.dragOver(dropzone);
+      expect(screen.getByText(/松开以批量导入素材/i)).toBeDefined();
+
+      fireEvent.dragLeave(dropzone);
+      expect(screen.getByText(/点击或拖拽上传多张源人脸/i)).toBeDefined();
+    }
   });
 });
