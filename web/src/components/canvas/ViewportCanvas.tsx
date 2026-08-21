@@ -210,22 +210,22 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
           />
         ) : viewportMode === 'result' && latestResult ? (
           /* Single Result Viewer */
-          <div className="relative max-h-full max-w-full flex items-center justify-center rounded-lg shadow-2xl overflow-hidden border border-emerald-500/20 bg-black/40">
+          <div className="relative w-full h-full max-h-[calc(100vh-180px)] flex items-center justify-center rounded-lg shadow-2xl overflow-hidden border border-emerald-500/20 bg-black/40">
             {isVideo ? (
               <video
                 src={latestResult}
                 controls
                 autoPlay
-                className="max-h-[calc(100vh-220px)] max-w-full object-contain rounded"
+                className="w-full h-full object-contain rounded"
               />
             ) : (
-              <div className="relative inline-block leading-none">
+              <div className="relative w-full h-full flex items-center justify-center">
                 <img
                   src={latestResult}
                   alt="Processed Result"
-                  className="max-h-[calc(100vh-220px)] max-w-full object-contain block rounded"
+                  className="w-full h-full object-contain block rounded"
                 />
-                <div className="absolute top-3 right-3 bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 text-xs px-2.5 py-1 rounded font-mono font-medium shadow-md backdrop-blur-sm">
+                <div className="absolute top-3 right-3 bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 text-xs px-2.5 py-1 rounded font-mono font-medium shadow-md backdrop-blur-sm z-10">
                   处理后结果 (AFTER)
                 </div>
               </div>
@@ -238,7 +238,7 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
           />
         ) : (
           /* Normal Canvas Viewport with FaceOverlay */
-          <div className="relative max-h-full max-w-full flex items-center justify-center rounded-lg shadow-2xl overflow-hidden border border-white/10 bg-black/40">
+          <div className="relative w-full h-full max-h-[calc(100vh-180px)] flex items-center justify-center rounded-lg shadow-2xl overflow-hidden border border-white/10 bg-black/40">
             {activeTarget ? (
               isVideo ? (
                 <video
