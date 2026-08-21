@@ -296,7 +296,9 @@ bool is_path_within(const std::filesystem::path& file, const std::filesystem::pa
 
 void serve_file(const std::filesystem::path& path, const drogon::HttpRequestPtr& req,
                 std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
-    if (!std::filesystem::exists(path) || std::filesystem::is_directory(path)) {
+    std::error_code ec;
+    auto abs_path = std::filesystem::absolute(path, ec);
+    if (ec || !std::filesystem::exists(abs_path) || std::filesystem::is_directory(abs_path)) {
         auto resp = drogon::HttpResponse::newNotFoundResponse();
         cb(resp);
         return;
@@ -308,7 +310,7 @@ void serve_file(const std::filesystem::path& path, const drogon::HttpRequestPtr&
         std::string spec = range_header.substr(6);
         auto dash_pos = spec.find('-');
         if (dash_pos != std::string::npos) {
-            std::size_t file_size = std::filesystem::file_size(path);
+            std::size_t file_size = std::filesystem::file_size(abs_path, ec);
             std::string start_str = spec.substr(0, dash_pos);
             std::string end_str = spec.substr(dash_pos + 1);
             std::size_t start = 0;
@@ -318,14 +320,15 @@ void serve_file(const std::filesystem::path& path, const drogon::HttpRequestPtr&
             if (start <= end && start < file_size) {
                 std::size_t length = std::min(end + 1, file_size) - start;
                 auto resp = drogon::HttpResponse::newFileResponse(
-                    path.string(), start, length, true, "", drogon::CT_NONE, "", req);
+                    abs_path.string(), start, length, false, "", drogon::CT_NONE, "", req);
                 resp->addHeader("Accept-Ranges", "bytes");
                 cb(resp);
                 return;
             }
         }
     }
-    auto resp = drogon::HttpResponse::newFileResponse(path.string(), "", drogon::CT_NONE, "", req);
+    auto resp =
+        drogon::HttpResponse::newFileResponse(abs_path.string(), "", drogon::CT_NONE, "", req);
     resp->addHeader("Accept-Ranges", "bytes");
     cb(resp);
 }

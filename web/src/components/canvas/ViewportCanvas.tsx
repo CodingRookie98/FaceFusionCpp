@@ -67,9 +67,15 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
     bindReferenceFaceToActiveStep(face, activeTarget?.path);
   };
 
-  // Result file for comparison
-  const latestResult = activeTaskDetail?.results?.[0]?.url;
-  const latestResultName = activeTaskDetail?.results?.[0]?.name;
+  // Result file for comparison: match against current activeTarget if multiple results exist
+  const targetStem = activeTarget?.name?.replace(/\.[^/.]+$/, '') || '';
+  const matchingResult =
+    activeTaskDetail?.results?.find(
+      (r) => targetStem && r.name.toLowerCase().includes(targetStem.toLowerCase())
+    ) || activeTaskDetail?.results?.[0];
+
+  const latestResult = matchingResult?.url;
+  const latestResultName = matchingResult?.name;
   const originalUrl = getMediaPreviewUrl(activeTarget);
   const isVideo = activeTarget?.type === 'video';
 

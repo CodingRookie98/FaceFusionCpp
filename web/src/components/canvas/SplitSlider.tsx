@@ -92,6 +92,7 @@ export const SplitSlider: React.FC<SplitSliderProps> = ({
         className="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden pointer-events-none"
         style={{
           clipPath: `polygon(0 0, ${split}% 0, ${split}% 100%, 0 100%)`,
+          WebkitClipPath: `polygon(0 0, ${split}% 0, ${split}% 100%, 0 100%)`,
         }}
       >
         {isVideo ? (
