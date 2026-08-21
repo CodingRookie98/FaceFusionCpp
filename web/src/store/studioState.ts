@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api, subscribeProgress } from '../api/client';
 import type {
   DetectedFace,
@@ -359,6 +359,8 @@ export function useStudioStore() {
       .catch(() => {});
   }, []);
 
+  const autoComparedTasksRef = useRef<Set<string>>(new Set());
+
   // Poll Tasks
   const refreshTasks = useCallback(() => {
     api
@@ -373,19 +375,18 @@ export function useStudioStore() {
         } else {
           // If active task changed to done, ensure we have full detail with results
           const cur = list.find((t) => t.id === activeTaskId);
-          if (
-            cur &&
-            cur.status === 'done' &&
-            (!activeTaskDetail ||
-              activeTaskDetail.status !== 'done' ||
-              !activeTaskDetail.results ||
-              activeTaskDetail.results.length === 0)
-          ) {
+          if (cur && cur.status === 'done') {
             api
               .getTask(activeTaskId)
               .then((d) => {
                 setActiveTaskDetail(d);
-                if (d.status === 'done' && d.results && d.results.length > 0) {
+                if (
+                  d.status === 'done' &&
+                  d.results &&
+                  d.results.length > 0 &&
+                  !autoComparedTasksRef.current.has(d.id)
+                ) {
+                  autoComparedTasksRef.current.add(d.id);
                   setViewportMode('compare');
                 }
               })
@@ -394,7 +395,7 @@ export function useStudioStore() {
         }
       })
       .catch(() => {});
-  }, [activeTaskId, activeTaskDetail]);
+  }, [activeTaskId]);
 
   useEffect(() => {
     refreshTasks();
@@ -413,7 +414,13 @@ export function useStudioStore() {
       .getTask(activeTaskId)
       .then((detail) => {
         setActiveTaskDetail(detail);
-        if (detail.status === 'done' && detail.results && detail.results.length > 0) {
+        if (
+          detail.status === 'done' &&
+          detail.results &&
+          detail.results.length > 0 &&
+          !autoComparedTasksRef.current.has(detail.id)
+        ) {
+          autoComparedTasksRef.current.add(detail.id);
           setViewportMode('compare');
         }
         if (detail.status === 'queued' || detail.status === 'running') {
@@ -437,7 +444,13 @@ export function useStudioStore() {
                 .getTask(activeTaskId)
                 .then((latestDetail) => {
                   setActiveTaskDetail(latestDetail);
-                  if (latestDetail.status === 'done' && latestDetail.results && latestDetail.results.length > 0) {
+                  if (
+                    latestDetail.status === 'done' &&
+                    latestDetail.results &&
+                    latestDetail.results.length > 0 &&
+                    !autoComparedTasksRef.current.has(latestDetail.id)
+                  ) {
+                    autoComparedTasksRef.current.add(latestDetail.id);
                     setViewportMode('compare');
                   }
                 })
