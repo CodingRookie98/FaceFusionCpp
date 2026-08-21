@@ -156,8 +156,8 @@ def run_test(ctest_exe, preset, regex, label, env, project_root, build_dir):
         sys.exit(e.returncode)
 
 
-def run_web_build(project_root):
-    """Build the frontend (web/) and sync static assets to assets/web/."""
+def run_web_build(project_root, preset=None):
+    """Build the frontend (web/) and sync static assets to assets/web/ (and bin dir if present)."""
     log("\n=== Building Web Frontend (web/) ===", "info")
     web_dir = project_root / "web"
     if not (web_dir / "package.json").exists():
@@ -189,6 +189,22 @@ def run_web_build(project_root):
         shutil.rmtree(target)
     shutil.copytree(dist_dir, target)
     log(f"Web assets synced to {target}", "success")
+
+    # If preset is provided, also sync directly to build/bin/<preset>/assets/web if bin dir exists
+    if preset:
+        bin_dir_name = preset
+        if (
+            platform.system() == "Linux"
+            and preset.startswith("linux-")
+            and "x64" not in preset
+        ):
+            bin_dir_name = preset.replace("linux-", "linux-x64-")
+        bin_assets_web = project_root / "build" / "bin" / bin_dir_name / "assets" / "web"
+        if bin_assets_web.parent.exists():
+            if bin_assets_web.exists():
+                shutil.rmtree(bin_assets_web)
+            shutil.copytree(dist_dir, bin_assets_web)
+            log(f"Web assets synced to active bin directory {bin_assets_web}", "success")
 
 
 def _is_port_in_use(host, port):
@@ -434,10 +450,10 @@ def main():
         run_configure(cmake_exe, preset, env, project_root, extra_cmake_args)
 
     elif args.action == "build":
+        if not args.no_web:
+            run_web_build(project_root, preset)
         ensure_configured(cmake_exe, preset, env, project_root, extra_cmake_args)
         run_build(cmake_exe, preset, args.target, jobs, env, project_root)
-        if not args.no_web:
-            run_web_build(project_root)
 
     elif args.action == "test":
         if not args.no_build:
@@ -460,18 +476,19 @@ def main():
         run_install(cmake_exe, build_dir, env, project_root)
 
     elif args.action == "package":
+        if not args.no_web:
+            run_web_build(project_root, preset)
+
         # Ensure configured and built before packaging
         ensure_configured(cmake_exe, preset, env, project_root, extra_cmake_args)
 
         log("Running build before packaging...", "info")
         run_build(cmake_exe, preset, "all", jobs, env, project_root)
-        if not args.no_web:
-            run_web_build(project_root)
 
         run_package(cpack_exe, build_dir, env)
 
     elif args.action == "web":
-        run_web_build(project_root)
+        run_web_build(project_root, preset)
 
     elif args.action == "dev":
         run_dev(project_root, preset, env, args.web_port)
