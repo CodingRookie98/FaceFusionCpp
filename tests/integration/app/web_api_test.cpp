@@ -707,3 +707,34 @@ TEST_F(WebApiTest, LargeUploadSucceedsAbove1MB) {
     EXPECT_TRUE(std::filesystem::exists(res["path"].get<std::string>()));
     std::filesystem::remove(res["path"].get<std::string>());
 }
+
+TEST_F(WebApiTest, SubmitTaskGeneratesValidTaskConfig) {
+    std::filesystem::create_directories("./temp");
+    std::string src_file = "./temp/test_source_valid.jpg";
+    std::string tgt_file = "./temp/test_target_valid.jpg";
+    {
+        std::ofstream(src_file) << "fake_src";
+        std::ofstream(tgt_file) << "fake_tgt";
+    }
+
+    json payload = {
+        {"source_paths", {src_file}},
+        {"target_paths", {tgt_file}},
+        {"pipeline_steps",
+         {{{"step", "face_swapper"},
+           {"name", "主角换脸"},
+           {"enabled", true},
+           {"params", {{"model", "inswapper_128_fp16"}, {"face_selector_mode", "reference"}}}}}}};
+
+    auto created = SubmitTask(payload.dump());
+    std::string id = created["id"].get<std::string>();
+
+    auto [code, resp] = SendRequest(drogon::Get, "/api/tasks/" + id);
+    EXPECT_EQ(code, 200);
+    auto detail = json::parse(resp);
+    EXPECT_EQ(detail["id"], id);
+    EXPECT_EQ(detail["output_path"], "./output");
+
+    std::filesystem::remove(src_file);
+    std::filesystem::remove(tgt_file);
+}

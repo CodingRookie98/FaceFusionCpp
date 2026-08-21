@@ -189,10 +189,17 @@ export const SAMPLE_MEDIA: { sources: MediaItem[]; targets: MediaItem[] } = {
     },
     {
       id: 'sample-s2',
-      path: 'assets/standard_face_test_images/avatar_man.png',
-      name: 'Male Avatar (男士头像)',
+      path: 'assets/standard_face_test_images/man.bmp',
+      name: 'Man (男士肖像)',
       type: 'image',
-      thumbnailUrl: `/api/preview?path=${encodeURIComponent('assets/standard_face_test_images/avatar_man.png')}`,
+      thumbnailUrl: `/api/preview?path=${encodeURIComponent('assets/standard_face_test_images/man.bmp')}`,
+    },
+    {
+      id: 'sample-s3',
+      path: 'assets/standard_face_test_images/barbara.bmp',
+      name: 'Barbara (女士肖像)',
+      type: 'image',
+      thumbnailUrl: `/api/preview?path=${encodeURIComponent('assets/standard_face_test_images/barbara.bmp')}`,
     },
   ],
   targets: [
@@ -205,12 +212,54 @@ export const SAMPLE_MEDIA: { sources: MediaItem[]; targets: MediaItem[] } = {
     },
     {
       id: 'sample-t2',
-      path: 'assets/standard_face_test_images/family.jpg',
-      name: 'Family (多人合影目标图)',
+      path: 'assets/standard_face_test_images/woman.jpg',
+      name: 'Woman (女士目标图)',
       type: 'image',
-      thumbnailUrl: `/api/preview?path=${encodeURIComponent('assets/standard_face_test_images/family.jpg')}`,
+      thumbnailUrl: `/api/preview?path=${encodeURIComponent('assets/standard_face_test_images/woman.jpg')}`,
+    },
+    {
+      id: 'sample-t3',
+      path: 'assets/standard_face_test_images/tiffany.bmp',
+      name: 'Tiffany (肖像目标图)',
+      type: 'image',
+      thumbnailUrl: `/api/preview?path=${encodeURIComponent('assets/standard_face_test_images/tiffany.bmp')}`,
+    },
+    {
+      id: 'sample-t4',
+      path: 'assets/standard_face_test_videos/slideshow_scaled.mp4',
+      name: 'Slideshow (测试视频)',
+      type: 'video',
+      thumbnailUrl: `/api/preview?path=${encodeURIComponent('assets/standard_face_test_videos/slideshow_scaled.mp4')}`,
     },
   ],
+};
+
+const sanitizeSources = (items: MediaItem[]): MediaItem[] => {
+  return items.map((item) => {
+    if (item.path === 'assets/standard_face_test_images/avatar_man.png') {
+      return {
+        ...item,
+        path: 'assets/standard_face_test_images/man.bmp',
+        name: 'Man (男士肖像)',
+        thumbnailUrl: `/api/preview?path=${encodeURIComponent('assets/standard_face_test_images/man.bmp')}`,
+      };
+    }
+    return item;
+  });
+};
+
+const sanitizeTargets = (items: MediaItem[]): MediaItem[] => {
+  return items.map((item) => {
+    if (item.path === 'assets/standard_face_test_images/family.jpg') {
+      return {
+        ...item,
+        path: 'assets/standard_face_test_images/woman.jpg',
+        name: 'Woman (女士目标图)',
+        thumbnailUrl: `/api/preview?path=${encodeURIComponent('assets/standard_face_test_images/woman.jpg')}`,
+      };
+    }
+    return item;
+  });
 };
 
 const STORAGE_KEY_SOURCES = 'ffc_studio_sources_v2';
@@ -222,7 +271,7 @@ export function useStudioStore() {
   const [sources, setSources] = useState<MediaItem[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_SOURCES);
-      return saved ? JSON.parse(saved) : SAMPLE_MEDIA.sources;
+      return saved ? sanitizeSources(JSON.parse(saved)) : SAMPLE_MEDIA.sources;
     } catch {
       return SAMPLE_MEDIA.sources;
     }
@@ -231,7 +280,7 @@ export function useStudioStore() {
   const [targets, setTargets] = useState<MediaItem[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_TARGETS);
-      return saved ? JSON.parse(saved) : SAMPLE_MEDIA.targets;
+      return saved ? sanitizeTargets(JSON.parse(saved)) : SAMPLE_MEDIA.targets;
     } catch {
       return SAMPLE_MEDIA.targets;
     }
@@ -265,7 +314,7 @@ export function useStudioStore() {
   // 3. Canvas State & Detected Faces
   const [detectedFaces, setDetectedFaces] = useState<DetectedFace[]>([]);
   const [isDetectingFaces, setIsDetectingFaces] = useState(false);
-  const [viewportMode, setViewportMode] = useState<'canvas' | 'compare' | 'loupe'>('canvas');
+  const [viewportMode, setViewportMode] = useState<'canvas' | 'compare' | 'loupe' | 'result'>('canvas');
   const [compareSplitPos, setCompareSplitPos] = useState<number>(50); // percentage 0-100
 
   // 4. Tasks & Telemetry
@@ -321,10 +370,31 @@ export function useStudioStore() {
           const running = list.find((t) => t.status === 'running' || t.status === 'queued');
           if (running) setActiveTaskId(running.id);
           else if (list[0]) setActiveTaskId(list[0].id);
+        } else {
+          // If active task changed to done, ensure we have full detail with results
+          const cur = list.find((t) => t.id === activeTaskId);
+          if (
+            cur &&
+            cur.status === 'done' &&
+            (!activeTaskDetail ||
+              activeTaskDetail.status !== 'done' ||
+              !activeTaskDetail.results ||
+              activeTaskDetail.results.length === 0)
+          ) {
+            api
+              .getTask(activeTaskId)
+              .then((d) => {
+                setActiveTaskDetail(d);
+                if (d.status === 'done' && d.results && d.results.length > 0) {
+                  setViewportMode('compare');
+                }
+              })
+              .catch(() => {});
+          }
         }
       })
       .catch(() => {});
-  }, [activeTaskId]);
+  }, [activeTaskId, activeTaskDetail]);
 
   useEffect(() => {
     refreshTasks();
@@ -343,6 +413,9 @@ export function useStudioStore() {
       .getTask(activeTaskId)
       .then((detail) => {
         setActiveTaskDetail(detail);
+        if (detail.status === 'done' && detail.results && detail.results.length > 0) {
+          setViewportMode('compare');
+        }
         if (detail.status === 'queued' || detail.status === 'running') {
           unsub = subscribeProgress(activeTaskId, (msg: WsMessage) => {
             if (msg.type === 'progress') {
@@ -360,11 +433,21 @@ export function useStudioStore() {
                   : prev
               );
             } else if (msg.type === 'status') {
-              setActiveTaskDetail((prev) =>
-                prev && prev.id === activeTaskId
-                  ? { ...prev, status: msg.status, error_message: msg.message || '' }
-                  : prev
-              );
+              api
+                .getTask(activeTaskId)
+                .then((latestDetail) => {
+                  setActiveTaskDetail(latestDetail);
+                  if (latestDetail.status === 'done' && latestDetail.results && latestDetail.results.length > 0) {
+                    setViewportMode('compare');
+                  }
+                })
+                .catch(() => {
+                  setActiveTaskDetail((prev) =>
+                    prev && prev.id === activeTaskId
+                      ? { ...prev, status: msg.status, error_message: msg.message || '' }
+                      : prev
+                  );
+                });
               refreshTasks();
             }
           });
@@ -521,14 +604,24 @@ export function useStudioStore() {
     const payload = {
       source_paths: sources.map((s) => s.path),
       target_paths: targets.map((t) => t.path),
+      output_path: './output',
       pipeline_steps: steps
         .filter((s) => s.enabled)
-        .map((s) => ({
-          step: s.step,
-          name: s.name,
-          enabled: true,
-          params: s.params,
-        })),
+        .map((s) => {
+          const params = { ...s.params };
+          if (
+            params.face_selector_mode === 'reference' &&
+            (!params.reference_face_path || params.reference_face_path === '')
+          ) {
+            params.reference_face_path = sources[0]?.path || '';
+          }
+          return {
+            step: s.step,
+            name: s.name,
+            enabled: true,
+            params,
+          };
+        }),
     };
 
     setIsSubmitting(true);

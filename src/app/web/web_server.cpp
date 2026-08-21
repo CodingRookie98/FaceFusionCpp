@@ -111,8 +111,23 @@ json detected_face_to_json(const DetectedFaceInfo& f) {
 // ─────────────────────────────────────────────────────────────────────────
 
 bool parse_task_config(const json& body, config::TaskConfig& out, std::string& err) {
-    out.config_version = "1.0";
+    out.config_version = config::kSupportedConfigVersion;
     out.task_info.id = "web_task";
+
+    out.io.output.path = "./output";
+    out.io.output.image_format = "png";
+    out.io.output.video_encoder = "libx264";
+    out.io.output.video_quality = 80;
+    out.io.output.conflict_policy = config::ConflictPolicy::Overwrite;
+    out.io.output.audio_policy = config::AudioPolicy::Copy;
+
+    out.face_analysis.face_detector.models = {"yoloface", "retinaface", "scrfd"};
+    out.face_analysis.face_detector.score_threshold = 0.5;
+    out.face_analysis.face_recognizer.model = "arcface_w600k_r50";
+    out.face_analysis.face_recognizer.similarity_threshold = 0.6;
+    out.face_analysis.face_landmarker.model = "2dfan4";
+    out.face_analysis.face_masker.types = {"box", "occlusion", "region"};
+    out.face_analysis.face_masker.region = {"face", "eyes"};
 
     // io.source_paths
     if (!body.contains("source_paths") || !body["source_paths"].is_array()
@@ -148,7 +163,8 @@ bool parse_task_config(const json& body, config::TaskConfig& out, std::string& e
             err = "output_path must be a string";
             return false;
         }
-        out.io.output.path = body["output_path"].get<std::string>();
+        auto p = body["output_path"].get<std::string>();
+        if (!p.empty()) { out.io.output.path = p; }
     }
 
     // 1. New structured pipeline_steps support

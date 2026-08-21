@@ -74,26 +74,33 @@ struct TaskManager::Impl {
             {
                 auto it = tasks.find(task_id);
                 if (it == tasks.end()) { continue; }
-                // Run with progress callback wiring (defensive: executor must not throw)
+                std::string err_msg;
                 try {
-                    result_code =
-                        executor->run(it->second.config,
-                                      [this, task_id](const services::pipeline::TaskProgress& p) {
-                                          TaskProgress snap;
-                                          snap.current_frame = p.current_frame;
-                                          snap.total_frames = p.total_frames;
-                                          snap.fps = p.fps;
-                                          std::lock_guard lock(mutex);
-                                          auto it = tasks.find(task_id);
-                                          if (it == tasks.end()) { return; }
-                                          it->second.progress = snap;
-                                          if (listener) { listener(task_id, snap); }
-                                      });
+                    result_code = executor->run(
+                        it->second.config,
+                        [this, task_id](const services::pipeline::TaskProgress& p) {
+                            TaskProgress snap;
+                            snap.current_frame = p.current_frame;
+                            snap.total_frames = p.total_frames;
+                            snap.fps = p.fps;
+                            std::lock_guard lock(mutex);
+                            auto it = tasks.find(task_id);
+                            if (it == tasks.end()) { return; }
+                            it->second.progress = snap;
+                            if (listener) { listener(task_id, snap); }
+                        },
+                        err_msg);
                 } catch (const std::exception& e) {
                     result_code = 1;
+                    err_msg = e.what();
+                }
+
+                {
                     std::lock_guard lock(mutex);
                     auto it2 = tasks.find(task_id);
-                    if (it2 != tasks.end()) { it2->second.error_message = e.what(); }
+                    if (it2 != tasks.end() && !err_msg.empty()) {
+                        it2->second.error_message = err_msg;
+                    }
                 }
             }
 
@@ -108,8 +115,10 @@ struct TaskManager::Impl {
                             it->second.result_files = collect_result_files(it->second.config);
                         } else {
                             it->second.status = TaskStatus::Failed;
-                            it->second.error_message =
-                                "Task failed with error code " + std::to_string(result_code);
+                            if (it->second.error_message.empty()) {
+                                it->second.error_message =
+                                    "Task failed with error code " + std::to_string(result_code);
+                            }
                         }
                     }
                     if (status_listener) {

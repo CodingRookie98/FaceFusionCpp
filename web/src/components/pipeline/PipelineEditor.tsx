@@ -43,7 +43,7 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({ store }) => {
   const [showAddMenu, setShowAddMenu] = useState(false);
 
   return (
-    <div className="w-80 h-full bg-[#0f1523] border-l border-white/5 flex flex-col select-none">
+    <div className="w-80 flex-shrink-0 h-full bg-[#0f1523] border-l border-white/5 flex flex-col select-none overflow-hidden">
       {/* Header */}
       <div className="p-3 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-200">

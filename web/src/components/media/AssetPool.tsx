@@ -78,7 +78,7 @@ export const AssetPool: React.FC<AssetPoolProps> = ({ store }) => {
   const selectedId = activeTab === 'sources' ? selectedSourceId : selectedTargetId;
 
   return (
-    <div className="w-72 h-full bg-[#0f1523] border-r border-white/5 flex flex-col select-none">
+    <div className="w-72 flex-shrink-0 h-full bg-[#0f1523] border-r border-white/5 flex flex-col select-none overflow-hidden">
       {/* Header Tabs */}
       <div className="p-3 border-b border-white/10 flex items-center justify-between">
         <div className="flex bg-[#151d30] p-0.5 rounded-lg border border-white/10 w-full">

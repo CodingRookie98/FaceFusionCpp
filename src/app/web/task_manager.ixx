@@ -26,7 +26,15 @@ public:
     virtual ~ITaskExecutor() = default;
     /// Run one task; returns 0 on success, non-zero error code on failure
     virtual int run(const config::TaskConfig& config,
-                    const services::pipeline::ProgressCallback& progress) = 0;
+                    const services::pipeline::ProgressCallback& progress) {
+        std::string err;
+        return run(config, progress, err);
+    }
+    virtual int run(const config::TaskConfig& config,
+                    const services::pipeline::ProgressCallback& progress,
+                    std::string& error_message) {
+        return run(config, progress);
+    }
     /// Abort the currently running task (no-op when idle)
     virtual void cancel() = 0;
 };

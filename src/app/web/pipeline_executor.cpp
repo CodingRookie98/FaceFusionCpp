@@ -24,6 +24,13 @@ PipelineTaskExecutor::~PipelineTaskExecutor() = default;
 
 int PipelineTaskExecutor::run(const config::TaskConfig& config,
                               const services::pipeline::ProgressCallback& progress) {
+    std::string err;
+    return run(config, progress, err);
+}
+
+int PipelineTaskExecutor::run(const config::TaskConfig& config,
+                              const services::pipeline::ProgressCallback& progress,
+                              std::string& error_message) {
     // Merge app defaults (models, io, resource) into the submitted config
     auto merged = config::MergeConfigs(config, m_impl->app_config);
 
@@ -40,7 +47,12 @@ int PipelineTaskExecutor::run(const config::TaskConfig& config,
         m_impl->runner.reset();
     }
 
-    return result.is_ok() ? 0 : static_cast<int>(result.error().code);
+    if (!result) {
+        error_message = result.error().message;
+        return static_cast<int>(result.error().code);
+    }
+
+    return 0;
 }
 
 void PipelineTaskExecutor::cancel() {
