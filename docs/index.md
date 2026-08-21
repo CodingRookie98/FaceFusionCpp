@@ -4,22 +4,22 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DOC-INDEX-2026
-> - **当前版本 (Version)**: V1.2.0
+> - **当前版本 (Version)**: V1.2.1
 > **状态 (Status)**: 正式 (Official)
 > **权威性 (Authority)**: 规范 (Normative)
 > **所有者 (Owner)**: 王辉
 > **审核人 (Reviewer)**: 王辉
-> **最后更新 (Last Updated)**: 2026-08-20
+> **最后更新 (Last Updated)**: 2026-08-21
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.2.1** | 2026-08-21 | AI Agent | 王辉 | 同步更新 web_ui_design.md (zh/en) 与 web_guide.md (zh/en) 至最新设计（多文件并发上传、人脸多选/反选与批量控制、结果独立全图预览与下载、结构化日志与 Playwright E2E 测试）。 |
 | **V1.2.0** | 2026-08-20 | AI Agent | 王辉 | 同步更新 web_ui_design.md 至 V0.4.0（Web UI V2 Studio 沉浸式工作台重构架构与实施计划）。 |
 | **V1.1.9** | 2026-08-18 | AI Agent | 王辉 | 同步更新 web-ui-design-completion-review.md 状态为已通过（记录整改闭环与二次复核证据）。 |
 | **V1.1.8** | 2026-08-18 | AI Agent | 王辉 | 登记新增英文设计文档 web_ui_design.md（Web UI Design Specification）。 |
 | **V1.1.7** | 2026-08-17 | AI Agent | 王辉 | 登记新增评估报告 web-ui-design-completion-review.md（Web UI M1-M4 完成度对抗性复核）。 |
-| **V1.1.6** | 2026-08-17 | AI Agent | 王辉 | 同步 M4 完成状态：更新 web_ui_design.md 与 web_guide.md（zh/en）。 |
 
 > 仅保留最近 5 条记录，更早的历史可通过 `git log --oneline docs/index.md` 查阅。
 

@@ -2,54 +2,68 @@
 
 > **Document Control Information**
 > - **Document ID**: FFC-DEV-EN-ARCH-WEBUI-2026
-> - **Current Version**: V0.3.2
+> - **Current Version**: V0.4.1
 > - **Status**: Official
 > - **Authority**: Informative
 > - **Owner**: Hui Wang
 > - **Reviewer**: Hui Wang
-> - **Last Updated**: 2026-08-18
+> - **Last Updated**: 2026-08-21
 
 ## Revision History
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| **V0.4.1** | 2026-08-21 | AI Agent | Hui Wang | Added multi-file concurrent & drag-and-drop uploads, multi-face selection/toggle with batch controls, standalone result preview with download action, C++ Web structured logging, and Playwright E2E test suite. |
+| **V0.4.0** | 2026-08-20 | AI Agent | Hui Wang | Completely redesigned for Studio Workbench: Deep Studio Dark single-page layout, dynamic multi-instance processor pipeline, WYSIWYG face mapping, split-slider/loupe comparison matrix, telemetry HUD, and /api/tasks pipeline_steps. |
 | **V0.3.2** | 2026-08-18 | AI Agent | Hui Wang | Fixed review gaps: corrected priority scheduling semantics (higher value = higher priority), added /api/processors and /api/tasks/{id}/progress endpoints, implemented video Range playback and production face detection injection. |
 | **V0.3.1** | 2026-08-17 | AI Agent | Hui Wang | Added `build.py --action dev` one-click startup, configurable `FFC_WEB_PORT`/`FFC_WEB_HOST`, and frontend WebSocket auto-reconnect with exponential backoff. |
 | **V0.3.0** | 2026-08-17 | AI Agent | Hui Wang | M4 landing: implemented FrameExtractor, FaceSelector, /api/faces detection and annotation, and reference face configuration. |
-| **V0.2.0** | 2026-08-14 | AI Agent | Hui Wang | Integrated confirmed functional requirements (F1-F6), added TaskScheduler queue model, /api/faces and /media/ routes. |
-| **V0.1.0** | 2026-08-14 | AI Agent | Hui Wang | Initial design draft: confirmed single-binary embedded server architecture, Drogon, React + Vite + TS. |
 
 ---
 
 ## 1. Background & Goals
 
-FaceFusionCpp originally provided a CLI entry point. To lower the barrier to entry, a Web interface is provided: users can upload media, configure processors, submit tasks, and view real-time progress and results in the browser.
+FaceFusionCpp originally provided a CLI entry point. To deliver a first-class user experience comparable to modern creative suites (DaVinci, Figma, ComfyUI), the Web interface is overhauled into **Studio Workbench**: an integrated single-page darkroom environment where media asset management, interactive face mapping, dynamic pipeline orchestration, real-time comparison, and task scheduling converge seamlessly.
 
 **Core Goals**:
 1. Maintain the "single binary, zero environment configuration" delivery principle — `ffc --web` works out of the box;
-2. Fully reuse the C++ core inference pipeline (`services.pipeline`) without rewriting business logic;
-3. Maintain clear coexistence and independent evolution of the C++ codebase and frontend codebase in the same repository.
+2. **Deep Studio Dark Single-Page Workbench**: 3-column unified layout eliminating disconnected navigation;
+3. **Multi-Instance Dynamic Pipeline**: Mount multiple instances of any processor (e.g. separate `face_swapper` steps with individual reference faces);
+4. **WYSIWYG Face Mapping & Multi-Selection**: Bounding box rendering, click-to-toggle multi-face selection, select-all/clear controls, and automatic pipeline parameter synchronization;
+5. **Multi-Modal Comparison Matrix**: Split slider, standalone full result viewer, detail loupe, and synchronized video playback;
+6. **Full-Stack Observability & E2E Testing**: C++ Web module structured logging and Playwright E2E live test automation.
 
 ## 2. Decision Baseline
 
 | Decision Point | Choice | Rationale |
 | :--- | :--- | :--- |
 | Deployment Form | Single-process embedded HTTP server | Preserves single-binary delivery with zero user setup |
-| Frontend Stack | React + Vite + TypeScript | Mature ecosystem; outputs purely static assets |
+| Frontend Stack | React 19 + Vite + TypeScript + Tailwind CSS | Mature ecosystem; outputs purely static assets |
+| Visual Design Language | Deep Studio Dark (Creative Studio Aesthetic) | Darkroom environment provides optimal color and detail inspection |
+| Interaction Paradigm | 3-Column Studio + Floating Telemetry HUD | Natural visual flow: Left (Assets) ➔ Center (Canvas) ➔ Right (Pipeline) ➔ Bottom (HUD) |
 | Build Integration | `build.py` unified entry (`--action web`) | One command for development and release, minimal CI change |
 | HTTP Server | Drogon | All-in-one HTTP + WebSocket + static hosting; native WebSocket support |
-| Progress Push | WebSocket | Bidirectional communication, ready for real-time progress push and future interactive preview |
+| Progress Push | WebSocket | Bidirectional communication, real-time frame progress push |
+| Automated Testing | Vitest (Unit) + Playwright (Full-stack E2E) | Validates frontend state, components, and real C++ core inference pipeline |
 
 ### 2.1 Functional Requirements Matrix
 
-| # | Feature | Implementation Notes | Workload |
+| # | Feature | Module / Implementation | Status |
 | :--- | :--- | :--- | :--- |
-| F1 | Image/Video Preview | Static media file API (`/media/...`) with HTTP Range / 206 support for video streaming | Low |
-| F2 | Before/After Comparison | Frontend side-by-side / drag comparison of target and result files | Low |
-| F3 | Batch Processing | Multiple source/target arrays in TaskConfig, multi-select upload in UI | Low |
-| F4 | Task Queue & Priority | Task queue scheduler (FIFO + priority field, support promotion/demotion) | Medium |
-| F5 | Video Frame Extraction | FrameExtractor component for single-frame extraction from video in browser | Low-Medium |
-| F6 | Face Selection | Reuses mode + reference_face_path; `/api/faces` detection API for interactive canvas selection | Low-Medium |
+| F1 | Image/Video Preview | Static media API (`/media/...`) with HTTP Range for streaming | Implemented (M2) |
+| F2 | Before/After Comparison | Side-by-side comparison | Implemented (M2) |
+| F3 | Batch Processing | Multiple source/target arrays in TaskConfig | Implemented (M3) |
+| F4 | Task Queue & Priority | TaskScheduler FIFO + priority field (higher = earlier) | Implemented (M3) |
+| F5 | Video Frame Extraction | Frame grabber from `<video>` timeline into asset pool | Implemented (M4) |
+| F6 | Face Detection & Annotation | `/api/faces` detection API for interactive canvas annotation | Implemented (M4) |
+| **F7** | **Studio Single-Page Workbench** | 3-column responsive layout aggregating all high-frequency operations | **Implemented (M5)** |
+| **F8** | **Dynamic Multi-Instance Pipeline**| Multiple instances of any processor with custom naming, order, and parameters | **Implemented (M5)** |
+| **F9** | **WYSIWYG Face Multi-Select & Toggle** | Canvas bounding box multi-selection, toggle selection, Select All/Clear | **Implemented (M5)** |
+| **F10**| **Multi-Modal Comparison & Result Viewer** | Split slider, standalone result viewer with download button, detail loupe | **Implemented (M5)** |
+| **F11**| **Real-Time Telemetry HUD & History** | Persistent bottom dock with FPS/progress telemetry and LocalStorage history | **Implemented (M5)** |
+| **F12**| **Multi-File Concurrent & Drag Upload** | Multi-file concurrent upload and drag-and-drop with live progress counters | **Implemented (M5)** |
+| **F13**| **C++ Web Module Structured Logging** | Full lifecycle logging across HTTP/WS routes, uploads, detections, and tasks | **Implemented (M5)** |
+| **F14**| **Playwright Full-Stack E2E Test Suite**| Automated end-to-end integration tests with real backend inference | **Implemented (M5)** |
 
 ## 3. Directory Layout (Single Repo, Dual Project)
 

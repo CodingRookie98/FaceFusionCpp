@@ -2,17 +2,18 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-PLAN-WEBUI-V2-2026
-> - **当前版本 (Version)**: V1.0.0
+> - **当前版本 (Version)**: V1.1.0
 > - **状态 (Status)**: 已完成 (Completed)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-08-20
+> - **最后更新 (Last Updated)**: 2026-08-21
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-08-21 | AI Agent | 王辉 | 增补阶段 6 与阶段 7：实现多文件并发与拖拽上传、人脸多选/反选/全选/清空、处理结果独立预览与下载、C++ Web 全链路结构化日志及 Playwright E2E 自动化端到端测试。 |
 | **V1.0.0** | 2026-08-20 | AI Agent | 王辉 | 依据 Web UI 设计规格 V0.4.0 创建 Web UI V2 Studio 重构实施计划（3栏工作台、多实例动态管线、WYSIWYG 人脸映射、卷帘/放大镜多模态对比、HUD 调度与历史持久化）。 |
 
 ---
@@ -97,6 +98,24 @@
   - `docs/index.md`: 更新文档索引与版本号
 - **验收标准**: `python build.py --action test --test-label unit` 与 `npm run test` 全绿，`build.py --action web` 打包成功。
 
+### 阶段 6: 多文件并发、人脸多选反选与智能结果匹配增强
+- **目标**: 素材池支持多文件并发上传与拖拽放置；画布支持人脸多选、反选、全选/清空；结果支持全图预览、一键下载与智能结果匹配
+- **文件**:
+  - `web/src/components/media/AssetPool.tsx`: 多文件并发上传与拖拽导入
+  - `web/src/components/canvas/FaceOverlay.tsx`: 多脸红框高亮、选中/未选标签提示与点击反选切换
+  - `web/src/components/canvas/ViewportCanvas.tsx`: 全选/清空控制栏、结果独立预览模式与下载按钮
+  - `web/src/store/studioState.ts`: 多人脸状态管理与步骤参数智能联动
+- **验收标准**: Vitest 35 项测试全绿，画布多脸交互丝滑，结果匹配 100% 准确。
+
+### 阶段 7: C++ Web 模块日志系统化与 Playwright 全栈 E2E 自动化测试
+- **目标**: C++ Web 服务全生命周期结构化日志，Playwright E2E 直连真实后端全链路自动化测试
+- **文件**:
+  - `src/app/web/web_server.cpp`: 路由日志、MIME 类型推导、CORS 支持
+  - `src/app/web/task_manager.cpp`: 任务生命周期日志、精准结果收集
+  - `src/app/web/pipeline_executor.cpp`: 流水线执行与取消日志
+  - `web/e2e/studio.spec.ts` & `web/e2e/studio.live.spec.ts`: Playwright E2E 测试套件
+- **验收标准**: Playwright 11 项端到端测试全绿，C++ 262 项单元测试全绿。
+
 ---
 
 ## 4. 实施状态跟踪
@@ -108,4 +127,6 @@
 | 阶段 3: 工作台核心组件群 | 已完成 | AI Agent | 2026-08-20 |
 | 阶段 4: 工作台整合与持久化 | 已完成 | AI Agent | 2026-08-20 |
 | 阶段 5: 全链路质量验收 | 已完成 | AI Agent | 2026-08-20 |
+| 阶段 6: 多文件与人脸多选增强 | 已完成 | AI Agent | 2026-08-21 |
+| 阶段 7: 全链路日志与 E2E 测试 | 已完成 | AI Agent | 2026-08-21 |
 
