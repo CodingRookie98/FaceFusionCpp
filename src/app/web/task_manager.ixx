@@ -84,6 +84,9 @@ public:
     /// Stop the worker thread (called on server shutdown)
     void shutdown();
 
+    /// Get underlying task executor
+    std::shared_ptr<ITaskExecutor> get_executor() const;
+
 private:
     struct Impl;
     std::unique_ptr<Impl> m_impl;

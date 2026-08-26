@@ -1,6 +1,7 @@
 function(setup_resource_copying TARGET_NAME)
     # 默认资源目录位于项目根目录的 assets
     set(ASSETS_SOURCE_DIR "${PROJECT_SOURCE_DIR}/assets")
+    set(CONFIG_SOURCE_DIR "${PROJECT_SOURCE_DIR}/config")
 
     # 输出目录依赖于全局设置的 CMAKE_RUNTIME_OUTPUT_DIRECTORY
     # 如果未设置，回退到 target 的输出目录 (这里简化处理，假设全局已设置)
@@ -8,7 +9,7 @@ function(setup_resource_copying TARGET_NAME)
         message(FATAL_ERROR "CMAKE_RUNTIME_OUTPUT_DIRECTORY must be defined before calling setup_resource_copying")
     endif()
 
-    # 我们希望将 assets 文件夹复制到 bin 目录下
+    # 我们希望将 assets 和 config 文件夹复制到 bin 目录下
     set(ASSETS_OUTPUT_ROOT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
     # 1. 仅当目标不存在时创建目标
@@ -18,6 +19,7 @@ function(setup_resource_copying TARGET_NAME)
         add_custom_target(copy_resource_files
             COMMAND ${CMAKE_COMMAND}
                 "-DASSETS_SOURCE_DIR=${ASSETS_SOURCE_DIR}"
+                "-DCONFIG_SOURCE_DIR=${CONFIG_SOURCE_DIR}"
                 "-DASSETS_OUTPUT_ROOT_DIR=${ASSETS_OUTPUT_ROOT_DIR}"
                 -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/copy_assets.cmake"
             COMMENT "Checking and updating resource files..."

@@ -1,0 +1,93 @@
+# FaceFusionCpp 任务执行配置文件 (Task Configuration)
+# 作用: 声明单次处理任务的元数据、输入输出素材路径、多实例动态处理管线 (Pipeline)、人脸分析器及资源调度策略。
+config_version: "0.34.1"
+
+# --- 任务元信息 (Task Metadata) ---
+task_info:
+  id: "task_001"
+  description: "标准人脸替换与画质增强流水线示例"
+  enable_logging: true
+  enable_resume: false
+
+# --- 输入 / 输出路径与编码配置 (I/O Settings) ---
+io:
+  # 源人脸素材 (用于提取人脸特征嵌入并替换到目标中)
+  source_paths:
+    - "assets/standard_face_test_images/lenna.bmp"
+
+  # 目标素材 (待处理的图片或视频文件路径列表)
+  target_paths:
+    - "assets/standard_face_test_images/woman.jpg"
+
+  # 输出配置
+  output:
+    path: "output"               # 输出根目录 (任务执行时将自动隔离或存放)
+    prefix: "result_"            # 输出文件名前缀
+    suffix: ""                   # 输出文件名后缀
+    image_format: "png"          # 输出图片格式: png, jpg, webp
+    video_encoder: "libx264"     # 视频编码器: libx264, libx265, h264_nvenc, hevc_nvenc
+    video_quality: 80            # 视频画质 CRF / 质量因子 (1-100)
+    conflict_policy: "overwrite" # 同名冲突策略: overwrite (覆盖), rename (自动序号), error (报错)
+    audio_policy: "copy"         # 音频处理策略: copy (无损复制), skip (静音)
+
+# --- 计算资源与批处理调度 (Resources) ---
+resource:
+  thread_count: 0             # 工作线程数: 0 表示根据 CPU 核心数自动调配
+  max_queue_size: 20          # 帧处理管道队列缓冲区容量
+  execution_order: "sequential" # 执行顺序: "sequential" (顺序串行, 低时延) 或 "batch" (批处理, 节省显存)
+  memory_strategy: "tolerant" # 任务显存策略: "tolerant" (宽松常驻) 或 "strict" (严苛释放)
+  segment_duration_seconds: 0 # 视频分段处理时长 (秒): 0 表示不分段
+  max_frames: 0               # 最大处理帧数: 0 表示处理全部帧; >0 仅处理前 N 帧 (用于快速调试验证)
+
+# --- 人脸检测与特征分析 (Face Analysis) ---
+face_analysis:
+  face_detector:
+    models: ["yoloface", "retinaface", "scrfd"] # 人脸检测器级联模型
+    score_threshold: 0.5                          # 人脸检测置信度阈值 (0.0 - 1.0)
+  face_landmarker:
+    model: "2dfan4"                               # 关键点对齐模型: 2dfan4, peppa_wutz, face_landmarker_68_5
+  face_recognizer:
+    model: "arcface_w600k_r50"                    # 人脸特征识别比对模型: arcface_w600k_r50
+    similarity_threshold: 0.6                     # 参考人脸余弦相似度匹配阈值 (0.0 - 1.0)
+  face_masker:
+    types: ["box", "occlusion", "region"]         # 遮罩生成器类型组合
+    region: ["face", "eyes"]                      # 区域遮罩细节
+
+# --- 动态处理管线 (Processing Pipeline) ---
+# 按列表声明顺序自上向下串联执行，支持同类处理器多次挂载
+pipeline:
+  # 步骤 1: 核心人脸替换
+  - step: "face_swapper"
+    name: "main_swapper"
+    enabled: true
+    params:
+      model: "inswapper_128_fp16"
+      face_selector_mode: "many" # 人脸匹配模式: reference (指定参考人脸), one (单人脸), many (所有人脸)
+      # reference_face_path: "path/to/ref.jpg" # 若 mode 为 reference 则需指定参考人脸图片路径
+
+  # 步骤 2: 面部画质超分增强
+  - step: "face_enhancer"
+    name: "enhancer"
+    enabled: true
+    params:
+      model: "gfpgan_1.4"        # 面部增强模型: gfpgan_1.4, codeformer, restoreformer
+      blend_factor: 1.0          # 增强融合权重 (0.0 - 1.0)
+      face_selector_mode: "many"
+
+  # 步骤 3: 表情姿态还原 (可选)
+  # - step: "expression_restorer"
+  #   name: "expression"
+  #   enabled: false
+  #   params:
+  #     model: "live_portrait"
+  #     restore_factor: 0.8
+  #     face_selector_mode: "many"
+
+  # 步骤 4: 全画面帧级超分 (可选)
+  # - step: "frame_enhancer"
+  #   name: "super_res"
+  #   enabled: false
+  #   params:
+  #     model: "real_esrgan_x4"
+  #     enhance_factor: 1.0
+

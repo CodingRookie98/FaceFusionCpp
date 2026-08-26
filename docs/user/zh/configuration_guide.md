@@ -2,35 +2,43 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-USER-ZH-CFG-2026
-> - **当前版本 (Version)**: V1.0.0
+> - **当前版本 (Version)**: V1.2.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-08-13
+> - **最后更新 (Last Updated)**: 2026-08-21
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.2.0** | 2026-08-21 | AI Agent | 王辉 | 配置文件重命名（`config/app.yaml`, `config/task.yaml`）；新增 `web:` 配置节（`host`, `port`, `web_root`, `temp_dir`）；明确 CLI 寻径与任务路径指定规则。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
 
 
 FaceFusionCpp 采用灵活的 YAML 配置系统。主要的配置文件有两个：
 
-1. **`config/app_config.yaml`**: 全局应用程序设置 (硬件基础、路径、日志、可观测性)。
-2. **`config/task_config.yaml`**: 特定任务设置 (I/O 策略、流水线拓扑、算法参数)。
+1. **`config/app.yaml`**: 全局应用程序设置 (硬件基础、路径、日志、可观测性、Web 服务)。
+2. **`config/task.yaml`**: 特定任务设置 (I/O 策略、流水线拓扑、算法参数)。
 
 ---
 
-## 1. 应用程序配置 (`config/app_config.yaml`)
+## 1. 应用程序配置 (`config/app.yaml`)
 
-此文件通常位于 `config/` 目录下，用于定义运行时环境和基础设施。**这是对整个程序生效的全局设置**。
+此文件通常位于 `config/` 目录下（每次构建时也会自动同步到可执行文件所在目录），用于定义运行时环境和基础设施。**这是对整个程序生效的全局设置**。
 
 ### 结构与参数 (小白必读)
 
 ```yaml
 config_version: "0.34.1"
+
+# --- Web UI 服务设置 ---
+web:
+  host: "0.0.0.0"               # Web 服务监听地址 (默认: "0.0.0.0"，允许局域网访问)
+  port: 8000                    # Web 服务监听端口 (默认: 8000)
+  web_root: "assets/web"        # 前端编译产物静态资源路径 (默认: "assets/web")
+  temp_dir: "temp"              # 临时文件与即时渲染产物目录 (默认: "temp")
 
 # --- 推理基础设施 (显卡相关的设置) ---
 inference:
@@ -96,9 +104,9 @@ default_task_settings:
 
 ---
 
-## 2. 任务配置 (`config/task_config.yaml`)
+## 2. 任务配置 (`config/task.yaml`)
 
-此文件定义了您想要执行的**具体任务**（例如，在特定视频中进行换脸）。您可以通过 `-c/--task-config` 命令行参数传入此文件。
+此文件定义了您想要执行的**具体任务**（例如，在特定视频中进行换脸）。您可以通过 `-c/--task/--task-config` 命令行参数传入此文件。
 
 ### 2.1 基础结构描述
 

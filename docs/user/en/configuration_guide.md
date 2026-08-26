@@ -2,35 +2,43 @@
 
 > **Document Control**
 > - **Document ID**: FFC-USER-EN-CFG-2026
-> - **Version**: V1.0.0
+> - **Version**: V1.2.0
 > - **Status**: Official
 > - **Authority**: Informative
 > - **Owner**: 王辉
 > - **Reviewer**: 王辉
-> - **Last Updated**: 2026-08-13
+> - **Last Updated**: 2026-08-21
 
 ## Revision History
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.2.0** | 2026-08-21 | AI Agent | 王辉 | Renamed configuration files (`config/app.yaml`, `config/task.yaml`); added `web:` section (`host`, `port`, `web_root`, `temp_dir`); clarified CLI search paths and required task config argument. |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
 
 
 FaceFusionCpp uses a flexible YAML configuration system. There are two main configuration files:
 
-1. **`config/app_config.yaml`**: Global application settings (hardware foundation, paths, logging, observability).
-2. **`config/task_config.yaml`**: Task-specific settings (I/O strategy, pipeline topology, algorithm parameters).
+1. **`config/app.yaml`**: Global application settings (hardware foundation, paths, logging, observability, Web UI server).
+2. **`config/task.yaml`**: Task-specific settings (I/O strategy, pipeline topology, algorithm parameters).
 
 ---
 
-## 1. Application Configuration (`config/app_config.yaml`)
+## 1. Application Configuration (`config/app.yaml`)
 
-This file is usually located in the `config/` directory. It defines the runtime environment and infrastructure. **These settings apply globally to the entire application.**
+This file is located in the `config/` directory (automatically synced to the executable directory on build). It defines the runtime environment and infrastructure. **These settings apply globally to the entire application.**
 
 ### Structure and Parameters (Beginner's Guide)
 
 ```yaml
 config_version: "0.34.1"
+
+# --- Web UI Service Settings ---
+web:
+  host: "0.0.0.0"               # Web UI bind address (Default: "0.0.0.0")
+  port: 8000                    # Web UI bind port (Default: 8000)
+  web_root: "assets/web"        # Frontend static assets directory (Default: "assets/web")
+  temp_dir: "temp"              # Temporary uploads and preview artifacts directory (Default: "temp")
 
 # --- Inference Infrastructure (Graphics Card Settings) ---
 inference:
@@ -96,9 +104,9 @@ default_task_settings:
 
 ---
 
-## 2. Task Configuration (`config/task_config.yaml`)
+## 2. Task Configuration (`config/task.yaml`)
 
-This file defines the **specific task** you want to execute (e.g., swapping a face in a particular video). You can pass this file via the `-c/--task-config` command line argument.
+This file defines the **specific task** you want to execute (e.g., swapping a face in a particular video). You can pass this file via the `-c/--task/--task-config` command line argument.
 
 ### 2.1 Basic Structure
 

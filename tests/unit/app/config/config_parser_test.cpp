@@ -409,6 +409,36 @@ models:
     std::filesystem::remove(temp_file);
 }
 
+TEST(LoadAppConfigTest, WebSectionParsedCorrectly) {
+    auto temp_file = std::filesystem::temp_directory_path()
+                   / ("app_cfg_web_" + std::to_string(std::rand()) + ".yaml");
+    {
+        std::ofstream f(temp_file);
+        f << R"(
+config_version: "0.34.1"
+models:
+  path: "."
+web:
+  host: "127.0.0.1"
+  port: 9090
+  web_root: "assets/custom_web"
+  temp_dir: "./custom_temp"
+)";
+    }
+
+    auto result = load_app_config(temp_file);
+    EXPECT_TRUE(result.is_ok()) << (result.is_err() ? result.error().formatted() : "");
+    if (result.is_ok()) {
+        auto cfg = result.value();
+        EXPECT_EQ(cfg.web.host, "127.0.0.1");
+        EXPECT_EQ(cfg.web.port, 9090);
+        EXPECT_EQ(cfg.web.web_root, "assets/custom_web");
+        EXPECT_EQ(cfg.web.temp_dir, "./custom_temp");
+    }
+
+    std::filesystem::remove(temp_file);
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

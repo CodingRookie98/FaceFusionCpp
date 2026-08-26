@@ -11,6 +11,8 @@ module;
 #include <string>
 #include <vector>
 #include <optional>
+#include <cstdint>
+#include <cstddef>
 
 export module config.app;
 
@@ -130,6 +132,16 @@ struct DefaultTaskSettings {
 };
 
 /**
+ * @brief Web server and frontend hosting configuration
+ */
+struct WebConfig {
+    std::string host = "0.0.0.0";            ///< Bind host address
+    uint16_t port = 8000;                    ///< Bind port number
+    std::string web_root = "assets/web";     ///< Frontend static assets root
+    std::string temp_dir = "./temp/uploads"; ///< Upload & temporary frame directory
+};
+
+/**
  * @brief Global application configuration
  */
 struct AppConfig {
@@ -141,6 +153,7 @@ struct AppConfig {
     ModelsConfig models;                       ///< Model management settings
     DefaultModels default_models;              ///< Default model selections
     DefaultTaskSettings default_task_settings; ///< NEW: Default task-specific settings
+    WebConfig web;                             ///< Web UI and API server configuration
     std::string temp_directory = "./temp";     ///< Temp file storage
 };
 

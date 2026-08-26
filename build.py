@@ -207,6 +207,27 @@ def run_web_build(project_root, preset=None):
             log(f"Web assets synced to active bin directory {bin_assets_web}", "success")
 
 
+def sync_config(project_root, preset=None):
+    """Sync config/ directory to build/bin/<preset>/config/ if bin dir exists."""
+    config_src = project_root / "config"
+    if not config_src.exists():
+        return
+    if preset:
+        bin_dir_name = preset
+        if (
+            platform.system() == "Linux"
+            and preset.startswith("linux-")
+            and "x64" not in preset
+        ):
+            bin_dir_name = preset.replace("linux-", "linux-x64-")
+        bin_config = project_root / "build" / "bin" / bin_dir_name / "config"
+        if bin_config.parent.exists():
+            if bin_config.exists():
+                shutil.rmtree(bin_config)
+            shutil.copytree(config_src, bin_config)
+            log(f"Config files synced to active bin directory {bin_config}", "success")
+
+
 def _is_port_in_use(host, port):
     import socket
 
@@ -454,6 +475,7 @@ def main():
             run_web_build(project_root, preset)
         ensure_configured(cmake_exe, preset, env, project_root, extra_cmake_args)
         run_build(cmake_exe, preset, args.target, jobs, env, project_root)
+        sync_config(project_root, preset)
 
     elif args.action == "test":
         if not args.no_build:

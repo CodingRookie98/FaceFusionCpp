@@ -30,6 +30,8 @@ import config.task;
 import config.merger;
 import processor.param_registry;
 import foundation.infrastructure.logger;
+import foundation.infrastructure.core_utils;
+import services.pipeline.runner;
 
 namespace app::web {
 
@@ -657,6 +659,121 @@ void run_server(const WebServerOptions& options, const WebServerDeps& deps) {
                             cb(resp);
                         },
                         {drogon::Post});
+
+    // POST /api/preview_render
+    app.registerHandler(
+        "/api/preview_render",
+        [deps, tasks](const drogon::HttpRequestPtr& req,
+                      std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
+            auto resp = drogon::HttpResponse::newHttpResponse();
+            resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+            json body;
+            try {
+                body = json::parse(req->getBody());
+            } catch (const std::exception& e) {
+                Logger::get_instance()->warn(
+                    std::format("[WebServer] POST /api/preview_render invalid JSON: {}", e.what()));
+                resp->setStatusCode(drogon::k400BadRequest);
+                resp->setBody(json{{"error", "invalid JSON body"}}.dump());
+                cb(resp);
+                return;
+            }
+
+            config::TaskConfig task_config;
+            std::string err;
+            if (!parse_task_config(body, task_config, err)) {
+                Logger::get_instance()->warn(std::format(
+                    "[WebServer] POST /api/preview_render validation/parse error: {}", err));
+                resp->setStatusCode(drogon::k400BadRequest);
+                resp->setBody(json{{"error", err}}.dump());
+                cb(resp);
+                return;
+            }
+
+            // If base64 target frame provided, decode and save to temporary file
+            if (body.contains("target_frame_base64") && body["target_frame_base64"].is_string()) {
+                std::string b64 = body["target_frame_base64"].get<std::string>();
+                if (!b64.empty()) {
+                    auto comma_pos = b64.find(',');
+                    if (comma_pos != std::string::npos) { b64 = b64.substr(comma_pos + 1); }
+                    auto decoded = drogon::utils::base64Decode(b64);
+                    if (!decoded.empty()) {
+                        std::string frame_id =
+                            foundation::infrastructure::core_utils::random::generate_uuid();
+                        std::filesystem::path temp_frame_dir = "./temp/uploads";
+                        std::error_code ec;
+                        std::filesystem::create_directories(temp_frame_dir, ec);
+                        std::filesystem::path frame_file =
+                            temp_frame_dir / ("preview_frame_" + frame_id + ".png");
+                        std::ofstream out(frame_file, std::ios::binary);
+                        out.write(decoded.data(), static_cast<std::streamsize>(decoded.size()));
+                        out.close();
+                        task_config.io.target_paths = {frame_file.string()};
+                    }
+                }
+            }
+
+            std::string preview_id =
+                "prev_" + foundation::infrastructure::core_utils::random::generate_uuid();
+            std::filesystem::path out_dir = std::filesystem::path("./temp/preview") / preview_id;
+            std::error_code ec;
+            std::filesystem::create_directories(out_dir, ec);
+            task_config.io.output.path = out_dir.string();
+            task_config.resource.max_frames = 1;
+
+            auto executor =
+                deps.executor ? deps.executor : (tasks ? tasks->get_executor() : nullptr);
+            if (!executor) {
+                Logger::get_instance()->error(
+                    "[WebServer] POST /api/preview_render no executor available");
+                resp->setStatusCode(drogon::k500InternalServerError);
+                resp->setBody(json{{"error", "no executor available"}}.dump());
+                cb(resp);
+                return;
+            }
+
+            std::string err_msg;
+            int code =
+                executor->run(task_config, [](const services::pipeline::TaskProgress&) {}, err_msg);
+
+            if (code != 0) {
+                Logger::get_instance()->error(std::format(
+                    "[WebServer] POST /api/preview_render failed with code {}: {}", code, err_msg));
+                resp->setStatusCode(drogon::k500InternalServerError);
+                resp->setBody(
+                    json{{"error", err_msg.empty() ? "preview rendering failed" : err_msg}}.dump());
+                cb(resp);
+                return;
+            }
+
+            // Find output result file
+            std::string result_file;
+            for (const auto& entry : std::filesystem::directory_iterator(out_dir, ec)) {
+                if (entry.is_regular_file(ec)) {
+                    result_file = entry.path().string();
+                    break;
+                }
+            }
+
+            if (result_file.empty()) {
+                Logger::get_instance()->error(
+                    "[WebServer] POST /api/preview_render produced no output file");
+                resp->setStatusCode(drogon::k500InternalServerError);
+                resp->setBody(json{{"error", "preview rendered no file"}}.dump());
+                cb(resp);
+                return;
+            }
+
+            Logger::get_instance()->info(std::format(
+                "[WebServer] POST /api/preview_render succeeded: result={}", result_file));
+            std::string preview_url = "/api/preview?path=" + drogon::utils::urlEncode(result_file);
+            resp->setStatusCode(drogon::k200OK);
+            resp->setBody(json{
+                {"status", "success"}, {"preview_url", preview_url}, {"output_path", result_file}}
+                              .dump());
+            cb(resp);
+        },
+        {drogon::Post});
 
     // GET /api/tasks
     app.registerHandler("/api/tasks",

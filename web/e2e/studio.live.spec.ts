@@ -68,18 +68,18 @@ test.describe('FaceFusionCpp Studio - Live C++ Backend Integration E2E Tests', (
     // Select Source face
     const sourceTabBtn = page.getByRole('button', { name: /源素材/i });
     await sourceTabBtn.click();
-    await page.getByText('Lenna (经典测试头像)').click();
+    await page.getByText('Lenna (经典测试头像)').first().click();
 
     // Select Target image
     const targetTabBtn = page.getByRole('button', { name: /目标素材/i });
     await targetTabBtn.click();
-    await page.getByText('Girl (单人目标图)', { exact: true }).click();
+    await page.getByText('Girl (单人目标图)').first().click();
 
     // Apply a fast preset
     await page.getByRole('button', { name: /极速单人换脸/i }).click();
 
     // Click Run Task (sends live POST /api/tasks to Drogon C++ server)
-    const runBtn = page.getByRole('button', { name: /添加到任务队列/i });
+    const runBtn = page.getByRole('button', { name: /加入队列/i });
     await expect(runBtn).toBeVisible();
     await runBtn.click();
 
@@ -92,8 +92,8 @@ test.describe('FaceFusionCpp Studio - Live C++ Backend Integration E2E Tests', (
 
     await expect(page.getByText('历史任务与成果记录')).toBeVisible();
 
-    // Close Modal
-    const closeBtn = page.locator('button:has(.lucide-x)');
+    // Close Modal via dialog header close button
+    const closeBtn = page.locator('div.fixed').locator('button:has(.lucide-x)').last();
     await closeBtn.click();
     await expect(page.getByText('历史任务与成果记录')).not.toBeVisible();
   });

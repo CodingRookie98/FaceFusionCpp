@@ -2,7 +2,7 @@
 
 > **Document Control**
 > - **Document ID**: FFC-USER-EN-WEBUI-2026
-> - **Version**: V2.2.1
+> - **Version**: V2.3.0
 > - **Status**: Official
 > - **Authority**: Informative
 > - **Owner**: 王辉
@@ -13,6 +13,7 @@
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| **V2.3.0** | 2026-08-21 | AI Agent | 王辉 | Added 【⚡ Instant Preview Render】 single-frame effect verification and video pause-frame extraction; streamlined 【➕ Add to Queue】 CTA; implemented per-task output sandbox directory isolation (`./output/<uuid>`); standardized compare disabled on raw material and active after preview render. |
 | **V2.2.1** | 2026-08-21 | AI Agent | 王辉 | Added media preview lifecycle persistence & recovery documentation (seamless /api/preview fallback upon page reload, auto face detection recovery on active target media). |
 | **V2.2.0** | 2026-08-21 | AI Agent | 王辉 | Upgraded task queue & omni-preview architecture: renamed submit CTA to "Add to Task Queue", left sidebar 3-tab layout (Source Assets / Target Media / Task Queue), priority up/down & cancel actions on task cards, and omni canvas preview for source/target/queue items. |
 | **V2.1.0** | 2026-08-21 | AI Agent | 王辉 | Added multi-file concurrent & drag-and-drop uploads, multi-face selection/toggle with batch controls, standalone result preview with download action, and smart split-slider matching. |
@@ -33,68 +34,69 @@ Run from the executable directory:
 .\ffc.exe --web
 ```
 
-Default listen address `http://0.0.0.0:8000`; open `http://127.0.0.1:8000` in a browser.
+Default listen address `http://0.0.0.0:8000` (configured via `app.yaml`); open `http://127.0.0.1:8000` in a browser.
 
 Common options:
 
 | Option | Description | Default |
 | :--- | :--- | :--- |
-| `--web-port` | Server port | `8000` |
-| `--web-host` | Bind address | `0.0.0.0` |
-| `--web-root` | Frontend assets root (point to `web/dist` when developing) | `assets/web` |
+| `--web-port` | Server port (defaults to `web.port` from `app.yaml`) | `8000` |
+| `--web-host` | Bind address (defaults to `web.host` from `app.yaml`) | `0.0.0.0` |
+| `--web-root` | Frontend assets root (defaults to `web.web_root` from `app.yaml`) | `assets/web` |
 
 > [!NOTE]
 > `--web` is mutually exclusive with quick mode (`-s/-t/-o`) and task config mode (`-c`).
 
 ## 2. Studio Workbench Overview
 
-Web UI V2 provides an integrated, darkroom-styled **Deep Studio Dark single-page workbench**:
+Web UI provides an integrated, darkroom-styled **Deep Studio Dark single-page workbench**:
 
 ### 2.1 Left Sidebar: Asset Pool & Task Queue
 The left sidebar aggregates 3 primary tabs:
-- **Source Assets (Sources)**: Renamed from Source Faces, manages all source references with multi-file concurrent and drag-and-drop uploads; clicking any item instantly previews it in high definition on the center canvas;
+- **Source Assets (Sources)**: Manages all source references with multi-file concurrent and drag-and-drop uploads; clicking any item instantly previews it in high definition on the center canvas;
 - **Target Media (Targets)**: Upload and organize target images or video assets; clicking projects onto the canvas with automatic face detection & interactive overlay;
 - **Task Queue**: Real-time list of all queued, running, done, and failed tasks. Each card provides:
   - 【**⬆️ Promote Priority**】: Raise task queue priority for earlier worker scheduling (available when pending);
   - 【**⬇️ Demote Priority**】: Lower task queue priority (available when pending);
   - 【**✕ Cancel Task**】: Cancel a pending or running task;
-  - **Instant Canvas Linkage**: Clicking any task card displays its target media, live progress overlay, or completed render on the center canvas.
-- **Video Scrubbing**: Quick frame extraction from local videos into the asset pool.
+  - **Live Canvas Binding**: Clicking any task card synchronizes the center viewport to display the task's base target, live progress HUD, or finished results.
+  - **Per-Task Output Isolation**: Each task's output files are isolated in its dedicated sandbox subdirectory (`./output/<uuid>/`), preventing result collisions.
 
-### 2.2 Center: Omni Viewport Canvas & Comparison Stage
-- **Omni Perception Canvas Linkage**:
-  - **Source Asset State**: Shows the selected source image/video with metadata badge (`Source Asset: <filename>`);
-  - **Target Media State**: Shows target image/video with WYSIWYG face bounding boxes and multi-face selection/toggle controls;
-  - **Task Queue State**: Pending shows target backdrop & queue index; Running shows translucent live progress bar with FPS; Done shows final render and enables comparison modes.
-- **Multi-Modal Comparison Matrix**:
-  - **Result Viewer**: Standalone full-image/video inspection of output assets, with a direct 【**Download Result**】 button;
-  - **Split Slider**: Smooth Before / After comparison slider auto-activated upon task completion;
-  - **Detail Loupe**: 2.8x high-magnification floating loupe to examine blending edges and skin texture;
-  - **Synced Video**: Synchronized playback of original and processed video files.
+### 2.2 Center Viewport: Omni Viewport Canvas & Comparison Matrix
+- **Omni Perception Modes**:
+  - **Source Material Mode**: High-resolution view of source image/video (SplitSlider comparison disabled for raw inputs);
+  - **Target Media Mode**: Target image canvas with WYSIWYG bounding box overlay (Red `✓ Selected` $\leftrightarrow$ Cyan `○ Unselected`) with batch select/clear toolbar;
+  - **Task Queue Mode**: Live frame progress HUD, queue position indicators, or completed output viewer.
+- **Multimodal Viewport Tools**:
+  - **Result Viewer**: Standalone full-res inspector with a direct 【**Download Result**】 button;
+  - **Compare (SplitSlider)**: Enabled after task completion or 【Instant Preview Render】, drag divider to compare before & after;
+  - **Detail Loupe**: High-power 2.8x magnifying lens for pixel-level inspection of eyes, hair blending, and skin texture.
 
-### 2.3 Right Sidebar: Dynamic Pipeline Editor
-- **Official Presets**: One-click switching for Fast Swap, HD Portrait, Multi-Face Swap, and Cinematic Remaster;
-- **Multi-Instance Pipeline**: Mount multiple instances of any processor (e.g. multiple `face_swapper` steps with independent reference faces);
-- **Interactive Tuning**: Model dropdowns, selection strategy switches, and live numeric sliders for blend factors;
-- **Enqueue CTA**: The bottom action button is updated to 【**Add to Task Queue (Add to Queue)**】, submitting jobs directly to the background queue while switching to the left queue tab.
+### 2.3 Right Sidebar: Pipeline Editor & Dual CTAs
+- **Official Presets**: Fast 1-click presets ("Fast Single Swap", "Portrait Remaster", "Multi-Face Swap", "Cinematic Full Upscale");
+- **Multi-Instance Pipeline**: Chain multiple processor steps of same/different types with custom bindings;
+- **Dual Core Action CTAs**:
+  - 【**⚡ Instant Preview Render**】: Single-frame instant execution (does not enter queue). For video targets, becomes active when paused to grab the current frame, perform detection and single-frame swap, and switch into compare mode;
+  - 【**➕ Add to Queue**】: Package the task into background worker queue for asynchronous batch processing.
 
-### 2.4 Bottom Dock: Telemetry HUD
-- **Real-Time Telemetry**: C++ Core status, active task frame progress percentage, live inference FPS;
-- **Queue Scheduler**: Queue positions, priority controls (higher value = earlier execution), and task cancellation;
-- **History Drawer**: Access past completed runs and reload them into the studio workbench with one click.
+### 2.4 Bottom Bar: Telemetry & Task Scheduler HUD
+- **Live Telemetry**: C++ Core online state, current frame progress, live FPS;
+- **Queue Controls**: View queue length and adjust priorities on the fly;
+- **History Drawer**: Access past completions with one click.
 
-## 3. REST API Summary
+## 3. REST API Contract Summary
 
-| Method | Path | Description |
+| Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/health` | Service health check and version info |
-| `GET` | `/api/processors` | List available processors and parameter schemas |
-| `POST` | `/api/tasks` | Create task with structured `pipeline_steps` array |
-| `GET` | `/api/tasks` | List all tasks with queue status and progress |
-| `GET` | `/api/tasks/{id}` | Task details and output file URLs |
-| `POST` | `/api/tasks/{id}/cancel` | Cancel a queued or running task |
-| `POST` | `/api/tasks/{id}/priority` | Update task queue priority |
-| `GET` | `/api/tasks/{id}/progress` | Query latest task progress |
-| `POST` | `/api/faces` | Detect faces and keypoints on an image |
-| `POST` | `/api/upload` | Upload media files to temporary directory |
+| `GET` | `/api/health` | Backend status & version |
+| `GET` | `/api/processors` | Available processors & parameter schema |
+| `POST` | `/api/preview_render` | Lightweight single-frame instant rendering (supports base64 frame) |
+| `POST` | `/api/tasks` | Submit task (allocates isolated output directory `./output/<uuid>`) |
+| `GET` | `/api/tasks` | List all tasks with queue status |
+| `GET` | `/api/tasks/{id}` | Task detail and output file list |
+| `POST` | `/api/tasks/{id}/cancel` | Cancel queued or running task |
+| `POST` | `/api/tasks/{id}/priority` | Adjust queue priority |
+| `GET` | `/api/tasks/{id}/progress` | Real-time frame progress |
+| `POST` | `/api/faces` | Face detection & landmark analysis |
+| `POST` | `/api/upload` | Upload media file to temp directory |
 | `GET` | `/media/...` | Serve static media and processed outputs (Range supported) |

@@ -41,6 +41,7 @@ struct WebServerDeps {
     const config::AppConfig* app_config =
         nullptr;                             ///< For merging task defaults (may be null in tests)
     FaceDetectorFunc detect_faces = nullptr; ///< Optional custom face detection provider
+    std::shared_ptr<ITaskExecutor> executor = nullptr; ///< Direct task executor (optional)
 };
 
 /**

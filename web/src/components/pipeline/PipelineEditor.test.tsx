@@ -57,6 +57,13 @@ describe('PipelineEditor Component', () => {
     isSubmitting: false,
     errorMsg: null,
     backendStatus: 'online',
+    isRenderingPreview: false,
+    previewResultUrl: null,
+    setPreviewResultUrl: vi.fn(),
+    renderPreview: vi.fn(),
+    clearPreviewResult: vi.fn(),
+    isVideoPlaying: false,
+    setIsVideoPlaying: vi.fn(),
     submitJob: vi.fn(),
     cancelTask: vi.fn(),
     bumpPriority: vi.fn(),
@@ -79,7 +86,8 @@ describe('PipelineEditor Component', () => {
 
     expect(screen.getByText(/1\/1 激活/i)).toBeDefined();
     expect(screen.getByDisplayValue('Face Swapper #1')).toBeDefined();
-    expect(screen.getByText(/➕ 添加到任务队列/i)).toBeDefined();
+    expect(screen.getByText(/⚡ 渲染预览/i)).toBeDefined();
+    expect(screen.getByText(/➕ 加入队列/i)).toBeDefined();
   });
 
   it('opens add step menu and triggers addStep', () => {
@@ -94,11 +102,20 @@ describe('PipelineEditor Component', () => {
     expect(store.addStep).toHaveBeenCalledWith('face_enhancer');
   });
 
+  it('triggers renderPreview when clicking Preview CTA', () => {
+    const store = createMockStore();
+    render(<PipelineEditor store={store} />);
+
+    const previewBtn = screen.getByText(/⚡ 渲染预览/i);
+    fireEvent.click(previewBtn);
+    expect(store.renderPreview).toHaveBeenCalled();
+  });
+
   it('triggers submitJob when clicking Add to Queue CTA', () => {
     const store = createMockStore();
     render(<PipelineEditor store={store} />);
 
-    const submitBtn = screen.getByText(/➕ 添加到任务队列/i);
+    const submitBtn = screen.getByText(/➕ 加入队列/i);
     fireEvent.click(submitBtn);
     expect(store.submitJob).toHaveBeenCalled();
   });

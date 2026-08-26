@@ -222,6 +222,15 @@ std::string TaskManager::submit(config::TaskConfig config, int priority) {
     std::string uuid = foundation::infrastructure::core_utils::random::generate_uuid();
     std::replace(uuid.begin(), uuid.end(), '-', '_');
 
+    // Partition output directory per task to guarantee physical isolation
+    std::filesystem::path base_out(config.io.output.path.empty() ? "./output" :
+                                                                   config.io.output.path);
+    if (base_out.filename().string() != uuid) {
+        config.io.output.path = (base_out / uuid).string();
+    }
+    std::error_code ec;
+    std::filesystem::create_directories(config.io.output.path, ec);
+
     TaskEntry entry;
     entry.id = uuid;
     entry.config = std::move(config);
@@ -229,8 +238,9 @@ std::string TaskManager::submit(config::TaskConfig config, int priority) {
     entry.priority = priority;
 
     Logger::get_instance()->info(std::format(
-        "[TaskManager] Submitting task: id={}, priority={}, targets={}, sources={}", uuid, priority,
-        entry.config.io.target_paths.size(), entry.config.io.source_paths.size()));
+        "[TaskManager] Submitting task: id={}, priority={}, output={}, targets={}, sources={}",
+        uuid, priority, entry.config.io.output.path, entry.config.io.target_paths.size(),
+        entry.config.io.source_paths.size()));
 
     {
         std::lock_guard lock(m_impl->mutex);
@@ -239,6 +249,10 @@ std::string TaskManager::submit(config::TaskConfig config, int priority) {
     }
     m_impl->stop_cv.notify_all();
     return uuid;
+}
+
+std::shared_ptr<ITaskExecutor> TaskManager::get_executor() const {
+    return m_impl->executor;
 }
 
 bool TaskManager::set_priority(const std::string& id, int priority) {

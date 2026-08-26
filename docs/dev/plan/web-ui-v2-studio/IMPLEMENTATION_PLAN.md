@@ -2,8 +2,8 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-PLAN-WEBUI-V2-2026
-> - **当前版本 (Version)**: V1.3.0
-> - **状态 (Status)**: 已完成 (Completed)
+> - **当前版本 (Version)**: V1.4.0
+> - **状态 (Status)**: 进行中 (In Progress)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.4.0** | 2026-08-21 | AI Agent | 王辉 | 增补阶段 10：任务产物物理目录隔离 (`./output/<task_id>`)、新增【⚡ 渲染预览】(单帧与视频暂停帧抓取即时渲染与卷帘对比联动)、精简按钮文案 (`⚡ 渲染预览` / `➕ 加入队列`)、配置文件重命名为 `app.yaml` / `task.yaml` 并集成 Web 配置段与构建自动同步。 |
 | **V1.3.0** | 2026-08-21 | AI Agent | 王辉 | 增补阶段 9：素材预览生命周期持久化（解决页面刷新后 Blob URL 失效问题、智能回落 /api/preview、localStorage 清洗）与页面刷新后人脸自动感知恢复。 |
 | **V1.2.0** | 2026-08-21 | AI Agent | 王辉 | 增补阶段 8：实现“添加到任务队列”CTA、左栏三 Tab（源素材/目标素材/任务队列）、任务卡片优先级升降级与取消、中间画布源素材/目标素材/任务全态联动预览。 |
 | **V1.1.0** | 2026-08-21 | AI Agent | 王辉 | 增补阶段 6 与阶段 7：实现多文件并发与拖拽上传、人脸多选/反选/全选/清空、处理结果独立预览与下载、C++ Web 全链路结构化日志及 Playwright E2E 自动化端到端测试。 |
@@ -146,6 +147,22 @@
   - `web/src/components/canvas/ViewportCanvas.tsx`: 验证刷新后画布渲染
 - **验收标准**: 页面刷新后，上传的源素材/目标素材缩略图与画布视图均能正常从 `/api/preview` 加载显示，当前选中的目标素材自动恢复人脸框检测，Vitest 与 E2E 测试全部通过。
 
+### 阶段 10: 任务物理隔离、快速渲染预览与配置重命名规范
+- **目标**:
+  1. **后端任务产物物理隔离**: 每个任务使用独立子目录 `./output/<task_id>` 存放结果文件，`/media/{task_id}/result/{file}` 严格读取各自任务目录，彻底避免同名文件覆盖与串扰；
+  2. **新增【⚡ 渲染预览】与单帧即时推理接口 `/api/preview_render`**: 提供免入队单帧即时换脸与增强推理，渲染后直接在主视口激活【卷帘对比】(Compare)；
+  3. **视频素材暂停感知与单帧抓取**: 视频播放中时【⚡ 渲染预览】按钮置灰并提示，暂停/停止时利用 Canvas 抓取当前视频帧并执行人脸检测与单帧预览；
+  4. **按钮文案精简**: 右侧 CTA 精简为 `⚡ 渲染预览` 与 `➕ 加入队列`；
+  5. **配置文件重命名与 Web 配置整合**: 将 `config/app_config.yaml` 重命名为 `config/app.yaml`，`config/task_config.yaml` 重命名为 `config/task.yaml`，在 `app.yaml` 中新增 `web:` 配置节，构建时自动复制到可执行文件所在目录，CLI `--app-config` 支持指定路径及默认寻径，`--task` 强制要求指定路径。
+- **涉及文件**:
+  - `config/app.yaml`, `config/task.yaml`
+  - `CMakeLists.txt`, `cmake/copy_assets.cmake`, `build.py`
+  - `src/app/config/app_config.ixx`, `src/app/config/app_config_loader.cpp`, `src/app/cli/app_cli.cpp`
+  - `src/app/web/task_manager.cpp`, `src/app/web/web_server.cpp`
+  - `web/src/api/client.ts`, `web/src/store/studioState.ts`
+  - `web/src/components/pipeline/PipelineEditor.tsx`, `web/src/components/canvas/ViewportCanvas.tsx`
+- **验收标准**: 多任务针对同一素材生成的结果物理隔离且预览互不影响，渲染预览秒级出图并无缝卷帘对比，视频暂停时正确抓帧，配置文件及 CLI 寻径规范健全，Vitest/Playwright/C++ 单元测试全绿。
+
 ---
 
 ## 4. 实施状态跟踪
@@ -161,3 +178,4 @@
 | 阶段 7: 全链路日志与 E2E 测试 | 已完成 | AI Agent | 2026-08-21 |
 | 阶段 8: 任务队列与全态画布预览 | 已完成 | AI Agent | 2026-08-21 |
 | 阶段 9: 素材预览生命周期与人脸感知恢复 | 已完成 | AI Agent | 2026-08-21 |
+| 阶段 10: 任务物理隔离、快速渲染预览与配置重命名规范 | 已完成 | AI Agent | 2026-08-21 |

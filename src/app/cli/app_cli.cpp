@@ -143,15 +143,17 @@ int App::run(int argc, char** argv) {
     // 全局选项 (Global Options)
     // ─────────────────────────────────────────────────────────────────────────
     std::string config_path;
-    std::string app_config_path = "config/app_config.yaml"; // 默认路径
+    std::string app_config_path; // 留空以启用自动寻径
     std::string log_level;
     bool show_version = false;
     bool validate_only = false;
     bool system_check = false;
     bool json_output = false;
 
-    app.add_option("-c,--task-config", config_path, "Path to task configuration file");
-    app.add_option("--app-config", app_config_path, "Path to application config");
+    app.add_option("-c,--task,--task-config", config_path, "Path to task configuration file");
+    app.add_option(
+        "--app-config", app_config_path,
+        "Path to application config (default: searches executable/working dir config/app.yaml)");
     app.add_option("--log-level", log_level, "Override log level (trace/debug/info/warn/error)")
         ->check(CLI::IsMember({"trace", "debug", "info", "warn", "error"}));
     app.add_flag("-v,--version", show_version, "Show version information");
@@ -167,14 +169,23 @@ int App::run(int argc, char** argv) {
     std::string output_path;
     std::string processors_str;
 
-    app.add_option("-s,--source", source_paths, "Source face image(s)")->excludes("--task-config");
+    app.add_option("-s,--source", source_paths, "Source face image(s)")
+        ->excludes("-c")
+        ->excludes("--task")
+        ->excludes("--task-config");
     app.add_option("-t,--target", target_paths, "Target image/video path(s)")
+        ->excludes("-c")
+        ->excludes("--task")
         ->excludes("--task-config");
     app.add_option("-o,--output", output_path, "Output directory or file path")
+        ->excludes("-c")
+        ->excludes("--task")
         ->excludes("--task-config");
     app.add_option("--processors", processors_str,
                    "Comma-separated processor list "
                    "(face_swapper,face_enhancer,expression_restorer,frame_enhancer)")
+        ->excludes("-c")
+        ->excludes("--task")
         ->excludes("--task-config");
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -187,6 +198,8 @@ int App::run(int argc, char** argv) {
     std::string web_root = "assets/web";
 
     app.add_flag("--web", web_mode, "Run the embedded web UI server")
+        ->excludes("-c")
+        ->excludes("--task")
         ->excludes("--task-config")
         ->excludes("--source")
         ->excludes("--target")
@@ -267,7 +280,12 @@ int App::run(int argc, char** argv) {
                 exit_code = run_validate(task_config, *app_config);
             }
         } else if (web_mode) {
-            exit_code = run_web_mode(web_host, web_port, web_root, *app_config);
+            std::string effective_host = app.count("--web-host") ? web_host : app_config->web.host;
+            uint16_t effective_port = app.count("--web-port") ? web_port : app_config->web.port;
+            std::string effective_web_root =
+                app.count("--web-root") ? web_root : app_config->web.web_root;
+            exit_code =
+                run_web_mode(effective_host, effective_port, effective_web_root, *app_config);
         } else if (!config_path.empty()) {
             exit_code = run_pipeline(config_path, *app_config);
         } else if (!source_paths.empty() && !target_paths.empty()) {
@@ -376,7 +394,10 @@ int App::run_web_mode(const std::string& host, uint16_t port, const std::string&
     };
 
     app::web::run_server({.host = host, .port = port, .web_root = web_root},
-                         {.tasks = tasks, .app_config = &app_config, .detect_faces = detect_faces});
+                         {.tasks = tasks,
+                          .app_config = &app_config,
+                          .detect_faces = detect_faces,
+                          .executor = executor});
     return 0;
 }
 
@@ -506,21 +527,63 @@ int App::run_pipeline_internal(const config::TaskConfig& task_config,
     }
 }
 
+static std::filesystem::path get_executable_dir() {
+#if defined(_WIN32)
+    wchar_t path[MAX_PATH] = {0};
+    GetModuleFileNameW(NULL, path, MAX_PATH);
+    return std::filesystem::path(path).parent_path();
+#elif defined(__linux__)
+    std::error_code ec;
+    auto p = std::filesystem::canonical("/proc/self/exe", ec);
+    if (!ec) { return p.parent_path(); }
+    return std::filesystem::current_path();
+#elif defined(__APPLE__)
+    char path[1024];
+    uint32_t size = sizeof(path);
+    if (_NSGetExecutablePath(path, &size) == 0) {
+        return std::filesystem::canonical(path).parent_path();
+    }
+    return std::filesystem::current_path();
+#else
+    return std::filesystem::current_path();
+#endif
+}
+
 std::optional<config::AppConfig> App::load_app_config(const std::string& path,
                                                       const std::string& log_level_override) {
     using namespace config;
     using foundation::infrastructure::logger::Logger;
 
     AppConfig config;
+    std::string resolved_path = path;
+
+    if (resolved_path.empty()) {
+        auto exe_dir = get_executable_dir();
+        std::vector<std::filesystem::path> candidates = {exe_dir / "config" / "app.yaml",
+                                                         exe_dir / "app.yaml",
+                                                         "config/app.yaml",
+                                                         "app.yaml",
+                                                         exe_dir / "config" / "app_config.yaml",
+                                                         exe_dir / "app_config.yaml",
+                                                         "config/app_config.yaml",
+                                                         "app_config.yaml"};
+        for (const auto& c : candidates) {
+            if (std::filesystem::exists(c)) {
+                resolved_path = c.string();
+                break;
+            }
+        }
+    }
 
     // 尝试从文件加载
-    if (std::filesystem::exists(path)) {
-        auto result = config::load_app_config(path);
+    if (!resolved_path.empty() && std::filesystem::exists(resolved_path)) {
+        auto result = config::load_app_config(resolved_path);
         if (result.is_ok()) {
             config = std::move(result).value();
         } else {
             // 配置文件存在但解析/版本校验失败: 拒绝启动 (design.md §3.3.1 启动时校验)
-            Logger::get_instance()->error("Failed to load app config: " + result.error().message);
+            std::cerr << "Failed to load app config (" << resolved_path
+                      << "): " << result.error().message << std::endl;
             return std::nullopt;
         }
     }

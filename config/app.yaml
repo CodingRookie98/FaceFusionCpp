@@ -1,0 +1,89 @@
+# FaceFusionCpp 全局应用配置文件 (Application Configuration)
+# 作用: 定义全局硬件基础、推理后端引擎、显存与系统资源策略、日志级别与路径、可观测性指标、默认模型以及 Web UI 服务器参数。
+config_version: "0.34.1"
+
+# --- 推理基础设施 (Inference Infrastructure) ---
+inference:
+  # 运行的主 GPU 设备 ID (0-indexed)
+  device_id: 0
+  # TensorRT 引擎缓存机制 (大幅加速后续推理初始化)
+  engine_cache:
+    enable: true
+    path: "./.cache/tensorrt"
+    max_entries: 3
+    idle_timeout_seconds: 60
+  # 推理执行提供者优先级 (从左至右回退)
+  default_providers: ["tensorrt", "cuda", "cpu"]
+
+# --- 资源与内存策略 (Resource Management) ---
+resource:
+  # 显存释放策略: "strict" (处理完立即释放, 适合低显存环境 <8GB) 或 "tolerant" (保持模型常驻, 适合充足显存 >=8GB)
+  memory_strategy: "strict"
+
+# --- 日志记录系统 (Logging) ---
+logging:
+  # 日志级别: trace, debug, info, warn, error
+  level: "info"
+  directory: "./logs"
+  rotation: "daily" # daily (按天滚动), hourly (按小时滚动), size (按大小滚动)
+  max_files: 7
+  max_total_size: "1GB"
+
+# --- 性能指标与可观测性 (Metrics & Observability) ---
+metrics:
+  enable: true
+  step_latency: true
+  gpu_memory: true
+  report_path: "./logs/metrics_{timestamp}.json"
+  gpu_sample_interval_ms: 1000
+
+# --- 模型仓库管理 (Model Management) ---
+models:
+  path: "./assets/models"
+  # 下载策略: "auto" (缺失时自动下载), "force" (强制重新下载), "skip" (跳过下载直接使用本地)
+  download_strategy: "auto"
+
+# --- 默认模型配置 (Default Models) ---
+default_models:
+  face_detector: "yoloface"
+  face_recognizer: "arcface_w600k_r50"
+  face_swapper: "inswapper_128_fp16"
+  face_enhancer: "gfpgan_1.4"
+  frame_enhancer: "real_esrgan_x2_fp16"
+
+# --- 系统临时目录 (System Temp Directory) ---
+temp_directory: "./temp"
+
+# --- Web 界面与 API 服务配置 (Web Server Configuration) ---
+web:
+  # 监听的主机地址 ("0.0.0.0" 允许局域网/公网访问, "127.0.0.1" 仅限本地访问)
+  host: "0.0.0.0"
+  # 监听端口号 (1-65535)
+  port: 8000
+  # 前端静态资源根目录 (相对于执行路径)
+  web_root: "assets/web"
+  # 上传素材与临时帧暂存目录
+  temp_dir: "./temp/uploads"
+
+# --- 默认任务参数回退 (Default Task Settings - Optional) ---
+# 若任务配置 (task.yaml / CLI) 中未显式指定某项参数，则回退使用此处的默认值。
+# 优先级规则: 任务配置显式值 > 此处默认值 > 代码内建硬编码默认值。
+default_task_settings:
+  io:
+    output:
+      video_encoder: "libx264"
+      video_quality: 80
+      prefix: "result_"
+      suffix: ""
+      image_format: "png"
+      conflict_policy: "error" # overwrite (覆盖), rename (自动序号重命名), error (报错中止)
+      audio_policy: "copy"     # copy (保留原音频流), skip (静音/剥离音频)
+  resource:
+    thread_count: 0      # 0 = 自动根据 CPU 核心数分配
+    max_queue_size: 20
+    execution_order: "sequential" # sequential (顺序串行, 低时延), batch (批处理, 节省显存)
+  face_analysis:
+    face_detector:
+      score_threshold: 0.5
+    face_recognizer:
+      similarity_threshold: 0.6

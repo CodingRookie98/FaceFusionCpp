@@ -333,6 +333,9 @@ export function useStudioStore() {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [activeTaskDetail, setActiveTaskDetail] = useState<TaskDetail | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRenderingPreview, setIsRenderingPreview] = useState(false);
+  const [previewResultUrl, setPreviewResultUrl] = useState<string | null>(null);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [backendStatus, setBackendStatus] = useState<string>('connecting');
 
@@ -709,6 +712,60 @@ export function useStudioStore() {
     );
   };
 
+  const renderPreview = async (targetFrameBase64?: string) => {
+    setErrorMsg(null);
+    if (sources.length === 0 || !activeTarget) {
+      setErrorMsg('请先选择至少一个源素材和目标素材');
+      return;
+    }
+    if (steps.filter((s) => s.enabled).length === 0) {
+      setErrorMsg('请至少启用一个处理器步骤');
+      return;
+    }
+
+    const payload = {
+      source_paths: sources.map((s) => s.path),
+      target_paths: targetFrameBase64 ? undefined : [activeTarget.path],
+      target_frame_base64: targetFrameBase64,
+      target_face_indices: selectedFaceIndices.length > 0 ? selectedFaceIndices : undefined,
+      pipeline_steps: steps
+        .filter((s) => s.enabled)
+        .map((s) => {
+          const params = { ...s.params };
+          if (
+            params.face_selector_mode === 'reference' &&
+            (!params.reference_face_path || params.reference_face_path === '')
+          ) {
+            params.reference_face_path = sources[0]?.path || '';
+          }
+          return {
+            step: s.step,
+            name: s.name,
+            enabled: true,
+            params,
+          };
+        }),
+    };
+
+    setIsRenderingPreview(true);
+    try {
+      const res = await api.previewRender(payload);
+      if (res && res.preview_url) {
+        setPreviewResultUrl(res.preview_url);
+        setActivePreviewTarget('target');
+        setViewportMode('compare');
+      }
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsRenderingPreview(false);
+    }
+  };
+
+  const clearPreviewResult = () => {
+    setPreviewResultUrl(null);
+  };
+
   const submitJob = async () => {
     setErrorMsg(null);
     if (sources.length === 0 || targets.length === 0) {
@@ -832,6 +889,13 @@ export function useStudioStore() {
     activeTaskDetail,
     setActiveTaskId,
     isSubmitting,
+    isRenderingPreview,
+    previewResultUrl,
+    setPreviewResultUrl,
+    renderPreview,
+    clearPreviewResult,
+    isVideoPlaying,
+    setIsVideoPlaying,
     errorMsg,
     backendStatus,
     submitJob,

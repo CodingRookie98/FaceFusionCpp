@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Plus,
   Play,
+  Zap,
   Sparkles,
   Sliders,
   Wand2,
@@ -37,6 +38,10 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({ store }) => {
     setActiveBindingStepId,
     submitJob,
     isSubmitting,
+    isRenderingPreview,
+    renderPreview,
+    isVideoPlaying,
+    activeTarget,
     errorMsg,
   } = store;
 
@@ -146,14 +151,44 @@ export const PipelineEditor: React.FC<PipelineEditorProps> = ({ store }) => {
           </div>
         )}
 
-        <button
-          onClick={submitJob}
-          disabled={isSubmitting}
-          className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:opacity-50 text-white rounded-lg font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all hover:shadow-blue-500/40 active:scale-[0.98] cursor-pointer"
-        >
-          <Play className="w-4 h-4 fill-white" />
-          <span>{isSubmitting ? '正在加入队列...' : '➕ 添加到任务队列 (Add to Queue)'}</span>
-        </button>
+        {/* Video pause frame hint */}
+        {activeTarget?.type === 'video' && isVideoPlaying && (
+          <div className="px-2 py-1 bg-amber-950/50 border border-amber-500/30 rounded text-[11px] text-amber-300/90 flex items-center gap-1">
+            <AlertCircle className="w-3 h-3 flex-shrink-0 text-amber-400" />
+            <span>暂停视频播放后可抓取当前画面帧进行渲染预览</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => renderPreview()}
+            disabled={
+              isRenderingPreview ||
+              isSubmitting ||
+              !activeTarget ||
+              (activeTarget.type === 'video' && isVideoPlaying)
+            }
+            className="py-2.5 px-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg font-semibold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 transition-all hover:shadow-amber-500/30 active:scale-[0.98] cursor-pointer"
+            title={
+              activeTarget?.type === 'video' && isVideoPlaying
+                ? '请先暂停/停止视频播放以抓取当前帧进行渲染预览'
+                : '单帧即时临时预览效果（不加入任务队列）'
+            }
+          >
+            <Zap className={`w-3.5 h-3.5 fill-white ${isRenderingPreview ? 'animate-bounce' : ''}`} />
+            <span>{isRenderingPreview ? '预览渲染中...' : '⚡ 渲染预览'}</span>
+          </button>
+
+          <button
+            onClick={submitJob}
+            disabled={isSubmitting || isRenderingPreview}
+            className="py-2.5 px-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:opacity-50 text-white rounded-lg font-semibold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/20 transition-all hover:shadow-blue-500/30 active:scale-[0.98] cursor-pointer"
+            title="将任务加入持久化后台执行队列"
+          >
+            <Play className="w-3.5 h-3.5 fill-white" />
+            <span>{isSubmitting ? '正在加入...' : '➕ 加入队列'}</span>
+          </button>
+        </div>
       </div>
     </div>
   );

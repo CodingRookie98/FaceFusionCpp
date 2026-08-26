@@ -41,11 +41,14 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
     tasks,
     activeTaskId,
     activeTaskDetail,
+    previewResultUrl,
+    setIsVideoPlaying,
   } = store;
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [naturalSize, setNaturalSize] = useState<{ width: number; height: number }>({
     width: 0,
     height: 0,
@@ -90,25 +93,39 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
   const isTaskFailed = currentTask?.status === 'failed';
   const isTaskCancelled = currentTask?.status === 'cancelled';
 
-  // Result file for comparison: match against current activeTarget if multiple results exist
+  // Result file for comparison:
+  // In task mode: match task results from backend
+  // In target mode: use temporary single-frame render preview (previewResultUrl)
+  // In source mode: no comparison supported
   const pathStem =
     activeTarget?.path?.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, '').toLowerCase() || '';
   const nameClean = activeTarget?.name?.replace(/\.[^/.]+$/, '') || '';
   const nameFirstWord = nameClean.split(/[\s(（]/)[0]?.toLowerCase() || '';
 
   const matchingResult =
-    activeTaskDetail?.results?.find((r) => {
-      const rName = r.name.toLowerCase();
-      if (pathStem && rName.includes(pathStem)) return true;
-      if (nameFirstWord && rName.includes(nameFirstWord)) return true;
-      if (nameClean && rName.includes(nameClean.toLowerCase())) return true;
-      return false;
-    }) ||
-    activeTaskDetail?.results?.[activeTaskDetail.results.length - 1] ||
-    activeTaskDetail?.results?.[0];
+    isTaskMode
+      ? activeTaskDetail?.results?.find((r) => {
+          const rName = r.name.toLowerCase();
+          if (pathStem && rName.includes(pathStem)) return true;
+          if (nameFirstWord && rName.includes(nameFirstWord)) return true;
+          if (nameClean && rName.includes(nameClean.toLowerCase())) return true;
+          return false;
+        }) ||
+        activeTaskDetail?.results?.[activeTaskDetail.results.length - 1] ||
+        activeTaskDetail?.results?.[0]
+      : undefined;
 
-  const latestResult = matchingResult?.url;
-  const latestResultName = matchingResult?.name;
+  const latestResult = isTaskMode
+    ? matchingResult?.url
+    : isSourceMode
+    ? undefined
+    : previewResultUrl || undefined;
+
+  const latestResultName = isTaskMode
+    ? matchingResult?.name
+    : previewResultUrl
+    ? '渲染预览 (Preview)'
+    : undefined;
 
   return (
     <div
@@ -328,8 +345,12 @@ export const ViewportCanvas: React.FC<ViewportCanvasProps> = ({ store }) => {
             {displayMedia ? (
               isVideo ? (
                 <video
+                  ref={videoRef}
                   src={originalUrl}
                   controls
+                  onPlay={() => setIsVideoPlaying(true)}
+                  onPause={() => setIsVideoPlaying(false)}
+                  onEnded={() => setIsVideoPlaying(false)}
                   className="max-h-[calc(100vh-220px)] max-w-full object-contain rounded"
                 />
               ) : (

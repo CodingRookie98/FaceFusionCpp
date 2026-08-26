@@ -2,7 +2,7 @@
 
 > **Document Control Information**
 > - **Document ID**: FFC-DEV-EN-ARCH-WEBUI-2026
-> - **Current Version**: V0.5.1
+> - **Current Version**: V0.6.0
 > - **Status**: Official
 > - **Authority**: Informative
 > - **Owner**: Hui Wang
@@ -13,11 +13,11 @@
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| **V0.6.0** | 2026-08-21 | AI Agent | Hui Wang | Introduced 【⚡ Instant Preview Render】 single-frame endpoint (`/api/preview_render`) & video pause-frame grabber; streamlined 【➕ Add to Queue】 CTA; established per-task output sandbox directory isolation (`./output/<uuid>`); standardized compare disabled on raw materials. |
 | **V0.5.1** | 2026-08-21 | AI Agent | Hui Wang | Specified media preview lifecycle persistence (smart Blob fallback to backend /api/preview, localStorage sanitization) and automatic face detection recovery upon page reload. |
 | **V0.5.0** | 2026-08-21 | AI Agent | Hui Wang | Upgraded task queue & omni-preview architecture: renamed submit CTA to "Add to Task Queue", left sidebar 3-tab layout (Source Assets / Target Media / Task Queue), priority up/down & cancel actions on task cards, and omni canvas preview for source/target/queue items. |
 | **V0.4.1** | 2026-08-21 | AI Agent | Hui Wang | Added multi-file concurrent & drag-and-drop uploads, multi-face selection/toggle with batch controls, standalone result preview with download action, C++ Web structured logging, and Playwright E2E test suite. |
 | **V0.4.0** | 2026-08-20 | AI Agent | Hui Wang | Completely redesigned for Studio Workbench: Deep Studio Dark single-page layout, dynamic multi-instance processor pipeline, WYSIWYG face mapping, split-slider/loupe comparison matrix, telemetry HUD, and /api/tasks pipeline_steps. |
-| **V0.3.2** | 2026-08-18 | AI Agent | Hui Wang | Fixed review gaps: corrected priority scheduling semantics (higher value = higher priority), added /api/processors and /api/tasks/{id}/progress endpoints, implemented video Range playback and production face detection injection. |
 
 ---
 
@@ -31,7 +31,8 @@ FaceFusionCpp originally provided a CLI entry point. To deliver a first-class us
 3. **Multi-Instance Dynamic Pipeline**: Mount multiple instances of any processor (e.g. separate `face_swapper` steps with individual reference faces);
 4. **WYSIWYG Face Mapping & Multi-Selection**: Bounding box rendering, click-to-toggle multi-face selection, select-all/clear controls, and automatic pipeline parameter synchronization;
 5. **Omni Canvas Perception Preview**: Clicking any item in Source Assets, Target Media, or Task Queue immediately previews the respective media, face overlay, or task render/progress on the center canvas;
-6. **Dynamic Task Queue Workbench**: Direct enqueueing ("Add to Task Queue"), left sidebar task queue cards with real-time priority promotion/demotion and one-click task cancellation.
+6. **Per-Task Sandbox Output Directory Isolation**: Every task receives an isolated directory (`./output/<uuid>`), avoiding file collisions across runs;
+7. **Instant Lightweight Preview Rendering**: Single-frame on-demand inference (`POST /api/preview_render`) for instant verification without entering the queue; for videos, grabs the paused frame to render and opens compare mode.
 
 ## 2. Decision Baseline
 
@@ -40,8 +41,8 @@ FaceFusionCpp originally provided a CLI entry point. To deliver a first-class us
 | Deployment Form | Single-process embedded HTTP server | Preserves single-binary delivery with zero user setup |
 | Frontend Stack | React 19 + Vite + TypeScript + Tailwind CSS | Mature ecosystem; outputs purely static assets |
 | Visual Design Language | Deep Studio Dark (Creative Studio Aesthetic) | Darkroom environment provides optimal color and detail inspection |
-| Interaction Paradigm | 3-Column Studio + Floating Telemetry HUD | Natural visual flow: Left (Assets/Queue) ➔ Center (Omni Canvas) ➔ Right (Pipeline/Enqueue) ➔ Bottom (HUD) |
-| Build Integration | `build.py` unified entry (`--action web`) | One command for development and release, minimal CI change |
+| Interaction Paradigm | 3-Column Studio + Floating Telemetry HUD | Natural visual flow: Left (Assets/Queue) ➔ Center (Omni Canvas) ➔ Right (Pipeline/Preview/Enqueue) ➔ Bottom (HUD) |
+| Build Integration | `build.py` unified entry (`--action build` integrates web) | One command for development and release, automatic asset & config sync |
 | HTTP Server | Drogon | All-in-one HTTP + WebSocket + static hosting; native WebSocket support |
 | Progress Push | WebSocket | Bidirectional communication, real-time frame progress push |
 | Automated Testing | Vitest (Unit) + Playwright (Full-stack E2E) | Validates frontend state, components, and real C++ core inference pipeline |
@@ -64,9 +65,11 @@ FaceFusionCpp originally provided a CLI entry point. To deliver a first-class us
 | **F12**| **Multi-File Concurrent & Drag Upload** | Multi-file concurrent upload and drag-and-drop with live progress counters | **Implemented (M5)** |
 | **F13**| **C++ Web Module Structured Logging** | Full lifecycle logging across HTTP/WS routes, uploads, detections, and tasks | **Implemented (M5)** |
 | **F14**| **Playwright Full-Stack E2E Test Suite**| Automated end-to-end integration tests with real backend inference | **Implemented (M5)** |
-| **F15**| **Add to Task Queue & Queue Panel** | Submit CTA renamed to "Add to Task Queue", left panel integrated task queue tab | **Implemented (M5)** |
+| **F15**| **Add to Task Queue & Queue Panel** | Submit CTA streamlined to "➕ Add to Queue", left panel integrated task queue tab | **Implemented (M5)** |
 | **F16**| **Queue Item Priority & Cancel Actions**| Task cards support ⬆️ Promote Priority, ⬇️ Demote Priority, ✕ Cancel Task | **Implemented (M5)** |
 | **F17**| **Omni Canvas Perception Preview** | Seamless preview of Source Assets, Target Media, and Task Queue runs on canvas | **Implemented (M5)** |
+| **F18**| **Per-Task Output Directory Isolation** | Dedicated `./output/<uuid>` for each task run to guarantee independent outputs | **Implemented (M5)** |
+| **F19**| **Instant Preview Render** | `POST /api/preview_render` for single-frame instant inference without queueing | **Implemented (M5)** |
 
 ## 3. Directory Layout (Single Repo, Dual Project)
 

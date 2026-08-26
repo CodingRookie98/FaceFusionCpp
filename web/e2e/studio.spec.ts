@@ -87,6 +87,18 @@ test.describe('FaceFusionCpp Studio - Comprehensive E2E Tests', () => {
       });
     });
 
+    await page.route('**/api/preview_render', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'success',
+          preview_url: '/api/preview?path=assets%2Fgirl.bmp',
+          output_path: 'output/result.png',
+        }),
+      });
+    });
+
     await page.route('**/api/faces*', async (route) => {
       await route.fulfill({
         status: 200,
@@ -117,7 +129,7 @@ test.describe('FaceFusionCpp Studio - Comprehensive E2E Tests', () => {
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
       'base64'
     );
-    await page.route('**/api/preview*', async (route) => {
+    await page.route('**/api/preview?*', async (route) => {
       await route.fulfill({ status: 200, contentType: 'image/png', body: pixelPng });
     });
     await page.route(/.*\/media\/.*(\.png|\.jpg|\.bmp|\.mp4|\/source\/|\/target\/|\/result\/).*/, async (route) => {
@@ -204,6 +216,15 @@ test.describe('FaceFusionCpp Studio - Comprehensive E2E Tests', () => {
     await expect(compareBtn).toBeVisible();
     await expect(loupeBtn).toBeVisible();
 
+    // Switch to Target tab & select target & trigger instant preview render
+    const targetTabBtn = page.getByRole('button', { name: /目标素材/i });
+    await targetTabBtn.click();
+    await page.getByText('Girl (单人目标图)').first().click();
+
+    const previewBtn = page.getByRole('button', { name: /⚡ 渲染预览/i });
+    await previewBtn.click();
+    await expect(page.getByText('处理前 (BEFORE)')).toBeVisible({ timeout: 5000 });
+
     // Switch to Canvas mode
     await canvasBtn.click();
     await expect(canvasBtn).toHaveClass(/bg-blue-600/);
@@ -225,6 +246,15 @@ test.describe('FaceFusionCpp Studio - Comprehensive E2E Tests', () => {
   });
 
   test('5. SplitSlider: drag divider handle and update split clipPath', async ({ page }) => {
+    // Switch to Target tab & select target & trigger preview render first to enable comparison
+    const targetTabBtn = page.getByRole('button', { name: /目标素材/i });
+    await targetTabBtn.click();
+    await page.getByText('Girl (单人目标图)').first().click();
+
+    const previewBtn = page.getByRole('button', { name: /⚡ 渲染预览/i });
+    await previewBtn.click();
+    await expect(page.getByText('处理前 (BEFORE)')).toBeVisible({ timeout: 5000 });
+
     // Switch to Compare Mode
     const compareBtn = page.getByRole('button', { name: /卷帘对比/i });
     await compareBtn.click();
@@ -269,7 +299,7 @@ test.describe('FaceFusionCpp Studio - Comprehensive E2E Tests', () => {
   });
 
   test('7. Task Submission Flow & Queue Enqueue', async ({ page }) => {
-    const runBtn = page.getByRole('button', { name: /添加到任务队列/i });
+    const runBtn = page.getByRole('button', { name: /加入队列/i });
     await expect(runBtn).toBeVisible();
     await runBtn.click();
 

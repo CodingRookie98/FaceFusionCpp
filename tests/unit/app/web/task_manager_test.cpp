@@ -20,7 +20,7 @@ namespace {
 /// Fake executor controllable per test
 class FakeExecutor : public ITaskExecutor {
 public:
-    int run(const TaskConfig&, const services::pipeline::ProgressCallback& cb) override {
+    int run(const TaskConfig& config, const services::pipeline::ProgressCallback& cb) override {
         if (block) {
             while (!cancelled.load()) { std::this_thread::sleep_for(std::chrono::milliseconds(5)); }
             return 2; // cancelled
@@ -32,6 +32,11 @@ public:
             p.fps = 30.0;
             cb(p);
         }
+        if (create_dummy_result && !config.io.output.path.empty()) {
+            std::error_code ec;
+            std::filesystem::create_directories(config.io.output.path, ec);
+            std::ofstream(std::filesystem::path(config.io.output.path) / "result.png") << "x";
+        }
         return fail_code;
     }
     void cancel() override { cancelled.store(true); }
@@ -39,6 +44,7 @@ public:
     std::atomic<bool> cancelled{false};
     bool block = false;
     bool emit_progress = true;
+    bool create_dummy_result = false;
     int fail_code = 0;
 };
 
@@ -58,23 +64,37 @@ TaskStatus WaitForTerminal(TaskManager& mgr, const std::string& id,
     while (std::chrono::steady_clock::now() < deadline) {
         auto entry = mgr.get(id);
         if (entry && entry->status != TaskStatus::Queued) { return entry->status; }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
-    auto entry = mgr.get(id);
-    return entry ? entry->status : TaskStatus::Queued;
+    return TaskStatus::Queued;
 }
 
 } // namespace
 
-TEST(TaskManagerTest, SubmitGeneratesUniqueIdQueued) {
-    // Block the worker so queued tasks stay queued during assertions
+TEST(TaskManagerTest, SubmitsTaskAndAssignsId) {
     auto executor = std::make_shared<FakeExecutor>();
-    executor->block = true;
     TaskManager mgr(executor);
+    auto id = mgr.submit(MakeConfig());
+    EXPECT_FALSE(id.empty());
+    auto entry = mgr.get(id);
+    ASSERT_TRUE(entry.has_value());
+    EXPECT_EQ(entry->id, id);
+}
+
+TEST(TaskManagerTest, GetNonExistentReturnsNullopt) {
+    auto executor = std::make_shared<FakeExecutor>();
+    TaskManager mgr(executor);
+    EXPECT_FALSE(mgr.get("non-existent-id").has_value());
+}
+
+TEST(TaskManagerTest, MultipleTasksQueuedInOrder) {
+    auto executor = std::make_shared<FakeExecutor>();
+    executor->block = true; // keep worker busy so task 2 stays queued
+    TaskManager mgr(executor);
+
     auto id1 = mgr.submit(MakeConfig());
     auto id2 = mgr.submit(MakeConfig());
-    EXPECT_NE(id1, id2);
-    EXPECT_FALSE(id1.empty());
+
     auto entry = mgr.get(id1);
     ASSERT_TRUE(entry.has_value());
     // worker may have already consumed id1 (Running); id2 must still be queued
@@ -86,12 +106,10 @@ TEST(TaskManagerTest, SubmitGeneratesUniqueIdQueued) {
 
 TEST(TaskManagerTest, ExecutorRunsToDoneAndCollectsResults) {
     auto executor = std::make_shared<FakeExecutor>();
+    executor->create_dummy_result = true;
     TaskManager mgr(executor);
 
-    // Fresh output dir + file so result collection finds exactly one file
     std::filesystem::remove_all("web_test_output");
-    std::filesystem::create_directories("web_test_output");
-    std::ofstream("web_test_output/result.png") << "x";
 
     auto id = mgr.submit(MakeConfig());
     EXPECT_EQ(WaitForTerminal(mgr, id), TaskStatus::Done);
@@ -100,6 +118,8 @@ TEST(TaskManagerTest, ExecutorRunsToDoneAndCollectsResults) {
     ASSERT_EQ(entry->result_files.size(), 1u);
     EXPECT_EQ(entry->result_files[0], "result.png");
     EXPECT_FALSE(mgr.is_running());
+
+    std::filesystem::remove_all("web_test_output");
 }
 
 TEST(TaskManagerTest, CancelsQueuedTask) {
@@ -242,4 +262,22 @@ TEST(TaskManagerTest, SetPriorityAffectsQueuePosition) {
     EXPECT_FALSE(mgr.set_priority(first, 9));
     // unknown task
     EXPECT_FALSE(mgr.set_priority("no_such", 9));
+}
+
+TEST(TaskManagerTest, TaskOutputDirectoryIsIsolatedPerTask) {
+    auto executor = std::make_shared<FakeExecutor>();
+    TaskManager mgr(executor);
+    auto cfg1 = MakeConfig();
+    auto id1 = mgr.submit(cfg1);
+    auto cfg2 = MakeConfig();
+    auto id2 = mgr.submit(cfg2);
+
+    auto entry1 = mgr.get(id1);
+    auto entry2 = mgr.get(id2);
+    ASSERT_TRUE(entry1.has_value());
+    ASSERT_TRUE(entry2.has_value());
+
+    EXPECT_NE(entry1->config.io.output.path, entry2->config.io.output.path);
+    EXPECT_TRUE(entry1->config.io.output.path.find(id1) != std::string::npos);
+    EXPECT_TRUE(entry2->config.io.output.path.find(id2) != std::string::npos);
 }
