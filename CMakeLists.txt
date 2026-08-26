@@ -201,8 +201,8 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/README.md"
         COMPONENT "doc"
 )
 
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/config/app_config.yaml"
-        "${CMAKE_CURRENT_SOURCE_DIR}/config/task_config.yaml"
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/config/app.yaml"
+        "${CMAKE_CURRENT_SOURCE_DIR}/config/task.yaml"
         DESTINATION "config"
         COMPONENT "config"
 )

@@ -282,6 +282,33 @@ TEST_F(WebApiTest, UploadRejectsBadFileName) {
     EXPECT_EQ(out.first, 400);
 }
 
+TEST_F(WebApiTest, UploadHandlesNonAsciiUrlEncodedFileName) {
+    auto client = drogon::HttpClient::newHttpClient(kBaseUrl);
+    auto req = drogon::HttpRequest::newHttpRequest();
+    req->setPath("/api/upload");
+    req->setMethod(drogon::Post);
+    // URL-encoded UTF-8 filename for "我的头像_测试.jpg"
+    std::string encoded_name = "%E6%88%91%E7%9A%84%E5%A4%B4%E5%83%8F_%E6%B5%8B%E8%AF%95.jpg";
+    req->addHeader("X-File-Name", encoded_name);
+    req->setBody("binary_photo_data_123");
+    std::pair<int, std::string> out;
+    std::promise<void> done;
+    client->sendRequest(req, [&](drogon::ReqResult, const drogon::HttpResponsePtr& resp) {
+        if (resp) {
+            out.first = resp->getStatusCode();
+            out.second = std::string(resp->getBody());
+        }
+        done.set_value();
+    });
+    done.get_future().wait();
+    EXPECT_EQ(out.first, 201);
+    auto res = json::parse(out.second);
+    EXPECT_EQ(res["name"], "我的头像_测试.jpg");
+    EXPECT_EQ(res["size"], 21);
+    EXPECT_TRUE(std::filesystem::exists(res["path"].get<std::string>()));
+    std::filesystem::remove(res["path"].get<std::string>());
+}
+
 TEST_F(WebApiTest, PriorityEndpointWorks) {
     // Block the executor so the first task stays running and later tasks queue
     g_executor->block.store(true);
@@ -459,4 +486,255 @@ TEST_F(WebApiTest, MediaEndpointSupportsRangeAndVideo) {
     EXPECT_EQ(out.second, "0123");
 
     std::filesystem::remove(test_file);
+}
+
+TEST_F(WebApiTest, SubmitTaskWithPipelineSteps) {
+    std::string payload = R"({
+        "source_paths": ["s1.jpg", "s2.jpg"],
+        "target_paths": ["t.jpg"],
+        "output_path": ")"
+                        + kOutputDir + R"(",
+        "pipeline_steps": [
+            {
+                "step": "face_swapper",
+                "name": "主角换脸",
+                "enabled": true,
+                "params": {
+                    "model": "inswapper_128",
+                    "face_selector_mode": "reference",
+                    "reference_face_path": "s1.jpg"
+                }
+            },
+            {
+                "step": "face_swapper",
+                "name": "配角换脸",
+                "enabled": true,
+                "params": {
+                    "model": "inswapper_128",
+                    "face_selector_mode": "reference",
+                    "reference_face_path": "s2.jpg"
+                }
+            },
+            {
+                "step": "face_enhancer",
+                "name": "高清细节增强",
+                "enabled": true,
+                "params": {
+                    "model": "codeformer",
+                    "blend_factor": 0.85,
+                    "face_selector_mode": "many"
+                }
+            }
+        ]
+    })";
+
+    auto [code, resp] = SendRequest(drogon::Post, "/api/tasks", payload);
+    ASSERT_EQ(code, 201);
+    auto created = json::parse(resp);
+    EXPECT_TRUE(created.contains("id"));
+    EXPECT_EQ(created["status"], "queued");
+
+    std::string id = created["id"].get<std::string>();
+    auto [dcode, dresp] = SendRequest(drogon::Get, "/api/tasks/" + id);
+    ASSERT_EQ(dcode, 200);
+}
+
+TEST_F(WebApiTest, PipelineStepsValidation) {
+    // 1. pipeline_steps not array
+    auto [c1, r1] = SendRequest(drogon::Post, "/api/tasks", R"({
+        "source_paths": ["s.jpg"],
+        "target_paths": ["t.jpg"],
+        "pipeline_steps": "not_an_array"
+    })");
+    EXPECT_EQ(c1, 400);
+
+    // 2. pipeline_steps entry missing 'step'
+    auto [c2, r2] = SendRequest(drogon::Post, "/api/tasks", R"({
+        "source_paths": ["s.jpg"],
+        "target_paths": ["t.jpg"],
+        "pipeline_steps": [{"name": "invalid_step"}]
+    })");
+    EXPECT_EQ(c2, 400);
+
+    // 3. pipeline_steps unknown processor step
+    auto [c3, r3] = SendRequest(drogon::Post, "/api/tasks", R"({
+        "source_paths": ["s.jpg"],
+        "target_paths": ["t.jpg"],
+        "pipeline_steps": [{"step": "non_existent_processor"}]
+    })");
+    EXPECT_EQ(c3, 400);
+
+    // 4. pipeline_steps with invalid selector mode
+    auto [c4, r4] = SendRequest(drogon::Post, "/api/tasks", R"({
+        "source_paths": ["s.jpg"],
+        "target_paths": ["t.jpg"],
+        "pipeline_steps": [{
+            "step": "face_swapper",
+            "params": {"face_selector_mode": "illegal_mode"}
+        }]
+    })");
+    EXPECT_EQ(c4, 400);
+}
+
+TEST_F(WebApiTest, SubmitTaskWithAllFourProcessors) {
+    std::string payload = R"({
+        "source_paths": ["s.jpg"],
+        "target_paths": ["t.jpg"],
+        "output_path": ")"
+                        + kOutputDir + R"(",
+        "pipeline_steps": [
+            {
+                "step": "face_swapper",
+                "name": "电影级换脸",
+                "enabled": true,
+                "params": {
+                    "model": "inswapper_128",
+                    "face_selector_mode": "many"
+                }
+            },
+            {
+                "step": "face_enhancer",
+                "name": "GFPGAN增强",
+                "enabled": true,
+                "params": {
+                    "model": "gfpgan_1.4",
+                    "blend_factor": 0.9,
+                    "face_selector_mode": "many"
+                }
+            },
+            {
+                "step": "expression_restorer",
+                "name": "微表情修复",
+                "enabled": true,
+                "params": {
+                    "model": "live_portrait",
+                    "restore_factor": 0.7,
+                    "face_selector_mode": "many"
+                }
+            },
+            {
+                "step": "frame_enhancer",
+                "name": "超分放大",
+                "enabled": true,
+                "params": {
+                    "model": "real_esrgan_x4",
+                    "enhance_factor": 1.0
+                }
+            }
+        ]
+    })";
+
+    auto [code, resp] = SendRequest(drogon::Post, "/api/tasks", payload);
+    ASSERT_EQ(code, 201);
+    auto created = json::parse(resp);
+    EXPECT_TRUE(created.contains("id"));
+    EXPECT_EQ(created["status"], "queued");
+
+    std::string id = created["id"].get<std::string>();
+    auto [dcode, dresp] = SendRequest(drogon::Get, "/api/tasks/" + id);
+    ASSERT_EQ(dcode, 200);
+}
+
+TEST_F(WebApiTest, FaceDetectionErrorHandling) {
+    // Non-existent image path -> 404 Not Found
+    auto [code, resp] = SendRequest(drogon::Post, "/api/faces", R"({
+        "image_path": "non_existent_file_path_123456.jpg"
+    })");
+    EXPECT_EQ(code, 404);
+
+    // Empty body -> 400 Bad Request
+    auto [code2, resp2] = SendRequest(drogon::Post, "/api/faces", "");
+    EXPECT_EQ(code2, 400);
+
+    // GET without query parameter -> 400 Bad Request
+    auto [code3, resp3] = SendRequest(drogon::Get, "/api/faces");
+    EXPECT_EQ(code3, 400);
+}
+
+TEST_F(WebApiTest, PreviewEndpointWorks) {
+    // 1. Create a dummy test file
+    std::filesystem::create_directories("./temp");
+    std::string test_file = "./temp/preview_test_sample.txt";
+    {
+        std::ofstream out(test_file);
+        out << "preview_sample_content";
+    }
+
+    // 2. Request preview
+    auto [code, resp] = SendRequest(drogon::Get, "/api/preview?path=" + test_file);
+    EXPECT_EQ(code, 200);
+    EXPECT_EQ(resp, "preview_sample_content");
+
+    // 3. Traversal rejection
+    auto [c2, r2] = SendRequest(drogon::Get, "/api/preview?path=../secret.txt");
+    EXPECT_EQ(c2, 400);
+
+    // 4. Missing path param
+    auto [c3, r3] = SendRequest(drogon::Get, "/api/preview");
+    EXPECT_EQ(c3, 400);
+
+    // 5. File not found
+    auto [c4, r4] = SendRequest(drogon::Get, "/api/preview?path=./temp/not_existing_file.xyz");
+    EXPECT_EQ(c4, 404);
+
+    std::filesystem::remove(test_file);
+}
+
+TEST_F(WebApiTest, LargeUploadSucceedsAbove1MB) {
+    auto client = drogon::HttpClient::newHttpClient(kBaseUrl);
+    auto req = drogon::HttpRequest::newHttpRequest();
+    req->setPath("/api/upload");
+    req->setMethod(drogon::Post);
+    req->addHeader("X-File-Name", "large_video_target.mp4");
+    // 2MB payload (> default Drogon 1MB limit)
+    std::string large_body(2 * 1024 * 1024, 'A');
+    req->setBody(std::move(large_body));
+
+    std::pair<int, std::string> out;
+    std::promise<void> done;
+    client->sendRequest(req, [&](drogon::ReqResult, const drogon::HttpResponsePtr& resp) {
+        if (resp) {
+            out.first = resp->getStatusCode();
+            out.second = std::string(resp->getBody());
+        }
+        done.set_value();
+    });
+    done.get_future().wait();
+
+    EXPECT_EQ(out.first, 201);
+    auto res = json::parse(out.second);
+    EXPECT_EQ(res["size"], 2 * 1024 * 1024);
+    EXPECT_TRUE(std::filesystem::exists(res["path"].get<std::string>()));
+    std::filesystem::remove(res["path"].get<std::string>());
+}
+
+TEST_F(WebApiTest, SubmitTaskGeneratesValidTaskConfig) {
+    std::filesystem::create_directories("./temp");
+    std::string src_file = "./temp/test_source_valid.jpg";
+    std::string tgt_file = "./temp/test_target_valid.jpg";
+    {
+        std::ofstream(src_file) << "fake_src";
+        std::ofstream(tgt_file) << "fake_tgt";
+    }
+
+    json payload = {
+        {"source_paths", {src_file}},
+        {"target_paths", {tgt_file}},
+        {"pipeline_steps",
+         {{{"step", "face_swapper"},
+           {"name", "主角换脸"},
+           {"enabled", true},
+           {"params", {{"model", "inswapper_128_fp16"}, {"face_selector_mode", "reference"}}}}}}};
+
+    auto created = SubmitTask(payload.dump());
+    std::string id = created["id"].get<std::string>();
+
+    auto [code, resp] = SendRequest(drogon::Get, "/api/tasks/" + id);
+    EXPECT_EQ(code, 200);
+    auto detail = json::parse(resp);
+    EXPECT_EQ(detail["id"], id);
+    EXPECT_EQ(detail["output_path"], "./output");
+
+    std::filesystem::remove(src_file);
+    std::filesystem::remove(tgt_file);
 }

@@ -2,17 +2,18 @@
 
 > **Document Control**
 > - **Document ID**: FFC-USER-EN-CLI-2026
-> - **Version**: V1.1.0
+> - **Version**: V1.2.0
 > - **Status**: Official
 > - **Authority**: Informative
 > - **Owner**: 王辉
 > - **Reviewer**: 王辉
-> - **Last Updated**: 2026-08-14
+> - **Last Updated**: 2026-08-21
 
 ## Revision History
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.2.0** | 2026-08-21 | AI Agent | 王辉 | Standardized configuration file names (`app.yaml`, `task.yaml`); added smart multi-level path auto-discovery for `--app-config`; supported `-c, --task, --task-config` for mandatory task config paths; synchronized Web UI options with config defaults. |
 | **V1.1.0** | 2026-08-14 | AI Agent | 王辉 | Added Processor Options section (sync with zh); fixed default values to match app_config.yaml (face_enhancer/gfpgan_1.4, frame_enhancer/real_esrgan_x2_fp16); noted defaults source. |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
 
@@ -39,24 +40,24 @@ The ffc executable provides a powerful command-line interface (CLI) for both qui
 
 These options control the base behavior of the application.
 
-| Option | Argument | Description | Default |
+| Option | Argument | Description | Default / Discovery Rule |
 | :--- | :--- | :--- | :--- |
 | `-v, --version` | None | Display application version. | `false` |
-| `--app-config` | `<path>` | Path to the **global** application configuration file. | `config/app_config.yaml` |
+| `-a, --app-config` | `<path>` | Path to the **global** application configuration file. If omitted, searches in `<exe_dir>/config/app.yaml`, `<exe_dir>/app.yaml`, `config/app.yaml`, `app.yaml`. | Auto-discovered `app.yaml` |
 | `--log-level` | `<level>` | Override log level (`trace`, `debug`, `info`, `warn`, `error`). | `info` |
 | `--system-check` | None | Run environment self-check (CUDA, library versions). | `false` |
 | `--json` | None | If set, `--system-check` results will be output in JSON format. | `false` |
 | `--validate` | None | Parse and validate configuration file (Dry-Run) without executing. | `false` |
 | `--web` | None | Run the embedded Web UI server (exclusive with quick mode / task config mode). | `false` |
-| `--web-port` | `<port>` | Web server port. | `8000` |
-| `--web-host` | `<host>` | Web server bind host. | `0.0.0.0` |
-| `--web-root` | `<path>` | Frontend static assets root (point to `web/dist` for dev). | `assets/web` |
+| `--web-port` | `<port>` | Web server port (defaults to `web.port` from `app.yaml`, or `8000`). | `8000` |
+| `--web-host` | `<host>` | Web server bind host (defaults to `web.host` from `app.yaml`, or `0.0.0.0`). | `0.0.0.0` |
+| `--web-root` | `<path>` | Frontend static assets root (defaults to `web.web_root` from `app.yaml`). | `assets/web` |
 
 ---
 
 ## 2. Quick Mode Options
 
-Run tasks directly from the CLI. **Note**: Quick mode options are mutually exclusive with `-c/--task-config`.
+Run tasks directly from the CLI. **Note**: Quick mode options are mutually exclusive with `-c/--task/--task-config`.
 
 | Option | Argument | Description | Example |
 | :--- | :--- | :--- | :--- |
@@ -66,7 +67,7 @@ Run tasks directly from the CLI. **Note**: Quick mode options are mutually exclu
 | `--processors` | `<list>` | Define pipeline steps (comma-separated). | `--processors face_swapper` |
 
 > [!TIP]
-> In Quick Mode, the app automatically loads `default_task_settings` from `app_config.yaml` as the foundation.
+> In Quick Mode, the app automatically loads `default_task_settings` from `app.yaml` as the foundation.
 
 ---
 
@@ -76,7 +77,7 @@ Processor parameter CLI flags are generated dynamically from parameter metadata,
 
 **Naming Rule**: `--{processor-name}-{param-name}` (underscores become hyphens). For example, the `model` parameter of `face_swapper` maps to `--face-swapper-model`.
 
-**Exclusivity Rule**: All processor parameter flags are mutually exclusive with `--task-config`.
+**Exclusivity Rule**: All processor parameter flags are mutually exclusive with `-c/--task/--task-config`.
 
 | Processor | Parameter | CLI Flag | Type | Allowed Values | Default |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -96,17 +97,17 @@ Processor parameter CLI flags are generated dynamically from parameter metadata,
 
 > [!NOTE]
 > Processor parameters take effect only in Quick Mode. Unspecified parameters use the defaults above.
-> Defaults come from the `default_models` section of `app_config.yaml` and can be adjusted there (no CLI change required).
+> Defaults come from the `default_models` section of `app.yaml` and can be adjusted there (no CLI change required).
 
 ---
 
 ## 4. Task Configuration Mode
 
-For complex workflows or batch processing, use YAML.
+For complex workflows or batch processing, use YAML. **In task configuration mode, you must explicitly specify the task configuration file path**.
 
 | Option | Argument | Description |
 | :--- | :--- | :--- |
-| `-c, --task-config` | `<path>` | Specify path to a task configuration file (YAML). |
+| `-c, --task, --task-config` | `<path>` | Specify path to a task configuration file (YAML) (must be explicitly provided, e.g. `-c config/task.yaml`). |
 
 ---
 

@@ -2,17 +2,18 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-USER-ZH-CLI-2026
-> - **当前版本 (Version)**: V1.1.0
+> - **当前版本 (Version)**: V1.2.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-08-14
+> - **最后更新 (Last Updated)**: 2026-08-21
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.2.0** | 2026-08-21 | AI Agent | 王辉 | 配置文件命名规范化（`app.yaml`, `task.yaml`）；支持 `--app-config` 智能逐级寻径；支持 `-c, --task, --task-config` 任务配置路径指定；更新 Web 服务默认参数与配置联动。 |
 | **V1.1.0** | 2026-08-14 | AI Agent | 王辉 | 修复处理器参数默认值列与实际配置不符（face_enhancer/gfpgan_1.4、frame_enhancer/real_esrgan_x2_fp16），注明默认值来源；同步确认快捷模式处理器参数已生效。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
 
@@ -39,24 +40,24 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 
 这些选项控制程序的基础行为。
 
-| 选项 | 参数 | 说明 | 默认值 |
+| 选项 | 参数 | 说明 | 默认值 / 寻径规则 |
 | :--- | :--- | :--- | :--- |
 | `-v, --version` | 无 | 显示应用程序版本。 | `false` |
-| `--app-config` | `<path>` | **全局**应用程序配置路径。 | `config/app_config.yaml` |
+| `-a, --app-config` | `<path>` | **全局**应用程序配置路径。若未指定，依次自动在 `<exe_dir>/config/app.yaml`、`<exe_dir>/app.yaml`、`config/app.yaml`、`app.yaml` 查找。 | 自动探测 `app.yaml` |
 | `--log-level` | `<level>` | 覆盖配置的日志级别 (`trace`, `debug`, `info`, `warn`, `error`)。 | `info` |
 | `--system-check`| 无 | 运行环境自检 (CUDA, 库版本等)。 | `false` |
 | `--json` | 无 | 开启时，`--system-check` 的结果将以 JSON 格式输出。 | `false` |
 | `--validate` | 无 | 解析并校验配置合法性 (Dry-Run)，不执行任务。支持 YAML 文件和快捷模式参数校验。 | `false` |
 | `--web` | 无 | 启动内嵌 Web 界面服务（与快捷模式/任务配置模式互斥）。 | `false` |
-| `--web-port` | `<port>` | Web 服务端口。 | `8000` |
-| `--web-host` | `<host>` | Web 服务绑定地址。 | `0.0.0.0` |
-| `--web-root` | `<path>` | 前端静态资源根目录（开发调试可指向 `web/dist`）。 | `assets/web` |
+| `--web-port` | `<port>` | Web 服务端口（若未指定则优先读取 `app.yaml` 中的 `web.port`，默认 `8000`）。 | `8000` |
+| `--web-host` | `<host>` | Web 服务绑定地址（若未指定则优先读取 `app.yaml` 中的 `web.host`，默认 `0.0.0.0`）。 | `0.0.0.0` |
+| `--web-root` | `<path>` | 前端静态资源根目录（若未指定则优先读取 `app.yaml` 中的 `web.web_root`）。 | `assets/web` |
 
 ---
 
 ## 2. 快捷模式选项 (Quick Mode Options)
 
-直接从命令行启动任务。**注意**: 快捷模式参数与 `-c/--task-config` 互斥。
+直接从命令行启动任务。**注意**: 快捷模式参数与 `-c/--task/--task-config` 互斥。
 
 | 选项 | 参数 | 说明 | 示例 |
 | :--- | :--- | :--- | :--- |
@@ -66,7 +67,7 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 | `--processors` | `<list>` | 定义流水线步骤 (逗号分隔)。 | `--processors face_swapper` |
 
 > [!TIP]
-> 快捷模式下，程序将自动加载 `app_config.yaml` 中的 `default_task_settings` 作为基础。
+> 快捷模式下，程序将自动加载 `app.yaml` 中的 `default_task_settings` 作为基础。
 
 ---
 
@@ -76,7 +77,7 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 
 **命名规则**: `--{processor-name}-{param-name}`（下划线转为连字符）。例如 `face_swapper` 的 `model` 参数对应 `--face-swapper-model`。
 
-**互斥规则**: 所有处理器参数标志与 `--task-config` 互斥。使用处理器参数时不能同时指定 `-c/--task-config`。
+**互斥规则**: 所有处理器参数标志与 `--task` / `--task-config` 互斥。使用处理器参数时不能同时指定 `-c/--task/--task-config`。
 
 | 处理器 | 参数 | CLI 标志 | 类型 | 可选值 | 默认值 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -96,17 +97,17 @@ FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作
 
 > [!NOTE]
 > 处理器参数仅在快捷模式下生效。未指定的参数将使用上表中的默认值。
-> 上表默认值来源于 `app_config.yaml` 的 `default_models` 配置段，可通过修改该配置调整（无需改动命令行）。
+> 上表默认值来源于 `app.yaml` 的 `default_models` 配置段，可通过修改该配置调整（无需改动命令行）。
 
 ---
 
 ## 4. 任务配置模式
 
-对于生产环境或复杂流水线，建议使用 YAML。
+对于生产环境或复杂流水线，建议使用 YAML 配置文件。**在任务配置模式下，必须显式指定任务配置文件路径**。
 
 | 选项 | 参数 | 说明 |
 | :--- | :--- | :--- |
-| `-c, --task-config` | `<path>` | 指定任务配置文件路径。 |
+| `-c, --task, --task-config` | `<path>` | 指定任务配置文件路径（必须显式传入，例如 `-c config/task.yaml`）。 |
 
 ---
 

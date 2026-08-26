@@ -111,6 +111,10 @@ struct PipelineRunner::Impl {
         if (!validate_result) {
             m_running = false;
             timer.set_result("error:validation_failed");
+            Logger::get_instance()->error(std::format(
+                "[PipelineRunner] Task validation failed for task {}: {} (field: '{}', code: {})",
+                task_config.task_info.id, validate_result.error().message,
+                validate_result.error().yaml_path, static_cast<int>(validate_result.error().code)));
             return config::Result<void, config::ConfigError>::err(validate_result.error());
         }
 

@@ -4,6 +4,7 @@ module;
 #include <condition_variable>
 #include <deque>
 #include <filesystem>
+#include <format>
 #include <limits>
 #include <map>
 #include <mutex>
@@ -13,8 +14,11 @@ module;
 module app.web.task_manager;
 
 import foundation.infrastructure.core_utils;
+import foundation.infrastructure.logger;
 
 namespace app::web {
+
+using Logger = foundation::infrastructure::logger::Logger;
 
 struct TaskManager::Impl {
     explicit Impl(std::shared_ptr<ITaskExecutor> ex) : executor(std::move(ex)) {
@@ -68,32 +72,46 @@ struct TaskManager::Impl {
                 }
                 it->second.status = TaskStatus::Running;
                 running_id = task_id;
+                Logger::get_instance()->info(std::format(
+                    "[TaskManager] Task {} picked from queue (priority={}), status set to Running",
+                    task_id, it->second.priority));
             }
 
             int result_code = 0;
             {
                 auto it = tasks.find(task_id);
                 if (it == tasks.end()) { continue; }
-                // Run with progress callback wiring (defensive: executor must not throw)
+                std::string err_msg;
                 try {
-                    result_code =
-                        executor->run(it->second.config,
-                                      [this, task_id](const services::pipeline::TaskProgress& p) {
-                                          TaskProgress snap;
-                                          snap.current_frame = p.current_frame;
-                                          snap.total_frames = p.total_frames;
-                                          snap.fps = p.fps;
-                                          std::lock_guard lock(mutex);
-                                          auto it = tasks.find(task_id);
-                                          if (it == tasks.end()) { return; }
-                                          it->second.progress = snap;
-                                          if (listener) { listener(task_id, snap); }
-                                      });
+                    Logger::get_instance()->info(std::format(
+                        "[TaskManager] Task {} started execution (targets={}, sources={})", task_id,
+                        it->second.config.io.target_paths.size(),
+                        it->second.config.io.source_paths.size()));
+                    result_code = executor->run(
+                        it->second.config,
+                        [this, task_id](const services::pipeline::TaskProgress& p) {
+                            TaskProgress snap;
+                            snap.current_frame = p.current_frame;
+                            snap.total_frames = p.total_frames;
+                            snap.fps = p.fps;
+                            std::lock_guard lock(mutex);
+                            auto it = tasks.find(task_id);
+                            if (it == tasks.end()) { return; }
+                            it->second.progress = snap;
+                            if (listener) { listener(task_id, snap); }
+                        },
+                        err_msg);
                 } catch (const std::exception& e) {
                     result_code = 1;
+                    err_msg = e.what();
+                }
+
+                {
                     std::lock_guard lock(mutex);
                     auto it2 = tasks.find(task_id);
-                    if (it2 != tasks.end()) { it2->second.error_message = e.what(); }
+                    if (it2 != tasks.end() && !err_msg.empty()) {
+                        it2->second.error_message = err_msg;
+                    }
                 }
             }
 
@@ -106,11 +124,22 @@ struct TaskManager::Impl {
                         if (result_code == 0) {
                             it->second.status = TaskStatus::Done;
                             it->second.result_files = collect_result_files(it->second.config);
+                            Logger::get_instance()->info(std::format(
+                                "[TaskManager] Task {} completed successfully with {} result file(s)",
+                                task_id, it->second.result_files.size()));
                         } else {
                             it->second.status = TaskStatus::Failed;
-                            it->second.error_message =
-                                "Task failed with error code " + std::to_string(result_code);
+                            if (it->second.error_message.empty()) {
+                                it->second.error_message =
+                                    "Task failed with error code " + std::to_string(result_code);
+                            }
+                            Logger::get_instance()->error(
+                                std::format("[TaskManager] Task {} failed with code {}: {}",
+                                            task_id, result_code, it->second.error_message));
                         }
+                    } else {
+                        Logger::get_instance()->warn(
+                            std::format("[TaskManager] Task {} ended in Cancelled state", task_id));
                     }
                     if (status_listener) {
                         status_listener(task_id, it->second.status, it->second.error_message);
@@ -127,10 +156,36 @@ struct TaskManager::Impl {
         std::error_code ec;
         fs::path out_dir(config.io.output.path);
         if (!fs::is_directory(out_dir, ec)) { return files; }
+
+        std::vector<std::string> all_files;
         for (const auto& entry : fs::directory_iterator(out_dir, ec)) {
-            if (entry.is_regular_file(ec)) { files.push_back(entry.path().filename().string()); }
+            if (entry.is_regular_file(ec)) {
+                all_files.push_back(entry.path().filename().string());
+            }
         }
-        std::sort(files.begin(), files.end());
+        std::sort(all_files.begin(), all_files.end());
+
+        // First attempt: match specific target paths stems
+        std::vector<std::string> target_stems;
+        for (const auto& tp : config.io.target_paths) {
+            fs::path p(tp);
+            if (!p.stem().empty()) { target_stems.push_back(p.stem().string()); }
+        }
+
+        if (!target_stems.empty()) {
+            for (const auto& stem : target_stems) {
+                for (const auto& f : all_files) {
+                    if (f.find(stem) != std::string::npos
+                        && std::find(files.begin(), files.end(), f) == files.end()) {
+                        files.push_back(f);
+                    }
+                }
+            }
+        }
+
+        // Fallback: if no target stem matches, return all files in output dir
+        if (files.empty()) { files = std::move(all_files); }
+
         return files;
     }
 
@@ -167,11 +222,25 @@ std::string TaskManager::submit(config::TaskConfig config, int priority) {
     std::string uuid = foundation::infrastructure::core_utils::random::generate_uuid();
     std::replace(uuid.begin(), uuid.end(), '-', '_');
 
+    // Partition output directory per task to guarantee physical isolation
+    std::filesystem::path base_out(config.io.output.path.empty() ? "./output" :
+                                                                   config.io.output.path);
+    if (base_out.filename().string() != uuid) {
+        config.io.output.path = (base_out / uuid).string();
+    }
+    std::error_code ec;
+    std::filesystem::create_directories(config.io.output.path, ec);
+
     TaskEntry entry;
     entry.id = uuid;
     entry.config = std::move(config);
     entry.created_at = std::chrono::system_clock::now();
     entry.priority = priority;
+
+    Logger::get_instance()->info(std::format(
+        "[TaskManager] Submitting task: id={}, priority={}, output={}, targets={}, sources={}",
+        uuid, priority, entry.config.io.output.path, entry.config.io.target_paths.size(),
+        entry.config.io.source_paths.size()));
 
     {
         std::lock_guard lock(m_impl->mutex);
@@ -182,18 +251,32 @@ std::string TaskManager::submit(config::TaskConfig config, int priority) {
     return uuid;
 }
 
+std::shared_ptr<ITaskExecutor> TaskManager::get_executor() const {
+    return m_impl->executor;
+}
+
 bool TaskManager::set_priority(const std::string& id, int priority) {
     std::lock_guard lock(m_impl->mutex);
     auto it = m_impl->tasks.find(id);
     if (it == m_impl->tasks.end() || it->second.status != TaskStatus::Queued) { return false; }
+    int old_priority = it->second.priority;
     it->second.priority = priority;
+    Logger::get_instance()->info(std::format("[TaskManager] Task {} priority changed from {} to {}",
+                                             id, old_priority, priority));
     return true;
 }
 
 bool TaskManager::cancel(const std::string& id) {
     std::lock_guard lock(m_impl->mutex);
     auto it = m_impl->tasks.find(id);
-    if (it == m_impl->tasks.end()) { return false; }
+    if (it == m_impl->tasks.end()) {
+        Logger::get_instance()->warn(
+            std::format("[TaskManager] Cancel failed: task {} not found", id));
+        return false;
+    }
+    Logger::get_instance()->warn(
+        std::format("[TaskManager] Task {} cancel requested (current status: {})", id,
+                    status_to_string(it->second.status)));
     switch (it->second.status) {
     case TaskStatus::Queued: it->second.status = TaskStatus::Cancelled; return true;
     case TaskStatus::Running:

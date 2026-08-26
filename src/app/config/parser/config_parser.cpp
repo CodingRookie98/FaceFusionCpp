@@ -444,6 +444,13 @@ Result<AppConfig> ParseAppConfigFromJson(const json& j) {
     config.default_task_settings.face_analysis.similarity_threshold =
         detail::GetOptionalDouble(recognizer_defaults_j, "similarity_threshold");
 
+    // web
+    auto web_j = detail::GetObject(j, "web");
+    config.web.host = detail::GetString(web_j, "host", "0.0.0.0");
+    config.web.port = static_cast<uint16_t>(detail::GetInt(web_j, "port", 8000));
+    config.web.web_root = detail::GetString(web_j, "web_root", "assets/web");
+    config.web.temp_dir = detail::GetString(web_j, "temp_dir", "./temp/uploads");
+
     // temp_directory
     config.temp_directory = detail::GetString(j, "temp_directory", "./temp");
 

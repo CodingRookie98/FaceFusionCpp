@@ -77,6 +77,9 @@ TaskConfig MergeConfigs(const TaskConfig& task, const AppConfig& app) {
     // 4. Apply hardcoded defaults for fields that are STILL empty/zero
     // (Ensure the final TaskConfig is fully usable)
     // ─────────────────────────────────────────────────────────────────────────
+    result.config_version = kSupportedConfigVersion;
+    if (result.task_info.id.empty()) result.task_info.id = "task";
+    if (result.io.output.path.empty()) result.io.output.path = "./output";
     if (result.io.output.video_encoder.empty()) result.io.output.video_encoder = "libx264";
     if (result.io.output.video_quality == 0) result.io.output.video_quality = 80;
     if (result.io.output.prefix.empty() && result.io.output.suffix.empty()) {
@@ -95,6 +98,29 @@ TaskConfig MergeConfigs(const TaskConfig& task, const AppConfig& app) {
     }
     if (result.face_analysis.face_recognizer.similarity_threshold == 0.0) {
         result.face_analysis.face_recognizer.similarity_threshold = 0.6;
+    }
+
+    // Fallback reference_face_path if reference selector mode is active but path is empty
+    for (auto& step : result.pipeline) {
+        if (step.step == "face_swapper") {
+            if (auto* p = std::get_if<FaceSwapperParams>(&step.params)) {
+                if (p->face_selector_mode == FaceSelectorMode::Reference) {
+                    if ((!p->reference_face_path.has_value() || p->reference_face_path->empty())
+                        && !result.io.source_paths.empty()) {
+                        p->reference_face_path = result.io.source_paths[0];
+                    }
+                }
+            }
+        } else if (step.step == "face_enhancer") {
+            if (auto* p = std::get_if<FaceEnhancerParams>(&step.params)) {
+                if (p->face_selector_mode == FaceSelectorMode::Reference) {
+                    if ((!p->reference_face_path.has_value() || p->reference_face_path->empty())
+                        && !result.io.source_paths.empty()) {
+                        p->reference_face_path = result.io.source_paths[0];
+                    }
+                }
+            }
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────

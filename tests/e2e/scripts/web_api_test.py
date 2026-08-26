@@ -11,6 +11,7 @@ import subprocess
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -200,6 +201,88 @@ def main() -> int:
         assert code == 201
         print("[PASS] submit with reference face selector mode")
 
+        # submit with structured multi-instance pipeline_steps
+        code, body = http("POST", f"{base}/api/tasks", {
+            "source_paths": [upload["path"]],
+            "target_paths": [upload["path"]],
+            "pipeline_steps": [
+                {
+                    "step": "face_swapper",
+                    "name": "主角换脸",
+                    "enabled": True,
+                    "params": {
+                        "model": "inswapper_128",
+                        "face_selector_mode": "reference",
+                        "reference_face_path": upload["path"],
+                    },
+                },
+                {
+                    "step": "face_swapper",
+                    "name": "配角换脸",
+                    "enabled": True,
+                    "params": {
+                        "model": "inswapper_128",
+                        "face_selector_mode": "one",
+                    },
+                },
+                {
+                    "step": "face_enhancer",
+                    "name": "面部高清修复",
+                    "enabled": True,
+                    "params": {
+                        "model": "codeformer",
+                        "blend_factor": 0.85,
+                    },
+                },
+            ],
+        })
+        assert code == 201, f"multi-instance submit failed: {code} {body}"
+        multi_step_id = json.loads(body)["id"]
+        print(f"[PASS] submit with multi-instance pipeline_steps -> {multi_step_id[:8]}...")
+
+        # verify structured pipeline_steps validation rejection
+        code, body = http("POST", f"{base}/api/tasks", {
+            "source_paths": [upload["path"]],
+            "target_paths": [upload["path"]],
+            "pipeline_steps": [
+                {"step": "unsupported_processor_xyz"},
+            ],
+        })
+        assert code == 400, f"expected 400 for unknown processor, got {code}"
+        print("[PASS] invalid pipeline_step rejected with 400")
+
+        # verify non-existent face detection rejected
+        code, body = http("POST", f"{base}/api/faces", {
+            "image_path": "non_existent_xyz_123.jpg",
+        })
+        assert code == 404, f"expected 404 for invalid face detect path, got {code}"
+        print("[PASS] invalid face detection rejected with 404")
+
+        # verify /api/preview serves uploaded image
+        preview_req = urllib.request.Request(f"{base}/api/preview?path={upload['path']}", method="GET")
+        with urllib.request.urlopen(preview_req, timeout=10) as r:
+            assert r.status == 200, f"preview failed: {r.status}"
+            content = r.read()
+            assert len(content) > 0
+        print("[PASS] /api/preview serves media successfully")
+
+        # verify upload above 1MB (e.g. 2MB video/image target)
+        large_body = b"X" * (2 * 1024 * 1024)
+        req = urllib.request.Request(
+            f"{base}/api/upload",
+            data=large_body,
+            headers={
+                "Content-Type": "application/octet-stream",
+                "X-File-Name": urllib.parse.quote("large_target.mp4"),
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            assert r.status == 201
+            up_large = json.loads(r.read().decode("utf-8"))
+            assert up_large["size"] == 2 * 1024 * 1024
+        print("[PASS] upload >1MB (2MB target) succeeded without 413")
+
         print("\nAll web API tests passed!")
         return 0
     finally:
@@ -212,3 +295,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

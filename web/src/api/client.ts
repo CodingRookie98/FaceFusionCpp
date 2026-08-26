@@ -1,6 +1,8 @@
 import type {
   CreateTaskRequest,
   DetectFacesResponse,
+  PreviewRenderRequest,
+  PreviewRenderResponse,
   ProcessorMeta,
   TaskDetail,
   TaskProgressResponse,
@@ -46,10 +48,15 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ image_path: imagePath }),
     }),
+  previewRender: (body: PreviewRenderRequest) =>
+    request<PreviewRenderResponse>('/api/preview_render', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   uploadFile: async (file: File): Promise<{ path: string; name: string; size: number }> => {
     const res = await fetch('/api/upload', {
       method: 'POST',
-      headers: { 'X-File-Name': file.name },
+      headers: { 'X-File-Name': encodeURIComponent(file.name) },
       body: file,
     });
     if (!res.ok) {

@@ -24,6 +24,8 @@ public:
 
     int run(const config::TaskConfig& config,
             const services::pipeline::ProgressCallback& progress) override;
+    int run(const config::TaskConfig& config, const services::pipeline::ProgressCallback& progress,
+            std::string& error_message) override;
     void cancel() override;
 
 private:

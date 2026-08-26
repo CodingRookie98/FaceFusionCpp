@@ -11,10 +11,12 @@ export interface TaskSummary {
   id: string;
   status: TaskStatus;
   progress: TaskProgress;
-  error_message: string;
-  media_count: number;
+  error_message?: string;
+  error?: string;
+  created_at?: string;
+  media_count?: number;
   priority: number;
-  queue_position: number;
+  queue_position?: number;
 }
 
 export interface TaskResultFile {
@@ -31,10 +33,24 @@ export interface TaskDetail extends TaskSummary {
   results: TaskResultFile[];
 }
 
+export interface PipelineStepConfig {
+  id: string;
+  step: string;
+  name?: string;
+  enabled: boolean;
+  params: Record<string, string | number | boolean | number[] | undefined>;
+}
+
 export interface CreateTaskRequest {
   source_paths: string[];
   target_paths: string[];
   output_path?: string;
+  pipeline_steps?: Array<{
+    step: string;
+    name?: string;
+    enabled?: boolean;
+    params?: Record<string, string | number | boolean | number[] | undefined>;
+  }>;
   processors?: string[];
   processor_params?: Record<string, Record<string, string | number>>;
 }
@@ -100,4 +116,23 @@ export interface TaskProgressResponse {
   status: TaskStatus;
   progress: TaskProgress;
   error_message?: string;
+}
+
+export interface PreviewRenderRequest {
+  source_paths: string[];
+  target_paths?: string[];
+  target_frame_base64?: string;
+  target_face_indices?: number[];
+  pipeline_steps?: Array<{
+    step: string;
+    name?: string;
+    enabled?: boolean;
+    params?: Record<string, string | number | boolean | number[] | undefined>;
+  }>;
+}
+
+export interface PreviewRenderResponse {
+  status: string;
+  preview_url: string;
+  output_path: string;
 }
