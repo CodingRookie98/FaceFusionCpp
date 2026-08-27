@@ -69,3 +69,18 @@ add_facefusion_test(web_task_manager_test
         foundation_infrastructure
 )
 target_compile_features(web_task_manager_test PRIVATE cxx_std_20)
+
+# Web task manager persistence tests
+add_facefusion_test(web_task_manager_persist_test
+    SOURCES
+        web/task_manager_persist_test.cpp
+    MAIN_LIB
+        GTest::gtest_main
+    LINK_LIBRARIES
+        app_web
+        config_core
+        config_parser
+        services_pipeline
+        foundation_infrastructure
+)
+target_compile_features(web_task_manager_persist_test PRIVATE cxx_std_20)

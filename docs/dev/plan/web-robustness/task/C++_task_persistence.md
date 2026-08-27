@@ -1,7 +1,7 @@
 # C++ 任务: TaskManager 任务持久化集成
 
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 阶段二（3.2）
-> **状态**: 进行中
+> **状态**: 已完成
 
 ## 目标
 
@@ -82,10 +82,12 @@ explicit TaskManager(std::shared_ptr<ITaskExecutor> executor,
 
 ## 验收标准
 
-- [ ] 失败测试先行编写（Red 确认）
-- [ ] 模拟重启场景测试全绿
-- [ ] 损坏快照不崩溃
-- [ ] 默认 persist_dir 空时旧行为保持（无快照产生）
+- [x] 失败测试先行编写（Red 确认）
+- [x] 模拟重启场景测试全绿（7 用例）
+- [x] 损坏快照不崩溃（跳过 + 告警）
+- [x] 默认 persist_dir 空时旧行为保持（无快照产生）
+- [x] running 任务置 Running 时落盘（真实崩溃恢复语义正确）
+- [x] 既有 task_manager_test 13 用例无回归
 
 ## 提交信息
 

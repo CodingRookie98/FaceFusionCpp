@@ -47,10 +47,16 @@ using ProgressListener =
 using StatusListener = std::function<void(const std::string& task_id, TaskStatus status,
                                           const std::string& error_message)>;
 
+/// Optional TaskManager configuration (persistence & timeout)
+struct TaskManagerOptions {
+    std::string persist_dir = "";     ///< Snapshot directory; empty disables persistence
+    int max_execution_seconds = 3600; ///< Per-task execution timeout; <=0 disables timeout
+};
+
 /// Task registry + serial worker thread
 class TaskManager {
 public:
-    explicit TaskManager(std::shared_ptr<ITaskExecutor> executor);
+    explicit TaskManager(std::shared_ptr<ITaskExecutor> executor, TaskManagerOptions options = {});
     ~TaskManager();
     TaskManager(const TaskManager&) = delete;
     TaskManager& operator=(const TaskManager&) = delete;
