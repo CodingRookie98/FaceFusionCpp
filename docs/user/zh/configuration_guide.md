@@ -2,17 +2,18 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-USER-ZH-CFG-2026
-> - **当前版本 (Version)**: V1.2.0
+> - **当前版本 (Version)**: V1.3.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-08-21
+> - **最后更新 (Last Updated)**: 2026-08-27
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.3.0** | 2026-08-27 | AI Agent | 王辉 | 依据 Web 功能设计评估（V0.7.0）新增 `web:` 配置节参数：`max_execution_seconds`（任务超时，默认 3600）、`persist_dir`（任务快照持久化目录）。`max_queue_size`（队列上限）为已规划项，待实现后补充。 |
 | **V1.2.0** | 2026-08-21 | AI Agent | 王辉 | 配置文件重命名（`config/app.yaml`, `config/task.yaml`）；新增 `web:` 配置节（`host`, `port`, `web_root`, `temp_dir`）；明确 CLI 寻径与任务路径指定规则。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
 
@@ -39,6 +40,8 @@ web:
   port: 8000                    # Web 服务监听端口 (默认: 8000)
   web_root: "assets/web"        # 前端编译产物静态资源路径 (默认: "assets/web")
   temp_dir: "temp"              # 临时文件与即时渲染产物目录 (默认: "temp")
+  max_execution_seconds: 3600   # 单任务最长执行时间 (默认: 3600 秒 = 1 小时)。超时后任务标记为 failed，已产出的部分帧会保留
+  persist_dir: "./temp/tasks"   # 任务快照持久化目录 (默认: "./temp/tasks")。服务重启后自动恢复排队中的任务
 
 # --- 推理基础设施 (显卡相关的设置) ---
 inference:

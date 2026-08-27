@@ -2,17 +2,18 @@
 
 > **Document Control**
 > - **Document ID**: FFC-USER-EN-CFG-2026
-> - **Version**: V1.2.0
+> - **Version**: V1.3.0
 > - **Status**: Official
 > - **Authority**: Informative
 > - **Owner**: 王辉
 > - **Reviewer**: 王辉
-> - **Last Updated**: 2026-08-21
+> - **Last Updated**: 2026-08-27
 
 ## Revision History
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.3.0** | 2026-08-27 | AI Agent | 王辉 | Per Web feature design review (V0.7.0), added `web:` section parameters: `max_execution_seconds` (task timeout, default 3600), `persist_dir` (task snapshot persistence directory). `max_queue_size` (queue cap) is planned and will be documented once implemented. |
 | **V1.2.0** | 2026-08-21 | AI Agent | 王辉 | Renamed configuration files (`config/app.yaml`, `config/task.yaml`); added `web:` section (`host`, `port`, `web_root`, `temp_dir`); clarified CLI search paths and required task config argument. |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
 
@@ -39,6 +40,8 @@ web:
   port: 8000                    # Web UI bind port (Default: 8000)
   web_root: "assets/web"        # Frontend static assets directory (Default: "assets/web")
   temp_dir: "temp"              # Temporary uploads and preview artifacts directory (Default: "temp")
+  max_execution_seconds: 3600   # Max execution time per task (Default: 3600s = 1 hour). On timeout the task is marked failed; partially produced frames are kept
+  persist_dir: "./temp/tasks"   # Task snapshot persistence directory (Default: "./temp/tasks"). Queued tasks are auto-restored after a service restart
 
 # --- Inference Infrastructure (Graphics Card Settings) ---
 inference:
