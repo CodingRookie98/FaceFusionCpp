@@ -2,8 +2,8 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-PLAN-WEB-ROBUSTNESS-2026
-> - **当前版本 (Version)**: V1.0.0
-> - **状态 (Status)**: 进行中 (In Progress)
+> - **当前版本 (Version)**: V1.1.0
+> - **状态 (Status)**: 已完成 (Completed)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-08-27 | AI Agent | 王辉 | 全部任务完成：TaskConfig 序列化（5 单测）、持久化（7 单测）、超时（4 单测）、配置接线；修复静态析构顺序 fiasco（logger_guard）与 web_api 隔离断言失配。验收：单元 282/282、集成 142/142、e2e 8/8 全绿。 |
 | **V1.0.0** | 2026-08-27 | AI Agent | 王辉 | 依据 Web 功能设计评估（[web_ui_design.md](../../zh/architecture/web_ui_design.md) V0.7.0 §8.2）创建：改进项 1（任务持久化）+ 改进项 2（任务超时机制）。 |
 
 > **标准参考 & 跨文档链接**:
