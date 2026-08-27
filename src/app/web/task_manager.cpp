@@ -5,23 +5,89 @@ module;
 #include <deque>
 #include <filesystem>
 #include <format>
+#include <fstream>
 #include <limits>
 #include <map>
 #include <mutex>
 #include <thread>
 #include <utility>
+#include <variant>
+#include <nlohmann/json.hpp>
 
 module app.web.task_manager;
 
+import config.parser;
 import foundation.infrastructure.core_utils;
 import foundation.infrastructure.logger;
 
 namespace app::web {
 
 using Logger = foundation::infrastructure::logger::Logger;
+using json = nlohmann::json;
+
+namespace {
+
+std::string task_status_to_string(TaskStatus status) {
+    switch (status) {
+    case TaskStatus::Queued: return "queued";
+    case TaskStatus::Running: return "running";
+    case TaskStatus::Done: return "done";
+    case TaskStatus::Failed: return "failed";
+    case TaskStatus::Cancelled: return "cancelled";
+    }
+    return "unknown";
+}
+
+TaskStatus task_status_from_string(const std::string& s) {
+    if (s == "queued") return TaskStatus::Queued;
+    if (s == "running") return TaskStatus::Running;
+    if (s == "done") return TaskStatus::Done;
+    if (s == "failed") return TaskStatus::Failed;
+    if (s == "cancelled") return TaskStatus::Cancelled;
+    return TaskStatus::Failed;
+}
+
+json progress_to_json(const TaskProgress& p) {
+    return json{
+        {"current_frame", p.current_frame}, {"total_frames", p.total_frames}, {"fps", p.fps}};
+}
+
+TaskProgress progress_from_json(const json& j) {
+    TaskProgress p;
+    if (j.contains("current_frame") && j["current_frame"].is_number()) {
+        p.current_frame = j["current_frame"].get<std::size_t>();
+    }
+    if (j.contains("total_frames") && j["total_frames"].is_number()) {
+        p.total_frames = j["total_frames"].get<std::size_t>();
+    }
+    if (j.contains("fps") && j["fps"].is_number()) { p.fps = j["fps"].get<double>(); }
+    return p;
+}
+
+json task_entry_to_json(const TaskEntry& e) {
+    return json{
+        {"id", e.id},
+        {"status", task_status_to_string(e.status)},
+        {"config", config::SerializeTaskConfig(e.config).value_or(json::object())},
+        {"progress", progress_to_json(e.progress)},
+        {"error_message", e.error_message},
+        {"result_files", e.result_files},
+        {"created_at",
+         std::chrono::duration_cast<std::chrono::seconds>(e.created_at.time_since_epoch()).count()},
+        {"priority", e.priority}};
+}
+
+} // namespace
 
 struct TaskManager::Impl {
-    explicit Impl(std::shared_ptr<ITaskExecutor> ex) : executor(std::move(ex)) {
+    explicit Impl(std::shared_ptr<ITaskExecutor> ex, TaskManagerOptions opts) :
+        executor(std::move(ex)), persist_dir(std::move(opts.persist_dir)),
+        max_execution_seconds(opts.max_execution_seconds),
+        // Hold the logger for the whole TaskManager lifetime: its function-local
+        // static may be destroyed before this Impl during static teardown, and
+        // the worker thread logs while running.
+        logger_guard(Logger::get_instance()) {
+        load_snapshots();
         worker = std::thread([this] { worker_loop(); });
     }
 
@@ -72,23 +138,33 @@ struct TaskManager::Impl {
                 }
                 it->second.status = TaskStatus::Running;
                 running_id = task_id;
+                save_snapshot(it->second);
                 Logger::get_instance()->info(std::format(
                     "[TaskManager] Task {} picked from queue (priority={}), status set to Running",
                     task_id, it->second.priority));
             }
 
-            int result_code = 0;
+            config::TaskConfig exec_config;
             {
+                std::lock_guard lock(mutex);
                 auto it = tasks.find(task_id);
                 if (it == tasks.end()) { continue; }
-                std::string err_msg;
+                exec_config = it->second.config;
+            }
+
+            int result_code = 0;
+            std::string err_msg;
+            std::atomic<bool> run_finished{false};
+            bool timed_out = false;
+
+            std::thread exec_thread([this, task_id, &exec_config, &result_code, &err_msg,
+                                     &run_finished] {
                 try {
                     Logger::get_instance()->info(std::format(
                         "[TaskManager] Task {} started execution (targets={}, sources={})", task_id,
-                        it->second.config.io.target_paths.size(),
-                        it->second.config.io.source_paths.size()));
+                        exec_config.io.target_paths.size(), exec_config.io.source_paths.size()));
                     result_code = executor->run(
-                        it->second.config,
+                        exec_config,
                         [this, task_id](const services::pipeline::TaskProgress& p) {
                             TaskProgress snap;
                             snap.current_frame = p.current_frame;
@@ -105,22 +181,45 @@ struct TaskManager::Impl {
                     result_code = 1;
                     err_msg = e.what();
                 }
+                run_finished.store(true);
+                stop_cv.notify_all();
+            });
 
-                {
-                    std::lock_guard lock(mutex);
-                    auto it2 = tasks.find(task_id);
-                    if (it2 != tasks.end() && !err_msg.empty()) {
-                        it2->second.error_message = err_msg;
+            {
+                std::unique_lock lock(mutex);
+                auto started = std::chrono::steady_clock::now();
+                while (!run_finished.load()) {
+                    if (max_execution_seconds > 0) {
+                        auto remaining = std::chrono::seconds(max_execution_seconds)
+                                       - (std::chrono::steady_clock::now() - started);
+                        if (remaining <= std::chrono::seconds(0)) {
+                            timed_out = true;
+                            executor->cancel();
+                            break;
+                        }
+                        stop_cv.wait_for(lock, remaining);
+                    } else {
+                        stop_cv.wait(lock, [this, &run_finished] {
+                            return run_finished.load() || stopping;
+                        });
+                        if (stopping && !run_finished.load()) { executor->cancel(); }
                     }
                 }
             }
+            if (exec_thread.joinable()) { exec_thread.join(); }
 
             {
                 std::lock_guard lock(mutex);
                 auto it = tasks.find(task_id);
                 if (it != tasks.end()) {
-                    // Cancelled wins over the executor result (user cancellation)
-                    if (it->second.status != TaskStatus::Cancelled) {
+                    if (timed_out) {
+                        it->second.status = TaskStatus::Failed;
+                        it->second.error_message =
+                            "Task timed out after " + std::to_string(max_execution_seconds) + "s";
+                        Logger::get_instance()->error(
+                            std::format("[TaskManager] Task {} timed out after {}s", task_id,
+                                        max_execution_seconds));
+                    } else if (it->second.status != TaskStatus::Cancelled) {
                         if (result_code == 0) {
                             it->second.status = TaskStatus::Done;
                             it->second.result_files = collect_result_files(it->second.config);
@@ -129,7 +228,9 @@ struct TaskManager::Impl {
                                 task_id, it->second.result_files.size()));
                         } else {
                             it->second.status = TaskStatus::Failed;
-                            if (it->second.error_message.empty()) {
+                            if (!err_msg.empty()) {
+                                it->second.error_message = err_msg;
+                            } else if (it->second.error_message.empty()) {
                                 it->second.error_message =
                                     "Task failed with error code " + std::to_string(result_code);
                             }
@@ -144,8 +245,104 @@ struct TaskManager::Impl {
                     if (status_listener) {
                         status_listener(task_id, it->second.status, it->second.error_message);
                     }
+                    save_snapshot(it->second);
                 }
                 running_id.clear();
+            }
+        }
+    }
+
+    void save_snapshot(const TaskEntry& entry) {
+        if (persist_dir.empty()) { return; }
+        std::error_code ec;
+        std::filesystem::create_directories(persist_dir, ec);
+        auto path = std::filesystem::path(persist_dir) / (entry.id + ".json");
+        std::ofstream out(path, std::ios::trunc);
+        if (!out) {
+            Logger::get_instance()->warn(
+                std::format("[TaskManager] Failed to write snapshot for task {}", entry.id));
+            return;
+        }
+        out << task_entry_to_json(entry).dump(2);
+    }
+
+    void remove_snapshot(const std::string& id) {
+        if (persist_dir.empty()) { return; }
+        std::error_code ec;
+        std::filesystem::remove(std::filesystem::path(persist_dir) / (id + ".json"), ec);
+    }
+
+    void load_snapshots() {
+        if (persist_dir.empty()) { return; }
+        std::error_code ec;
+        if (!std::filesystem::is_directory(persist_dir, ec)) { return; }
+
+        for (const auto& entry : std::filesystem::directory_iterator(persist_dir, ec)) {
+            if (!entry.is_regular_file(ec) || entry.path().extension() != ".json") { continue; }
+            std::ifstream in(entry.path());
+            if (!in) { continue; }
+            std::string content((std::istreambuf_iterator<char>(in)),
+                                std::istreambuf_iterator<char>());
+            json j;
+            try {
+                j = json::parse(content);
+            } catch (const std::exception& e) {
+                Logger::get_instance()->warn(
+                    std::format("[TaskManager] Skipping corrupt snapshot {}: {}",
+                                entry.path().string(), e.what()));
+                continue;
+            }
+
+            TaskEntry task;
+            task.id = j.contains("id") && j["id"].is_string() ? j["id"].get<std::string>() : "";
+            if (task.id.empty()) {
+                Logger::get_instance()->warn(std::format(
+                    "[TaskManager] Skipping snapshot {} (missing id)", entry.path().string()));
+                continue;
+            }
+            task.status = task_status_from_string(j.contains("status") && j["status"].is_string() ?
+                                                      j["status"].get<std::string>() :
+                                                      "failed");
+            if (j.contains("config") && j["config"].is_object()) {
+                auto cfg = config::DeserializeTaskConfig(j["config"]);
+                if (cfg.is_ok()) { task.config = cfg.value(); }
+            }
+            if (j.contains("progress") && j["progress"].is_object()) {
+                task.progress = progress_from_json(j["progress"]);
+            }
+            task.error_message = j.contains("error_message") && j["error_message"].is_string() ?
+                                     j["error_message"].get<std::string>() :
+                                     std::string{};
+            if (j.contains("result_files") && j["result_files"].is_array()) {
+                for (const auto& f : j["result_files"]) {
+                    if (f.is_string()) { task.result_files.push_back(f.get<std::string>()); }
+                }
+            }
+            if (j.contains("created_at") && j["created_at"].is_number()) {
+                task.created_at = std::chrono::system_clock::time_point(
+                    std::chrono::seconds(j["created_at"].get<std::int64_t>()));
+            }
+            task.priority =
+                j.contains("priority") && j["priority"].is_number() ? j["priority"].get<int>() : 0;
+
+            // 恢复语义：Queued 重新入队；Running 如实标记 failed；终态保留为历史
+            if (task.status == TaskStatus::Queued) {
+                tasks[task.id] = task;
+                queue.push_back(task.id);
+                Logger::get_instance()->info(std::format(
+                    "[TaskManager] Restored queued task {} (priority={})", task.id, task.priority));
+            } else if (task.status == TaskStatus::Running) {
+                task.status = TaskStatus::Failed;
+                task.error_message = "Task interrupted by service restart";
+                tasks[task.id] = task;
+                save_snapshot(task);
+                Logger::get_instance()->warn(std::format(
+                    "[TaskManager] Task {} was running at restart; marked failed", task.id));
+            } else {
+                tasks[task.id] = task;
+                Logger::get_instance()->info(
+                    std::format("[TaskManager] Restored terminal task {} ({})", task.id,
+                                task_status_to_string(task.status)));
             }
         }
     }
@@ -202,6 +399,8 @@ struct TaskManager::Impl {
     }
 
     std::shared_ptr<ITaskExecutor> executor;
+    std::string persist_dir;
+    int max_execution_seconds = 3600;
     std::map<std::string, TaskEntry> tasks;
     std::deque<std::string> queue;
     std::string running_id;
@@ -211,10 +410,13 @@ struct TaskManager::Impl {
     ProgressListener listener;
     StatusListener status_listener;
     std::thread worker;
+    // Declared after worker so it is destroyed first (reverse order), keeping
+    // the logger alive until the worker thread is fully joined during teardown.
+    std::shared_ptr<Logger> logger_guard;
 };
 
-TaskManager::TaskManager(std::shared_ptr<ITaskExecutor> executor) :
-    m_impl(std::make_unique<Impl>(std::move(executor))) {}
+TaskManager::TaskManager(std::shared_ptr<ITaskExecutor> executor, TaskManagerOptions options) :
+    m_impl(std::make_unique<Impl>(std::move(executor), std::move(options))) {}
 
 TaskManager::~TaskManager() = default;
 
@@ -246,6 +448,8 @@ std::string TaskManager::submit(config::TaskConfig config, int priority) {
         std::lock_guard lock(m_impl->mutex);
         m_impl->tasks[uuid] = std::move(entry);
         m_impl->queue.push_back(uuid);
+        auto it = m_impl->tasks.find(uuid);
+        if (it != m_impl->tasks.end()) { m_impl->save_snapshot(it->second); }
     }
     m_impl->stop_cv.notify_all();
     return uuid;
@@ -263,6 +467,7 @@ bool TaskManager::set_priority(const std::string& id, int priority) {
     it->second.priority = priority;
     Logger::get_instance()->info(std::format("[TaskManager] Task {} priority changed from {} to {}",
                                              id, old_priority, priority));
+    m_impl->save_snapshot(it->second);
     return true;
 }
 
@@ -278,7 +483,10 @@ bool TaskManager::cancel(const std::string& id) {
         std::format("[TaskManager] Task {} cancel requested (current status: {})", id,
                     status_to_string(it->second.status)));
     switch (it->second.status) {
-    case TaskStatus::Queued: it->second.status = TaskStatus::Cancelled; return true;
+    case TaskStatus::Queued:
+        it->second.status = TaskStatus::Cancelled;
+        m_impl->save_snapshot(it->second);
+        return true;
     case TaskStatus::Running:
         it->second.status = TaskStatus::Cancelled;
         m_impl->executor->cancel();

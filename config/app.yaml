@@ -64,6 +64,10 @@ web:
   web_root: "assets/web"
   # 上传素材与临时帧暂存目录
   temp_dir: "./temp/uploads"
+  # 任务快照持久化目录 (服务重启后自动恢复排队中的任务; 运行中任务如实标记 failed)
+  persist_dir: "./temp/tasks"
+  # 单任务最长执行时间 (秒; 超时后任务标记 failed 并保留已产出部分帧)
+  max_execution_seconds: 3600
 
 # --- 默认任务参数回退 (Default Task Settings - Optional) ---
 # 若任务配置 (task.yaml / CLI) 中未显式指定某项参数，则回退使用此处的默认值。

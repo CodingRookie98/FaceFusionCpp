@@ -449,17 +449,19 @@ TEST_F(WebApiTest, TaskProgressEndpointWorks) {
 }
 
 TEST_F(WebApiTest, MediaEndpointSupportsRangeAndVideo) {
-    std::filesystem::create_directories(kOutputDir);
-    std::string test_file = (std::filesystem::path(kOutputDir) / "sample_video.mp4").string();
-    {
-        std::ofstream out(test_file, std::ios::binary);
-        out << "0123456789ABCDEF"; // 16 bytes
-    }
-
     auto created =
         SubmitTask(R"({"source_paths":["s.jpg"],"target_paths":["t.jpg"],"output_path":")"
                    + kOutputDir + R"(","processors":["face_swapper"]})");
     std::string id = created["id"].get<std::string>();
+
+    // 输出目录按 task_id 物理隔离；将测试文件放入任务隔离目录
+    std::string isolated_dir = (std::filesystem::path(kOutputDir) / id).string();
+    std::filesystem::create_directories(isolated_dir);
+    std::string test_file = (std::filesystem::path(isolated_dir) / "sample_video.mp4").string();
+    {
+        std::ofstream out(test_file, std::ios::binary);
+        out << "0123456789ABCDEF"; // 16 bytes
+    }
 
     // Test standard GET /media/{id}/result/sample_video.mp4
     auto [code1, resp1] = SendRequest(drogon::Get, "/media/" + id + "/result/sample_video.mp4");
@@ -733,7 +735,10 @@ TEST_F(WebApiTest, SubmitTaskGeneratesValidTaskConfig) {
     EXPECT_EQ(code, 200);
     auto detail = json::parse(resp);
     EXPECT_EQ(detail["id"], id);
-    EXPECT_EQ(detail["output_path"], "./output");
+    // 任务输出目录按 task_id 物理隔离 (./output/{task_id})
+    auto output_path = detail["output_path"].get<std::string>();
+    EXPECT_NE(output_path.find("./output/"), std::string::npos);
+    EXPECT_NE(output_path.find(id), std::string::npos);
 
     std::filesystem::remove(src_file);
     std::filesystem::remove(tgt_file);

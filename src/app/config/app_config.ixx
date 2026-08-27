@@ -135,10 +135,12 @@ struct DefaultTaskSettings {
  * @brief Web server and frontend hosting configuration
  */
 struct WebConfig {
-    std::string host = "0.0.0.0";            ///< Bind host address
-    uint16_t port = 8000;                    ///< Bind port number
-    std::string web_root = "assets/web";     ///< Frontend static assets root
-    std::string temp_dir = "./temp/uploads"; ///< Upload & temporary frame directory
+    std::string host = "0.0.0.0";             ///< Bind host address
+    uint16_t port = 8000;                     ///< Bind port number
+    std::string web_root = "assets/web";      ///< Frontend static assets root
+    std::string temp_dir = "./temp/uploads";  ///< Upload & temporary frame directory
+    std::string persist_dir = "./temp/tasks"; ///< Task snapshot persistence directory
+    int max_execution_seconds = 3600;         ///< Per-task execution timeout (seconds)
 };
 
 /**

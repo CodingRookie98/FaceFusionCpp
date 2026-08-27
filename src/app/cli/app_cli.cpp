@@ -327,7 +327,10 @@ int App::run_web_mode(const std::string& host, uint16_t port, const std::string&
 
     // Wire the production task executor (PipelineRunner) into the task manager
     auto executor = std::make_shared<app::web::PipelineTaskExecutor>(app_config);
-    auto tasks = std::make_shared<app::web::TaskManager>(executor);
+    auto tasks = std::make_shared<app::web::TaskManager>(
+        executor, app::web::TaskManagerOptions{
+                      .persist_dir = app_config.web.persist_dir,
+                      .max_execution_seconds = app_config.web.max_execution_seconds});
 
     // Production face detector hook backed by FaceAnalyser
     auto detect_faces =

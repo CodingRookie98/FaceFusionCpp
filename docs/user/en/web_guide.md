@@ -2,17 +2,18 @@
 
 > **Document Control**
 > - **Document ID**: FFC-USER-EN-WEBUI-2026
-> - **Version**: V2.3.0
+> - **Version**: V2.4.0
 > - **Status**: Official
 > - **Authority**: Informative
 > - **Owner**: 王辉
 > - **Reviewer**: 王辉
-> - **Last Updated**: 2026-08-21
+> - **Last Updated**: 2026-08-27
 
 ## Revision History
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| **V2.4.0** | 2026-08-27 | AI Agent | 王辉 | Added task persistence & timeout documentation: restart recovery semantics (queued resumes / running marked failed / terminal kept as history), task timeout default 1h configurable (`web.max_execution_seconds` / `web.persist_dir`). |
 | **V2.3.0** | 2026-08-21 | AI Agent | 王辉 | Added 【⚡ Instant Preview Render】 single-frame effect verification and video pause-frame extraction; streamlined 【➕ Add to Queue】 CTA; implemented per-task output sandbox directory isolation (`./output/<uuid>`); standardized compare disabled on raw material and active after preview render. |
 | **V2.2.1** | 2026-08-21 | AI Agent | 王辉 | Added media preview lifecycle persistence & recovery documentation (seamless /api/preview fallback upon page reload, auto face detection recovery on active target media). |
 | **V2.2.0** | 2026-08-21 | AI Agent | 王辉 | Upgraded task queue & omni-preview architecture: renamed submit CTA to "Add to Task Queue", left sidebar 3-tab layout (Source Assets / Target Media / Task Queue), priority up/down & cancel actions on task cards, and omni canvas preview for source/target/queue items. |
@@ -61,6 +62,8 @@ The left sidebar aggregates 3 primary tabs:
   - 【**✕ Cancel Task**】: Cancel a pending or running task;
   - **Live Canvas Binding**: Clicking any task card synchronizes the center viewport to display the task's base target, live progress HUD, or finished results.
   - **Per-Task Output Isolation**: Each task's output files are isolated in its dedicated sandbox subdirectory (`./output/<uuid>/`), preventing result collisions.
+  - **Task Persistence**: Task snapshots are persisted to disk (default `./temp/tasks/`, configurable via `web.persist_dir` in `app.yaml`). After a service restart, queued tasks resume automatically; tasks that were running are truthfully marked as failed (avoiding reprocessing the same media); completed tasks are kept as history.
+  - **Task Timeout**: A single task is limited to 1 hour by default (configurable via `web.max_execution_seconds` in `app.yaml`). On timeout the task is marked as failed and partially produced frames are kept.
 
 ### 2.2 Center Viewport: Omni Viewport Canvas & Comparison Matrix
 - **Omni Perception Modes**:

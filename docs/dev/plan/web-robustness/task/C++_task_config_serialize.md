@@ -1,7 +1,7 @@
 # C++ 任务: TaskConfig/TaskEntry JSON 序列化
 
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 阶段一（3.1）
-> **状态**: 进行中
+> **状态**: 已完成
 
 ## 目标
 
@@ -33,25 +33,24 @@
 
 ### 🟢 Green: 实现
 
-- **config 层**（`src/app/config/config_serialize.ixx/.cpp`，或并入 config_merger 同层新模块）:
-  - `Result<nlohmann::json, ConfigError> SerializeTaskConfig(const TaskConfig&)`
-  - `Result<TaskConfig, ConfigError> DeserializeTaskConfig(const nlohmann::json&)`
-  - 枚举辅助：`to_string(FaceSelectorMode)` 等（若已存在则复用 config_parser 的映射，避免重复）。
-- **app.web 层**（`src/app/web/task_types.ixx` 或新 `task_serialize.ixx/.cpp`）:
-  - `nlohmann::json TaskEntryToJson(const TaskEntry&)`
-  - `Result<TaskEntry, std::string> TaskEntryFromJson(const nlohmann::json&)`
+- **config 层**（`src/app/config/parser/config_parser.ixx/.cpp`，复用既有枚举转换）:
+  - `Result<nlohmann::json> SerializeTaskConfig(const TaskConfig&)`
+  - `Result<TaskConfig> DeserializeTaskConfig(const nlohmann::json&)`
+  - 枚举转换复用 config_parser 既有 `to_string`/`parse_*` API，无重复。
+- **app.web 层**（TaskEntry ↔ JSON）: **并入阶段二**（作为 TaskManager 持久化的内部辅助，随快照读写一起实现与测试）。
 
 ### 🔵 Refactor
 
-- 复用 config_parser 现有枚举映射（如存在），消除重复。
+- 复用 config_parser 现有枚举映射，消除重复。
 - 保持纯函数、无 IO 副作用（文件读写不在本任务）。
+- 反序列化严格性：缺 `config_version` 或 `pipeline` 类型错误 → 返回错误（损坏快照可被检测）。
 
 ## 验收标准
 
-- [ ] 失败测试先行编写（Red 确认）
-- [ ] 编译通过（无警告）
-- [ ] `python build.py --action test --test-label unit` 新增用例全绿
-- [ ] 覆盖全部 4 种 processor variant
+- [x] 失败测试先行编写（Red 确认）
+- [x] 编译通过（无警告）
+- [x] `config_serialize_tests` 5/5 全绿；`config_parser_tests` 19/19、`config_merger_tests` 10/10 无回归
+- [x] 覆盖全部 4 种 processor variant
 
 ## 提交信息
 
