@@ -140,18 +140,27 @@ struct TaskManager::Impl {
                     task_id, it->second.priority));
             }
 
-            int result_code = 0;
+            config::TaskConfig exec_config;
             {
+                std::lock_guard lock(mutex);
                 auto it = tasks.find(task_id);
                 if (it == tasks.end()) { continue; }
-                std::string err_msg;
+                exec_config = it->second.config;
+            }
+
+            int result_code = 0;
+            std::string err_msg;
+            std::atomic<bool> run_finished{false};
+            bool timed_out = false;
+
+            std::thread exec_thread([this, task_id, &exec_config, &result_code, &err_msg,
+                                     &run_finished] {
                 try {
                     Logger::get_instance()->info(std::format(
                         "[TaskManager] Task {} started execution (targets={}, sources={})", task_id,
-                        it->second.config.io.target_paths.size(),
-                        it->second.config.io.source_paths.size()));
+                        exec_config.io.target_paths.size(), exec_config.io.source_paths.size()));
                     result_code = executor->run(
-                        it->second.config,
+                        exec_config,
                         [this, task_id](const services::pipeline::TaskProgress& p) {
                             TaskProgress snap;
                             snap.current_frame = p.current_frame;
@@ -168,22 +177,45 @@ struct TaskManager::Impl {
                     result_code = 1;
                     err_msg = e.what();
                 }
+                run_finished.store(true);
+                stop_cv.notify_all();
+            });
 
-                {
-                    std::lock_guard lock(mutex);
-                    auto it2 = tasks.find(task_id);
-                    if (it2 != tasks.end() && !err_msg.empty()) {
-                        it2->second.error_message = err_msg;
+            {
+                std::unique_lock lock(mutex);
+                auto started = std::chrono::steady_clock::now();
+                while (!run_finished.load()) {
+                    if (max_execution_seconds > 0) {
+                        auto remaining = std::chrono::seconds(max_execution_seconds)
+                                       - (std::chrono::steady_clock::now() - started);
+                        if (remaining <= std::chrono::seconds(0)) {
+                            timed_out = true;
+                            executor->cancel();
+                            break;
+                        }
+                        stop_cv.wait_for(lock, remaining);
+                    } else {
+                        stop_cv.wait(lock, [this, &run_finished] {
+                            return run_finished.load() || stopping;
+                        });
+                        if (stopping && !run_finished.load()) { executor->cancel(); }
                     }
                 }
             }
+            if (exec_thread.joinable()) { exec_thread.join(); }
 
             {
                 std::lock_guard lock(mutex);
                 auto it = tasks.find(task_id);
                 if (it != tasks.end()) {
-                    // Cancelled wins over the executor result (user cancellation)
-                    if (it->second.status != TaskStatus::Cancelled) {
+                    if (timed_out) {
+                        it->second.status = TaskStatus::Failed;
+                        it->second.error_message =
+                            "Task timed out after " + std::to_string(max_execution_seconds) + "s";
+                        Logger::get_instance()->error(
+                            std::format("[TaskManager] Task {} timed out after {}s", task_id,
+                                        max_execution_seconds));
+                    } else if (it->second.status != TaskStatus::Cancelled) {
                         if (result_code == 0) {
                             it->second.status = TaskStatus::Done;
                             it->second.result_files = collect_result_files(it->second.config);
@@ -192,7 +224,9 @@ struct TaskManager::Impl {
                                 task_id, it->second.result_files.size()));
                         } else {
                             it->second.status = TaskStatus::Failed;
-                            if (it->second.error_message.empty()) {
+                            if (!err_msg.empty()) {
+                                it->second.error_message = err_msg;
+                            } else if (it->second.error_message.empty()) {
                                 it->second.error_message =
                                     "Task failed with error code " + std::to_string(result_code);
                             }
