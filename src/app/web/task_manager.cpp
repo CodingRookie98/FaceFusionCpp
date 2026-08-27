@@ -82,7 +82,11 @@ json task_entry_to_json(const TaskEntry& e) {
 struct TaskManager::Impl {
     explicit Impl(std::shared_ptr<ITaskExecutor> ex, TaskManagerOptions opts) :
         executor(std::move(ex)), persist_dir(std::move(opts.persist_dir)),
-        max_execution_seconds(opts.max_execution_seconds) {
+        max_execution_seconds(opts.max_execution_seconds),
+        // Hold the logger for the whole TaskManager lifetime: its function-local
+        // static may be destroyed before this Impl during static teardown, and
+        // the worker thread logs while running.
+        logger_guard(Logger::get_instance()) {
         load_snapshots();
         worker = std::thread([this] { worker_loop(); });
     }
@@ -406,6 +410,9 @@ struct TaskManager::Impl {
     ProgressListener listener;
     StatusListener status_listener;
     std::thread worker;
+    // Declared after worker so it is destroyed first (reverse order), keeping
+    // the logger alive until the worker thread is fully joined during teardown.
+    std::shared_ptr<Logger> logger_guard;
 };
 
 TaskManager::TaskManager(std::shared_ptr<ITaskExecutor> executor, TaskManagerOptions options) :
