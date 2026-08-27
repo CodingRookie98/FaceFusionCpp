@@ -22,6 +22,19 @@ add_facefusion_test(config_merger_tests
         GTest::gmock
 )
 
+# Config serialize tests
+find_package(nlohmann_json CONFIG REQUIRED)
+add_facefusion_test(config_serialize_tests
+    SOURCES
+        config/config_serialize_test.cpp
+    MAIN_LIB
+        GTest::gtest_main
+    LINK_LIBRARIES
+        config_parser
+        nlohmann_json::nlohmann_json
+        GTest::gmock
+)
+
 # Config validator tests
 add_facefusion_test(config_validator_test
     SOURCES

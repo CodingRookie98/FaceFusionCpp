@@ -11,6 +11,7 @@ module;
 #include <algorithm>
 #include <cctype>
 #include <unordered_set>
+#include <variant>
 #include <nlohmann/json.hpp>
 
 module config.parser;
@@ -701,6 +702,356 @@ Result<void, ConfigError> validate_app_config(const AppConfig& config) {
 Result<void, ConfigError> validate_task_config(const TaskConfig& config) {
     ConfigValidator validator;
     return validator.validate_or_error(config);
+}
+
+// ============================================================================
+// TaskConfig JSON 序列化实现
+// ============================================================================
+
+namespace {
+
+json serialize_step_params(const config::PipelineStep& step) {
+    json params = json::object();
+    if (step.step == "face_swapper") {
+        const auto& p = std::get<config::FaceSwapperParams>(step.params);
+        params["model"] = p.model;
+        params["face_selector_mode"] = config::to_string(p.face_selector_mode);
+        if (p.reference_face_path) { params["reference_face_path"] = *p.reference_face_path; }
+    } else if (step.step == "face_enhancer") {
+        const auto& p = std::get<config::FaceEnhancerParams>(step.params);
+        params["model"] = p.model;
+        params["blend_factor"] = p.blend_factor;
+        params["face_selector_mode"] = config::to_string(p.face_selector_mode);
+        if (p.reference_face_path) { params["reference_face_path"] = *p.reference_face_path; }
+    } else if (step.step == "expression_restorer") {
+        const auto& p = std::get<config::ExpressionRestorerParams>(step.params);
+        params["model"] = p.model;
+        params["restore_factor"] = p.restore_factor;
+        params["face_selector_mode"] = config::to_string(p.face_selector_mode);
+        if (p.reference_face_path) { params["reference_face_path"] = *p.reference_face_path; }
+    } else if (step.step == "frame_enhancer") {
+        const auto& p = std::get<config::FrameEnhancerParams>(step.params);
+        params["model"] = p.model;
+        params["enhance_factor"] = p.enhance_factor;
+    } else {
+        // 未知 step 类型：回退到 cli_params 原始映射（尽力序列化）
+        for (const auto& [k, v] : step.cli_params) { params[k] = v; }
+    }
+    return params;
+}
+
+} // namespace
+
+Result<nlohmann::json> SerializeTaskConfig(const config::TaskConfig& config) {
+    json j;
+    j["config_version"] = config.config_version;
+
+    j["task_info"]["id"] = config.task_info.id;
+    j["task_info"]["description"] = config.task_info.description;
+    j["task_info"]["enable_logging"] = config.task_info.enable_logging;
+    j["task_info"]["enable_resume"] = config.task_info.enable_resume;
+
+    j["io"]["source_paths"] = config.io.source_paths;
+    j["io"]["target_paths"] = config.io.target_paths;
+    j["io"]["output"]["path"] = config.io.output.path;
+    j["io"]["output"]["prefix"] = config.io.output.prefix;
+    j["io"]["output"]["suffix"] = config.io.output.suffix;
+    j["io"]["output"]["image_format"] = config.io.output.image_format;
+    j["io"]["output"]["video_encoder"] = config.io.output.video_encoder;
+    j["io"]["output"]["video_quality"] = config.io.output.video_quality;
+    j["io"]["output"]["conflict_policy"] = config::to_string(config.io.output.conflict_policy);
+    j["io"]["output"]["audio_policy"] = config::to_string(config.io.output.audio_policy);
+
+    j["resource"]["thread_count"] = config.resource.thread_count;
+    j["resource"]["max_queue_size"] = config.resource.max_queue_size;
+    j["resource"]["execution_order"] = config::to_string(config.resource.execution_order);
+    j["resource"]["memory_strategy"] = config::to_string(config.resource.memory_strategy);
+    j["resource"]["segment_duration_seconds"] = config.resource.segment_duration_seconds;
+    j["resource"]["max_frames"] = config.resource.max_frames;
+
+    j["face_analysis"]["face_detector"]["models"] = config.face_analysis.face_detector.models;
+    j["face_analysis"]["face_detector"]["score_threshold"] =
+        config.face_analysis.face_detector.score_threshold;
+    j["face_analysis"]["face_landmarker"]["model"] = config.face_analysis.face_landmarker.model;
+    j["face_analysis"]["face_recognizer"]["model"] = config.face_analysis.face_recognizer.model;
+    j["face_analysis"]["face_recognizer"]["similarity_threshold"] =
+        config.face_analysis.face_recognizer.similarity_threshold;
+    j["face_analysis"]["face_masker"]["types"] = config.face_analysis.face_masker.types;
+    j["face_analysis"]["face_masker"]["region"] = config.face_analysis.face_masker.region;
+
+    json pipeline = json::array();
+    for (const auto& step : config.pipeline) {
+        json sj;
+        sj["step"] = step.step;
+        sj["name"] = step.name;
+        sj["enabled"] = step.enabled;
+        sj["params"] = serialize_step_params(step);
+        pipeline.push_back(std::move(sj));
+    }
+    j["pipeline"] = std::move(pipeline);
+
+    return Result<nlohmann::json>::ok(std::move(j));
+}
+
+Result<config::TaskConfig> DeserializeTaskConfig(const nlohmann::json& j) {
+    config::TaskConfig cfg;
+    if (!j.is_object()) {
+        return Result<config::TaskConfig>::err(
+            ConfigError(ErrorCode::E200ConfigError, "TaskConfig JSON must be an object"));
+    }
+
+    auto get_str = [&j](const char* key) -> std::string {
+        return j.contains(key) && j[key].is_string() ? j[key].get<std::string>() : std::string{};
+    };
+
+    if (!j.contains("config_version") || !j["config_version"].is_string()) {
+        return Result<config::TaskConfig>::err(
+            ConfigError(ErrorCode::E200ConfigError, "TaskConfig JSON missing 'config_version'"));
+    }
+
+    cfg.config_version = get_str("config_version");
+
+    if (j.contains("task_info") && j["task_info"].is_object()) {
+        const auto& ti = j["task_info"];
+        cfg.task_info.id =
+            ti.contains("id") && ti["id"].is_string() ? ti["id"].get<std::string>() : std::string{};
+        cfg.task_info.description = ti.contains("description") && ti["description"].is_string() ?
+                                        ti["description"].get<std::string>() :
+                                        std::string{};
+        cfg.task_info.enable_logging =
+            ti.contains("enable_logging") && ti["enable_logging"].is_boolean() ?
+                ti["enable_logging"].get<bool>() :
+                true;
+        cfg.task_info.enable_resume =
+            ti.contains("enable_resume") && ti["enable_resume"].is_boolean() ?
+                ti["enable_resume"].get<bool>() :
+                false;
+    }
+
+    if (j.contains("io") && j["io"].is_object()) {
+        const auto& io = j["io"];
+        if (io.contains("source_paths") && io["source_paths"].is_array()) {
+            for (const auto& p : io["source_paths"]) {
+                if (p.is_string()) { cfg.io.source_paths.push_back(p.get<std::string>()); }
+            }
+        }
+        if (io.contains("target_paths") && io["target_paths"].is_array()) {
+            for (const auto& p : io["target_paths"]) {
+                if (p.is_string()) { cfg.io.target_paths.push_back(p.get<std::string>()); }
+            }
+        }
+        if (io.contains("output") && io["output"].is_object()) {
+            const auto& o = io["output"];
+            cfg.io.output.path = o.contains("path") && o["path"].is_string() ?
+                                     o["path"].get<std::string>() :
+                                     std::string{};
+            cfg.io.output.prefix = o.contains("prefix") && o["prefix"].is_string() ?
+                                       o["prefix"].get<std::string>() :
+                                       std::string{};
+            cfg.io.output.suffix = o.contains("suffix") && o["suffix"].is_string() ?
+                                       o["suffix"].get<std::string>() :
+                                       std::string{};
+            cfg.io.output.image_format =
+                o.contains("image_format") && o["image_format"].is_string() ?
+                    o["image_format"].get<std::string>() :
+                    std::string{};
+            cfg.io.output.video_encoder =
+                o.contains("video_encoder") && o["video_encoder"].is_string() ?
+                    o["video_encoder"].get<std::string>() :
+                    std::string{};
+            cfg.io.output.video_quality =
+                o.contains("video_quality") && o["video_quality"].is_number_integer() ?
+                    o["video_quality"].get<int>() :
+                    0;
+            if (o.contains("conflict_policy") && o["conflict_policy"].is_string()) {
+                auto r = config::parse_conflict_policy(o["conflict_policy"].get<std::string>());
+                if (r.is_ok()) { cfg.io.output.conflict_policy = r.value(); }
+            }
+            if (o.contains("audio_policy") && o["audio_policy"].is_string()) {
+                auto r = config::parse_audio_policy(o["audio_policy"].get<std::string>());
+                if (r.is_ok()) { cfg.io.output.audio_policy = r.value(); }
+            }
+        }
+    }
+
+    if (j.contains("resource") && j["resource"].is_object()) {
+        const auto& r = j["resource"];
+        cfg.resource.thread_count =
+            r.contains("thread_count") && r["thread_count"].is_number_integer() ?
+                r["thread_count"].get<int>() :
+                0;
+        cfg.resource.max_queue_size =
+            r.contains("max_queue_size") && r["max_queue_size"].is_number_integer() ?
+                r["max_queue_size"].get<int>() :
+                0;
+        cfg.resource.segment_duration_seconds =
+            r.contains("segment_duration_seconds")
+                    && r["segment_duration_seconds"].is_number_integer() ?
+                r["segment_duration_seconds"].get<int>() :
+                0;
+        cfg.resource.max_frames = r.contains("max_frames") && r["max_frames"].is_number_integer() ?
+                                      r["max_frames"].get<int>() :
+                                      0;
+        if (r.contains("execution_order") && r["execution_order"].is_string()) {
+            auto rr = config::parse_execution_order(r["execution_order"].get<std::string>());
+            if (rr.is_ok()) { cfg.resource.execution_order = rr.value(); }
+        }
+        if (r.contains("memory_strategy") && r["memory_strategy"].is_string()) {
+            auto rr = config::parse_memory_strategy(r["memory_strategy"].get<std::string>());
+            if (rr.is_ok()) { cfg.resource.memory_strategy = rr.value(); }
+        }
+    }
+
+    if (j.contains("face_analysis") && j["face_analysis"].is_object()) {
+        const auto& fa = j["face_analysis"];
+        if (fa.contains("face_detector") && fa["face_detector"].is_object()) {
+            const auto& fd = fa["face_detector"];
+            if (fd.contains("models") && fd["models"].is_array()) {
+                for (const auto& m : fd["models"]) {
+                    if (m.is_string()) {
+                        cfg.face_analysis.face_detector.models.push_back(m.get<std::string>());
+                    }
+                }
+            }
+            cfg.face_analysis.face_detector.score_threshold =
+                fd.contains("score_threshold") && fd["score_threshold"].is_number() ?
+                    fd["score_threshold"].get<double>() :
+                    0.0;
+        }
+        if (fa.contains("face_landmarker") && fa["face_landmarker"].is_object()) {
+            const auto& fl = fa["face_landmarker"];
+            cfg.face_analysis.face_landmarker.model =
+                fl.contains("model") && fl["model"].is_string() ? fl["model"].get<std::string>() :
+                                                                  std::string{};
+        }
+        if (fa.contains("face_recognizer") && fa["face_recognizer"].is_object()) {
+            const auto& fr = fa["face_recognizer"];
+            cfg.face_analysis.face_recognizer.model =
+                fr.contains("model") && fr["model"].is_string() ? fr["model"].get<std::string>() :
+                                                                  std::string{};
+            cfg.face_analysis.face_recognizer.similarity_threshold =
+                fr.contains("similarity_threshold") && fr["similarity_threshold"].is_number() ?
+                    fr["similarity_threshold"].get<double>() :
+                    0.0;
+        }
+        if (fa.contains("face_masker") && fa["face_masker"].is_object()) {
+            const auto& fm = fa["face_masker"];
+            if (fm.contains("types") && fm["types"].is_array()) {
+                for (const auto& t : fm["types"]) {
+                    if (t.is_string()) {
+                        cfg.face_analysis.face_masker.types.push_back(t.get<std::string>());
+                    }
+                }
+            }
+            if (fm.contains("region") && fm["region"].is_array()) {
+                for (const auto& r : fm["region"]) {
+                    if (r.is_string()) {
+                        cfg.face_analysis.face_masker.region.push_back(r.get<std::string>());
+                    }
+                }
+            }
+        }
+    }
+
+    if (j.contains("pipeline") && !j["pipeline"].is_array()) {
+        return Result<config::TaskConfig>::err(
+            ConfigError(ErrorCode::E200ConfigError, "TaskConfig 'pipeline' must be an array"));
+    }
+    if (j.contains("pipeline") && j["pipeline"].is_array()) {
+        for (const auto& sj : j["pipeline"]) {
+            if (!sj.is_object()) { continue; }
+            config::PipelineStep step;
+            step.step = sj.contains("step") && sj["step"].is_string() ?
+                            sj["step"].get<std::string>() :
+                            std::string{};
+            step.name = sj.contains("name") && sj["name"].is_string() ?
+                            sj["name"].get<std::string>() :
+                            step.step;
+            step.enabled = sj.contains("enabled") && sj["enabled"].is_boolean() ?
+                               sj["enabled"].get<bool>() :
+                               true;
+
+            if (sj.contains("params") && sj["params"].is_object()) {
+                const auto& params = sj["params"];
+                auto get_param_str = [&params](const char* key) -> std::string {
+                    return params.contains(key) && params[key].is_string() ?
+                               params[key].get<std::string>() :
+                               std::string{};
+                };
+                auto get_param_double = [&params](const char* key) -> double {
+                    return params.contains(key) && params[key].is_number() ?
+                               params[key].get<double>() :
+                               0.0;
+                };
+
+                if (step.step == "face_swapper") {
+                    config::FaceSwapperParams p;
+                    p.model = get_param_str("model");
+                    p.face_selector_mode = config::FaceSelectorMode::Many;
+                    if (params.contains("face_selector_mode")
+                        && params["face_selector_mode"].is_string()) {
+                        auto r = config::parse_face_selector_mode(
+                            params["face_selector_mode"].get<std::string>());
+                        if (r.is_ok()) { p.face_selector_mode = r.value(); }
+                    }
+                    if (params.contains("reference_face_path")
+                        && params["reference_face_path"].is_string()) {
+                        p.reference_face_path = params["reference_face_path"].get<std::string>();
+                    }
+                    step.params = std::move(p);
+                } else if (step.step == "face_enhancer") {
+                    config::FaceEnhancerParams p;
+                    p.model = get_param_str("model");
+                    p.blend_factor = get_param_double("blend_factor");
+                    p.face_selector_mode = config::FaceSelectorMode::Many;
+                    if (params.contains("face_selector_mode")
+                        && params["face_selector_mode"].is_string()) {
+                        auto r = config::parse_face_selector_mode(
+                            params["face_selector_mode"].get<std::string>());
+                        if (r.is_ok()) { p.face_selector_mode = r.value(); }
+                    }
+                    if (params.contains("reference_face_path")
+                        && params["reference_face_path"].is_string()) {
+                        p.reference_face_path = params["reference_face_path"].get<std::string>();
+                    }
+                    step.params = std::move(p);
+                } else if (step.step == "expression_restorer") {
+                    config::ExpressionRestorerParams p;
+                    p.model = get_param_str("model");
+                    p.restore_factor = get_param_double("restore_factor");
+                    p.face_selector_mode = config::FaceSelectorMode::Many;
+                    if (params.contains("face_selector_mode")
+                        && params["face_selector_mode"].is_string()) {
+                        auto r = config::parse_face_selector_mode(
+                            params["face_selector_mode"].get<std::string>());
+                        if (r.is_ok()) { p.face_selector_mode = r.value(); }
+                    }
+                    if (params.contains("reference_face_path")
+                        && params["reference_face_path"].is_string()) {
+                        p.reference_face_path = params["reference_face_path"].get<std::string>();
+                    }
+                    step.params = std::move(p);
+                } else if (step.step == "frame_enhancer") {
+                    config::FrameEnhancerParams p;
+                    p.model = get_param_str("model");
+                    p.enhance_factor = get_param_double("enhance_factor");
+                    step.params = std::move(p);
+                } else {
+                    // 未知 step 类型：回退为 cli_params 原始映射（尽力反序列化）
+                    for (auto it = params.begin(); it != params.end(); ++it) {
+                        if (it.value().is_string()) {
+                            step.cli_params[it.key()] = it.value().get<std::string>();
+                        } else {
+                            step.cli_params[it.key()] = it.value().dump();
+                        }
+                    }
+                }
+            }
+            cfg.pipeline.push_back(std::move(step));
+        }
+    }
+
+    return Result<config::TaskConfig>::ok(std::move(cfg));
 }
 
 } // namespace config
