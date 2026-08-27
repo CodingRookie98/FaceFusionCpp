@@ -423,6 +423,8 @@ web:
   port: 9090
   web_root: "assets/custom_web"
   temp_dir: "./custom_temp"
+  persist_dir: "./custom_tasks"
+  max_execution_seconds: 7200
 )";
     }
 
@@ -434,6 +436,8 @@ web:
         EXPECT_EQ(cfg.web.port, 9090);
         EXPECT_EQ(cfg.web.web_root, "assets/custom_web");
         EXPECT_EQ(cfg.web.temp_dir, "./custom_temp");
+        EXPECT_EQ(cfg.web.persist_dir, "./custom_tasks");
+        EXPECT_EQ(cfg.web.max_execution_seconds, 7200);
     }
 
     std::filesystem::remove(temp_file);

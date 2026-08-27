@@ -1,7 +1,7 @@
 # C++ 任务: 配置接线（WebConfig + parser + app_cli）
 
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 阶段四（3.4）
-> **状态**: 进行中
+> **状态**: 已完成
 
 ## 目标
 
@@ -67,9 +67,10 @@ auto tasks = std::make_shared<app::web::TaskManager>(
 
 ## 验收标准
 
-- [ ] 配置解析测试通过（或手动验证记录）
-- [ ] 编译通过（无警告），单元测试无回归
-- [ ] 集成测试 `python build.py --action test --test-label integration` 通过
+- [x] 配置解析测试通过（WebSectionParsedCorrectly 扩展：persist_dir/max_execution_seconds 解析正确）
+- [x] 编译通过（无警告），单元测试无回归
+- [x] 集成测试 `python build.py --action test --test-label integration` 通过（阶段三.五执行）
+- [x] 完整单元测试套件 282/282 通过
 
 ## 提交信息
 

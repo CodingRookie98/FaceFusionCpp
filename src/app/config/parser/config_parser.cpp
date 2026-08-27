@@ -451,6 +451,8 @@ Result<AppConfig> ParseAppConfigFromJson(const json& j) {
     config.web.port = static_cast<uint16_t>(detail::GetInt(web_j, "port", 8000));
     config.web.web_root = detail::GetString(web_j, "web_root", "assets/web");
     config.web.temp_dir = detail::GetString(web_j, "temp_dir", "./temp/uploads");
+    config.web.persist_dir = detail::GetString(web_j, "persist_dir", "./temp/tasks");
+    config.web.max_execution_seconds = detail::GetInt(web_j, "max_execution_seconds", 3600);
 
     // temp_directory
     config.temp_directory = detail::GetString(j, "temp_directory", "./temp");
