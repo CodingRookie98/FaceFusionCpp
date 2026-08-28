@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.5.0** | 2026-08-28 | AI Agent | 王辉 | P1 批次 A 验收合并（`4d38789`）：P1-1（`84c4f5d`）、P1-5（`6a0cd1d`）、P-3（`10f5757`）、P-4（`4e4d311`）全部修复；单元 308/308、E2E 14/14；集成全量 2 次各有 1 例随机 Web flaky（单独复现通过，记录为既有测试稳定性问题）。 |
 | **V1.4.0** | 2026-08-28 | AI Agent | 王辉 | P0 优化批次验收合并（`18b6018`）：P0-1（`df805f2`）、P0-2（`87c03d3`）、P0-3（`a61112a`）、会话 P-2 容量（`ca2afeb`）全部修复；单元 296/296、集成 142/142、E2E 14/14 全绿。 |
 | **V1.3.0** | 2026-08-28 | AI Agent | 王辉 | 新增 §7 推理会话与推理池设计评估（InferenceSession + SessionPool）：确认 configure/cleanup_expired/preload_session 全项目无调用点（配置化、TTL 清理、预加载均未接线）；输出 S-1~S-5（session 层）与 P-1~P-5（池层）问题清单，P-1 池锁持锁建 session 为 P0 级并行放大器。 |
 | **V1.2.0** | 2026-08-28 | AI Agent | 王辉 | 补充 P2-2 多视频并行资源开销专项评估：显存（权重共享不翻倍，增量 10-20%/任务，LRU max_entries=3 单任务已超限）、内存（~100-300MB/视频线性增长）、收益面（仅 CPU-bound 场景）；新增 P2-2a 条目（SessionPool 容量超限）。 |
@@ -124,6 +125,8 @@ for (i) for (j) sum += source_embedding[j] * m_initializer_array[j*len+i];  // 5
 
 ### P1-1 🟠 Strict 模式（默认）`max_queue_size=4` 卡死流水线吞吐
 
+> ✅ **已修复（2026-08-28, `84c4f5d`）**: 新增 `strict_queue_limit()`（min(config, 16)），Strict 路径队列上限 4→16；未配置时默认 16。配套测试 3 例。
+
 **位置**: `runner_video.cpp:692` + `app.yaml:21`（`memory_strategy: "strict"` 是默认）
 
 **机理**: 所有视频默认走 `ProcessVideoStrict`，帧队列上限压到 4 → reader 频繁阻塞、GPU 空闲窗口增大。
@@ -171,6 +174,8 @@ for (i) for (j) sum += source_embedding[j] * m_initializer_array[j*len+i];  // 5
 **机理**: worker_loop 在持有 `mutex` 状态下 `wait_for`，期间 `submit/cancel/set_priority/进度更新` 全部阻塞；且 `listener` 同步调用（WebSocket 推送慢会拖慢执行线程）。
 
 ### P1-5 🟠 多 worker 并发抢 GPU，无显式串行化
+
+> ✅ **已修复（2026-08-28, `6a0cd1d`）**: Pipeline worker_loop 用 `std::counting_semaphore` 实现 GPU 并发闸门（`PipelineConfig.max_concurrent_gpu_tasks`，默认 2，0=不限），runner 全路径接线；RAII 释放防异常泄漏。配套测试 3 例（峰值限制/无限/保序）。
 
 **位置**: `pipeline_impl.ixx:96-117` + `inference_session.cpp:392-397`（`run()` 无锁）
 
@@ -255,8 +260,8 @@ for (i) for (j) sum += source_embedding[j] * m_initializer_array[j*len+i];  // 5
 | :--- | :--- | :--- | :--- |
 | P-1 | `get_or_create` 持池锁调用 factory | factory 内 `load_model` 构建 TRT 引擎可耗时数秒，期间**全局阻塞**所有 session 的 get/evict/cleanup（单 mutex）。多任务/多线程并发时是硬瓶颈 | **P0**（并行场景放大器） |
 | P-2 | `max_entries=3` 单任务已超限 | 换脸+增强+分割 = 6 session > 3 → LRU 驱逐/重建常态，显存抖动 + TRT 重载秒级延迟 ✅ **已修复（`ca2afeb`）**：默认 3→10 | P1 |
-| P-3 | TTL 无调度者 | `cleanup_expired()` 无调用点 → 空闲 session 永不释放 | P1 |
-| P-4 | key 不含模型文件指纹 | 模型文件热更新（同路径覆盖）后 key 不变 → **命中旧 session，新权重不生效**，需重启进程 | P1（运维坑） |
+| P-3 | TTL 无调度者 | `cleanup_expired()` 无调用点 → 空闲 session 永不释放 ✅ **已修复（`10f5757`）**：get_or_create 惰性触发（cleanup_interval 默认 30s） | P1 |
+| P-4 | key 不含模型文件指纹 | 模型文件热更新（同路径覆盖）后 key 不变 → **命中旧 session，新权重不生效**，需重启进程 ✅ **已修复（`4e4d311`）**：key 追加 size+mtime 指纹 | P1（运维坑） |
 | P-5 | LRU 驱逐不感知引用计数 | 被任务持有的 session 被驱逐后，旧任务继续用（shared_ptr 保护，安全），但新任务重建 → 无谓显存/时间开销 | P2 |
 
 ### 7.4 Registry 评估
