@@ -182,7 +182,6 @@ TEST_F(SessionPoolTest, ExplicitSmallCapacityStillEvicts) {
     EXPECT_EQ(pool.size(), 2);
     EXPECT_EQ(pool.get_stats().evictions, 1);
 }
-
 TEST_F(SessionPoolTest, ExplicitLargeCapacityHonored) {
     PoolConfig config;
     config.max_entries = 20;
@@ -194,4 +193,61 @@ TEST_F(SessionPoolTest, ExplicitLargeCapacityHonored) {
 
     EXPECT_EQ(pool.size(), 10);
     EXPECT_EQ(pool.get_stats().evictions, 0);
+}
+
+// ---- T4: TTL 惰性清理（get_or_create 周期触发） ----
+
+TEST_F(SessionPoolTest, LazyCleanupExpiresIdleSessions) {
+    PoolConfig config;
+    config.idle_timeout = std::chrono::milliseconds(50);
+    config.cleanup_interval = std::chrono::milliseconds(0); // 每次 get 都清理
+    SessionPool pool(config);
+
+    auto factory = []() { return std::make_shared<MockInferenceSession>(); };
+
+    pool.get_or_create("idle_key", factory);
+    EXPECT_EQ(pool.size(), 1);
+
+    // 等待 idle_key 过期
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    // 触发惰性清理（新 key 的 get_or_create）
+    pool.get_or_create("new_key", factory);
+
+    EXPECT_EQ(pool.get_stats().expirations, 1);
+    EXPECT_EQ(pool.size(), 1);
+    EXPECT_EQ(pool.get_stats().hits + pool.get_stats().misses, 2); // new_key 为 miss
+}
+
+TEST_F(SessionPoolTest, LazyCleanupKeepsFreshSessions) {
+    PoolConfig config;
+    config.idle_timeout = std::chrono::seconds(10);
+    config.cleanup_interval = std::chrono::milliseconds(0);
+    SessionPool pool(config);
+
+    auto factory = []() { return std::make_shared<MockInferenceSession>(); };
+
+    pool.get_or_create("fresh_key", factory);
+    pool.get_or_create("another_key", factory);
+
+    EXPECT_EQ(pool.size(), 2);
+    EXPECT_EQ(pool.get_stats().expirations, 0);
+}
+
+TEST_F(SessionPoolTest, LazyCleanupThrottledByInterval) {
+    PoolConfig config;
+    config.idle_timeout = std::chrono::milliseconds(50);
+    config.cleanup_interval = std::chrono::seconds(10); // 长间隔节流
+    SessionPool pool(config);
+
+    auto factory = []() { return std::make_shared<MockInferenceSession>(); };
+
+    pool.get_or_create("idle_key", factory);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    // 清理被节流：idle_key 虽过期但不触发清理
+    pool.get_or_create("new_key", factory);
+
+    EXPECT_EQ(pool.get_stats().expirations, 0);
+    EXPECT_EQ(pool.size(), 2);
 }

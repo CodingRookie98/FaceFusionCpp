@@ -40,6 +40,9 @@ struct SessionPool::Impl {
     CacheEntry* lru_tail{nullptr}; // Least recently used
     mutable std::mutex mutex;
     Stats stats;
+    std::chrono::steady_clock::time_point last_cleanup{};
+
+    size_t cleanup_expired_internal(const std::chrono::steady_clock::time_point& now);
 
     void move_to_head(CacheEntry* entry) {
         if (lru_head == entry) return;
@@ -97,6 +100,14 @@ std::shared_ptr<InferenceSession> SessionPool::get_or_create(
 
     if (!m_impl->config.enable) { return factory(); }
 
+    // 惰性 TTL 清理：达到清理间隔时移除过期 session（无线程/调度器）
+    const auto now = std::chrono::steady_clock::now();
+    const auto interval = m_impl->config.cleanup_interval;
+    if (interval.count() <= 0 || now - m_impl->last_cleanup >= interval) {
+        m_impl->cleanup_expired_internal(now);
+        m_impl->last_cleanup = now;
+    }
+
     // Check cache
     if (auto it = m_impl->cache.find(key); it != m_impl->cache.end()) {
         auto* entry = it->second.get();
@@ -149,22 +160,26 @@ void SessionPool::clear() {
 
 size_t SessionPool::cleanup_expired() {
     std::lock_guard lock(m_impl->mutex);
-    if (m_impl->config.idle_timeout.count() <= 0) return 0;
+    return m_impl->cleanup_expired_internal(std::chrono::steady_clock::now());
+}
 
-    auto now = std::chrono::steady_clock::now();
+size_t SessionPool::Impl::cleanup_expired_internal(
+    const std::chrono::steady_clock::time_point& now) {
+    if (config.idle_timeout.count() <= 0) return 0;
+
     std::vector<std::string> expired_keys;
 
-    for (const auto& [key, entry] : m_impl->cache) {
+    for (const auto& [key, entry] : cache) {
         auto idle_time = now - entry->last_access;
-        if (idle_time > m_impl->config.idle_timeout) { expired_keys.push_back(key); }
+        if (idle_time > config.idle_timeout) { expired_keys.push_back(key); }
     }
 
     size_t count = 0;
     for (const auto& key : expired_keys) {
-        if (auto it = m_impl->cache.find(key); it != m_impl->cache.end()) {
-            m_impl->remove_entry(it->second.get());
-            m_impl->cache.erase(it);
-            m_impl->stats.expirations++;
+        if (auto it = cache.find(key); it != cache.end()) {
+            remove_entry(it->second.get());
+            cache.erase(it);
+            stats.expirations++;
             count++;
         }
     }
