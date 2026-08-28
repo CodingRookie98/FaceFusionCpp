@@ -19,22 +19,25 @@ namespace {
 class FakeExecutor : public ITaskExecutor {
 public:
     int run(const TaskConfig& config, const services::pipeline::ProgressCallback& cb) override {
-        if (block) {
-            while (!cancelled.load()) { std::this_thread::sleep_for(std::chrono::milliseconds(5)); }
-            return 2;
-        }
+        // Simulate producing partial output BEFORE blocking: the file must
+        // exist on disk before the task times out, so the test can verify
+        // that partial results survive a timeout.
         if (create_dummy_result && !config.io.output.path.empty()) {
             std::error_code ec;
             std::filesystem::create_directories(config.io.output.path, ec);
             std::ofstream(std::filesystem::path(config.io.output.path) / "partial.png") << "x";
+        }
+        if (block) {
+            while (!cancelled.load()) { std::this_thread::sleep_for(std::chrono::milliseconds(5)); }
+            return 2;
         }
         return fail_code;
     }
     void cancel() override { cancelled.store(true); }
 
     std::atomic<bool> cancelled{false};
-    bool block = false;
-    bool create_dummy_result = false;
+    std::atomic<bool> block{false};
+    std::atomic<bool> create_dummy_result{false};
     int fail_code = 0;
 };
 
@@ -132,13 +135,11 @@ TEST(TaskManagerTimeoutTest, PartialOutputKeptAfterTimeout) {
     std::filesystem::remove_all("web_timeout_output");
     auto id = mgr.submit(MakeConfig());
     EXPECT_EQ(WaitForTerminal(mgr, id, std::chrono::seconds(8)), TaskStatus::Failed);
-    // FakeExecutor block 分支在 cancel 前已写 partial.png（create_dummy_result 在 block
-    // 前置检查后）
     auto entry = mgr.get(id);
     ASSERT_TRUE(entry.has_value());
-    // 输出目录存在（部分产物保留）
-    std::error_code ec;
-    EXPECT_TRUE(std::filesystem::is_directory("web_timeout_output", ec));
+    // 超时前已产出的部分帧文件必须保留在任务的隔离输出目录
+    EXPECT_TRUE(std::filesystem::exists(std::filesystem::path(entry->config.io.output.path)
+                                        / "partial.png"));
     std::filesystem::remove_all("web_timeout_output");
     mgr.shutdown();
 }

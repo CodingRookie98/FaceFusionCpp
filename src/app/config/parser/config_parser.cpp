@@ -788,6 +788,7 @@ Result<nlohmann::json> SerializeTaskConfig(const config::TaskConfig& config) {
         sj["name"] = step.name;
         sj["enabled"] = step.enabled;
         sj["params"] = serialize_step_params(step);
+        if (!step.cli_params.empty()) { sj["cli_params"] = step.cli_params; }
         pipeline.push_back(std::move(sj));
     }
     j["pipeline"] = std::move(pipeline);
@@ -909,6 +910,7 @@ Result<config::TaskConfig> DeserializeTaskConfig(const nlohmann::json& j) {
         if (fa.contains("face_detector") && fa["face_detector"].is_object()) {
             const auto& fd = fa["face_detector"];
             if (fd.contains("models") && fd["models"].is_array()) {
+                cfg.face_analysis.face_detector.models.clear(); // 覆盖 struct 默认数组
                 for (const auto& m : fd["models"]) {
                     if (m.is_string()) {
                         cfg.face_analysis.face_detector.models.push_back(m.get<std::string>());
@@ -939,6 +941,7 @@ Result<config::TaskConfig> DeserializeTaskConfig(const nlohmann::json& j) {
         if (fa.contains("face_masker") && fa["face_masker"].is_object()) {
             const auto& fm = fa["face_masker"];
             if (fm.contains("types") && fm["types"].is_array()) {
+                cfg.face_analysis.face_masker.types.clear(); // 覆盖 struct 默认数组
                 for (const auto& t : fm["types"]) {
                     if (t.is_string()) {
                         cfg.face_analysis.face_masker.types.push_back(t.get<std::string>());
@@ -946,6 +949,7 @@ Result<config::TaskConfig> DeserializeTaskConfig(const nlohmann::json& j) {
                 }
             }
             if (fm.contains("region") && fm["region"].is_array()) {
+                cfg.face_analysis.face_masker.region.clear(); // 覆盖 struct 默认数组
                 for (const auto& r : fm["region"]) {
                     if (r.is_string()) {
                         cfg.face_analysis.face_masker.region.push_back(r.get<std::string>());
@@ -1046,6 +1050,15 @@ Result<config::TaskConfig> DeserializeTaskConfig(const nlohmann::json& j) {
                         } else {
                             step.cli_params[it.key()] = it.value().dump();
                         }
+                    }
+                }
+            }
+            if (sj.contains("cli_params") && sj["cli_params"].is_object()) {
+                for (auto it = sj["cli_params"].begin(); it != sj["cli_params"].end(); ++it) {
+                    if (it.value().is_string()) {
+                        step.cli_params[it.key()] = it.value().get<std::string>();
+                    } else {
+                        step.cli_params[it.key()] = it.value().dump();
                     }
                 }
             }

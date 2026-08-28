@@ -257,13 +257,25 @@ struct TaskManager::Impl {
         std::error_code ec;
         std::filesystem::create_directories(persist_dir, ec);
         auto path = std::filesystem::path(persist_dir) / (entry.id + ".json");
-        std::ofstream out(path, std::ios::trunc);
-        if (!out) {
-            Logger::get_instance()->warn(
-                std::format("[TaskManager] Failed to write snapshot for task {}", entry.id));
-            return;
+        // Atomic write: write to a temp file then rename, so a crash mid-write
+        // never leaves a truncated snapshot behind.
+        auto tmp_path = std::filesystem::path(persist_dir) / (entry.id + ".json.tmp");
+        {
+            std::ofstream out(tmp_path, std::ios::trunc);
+            if (!out) {
+                Logger::get_instance()->warn(
+                    std::format("[TaskManager] Failed to write snapshot for task {}", entry.id));
+                return;
+            }
+            out << task_entry_to_json(entry).dump(2);
         }
-        out << task_entry_to_json(entry).dump(2);
+        std::filesystem::rename(tmp_path, path, ec);
+        if (ec) {
+            std::filesystem::remove(tmp_path, ec);
+            Logger::get_instance()->warn(
+                std::format("[TaskManager] Failed to finalize snapshot for task {}: {}", entry.id,
+                            ec.message()));
+        }
     }
 
     void remove_snapshot(const std::string& id) {
