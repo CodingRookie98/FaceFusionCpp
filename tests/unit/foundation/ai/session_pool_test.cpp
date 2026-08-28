@@ -156,3 +156,42 @@ TEST_F(SessionPoolTest, DisableCaching) {
     EXPECT_EQ(factory_calls, 2); // Should be called every time
     EXPECT_EQ(pool.size(), 0);
 }
+
+TEST_F(SessionPoolTest, DefaultCapacitySupportsSixSessions) {
+    // 默认容量必须 >= 单任务模型组合数（detector+landmarker+swapper+enhancer+occlusion+region = 6）
+    SessionPool pool;
+    auto factory = []() { return std::make_shared<MockInferenceSession>(); };
+
+    for (int i = 1; i <= 6; ++i) { pool.get_or_create("key" + std::to_string(i), factory); }
+
+    EXPECT_EQ(pool.size(), 6);
+    EXPECT_EQ(pool.get_stats().evictions, 0);
+}
+
+TEST_F(SessionPoolTest, ExplicitSmallCapacityStillEvicts) {
+    PoolConfig config;
+    config.max_entries = 2;
+    SessionPool pool(config);
+
+    auto factory = []() { return std::make_shared<MockInferenceSession>(); };
+
+    pool.get_or_create("key1", factory);
+    pool.get_or_create("key2", factory);
+    pool.get_or_create("key3", factory);
+
+    EXPECT_EQ(pool.size(), 2);
+    EXPECT_EQ(pool.get_stats().evictions, 1);
+}
+
+TEST_F(SessionPoolTest, ExplicitLargeCapacityHonored) {
+    PoolConfig config;
+    config.max_entries = 20;
+    SessionPool pool(config);
+
+    auto factory = []() { return std::make_shared<MockInferenceSession>(); };
+
+    for (int i = 1; i <= 10; ++i) { pool.get_or_create("key" + std::to_string(i), factory); }
+
+    EXPECT_EQ(pool.size(), 10);
+    EXPECT_EQ(pool.get_stats().evictions, 0);
+}
