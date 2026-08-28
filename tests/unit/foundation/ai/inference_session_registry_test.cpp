@@ -59,3 +59,71 @@ TEST_F(InferenceSessionRegistryTest, CleanupExpired) {
     auto registry = InferenceSessionRegistry::get_instance();
     EXPECT_EQ(registry->cleanup_expired(), 0);
 }
+
+// ---- T3: session key 包含模型文件指纹（热更新失效修复） ----
+
+TEST_F(InferenceSessionRegistryTest, KeyChangesWhenFileMtimeChanges) {
+    auto registry = InferenceSessionRegistry::get_instance();
+    Options opts;
+
+    std::string model_path = (fs::path(temp_dir) / "model.onnx").string();
+    {
+        std::ofstream f(model_path, std::ios::binary);
+        f.write("0123456789", 10);
+    }
+    const auto original_time = fs::last_write_time(model_path);
+
+    const std::string key1 = registry->generate_key(model_path, opts);
+
+    // 修改文件内容并更新 mtime
+    {
+        std::ofstream f(model_path, std::ios::binary | std::ios::trunc);
+        f.write("9876543210", 10);
+    }
+    fs::last_write_time(model_path, original_time + std::chrono::seconds(5));
+
+    const std::string key2 = registry->generate_key(model_path, opts);
+
+    EXPECT_NE(key1, key2) << "模型文件 mtime 变化后 key 应变化（热更新生效）";
+}
+
+TEST_F(InferenceSessionRegistryTest, KeyStableForUnchangedFile) {
+    auto registry = InferenceSessionRegistry::get_instance();
+    Options opts;
+
+    std::string model_path = (fs::path(temp_dir) / "stable.onnx").string();
+    {
+        std::ofstream f(model_path, std::ios::binary);
+        f.write("0123456789", 10);
+    }
+
+    const std::string key1 = registry->generate_key(model_path, opts);
+    const std::string key2 = registry->generate_key(model_path, opts);
+
+    EXPECT_EQ(key1, key2);
+}
+
+TEST_F(InferenceSessionRegistryTest, KeyIncludesFileSize) {
+    auto registry = InferenceSessionRegistry::get_instance();
+    Options opts;
+
+    std::string model_path = (fs::path(temp_dir) / "sized.onnx").string();
+    {
+        std::ofstream f(model_path, std::ios::binary);
+        f.write("0123456789", 10);
+    }
+    const auto original_time = fs::last_write_time(model_path);
+
+    const std::string key1 = registry->generate_key(model_path, opts);
+
+    // 改变文件大小但保持 mtime 不变 → size 应参与指纹
+    {
+        std::ofstream f(model_path, std::ios::binary | std::ios::trunc);
+        f.write("0123456789ABCDEF", 16);
+    }
+    fs::last_write_time(model_path, original_time);
+
+    const std::string key2 = registry->generate_key(model_path, opts);
+
+    EXPECT_NE(key1, key2) << "文件 size 变化后 key 应变化";
+}
