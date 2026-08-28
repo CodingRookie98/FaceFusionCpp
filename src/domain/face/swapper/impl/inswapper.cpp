@@ -95,14 +95,25 @@ cv::Mat InSwapper::swap_face(cv::Mat target_crop, const std::vector<float>& sour
     cv::Mat processed_crop = target_crop;
     if (processed_crop.size() != m_size) { cv::resize(processed_crop, processed_crop, m_size); }
 
+    // Embedding transform is task-invariant (source_embedding + initializer fixed) ->
+    // cache it and only recompute when the embedding changes.
+    std::vector<float> embedding_transform;
+    {
+        const std::lock_guard kLock(m_transform_mutex);
+        if (source_embedding != m_cached_embedding) {
+            m_cached_embedding = source_embedding;
+            m_cached_transform = compute_embedding_transform(source_embedding);
+            ++m_transform_count;
+        }
+        embedding_transform = m_cached_transform;
+    }
+
     // foundation::infrastructure::logger::ScopedTimer timer("InSwapper::Inference");
-    return apply_swap(source_embedding, processed_crop);
+    return apply_swap(embedding_transform, processed_crop);
 }
 
-std::tuple<std::vector<float>, std::vector<int64_t>, std::vector<float>, std::vector<int64_t>>
-InSwapper::prepare_input(const domain::face::types::Embedding& source_embedding,
-                         const cv::Mat& cropped_target_frame) const {
-    // 1. Prepare Source Embedding
+std::vector<float> InSwapper::compute_embedding_transform(
+    const domain::face::types::Embedding& source_embedding) const {
     std::vector<float> input_embedding_data;
     double norm = cv::norm(source_embedding, cv::NORM_L2);
     size_t lenFeature = source_embedding.size();
@@ -116,7 +127,14 @@ InSwapper::prepare_input(const domain::face::types::Embedding& source_embedding,
         }
         input_embedding_data.at(i) = static_cast<float>(sum / norm);
     }
+    return input_embedding_data;
+}
 
+std::tuple<std::vector<float>, std::vector<int64_t>, std::vector<float>, std::vector<int64_t>>
+InSwapper::prepare_input(const std::vector<float>& embedding_transform,
+                         const cv::Mat& cropped_target_frame) const {
+    // 1. Source embedding is already transformed by swap_face (cached)
+    std::vector<float> input_embedding_data = embedding_transform;
     std::vector<int64_t> input_embedding_shape{1,
                                                static_cast<int64_t>(input_embedding_data.size())};
 
@@ -186,10 +204,10 @@ cv::Mat InSwapper::process_output(const std::vector<Ort::Value>& output_tensors)
     return resultMat;
 }
 
-cv::Mat InSwapper::apply_swap(const Embedding& source_embedding,
+cv::Mat InSwapper::apply_swap(const std::vector<float>& embedding_transform,
                               const cv::Mat& cropped_target_frame) const {
     auto [input_embedding, embedding_shape, input_image, image_shape] =
-        prepare_input(source_embedding, cropped_target_frame);
+        prepare_input(embedding_transform, cropped_target_frame);
 
     std::vector<Ort::Value> inputTensors;
 

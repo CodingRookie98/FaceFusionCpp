@@ -198,3 +198,96 @@ TEST_F(InSwapperFp16Test, LoadModelReadsFp16InitializerCorrectly) {
     EXPECT_EQ(result.type(), CV_8UC3);
     EXPECT_TRUE(embedding_ok) << "FP16 initializer was not decoded correctly";
 }
+
+// ---- Embedding transform caching tests (T2) ----
+
+namespace {
+
+void SetupSwapperMocks(const std::shared_ptr<MockInferenceSession>& mock_session,
+                       const std::string& model_path) {
+    EXPECT_CALL(*mock_session, is_model_loaded()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_session, get_loaded_model_path()).WillRepeatedly(Return(model_path));
+
+    std::vector<std::vector<int64_t>> input_dims = {{1, 3, 128, 128}};
+    EXPECT_CALL(*mock_session, get_input_node_dims()).WillRepeatedly(Return(input_dims));
+
+    std::vector<std::string> input_names = {"source", "target"};
+    EXPECT_CALL(*mock_session, get_input_names()).WillRepeatedly(Return(input_names));
+
+    std::vector<int64_t> output_shape = {1, 3, 128, 128};
+    size_t output_size = 1 * 3 * 128 * 128;
+    std::vector<float> output_data(output_size, 0.5f);
+    // 值捕获 output_data/output_shape：lambda 生命周期超出本函数，引用捕获会悬空
+    EXPECT_CALL(*mock_session, run(_))
+        .WillRepeatedly([output_data, output_shape](const std::vector<Ort::Value>&) {
+            auto mem = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+            std::vector<Ort::Value> outs;
+            size_t output_size = output_data.size();
+            outs.push_back(Ort::Value::CreateTensor<float>(
+                mem, const_cast<float*>(output_data.data()), output_size, output_shape.data(),
+                output_shape.size()));
+            return outs;
+        });
+}
+
+} // namespace
+
+TEST_F(InSwapperTest, EmbeddingTransformComputedOncePerEmbedding) {
+    SetupSwapperMocks(mock_session, model_path);
+
+    InSwapper swapper;
+    Options options;
+    EXPECT_NO_THROW(swapper.load_model(model_path, options));
+
+    cv::Mat target_img = cv::Mat::zeros(128, 128, CV_8UC3);
+    std::vector<float> source_embedding(512, 0.1f);
+
+    auto r1 = swapper.swap_face(target_img, source_embedding);
+    ASSERT_FALSE(r1.empty());
+    EXPECT_EQ(swapper.embedding_transform_count(), 1u);
+
+    auto r2 = swapper.swap_face(target_img, source_embedding);
+    ASSERT_FALSE(r2.empty());
+    EXPECT_EQ(swapper.embedding_transform_count(), 1u) << "同 embedding 应命中缓存，不重算";
+}
+
+TEST_F(InSwapperTest, EmbeddingTransformInvalidatedOnChange) {
+    SetupSwapperMocks(mock_session, model_path);
+
+    InSwapper swapper;
+    Options options;
+    EXPECT_NO_THROW(swapper.load_model(model_path, options));
+
+    cv::Mat target_img = cv::Mat::zeros(128, 128, CV_8UC3);
+
+    std::vector<float> emb_a(512, 0.1f);
+    swapper.swap_face(target_img, emb_a);
+    EXPECT_EQ(swapper.embedding_transform_count(), 1u);
+
+    std::vector<float> emb_b(512, 0.2f);
+    swapper.swap_face(target_img, emb_b);
+    EXPECT_EQ(swapper.embedding_transform_count(), 2u);
+}
+
+TEST_F(InSwapperTest, SwapResultCorrectAcrossCalls) {
+    SetupSwapperMocks(mock_session, model_path);
+
+    InSwapper swapper;
+    Options options;
+    EXPECT_NO_THROW(swapper.load_model(model_path, options));
+
+    cv::Mat target_img = cv::Mat::zeros(128, 128, CV_8UC3);
+    std::vector<float> source_embedding(512, 0.1f);
+
+    auto r1 = swapper.swap_face(target_img, source_embedding);
+    ASSERT_FALSE(r1.empty());
+    EXPECT_EQ(swapper.embedding_transform_count(), 1u);
+
+    auto r2 = swapper.swap_face(target_img, source_embedding);
+    ASSERT_FALSE(r2.empty());
+    // 第二次应命中缓存（不重算变换）；输出非空且尺寸一致。
+    // 像素级一致性由模型确定性保证，mock 的 Ort::Value 包装不适用于像素对比。
+    EXPECT_EQ(swapper.embedding_transform_count(), 1u);
+    EXPECT_EQ(r1.size(), r2.size());
+    EXPECT_EQ(r1.type(), r2.type());
+}
