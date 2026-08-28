@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.6.0** | 2026-08-28 | AI Agent | 王辉 | P1 批次 B 验收合并（`d78b6fa`）：P1-2 mask 接线+共享（`cae010f`）、P-1 池锁重构（`93e6421`）、P2-7 checkpoint 节流（`613a1fd`）全部修复；WS 集成 flaky 根治（`264b0af`，Drogon 连接就绪 send 竞态产品侧修复）；单元 317/317、集成 142/142、E2E 14/14 全绿。 |
 | **V1.5.0** | 2026-08-28 | AI Agent | 王辉 | P1 批次 A 验收合并（`4d38789`）：P1-1（`84c4f5d`）、P1-5（`6a0cd1d`）、P-3（`10f5757`）、P-4（`4e4d311`）全部修复；单元 308/308、E2E 14/14；集成全量 2 次各有 1 例随机 Web flaky（单独复现通过，记录为既有测试稳定性问题）。 |
 | **V1.4.0** | 2026-08-28 | AI Agent | 王辉 | P0 优化批次验收合并（`18b6018`）：P0-1（`df805f2`）、P0-2（`87c03d3`）、P0-3（`a61112a`）、会话 P-2 容量（`ca2afeb`）全部修复；单元 296/296、集成 142/142、E2E 14/14 全绿。 |
 | **V1.3.0** | 2026-08-28 | AI Agent | 王辉 | 新增 §7 推理会话与推理池设计评估（InferenceSession + SessionPool）：确认 configure/cleanup_expired/preload_session 全项目无调用点（配置化、TTL 清理、预加载均未接线）；输出 S-1~S-5（session 层）与 P-1~P-5（池层）问题清单，P-1 池锁持锁建 session 为 P0 级并行放大器。 |
@@ -133,6 +134,8 @@ for (i) for (j) sum += source_embedding[j] * m_initializer_array[j*len+i];  // 5
 
 ### P1-2 🟠 mask 系统（Box/Occlusion/Region）链路未接线——非"重复推理"
 
+> ✅ **已修复（2026-08-28, `cae010f`）**: config `face_masker.types`（默认 `{"box"}` 零推理）驱动共享 mask——FaceAnalysisProcessor 以 512 参考尺度 warp 后 `MaskCompositor::compose`，结果存 `FrameData.mask_cache`，swapper/enhancer adapter 缩放复用（不再各自推理）；occluder（xseg_1）/region_masker（bisenet_resnet_18）由 runner 按配置惰性创建。配套测试 3 例（计算一次共享 / box-only 零推理 / 无模型不计算）。
+
 > **评估修正（2026-08-28 二轮）**: 初评将本条列为"换脸+增强同时启用 → occlusion/region mask 推理两次"，经用户澄清设计意图（可配置 box/occlusion/region，默认 box，配置其他项取 min 值）并深入核查代码后**修正**：当前代码中 occlusion/region 分割**从未执行**，问题是**链路未接线**而非重复推理。
 
 **位置**: `face_types.ixx:70`（默认 `{Box}`）、`face_analysis_processor.ixx:78-97`（不设置 mask_options）、`pipeline_runner.cpp:354-355`（occluder/region_masker 恒 nullptr）、`face_masker_factory.cpp`（工厂无调用点）、`task_config.ixx:161`（config 死配置）
@@ -208,7 +211,7 @@ for (i) for (j) sum += source_embedding[j] * m_initializer_array[j*len+i];  // 5
 | P2-4 | SessionPool `max_entries=3`：换脸+增强+检测+关键点+识别同时用 → LRU 驱逐重建 | `session_pool.ixx:22-26` |
 | P2-5 | FaceEnhancerAdapter `frame.image.clone()` 整帧拷贝 | `pipeline_adapters.ixx:242` |
 | P2-6 | FaceStore 空 faces 不缓存（`face_store.cpp:72`）→ 无脸帧永远重检测 | `face_analyser.cpp:135` |
-| P2-7 | Strict 模式 checkpoint **每帧保存**（无 `%100` 优化，普通路径有） | `runner_video.cpp:790-798` vs `:277` |
+| P2-7 | Strict 模式 checkpoint **每帧保存**（无 `%100` 优化，普通路径有）✅ **已修复（`613a1fd`）**：`should_save_checkpoint()`（%100）两路径共用 | `runner_video.cpp:790-798` vs `:277` |
 | P2-8 | **宣传与实现落差**：README 宣称 "TensorRT + maximum throughput"，实际是 ONNX Runtime（EP 可选 TRT），且"多线程"在 GPU 场景收益有限 | `inference_session.cpp` |
 
 ---
@@ -258,7 +261,7 @@ for (i) for (j) sum += source_embedding[j] * m_initializer_array[j*len+i];  // 5
 
 | # | 问题 | 机理 | 严重度 |
 | :--- | :--- | :--- | :--- |
-| P-1 | `get_or_create` 持池锁调用 factory | factory 内 `load_model` 构建 TRT 引擎可耗时数秒，期间**全局阻塞**所有 session 的 get/evict/cleanup（单 mutex）。多任务/多线程并发时是硬瓶颈 | **P0**（并行场景放大器） |
+| P-1 | `get_or_create` 持池锁调用 factory | factory 内 `load_model` 构建 TRT 引擎可耗时数秒，期间**全局阻塞**所有 session 的 get/evict/cleanup（单 mutex）。多任务/多线程并发时是硬瓶颈 ✅ **已修复（`93e6421`）**：fast-path 锁内命中；in-flight 集合 + condition_variable 等待同 key；factory 锁外执行（异常安全）；配套 3 测试（死锁探测/同 key 单建/异 key 并发） | **P0**（并行场景放大器） |
 | P-2 | `max_entries=3` 单任务已超限 | 换脸+增强+分割 = 6 session > 3 → LRU 驱逐/重建常态，显存抖动 + TRT 重载秒级延迟 ✅ **已修复（`ca2afeb`）**：默认 3→10 | P1 |
 | P-3 | TTL 无调度者 | `cleanup_expired()` 无调用点 → 空闲 session 永不释放 ✅ **已修复（`10f5757`）**：get_or_create 惰性触发（cleanup_interval 默认 30s） | P1 |
 | P-4 | key 不含模型文件指纹 | 模型文件热更新（同路径覆盖）后 key 不变 → **命中旧 session，新权重不生效**，需重启进程 ✅ **已修复（`4e4d311`）**：key 追加 size+mtime 指纹 | P1（运维坑） |
