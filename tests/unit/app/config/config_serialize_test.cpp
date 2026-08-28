@@ -38,8 +38,16 @@ TaskConfig MakeFullConfig() {
     cfg.resource.max_queue_size = 10;
     cfg.resource.execution_order = ExecutionOrder::Sequential;
     cfg.resource.memory_strategy = MemoryStrategy::Strict;
-    cfg.resource.segment_duration_seconds = 0;
-    cfg.resource.max_frames = 0;
+    cfg.resource.segment_duration_seconds = 15;
+    cfg.resource.max_frames = 300;
+
+    cfg.face_analysis.face_detector.models = {"yoloface", "scrfd"};
+    cfg.face_analysis.face_detector.score_threshold = 0.6;
+    cfg.face_analysis.face_landmarker.model = "2dfan4";
+    cfg.face_analysis.face_recognizer.model = "arcface_w600k_r50";
+    cfg.face_analysis.face_recognizer.similarity_threshold = 0.7;
+    cfg.face_analysis.face_masker.types = {"box", "occlusion"};
+    cfg.face_analysis.face_masker.region = {"face"};
 
     // 4 种 processor 全覆盖
     config::PipelineStep swapper;
@@ -121,6 +129,18 @@ TEST(TaskConfigSerializeTest, RoundTripPreservesAllFields) {
     EXPECT_EQ(out.resource.max_queue_size, cfg.resource.max_queue_size);
     EXPECT_EQ(out.resource.execution_order, cfg.resource.execution_order);
     EXPECT_EQ(out.resource.memory_strategy, cfg.resource.memory_strategy);
+    EXPECT_EQ(out.resource.segment_duration_seconds, cfg.resource.segment_duration_seconds);
+    EXPECT_EQ(out.resource.max_frames, cfg.resource.max_frames);
+
+    EXPECT_EQ(out.face_analysis.face_detector.models, cfg.face_analysis.face_detector.models);
+    EXPECT_DOUBLE_EQ(out.face_analysis.face_detector.score_threshold,
+                     cfg.face_analysis.face_detector.score_threshold);
+    EXPECT_EQ(out.face_analysis.face_landmarker.model, cfg.face_analysis.face_landmarker.model);
+    EXPECT_EQ(out.face_analysis.face_recognizer.model, cfg.face_analysis.face_recognizer.model);
+    EXPECT_DOUBLE_EQ(out.face_analysis.face_recognizer.similarity_threshold,
+                     cfg.face_analysis.face_recognizer.similarity_threshold);
+    EXPECT_EQ(out.face_analysis.face_masker.types, cfg.face_analysis.face_masker.types);
+    EXPECT_EQ(out.face_analysis.face_masker.region, cfg.face_analysis.face_masker.region);
 
     ASSERT_EQ(out.pipeline.size(), cfg.pipeline.size());
     for (std::size_t i = 0; i < cfg.pipeline.size(); ++i) {
@@ -218,4 +238,38 @@ TEST(TaskConfigSerializeTest, EmptyPipelineRoundTrips) {
     auto restored = DeserializeTaskConfig(json.value());
     ASSERT_TRUE(restored.is_ok());
     EXPECT_TRUE(restored.value().pipeline.empty());
+}
+
+// 6. 已知 step 类型的 cli_params 原始记录往返保留
+TEST(TaskConfigSerializeTest, CliParamsPreservedOnRoundTrip) {
+    TaskConfig cfg;
+    cfg.config_version = "0.34.1";
+    cfg.io.source_paths = {"s.jpg"};
+    cfg.io.target_paths = {"t.jpg"};
+
+    config::PipelineStep swapper;
+    swapper.step = "face_swapper";
+    swapper.name = "主角";
+    swapper.enabled = true;
+    swapper.cli_params = {{"model", "inswapper_128_fp16"}, {"face_selector_mode", "reference"}};
+    swapper.params = config::FaceSwapperParams{
+        .model = "inswapper_128_fp16",
+        .face_selector_mode = FaceSelectorMode::Reference,
+        .reference_face_path = "assets/lenna.bmp",
+    };
+    cfg.pipeline.push_back(std::move(swapper));
+
+    auto json = SerializeTaskConfig(cfg);
+    ASSERT_TRUE(json.is_ok());
+    ASSERT_TRUE(json.value()["pipeline"][0].contains("cli_params"));
+    EXPECT_EQ(json.value()["pipeline"][0]["cli_params"]["model"], "inswapper_128_fp16");
+
+    auto restored = DeserializeTaskConfig(json.value());
+    ASSERT_TRUE(restored.is_ok());
+    ASSERT_EQ(restored.value().pipeline.size(), 1u);
+    EXPECT_EQ(restored.value().pipeline[0].cli_params.at("model"), "inswapper_128_fp16");
+    EXPECT_EQ(restored.value().pipeline[0].cli_params.at("face_selector_mode"), "reference");
+    // typed params 仍完整
+    const auto& p = std::get<FaceSwapperParams>(restored.value().pipeline[0].params);
+    EXPECT_EQ(p.face_selector_mode, FaceSelectorMode::Reference);
 }
