@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.4.0** | 2026-08-28 | AI Agent | 王辉 | P0 优化批次验收合并（`18b6018`）：P0-1（`df805f2`）、P0-2（`87c03d3`）、P0-3（`a61112a`）、会话 P-2 容量（`ca2afeb`）全部修复；单元 296/296、集成 142/142、E2E 14/14 全绿。 |
 | **V1.3.0** | 2026-08-28 | AI Agent | 王辉 | 新增 §7 推理会话与推理池设计评估（InferenceSession + SessionPool）：确认 configure/cleanup_expired/preload_session 全项目无调用点（配置化、TTL 清理、预加载均未接线）；输出 S-1~S-5（session 层）与 P-1~P-5（池层）问题清单，P-1 池锁持锁建 session 为 P0 级并行放大器。 |
 | **V1.2.0** | 2026-08-28 | AI Agent | 王辉 | 补充 P2-2 多视频并行资源开销专项评估：显存（权重共享不翻倍，增量 10-20%/任务，LRU max_entries=3 单任务已超限）、内存（~100-300MB/视频线性增长）、收益面（仅 CPU-bound 场景）；新增 P2-2a 条目（SessionPool 容量超限）。 |
 | **V1.1.0** | 2026-08-28 | AI Agent | 王辉 | 二轮讨论修正：P1-2 从"mask 重复推理"修正为"mask 系统链路未接线"；确认 Box/Occlusion/Region min 融合设计意图完整、接线缺失；量化若接线的质量收益与性能代价（共享 vs 不共享两方案）。 |
@@ -84,6 +85,8 @@ TaskManager (单 serial worker + exec_thread，任务级串行)
 
 ### P0-1 🔴 视频路径 FaceStore 缓存是纯负收益（每帧 2 次整帧哈希）
 
+> ✅ **已修复（2026-08-28, `df805f2`）**: `FaceAnalyser` 新增 `set_face_cache_enabled()` + `Options.enable_face_cache`；`PipelineRunner` 视频路径禁用、图像批次保留。配套测试 3 例。
+
 **位置**: `face_analyser.cpp:66,170` + `face_store.cpp:161-184`
 
 **机理**:
@@ -95,6 +98,8 @@ TaskManager (单 serial worker + exec_thread，任务级串行)
 
 ### P0-2 🔴 InSwapper embedding 变换 O(n²) 每次重算
 
+> ✅ **已修复（2026-08-28, `87c03d3`）**: `swap_face` 按 embedding 相等缓存变换结果（mutex 保护），`prepare_input` 接收预变换数据。配套测试 3 例。
+
 **位置**: `inswapper.cpp:111-118`
 
 ```cpp
@@ -104,6 +109,8 @@ for (i) for (j) sum += source_embedding[j] * m_initializer_array[j*len+i];  // 5
 **机理**: 每帧每张脸执行 262,144 次乘加，但 `source_embedding` 与 `m_initializer_array` 在任务内恒定 → 结果恒定 → **应缓存**（任务级算一次）。
 
 ### P0-3 🔴 每视频重建 swapper 并重新解析 ONNX protobuf
+
+> ✅ **已修复（2026-08-28, `a61112a`）**: 新增 `DomainServiceCache`（runner:types，按 `{step}:{model}` key 缓存类型擦除实例）；`PipelineRunner` 跨视频/批次复用 swapper/enhancer/restorer/frame_enhancer 工厂，E302 模型检查保留。配套测试 4 例。
 
 **位置**: `pipeline_runner.cpp:352`（`domain_ctx` 局部变量，每视频新建）→ `pipeline_runner.cpp:380` `swapper->load_model()` → `inswapper.cpp:29-84` `init()`
 
@@ -247,7 +254,7 @@ for (i) for (j) sum += source_embedding[j] * m_initializer_array[j*len+i];  // 5
 | # | 问题 | 机理 | 严重度 |
 | :--- | :--- | :--- | :--- |
 | P-1 | `get_or_create` 持池锁调用 factory | factory 内 `load_model` 构建 TRT 引擎可耗时数秒，期间**全局阻塞**所有 session 的 get/evict/cleanup（单 mutex）。多任务/多线程并发时是硬瓶颈 | **P0**（并行场景放大器） |
-| P-2 | `max_entries=3` 单任务已超限 | 换脸+增强+分割 = 6 session > 3 → LRU 驱逐/重建常态，显存抖动 + TRT 重载秒级延迟 | P1 |
+| P-2 | `max_entries=3` 单任务已超限 | 换脸+增强+分割 = 6 session > 3 → LRU 驱逐/重建常态，显存抖动 + TRT 重载秒级延迟 ✅ **已修复（`ca2afeb`）**：默认 3→10 | P1 |
 | P-3 | TTL 无调度者 | `cleanup_expired()` 无调用点 → 空闲 session 永不释放 | P1 |
 | P-4 | key 不含模型文件指纹 | 模型文件热更新（同路径覆盖）后 key 不变 → **命中旧 session，新权重不生效**，需重启进程 | P1（运维坑） |
 | P-5 | LRU 驱逐不感知引用计数 | 被任务持有的 session 被驱逐后，旧任务继续用（shared_ptr 保护，安全），但新任务重建 → 无谓显存/时间开销 | P2 |
