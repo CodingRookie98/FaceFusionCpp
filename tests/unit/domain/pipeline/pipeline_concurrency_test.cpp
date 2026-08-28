@@ -93,8 +93,9 @@ TEST(PipelineConcurrencyTest, ConcurrencyUnlimitedWhenZero) {
     }
     pipeline.stop();
 
-    // 4 worker 无闸门时峰值应达 4
-    EXPECT_EQ(proc->peak.load(), 4);
+    // 4 worker 无闸门时并发应 > 闸门限制（2），证明闸门关闭生效；
+    // 不断言 == 4（峰值依赖 worker 调度的同时活跃性）
+    EXPECT_GT(proc->peak.load(), 2);
 }
 
 TEST(PipelineConcurrencyTest, OrderPreservedWithGating) {

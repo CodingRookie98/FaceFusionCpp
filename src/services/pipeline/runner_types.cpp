@@ -23,6 +23,7 @@ import domain.ai.model_repository;
 import domain.face.masker;
 import domain.face.analyser;
 import foundation.ai.inference_session;
+import config.task; // FaceMaskerConfig
 import services.pipeline.metrics;
 
 export namespace services::pipeline {
@@ -61,6 +62,7 @@ struct ProcessorContext {
     foundation::ai::inference_session::Options
         inference_options;                         ///< Configuration for ONNX inference
     MetricsCollector* metrics_collector = nullptr; ///< Performance metrics collector
+    config::FaceMaskerConfig face_masker_config;   ///< Face masker configuration (shared masks)
 };
 
 /**

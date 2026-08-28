@@ -642,7 +642,7 @@ Result<TaskConfig> ParseTaskConfigFromJson(const json& j) {
     auto masker_j = detail::GetObject(fa_j, "face_masker");
     config.face_analysis.face_masker.types = detail::GetStringArray(masker_j, "types");
     if (config.face_analysis.face_masker.types.empty()) {
-        config.face_analysis.face_masker.types = {"box", "occlusion", "region"};
+        config.face_analysis.face_masker.types = {"box"};
     }
     config.face_analysis.face_masker.region = detail::GetStringArray(masker_j, "region");
     if (config.face_analysis.face_masker.region.empty()) {
