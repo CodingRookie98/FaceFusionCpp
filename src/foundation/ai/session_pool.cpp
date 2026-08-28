@@ -10,7 +10,9 @@ module;
 #include <string>
 #include <chrono>
 #include <unordered_map>
+#include <unordered_set>
 #include <mutex>
+#include <condition_variable>
 #include <vector>
 #include <thread>
 #include <cstdio> // Debug
@@ -39,6 +41,8 @@ struct SessionPool::Impl {
     CacheEntry* lru_head{nullptr}; // Most recently used
     CacheEntry* lru_tail{nullptr}; // Least recently used
     mutable std::mutex mutex;
+    std::condition_variable cv;
+    std::unordered_set<std::string> in_flight; // 正在创建的 key（锁外 factory 防重复）
     Stats stats;
     std::chrono::steady_clock::time_point last_cleanup{};
 
@@ -96,47 +100,74 @@ SessionPool::~SessionPool() = default;
 
 std::shared_ptr<InferenceSession> SessionPool::get_or_create(
     const std::string& key, std::function<std::shared_ptr<InferenceSession>()> factory) {
-    std::lock_guard lock(m_impl->mutex);
+    {
+        std::unique_lock lock(m_impl->mutex);
 
-    if (!m_impl->config.enable) { return factory(); }
+        if (!m_impl->config.enable) { return factory(); }
 
-    // 惰性 TTL 清理：达到清理间隔时移除过期 session（无线程/调度器）
-    const auto now = std::chrono::steady_clock::now();
-    const auto interval = m_impl->config.cleanup_interval;
-    if (interval.count() <= 0 || now - m_impl->last_cleanup >= interval) {
-        m_impl->cleanup_expired_internal(now);
-        m_impl->last_cleanup = now;
+        // 惰性 TTL 清理：达到清理间隔时移除过期 session（无线程/调度器）
+        const auto now = std::chrono::steady_clock::now();
+        const auto interval = m_impl->config.cleanup_interval;
+        if (interval.count() <= 0 || now - m_impl->last_cleanup >= interval) {
+            m_impl->cleanup_expired_internal(now);
+            m_impl->last_cleanup = now;
+        }
+
+        // Fast path: cache hit
+        if (auto it = m_impl->cache.find(key); it != m_impl->cache.end()) {
+            auto* entry = it->second.get();
+            entry->last_access = std::chrono::steady_clock::now();
+            m_impl->move_to_head(entry);
+            m_impl->stats.hits++;
+            return entry->session;
+        }
+
+        // Same key already being created by another thread -> wait for completion
+        while (m_impl->in_flight.contains(key)) { m_impl->cv.wait(lock); }
+        // Re-check after wait (creator may have finished)
+        if (auto it = m_impl->cache.find(key); it != m_impl->cache.end()) {
+            auto* entry = it->second.get();
+            entry->last_access = std::chrono::steady_clock::now();
+            m_impl->move_to_head(entry);
+            m_impl->stats.hits++;
+            return entry->session;
+        }
+
+        m_impl->stats.misses++;
+        m_impl->in_flight.insert(key);
     }
 
-    // Check cache
-    if (auto it = m_impl->cache.find(key); it != m_impl->cache.end()) {
-        auto* entry = it->second.get();
-        entry->last_access = std::chrono::steady_clock::now();
-        m_impl->move_to_head(entry);
-        m_impl->stats.hits++;
-        return entry->session;
+    // Factory runs OUTSIDE the pool lock (TRT engine load can take seconds)
+    std::shared_ptr<InferenceSession> session;
+    try {
+        session = factory();
+    } catch (...) {
+        std::lock_guard lock(m_impl->mutex);
+        m_impl->in_flight.erase(key);
+        m_impl->cv.notify_all();
+        throw;
     }
 
-    m_impl->stats.misses++;
+    {
+        std::lock_guard lock(m_impl->mutex);
+        m_impl->in_flight.erase(key);
 
-    // Create new
-    auto session = factory();
-    if (!session) return nullptr;
-
-    // Check capacity
-    if (m_impl->config.max_entries > 0 && m_impl->cache.size() >= m_impl->config.max_entries) {
-        m_impl->evict_lru();
+        if (session) {
+            // Check capacity
+            if (m_impl->config.max_entries > 0
+                && m_impl->cache.size() >= m_impl->config.max_entries) {
+                m_impl->evict_lru();
+            }
+            auto entry = std::make_unique<Impl::CacheEntry>();
+            entry->key = key;
+            entry->session = session;
+            entry->last_access = std::chrono::steady_clock::now();
+            auto* entry_ptr = entry.get();
+            m_impl->cache[key] = std::move(entry);
+            m_impl->add_to_head(entry_ptr);
+        }
+        m_impl->cv.notify_all();
     }
-
-    // Add to cache
-    auto entry = std::make_unique<Impl::CacheEntry>();
-    entry->key = key;
-    entry->session = session;
-    entry->last_access = std::chrono::steady_clock::now();
-
-    auto* entry_ptr = entry.get();
-    m_impl->cache[key] = std::move(entry);
-    m_impl->add_to_head(entry_ptr);
 
     return session;
 }

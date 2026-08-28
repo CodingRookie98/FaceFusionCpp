@@ -1,7 +1,7 @@
 # C++ 任务: mask 链路接线 + 共享（P1-2 方案 B）
 
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 任务 T1
-> **状态**: 进行中
+> **状态**: 已完成（commit `cae010f`）
 
 ## 目标
 

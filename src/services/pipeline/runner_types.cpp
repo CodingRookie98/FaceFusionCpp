@@ -23,6 +23,7 @@ import domain.ai.model_repository;
 import domain.face.masker;
 import domain.face.analyser;
 import foundation.ai.inference_session;
+import config.task; // FaceMaskerConfig
 import services.pipeline.metrics;
 
 export namespace services::pipeline {
@@ -61,6 +62,7 @@ struct ProcessorContext {
     foundation::ai::inference_session::Options
         inference_options;                         ///< Configuration for ONNX inference
     MetricsCollector* metrics_collector = nullptr; ///< Performance metrics collector
+    config::FaceMaskerConfig face_masker_config;   ///< Face masker configuration (shared masks)
 };
 
 /**
@@ -107,6 +109,15 @@ inline constexpr int kStrictQueueCap = 16; ///< Strict 内存模式 Pipeline 帧
 int strict_queue_limit(int configured) {
     if (configured <= 0) return kStrictQueueCap;
     return std::min(configured, kStrictQueueCap);
+}
+
+inline constexpr int64_t kCheckpointInterval = 100; ///< Checkpoint 保存帧间隔
+
+/**
+ * @brief 是否应保存 checkpoint（每 kCheckpointInterval 帧一次）
+ */
+bool should_save_checkpoint(int64_t seq_id) {
+    return seq_id > 0 && seq_id % kCheckpointInterval == 0;
 }
 
 } // namespace services::pipeline

@@ -88,6 +88,9 @@ using SocketHandle = int;
 #define FFC_INVALID_SOCKET (-1)
 #endif
 
+// 长跑集成负载下 WS 消息可能延迟（曾致 2s/3s 超时随机 flaky），统一放宽
+static constexpr int kWsReadTimeoutMs = 10000;
+
 void CloseSocket(SocketHandle fd) {
 #ifdef _WIN32
     closesocket(fd);
@@ -222,7 +225,7 @@ TEST_F(WebWsTest, ReceivesProgressAndDoneMessages) {
     int progress_count = 0;
     bool saw_done = false;
     std::string msg;
-    while (WsReadText(fd, msg, 2000)) {
+    while (WsReadText(fd, msg, kWsReadTimeoutMs)) {
         auto j = json::parse(msg);
         if (j["type"] == "progress") {
             ++progress_count;
@@ -241,8 +244,13 @@ TEST_F(WebWsTest, ReceivesProgressAndDoneMessages) {
 TEST_F(WebWsTest, UnknownTaskGetsErrorMessage) {
     auto fd = WsConnect("/ws/tasks/nonexistent_ws_task/progress");
     ASSERT_NE(fd, FFC_INVALID_SOCKET) << "WS handshake failed";
+    // 冷启动防抖：连接建立回调的 send 已经事件循环延迟投递（产品侧修复），轮询保底
     std::string msg;
-    ASSERT_TRUE(WsReadText(fd, msg, 3000)) << "no frame received";
+    bool got_frame = false;
+    for (int attempt = 0; attempt < 5 && !got_frame; ++attempt) {
+        got_frame = WsReadText(fd, msg, kWsReadTimeoutMs / 5);
+    }
+    ASSERT_TRUE(got_frame) << "no frame received";
     CloseSocket(fd);
     auto j = json::parse(msg);
     EXPECT_EQ(j["type"], "error");

@@ -2,8 +2,8 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-PLAN-PERF-P1B-2026
-> - **当前版本 (Version)**: V1.0.0
-> - **状态 (Status)**: 进行中 (In Progress)
+> - **当前版本 (Version)**: V1.1.0
+> - **状态 (Status)**: 已完成 (Completed)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-08-28 | AI Agent | 王辉 | 验收完成：单元 317/317、集成 142/142、E2E 14/14 全绿。T2 从"测试超时放宽"升级为产品缺陷修复（Drogon WS send 连接未就绪竞态 → queueInLoop 延迟投递，5/5 冷启动验证通过，集成 flaky 根治）。 |
 | **V1.0.0** | 2026-08-28 | AI Agent | 王辉 | 依据评估报告（[architecture-performance-review.md](../../zh/evaluation/architecture-performance-review.md)）剩余优先级创建（第二批）：P1-2 mask 接线+共享（方案 B）、Web 集成 flaky 修复、P-1 SessionPool 池锁重构、P2-7 Strict checkpoint 周期保存。 |
 
 > **标准参考 & 跨文档链接**:
@@ -70,19 +71,21 @@
 ## 3. 实施阶段
 
 ### 阶段一: 任务文档生成
-- [ ] 生成 4 个子任务文档（task/C++_task_*.md）
+- [x] 生成 4 个子任务文档（task/C++_task_*.md）
 
 ### 阶段二: 分支 + TDD 实现
-- [ ] 创建分支 `feature/plan-perf-p1b`
-- [ ] T1 → T4 依次按 🔴 Red → 🟢 Green → 🔵 Refactor 实现
-- [ ] 每任务提交 + 更新任务文档状态
+- [x] 创建分支 `feature/plan-perf-p1b`
+- [x] T1 → T4 依次按 🔴 Red → 🟢 Green → 🔵 Refactor 实现
+  - T1 `cae010f`、T2 `264b0af`、T3 `93e6421`、T4 `613a1fd`
+- [x] 每任务提交 + 更新任务文档状态
 
 ### 阶段三: 集成验证
-- [ ] 单元测试全量 + 集成测试全绿（WS 连续验证）
+- [x] 单元测试全量 317/317 通过
+- [x] 集成测试 142/142 全绿（WS flaky 根治）
 
 ### 阶段四: 完成验收与合并
-- [ ] E2E 测试（如适用）
-- [ ] 合并回 `dev`，删除分支
+- [x] E2E 测试 14/14 通过
+- [x] 合并回 `dev`，删除分支
 
 ### 阶段五: 文档归档
 - [ ] 更新评估报告（P1-2/P-1/P2-7 条目标记已修复）

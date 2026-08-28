@@ -29,3 +29,13 @@ add_facefusion_test(strict_queue_capacity_test
     SOURCES strict_queue_capacity_test.cpp
     LINK_LIBRARIES services_pipeline
 )
+
+add_facefusion_test(checkpoint_throttle_test
+    SOURCES checkpoint_throttle_test.cpp
+    LINK_LIBRARIES services_pipeline
+)
+
+add_facefusion_test(face_analysis_mask_test
+    SOURCES face_analysis_mask_test.cpp
+    LINK_LIBRARIES services_pipeline domain_face GTest::gmock
+)

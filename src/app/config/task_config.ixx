@@ -158,8 +158,9 @@ struct FaceRecognizerConfig {
  * @brief Configuration for face masking service
  */
 struct FaceMaskerConfig {
-    std::vector<std::string> types = {"box", "occlusion", "region"}; ///< Active maskers
-    std::vector<std::string> region = {"face", "eyes"};              ///< Regions for parsing
+    std::vector<std::string> types = {
+        "box"}; ///< Active maskers（默认仅 box：零推理；配置 occlusion/region 启用分割）
+    std::vector<std::string> region = {"face", "eyes"}; ///< Regions for parsing
 };
 
 /**

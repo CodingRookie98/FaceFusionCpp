@@ -1,7 +1,7 @@
 # C++ 任务: SessionPool 池锁重构（factory 移出锁）
 
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 任务 T3
-> **状态**: 进行中
+> **状态**: 已完成（commit `93e6421`）
 
 ## 目标
 

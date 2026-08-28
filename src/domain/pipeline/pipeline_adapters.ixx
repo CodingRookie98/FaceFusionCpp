@@ -35,6 +35,22 @@ export namespace domain::pipeline {
 // Forward declaration
 void register_builtin_adapters();
 
+// 取共享 mask（FaceAnalysisProcessor 计算，512 参考尺度），缩放至目标尺寸；无则返回空
+cv::Mat resolve_shared_mask(const FrameData& frame, size_t face_index,
+                            const cv::Size& target_size) {
+    if (frame.mask_cache && face_index < frame.mask_cache->masks.size()) {
+        const auto& mask = frame.mask_cache->masks[face_index];
+        if (mask.empty()) return {};
+        if (mask.size() != target_size) {
+            cv::Mat resized;
+            cv::resize(mask, resized, target_size);
+            return resized;
+        }
+        return mask;
+    }
+    return {};
+}
+
 /**
  * @brief Adapter for Face Swapper
  * @details Wraps IFaceSwapper to implement IFrameProcessor
@@ -113,7 +129,9 @@ public:
 
                 cv::Mat working_frame = frame.image;
 
-                for (const auto& landmarks : input.target_faces_landmarks) {
+                for (size_t face_index = 0; face_index < input.target_faces_landmarks.size();
+                     ++face_index) {
+                    const auto& landmarks = input.target_faces_landmarks[face_index];
                     // 1. Warp / Crop
                     auto [crop_frame, affine_matrix] = face::helper::warp_face_by_face_landmarks_5(
                         working_frame, landmarks, m_template_type, m_input_size);
@@ -126,15 +144,17 @@ public:
                     const cv::Mat kMatchedCrop =
                         face::helper::apply_color_match(crop_frame, kSwappedCrop);
 
-                    // 4. Compose Mask
-                    face::masker::MaskCompositor::CompositionInput mask_input;
-                    mask_input.size = m_input_size;
-                    mask_input.options = input.mask_options;
-                    mask_input.crop_frame = crop_frame;
-                    mask_input.occluder = m_occluder.get();
-                    mask_input.region_masker = m_region_masker.get();
-
-                    const cv::Mat kComposedMask = face::masker::MaskCompositor::compose(mask_input);
+                    // 4. Compose Mask（优先复用 FaceAnalysisProcessor 计算的共享 mask）
+                    cv::Mat kComposedMask = resolve_shared_mask(frame, face_index, m_input_size);
+                    if (kComposedMask.empty()) {
+                        face::masker::MaskCompositor::CompositionInput mask_input;
+                        mask_input.size = m_input_size;
+                        mask_input.options = input.mask_options;
+                        mask_input.crop_frame = crop_frame;
+                        mask_input.occluder = m_occluder.get();
+                        mask_input.region_masker = m_region_masker.get();
+                        kComposedMask = face::masker::MaskCompositor::compose(mask_input);
+                    }
 
                     // 5. Paste back
                     working_frame = face::helper::paste_back(working_frame, kMatchedCrop,
@@ -241,7 +261,9 @@ public:
 
                 cv::Mat working_frame = frame.image.clone();
 
-                for (const auto& landmarks : input.target_faces_landmarks) {
+                for (size_t face_index = 0; face_index < input.target_faces_landmarks.size();
+                     ++face_index) {
+                    const auto& landmarks = input.target_faces_landmarks[face_index];
                     // 1. Warp
                     auto [crop_frame, affine_matrix] = face::helper::warp_face_by_face_landmarks_5(
                         frame.image, landmarks, m_template_type, m_input_size);
@@ -251,15 +273,17 @@ public:
 
                     if (kEnhancedCrop.empty()) continue;
 
-                    // 3. Compose Mask
-                    face::masker::MaskCompositor::CompositionInput mask_input;
-                    mask_input.size = m_input_size;
-                    mask_input.options = input.mask_options;
-                    mask_input.crop_frame = crop_frame;
-                    mask_input.occluder = m_occluder.get();
-                    mask_input.region_masker = m_region_masker.get();
-
-                    const cv::Mat kComposedMask = face::masker::MaskCompositor::compose(mask_input);
+                    // 3. Compose Mask（优先复用共享 mask）
+                    cv::Mat kComposedMask = resolve_shared_mask(frame, face_index, m_input_size);
+                    if (kComposedMask.empty()) {
+                        face::masker::MaskCompositor::CompositionInput mask_input;
+                        mask_input.size = m_input_size;
+                        mask_input.options = input.mask_options;
+                        mask_input.crop_frame = crop_frame;
+                        mask_input.occluder = m_occluder.get();
+                        mask_input.region_masker = m_region_masker.get();
+                        kComposedMask = face::masker::MaskCompositor::compose(mask_input);
+                    }
 
                     // 4. Paste back
                     working_frame = face::helper::paste_back(working_frame, kEnhancedCrop,

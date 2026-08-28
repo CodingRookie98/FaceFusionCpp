@@ -514,10 +514,32 @@ private:
 
         // 2. Add Face Analysis Processor (if needed)
         if (needs_face_detection) {
+            // 按 masker 配置惰性创建 occluder/region_masker（仅启用时）
+            if (!context.occluder && !context.region_masker) {
+                const auto& masker = task_config.face_analysis.face_masker;
+                for (const auto& t : masker.types) {
+                    if (t == "occlusion" && !context.occluder) {
+                        auto path = m_model_repo->ensure_model("xseg_1");
+                        if (!path.empty()) {
+                            context.occluder = domain::face::masker::create_occlusion_masker(
+                                path, m_inference_options);
+                        }
+                    } else if (t == "region" && !context.region_masker) {
+                        auto path = m_model_repo->ensure_model("bisenet_resnet_18");
+                        if (!path.empty()) {
+                            context.region_masker = domain::face::masker::create_region_masker(
+                                path, m_inference_options);
+                        }
+                    }
+                }
+            }
+            context.face_masker_config = task_config.face_analysis.face_masker;
+
             auto shared_emb = std::make_shared<const std::vector<float>>(context.source_embedding);
             pipeline->add_processor(
                 std::make_shared<services::pipeline::processors::FaceAnalysisProcessor>(
-                    context.face_analyser, shared_emb, reqs, context.metrics_collector));
+                    context.face_analyser, shared_emb, reqs, context.metrics_collector,
+                    context.face_masker_config, context.occluder, context.region_masker));
         }
 
         // 3. Create Processors using Factory
