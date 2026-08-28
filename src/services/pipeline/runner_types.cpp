@@ -62,4 +62,38 @@ struct ProcessorContext {
     MetricsCollector* metrics_collector = nullptr; ///< Performance metrics collector
 };
 
+/**
+ * @brief Keyed cache for domain service instances
+ * @details Reuses services (e.g. swapper/enhancer/restorer) across pipeline builds
+ *          (multi-video tasks, segmented mode) so per-video ONNX initializer reparse
+ *          and object reconstruction are avoided. Type-erased storage; callers
+ *          static_pointer_cast to the concrete interface.
+ */
+class DomainServiceCache {
+public:
+    std::shared_ptr<void> get_or_create(const std::string& key,
+                                        std::function<std::shared_ptr<void>()> factory) {
+        const std::lock_guard kLock(m_mutex);
+        auto it = m_cache.find(key);
+        if (it != m_cache.end()) { return it->second; }
+        auto instance = factory();
+        if (instance) { m_cache.emplace(key, instance); }
+        return instance;
+    }
+
+    [[nodiscard]] size_t size() const {
+        const std::lock_guard kLock(m_mutex);
+        return m_cache.size();
+    }
+
+    void clear() {
+        const std::lock_guard kLock(m_mutex);
+        m_cache.clear();
+    }
+
+private:
+    mutable std::mutex m_mutex;
+    std::map<std::string, std::shared_ptr<void>> m_cache;
+};
+
 } // namespace services::pipeline
