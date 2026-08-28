@@ -1,7 +1,7 @@
 # C++ 任务: session key 加入模型文件指纹
 
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 任务 T3
-> **状态**: 进行中
+> **状态**: 已完成（commit `4e4d311`）
 
 ## 目标
 

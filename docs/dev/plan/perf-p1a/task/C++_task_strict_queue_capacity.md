@@ -1,7 +1,7 @@
 # C++ 任务: Strict 模式 queue 上限放宽
 
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 任务 T1
-> **状态**: 进行中
+> **状态**: 已完成（commit `84c4f5d`）
 
 ## 目标
 

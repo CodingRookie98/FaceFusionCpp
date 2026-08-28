@@ -1,7 +1,7 @@
 # C++ 任务: SessionPool TTL 惰性清理
 
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 任务 T4
-> **状态**: 进行中
+> **状态**: 已完成（commit `10f5757`）
 
 ## 目标
 

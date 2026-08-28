@@ -1,7 +1,7 @@
 # C++ 任务: GPU 并发信号量闸门（max_concurrent_gpu_tasks）
 
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 任务 T2
-> **状态**: 进行中
+> **状态**: 已完成（commit `6a0cd1d`）
 
 ## 目标
 
