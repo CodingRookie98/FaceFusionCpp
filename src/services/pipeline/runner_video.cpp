@@ -275,7 +275,7 @@ public:
             // Save checkpoint periodically (every 30s)
             // Optimization: Only construct and call save every 100 frames to reduce per-frame
             // overhead
-            if (ckpt_mgr && seq_id % 100 == 0) {
+            if (ckpt_mgr && should_save_checkpoint(seq_id)) {
                 CheckpointData ckpt;
                 ckpt.task_id = task_config.task_info.id;
                 ckpt.config_hash = config_hash;
@@ -790,7 +790,7 @@ private:
             }
 
             // Save checkpoint periodically (every 30s)
-            if (ckpt_mgr) {
+            if (ckpt_mgr && should_save_checkpoint(seq_id)) {
                 CheckpointData ckpt;
                 ckpt.task_id = task_config.task_info.id;
                 ckpt.config_hash = config_hash;

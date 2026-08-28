@@ -29,3 +29,8 @@ add_facefusion_test(strict_queue_capacity_test
     SOURCES strict_queue_capacity_test.cpp
     LINK_LIBRARIES services_pipeline
 )
+
+add_facefusion_test(checkpoint_throttle_test
+    SOURCES checkpoint_throttle_test.cpp
+    LINK_LIBRARIES services_pipeline
+)

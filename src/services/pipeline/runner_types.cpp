@@ -109,4 +109,13 @@ int strict_queue_limit(int configured) {
     return std::min(configured, kStrictQueueCap);
 }
 
+inline constexpr int64_t kCheckpointInterval = 100; ///< Checkpoint 保存帧间隔
+
+/**
+ * @brief 是否应保存 checkpoint（每 kCheckpointInterval 帧一次）
+ */
+bool should_save_checkpoint(int64_t seq_id) {
+    return seq_id > 0 && seq_id % kCheckpointInterval == 0;
+}
+
 } // namespace services::pipeline
