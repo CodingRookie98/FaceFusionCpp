@@ -21,8 +21,9 @@ export namespace foundation::ai::session_pool {
  */
 struct PoolConfig {
     size_t max_entries{10}; // LRU Capacity（默认 10：单任务 6 模型组合不驱逐）
-    std::chrono::milliseconds idle_timeout{60000}; // TTL Timeout
-    bool enable{true};                             // Enable caching
+    std::chrono::milliseconds idle_timeout{60000};     // TTL Timeout
+    std::chrono::milliseconds cleanup_interval{30000}; // 惰性清理间隔（<=0 = 每次 get 触发）
+    bool enable{true};                                 // Enable caching
 };
 
 /**
