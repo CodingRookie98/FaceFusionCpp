@@ -689,7 +689,7 @@ private:
         PipelineConfig pipeline_config;
         // In strict memory mode, we still respect config but might want to cap it if it's too
         // large. For now, let's just use the config value as requested.
-        pipeline_config.max_queue_size = std::min(task_config.resource.max_queue_size, 4);
+        pipeline_config.max_queue_size = strict_queue_limit(task_config.resource.max_queue_size);
         pipeline_config.worker_thread_count = task_config.resource.get_effective_thread_count();
 
         auto pipeline = std::make_shared<Pipeline>(pipeline_config);

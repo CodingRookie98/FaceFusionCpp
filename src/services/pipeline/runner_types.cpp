@@ -13,6 +13,7 @@ module;
 #include <optional>
 #include <map>
 #include <any>
+#include <algorithm>
 #include <opencv2/core/mat.hpp>
 
 export module services.pipeline.runner:types;
@@ -95,5 +96,17 @@ private:
     mutable std::mutex m_mutex;
     std::map<std::string, std::shared_ptr<void>> m_cache;
 };
+
+inline constexpr int kStrictQueueCap = 16; ///< Strict 内存模式 Pipeline 帧队列上限
+
+/**
+ * @brief Strict 内存模式下 Pipeline 帧队列容量上限
+ * @param configured 用户配置的 max_queue_size（<=0 表示未配置）
+ * @return min(configured, kStrictQueueCap)，未配置时返回 kStrictQueueCap
+ */
+int strict_queue_limit(int configured) {
+    if (configured <= 0) return kStrictQueueCap;
+    return std::min(configured, kStrictQueueCap);
+}
 
 } // namespace services::pipeline

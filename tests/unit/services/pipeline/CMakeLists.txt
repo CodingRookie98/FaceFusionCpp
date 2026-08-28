@@ -24,3 +24,8 @@ add_facefusion_test(domain_service_cache_test
     SOURCES domain_service_cache_test.cpp
     LINK_LIBRARIES services_pipeline
 )
+
+add_facefusion_test(strict_queue_capacity_test
+    SOURCES strict_queue_capacity_test.cpp
+    LINK_LIBRARIES services_pipeline
+)
