@@ -420,10 +420,14 @@ public:
         if (!entry) {
             Logger::get_instance()->warn(
                 std::format("[WS] Client subscribed to non-existent task: {}", task_id));
-            wsConn->send(json{{"type", "error"}, {"message", "task not found"}}.dump());
+            // 连接建立回调中直接 send 可能在连接未就绪时被丢弃；延迟到事件循环下一轮投递
+            const auto kMsg = json{{"type", "error"}, {"message", "task not found"}}.dump();
+            drogon::app().getLoop()->queueInLoop([wsConn, kMsg]() { wsConn->send(kMsg); });
             return;
         }
-        wsConn->send(json{{"type", "status"}, {"status", status_to_string(entry->status)}}.dump());
+        const auto kStatusMsg =
+            json{{"type", "status"}, {"status", status_to_string(entry->status)}}.dump();
+        drogon::app().getLoop()->queueInLoop([wsConn, kStatusMsg]() { wsConn->send(kStatusMsg); });
         if (entry->status == TaskStatus::Running || entry->status == TaskStatus::Queued) {
             broadcast_progress(task_id, entry->progress);
         }
