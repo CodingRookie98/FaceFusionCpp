@@ -12,6 +12,7 @@ module;
 #include <optional>
 #include <map>
 #include <mutex>
+#include <semaphore>
 
 export module domain.pipeline:impl;
 
@@ -33,7 +34,11 @@ public:
      */
     explicit Pipeline(PipelineConfig config) :
         m_config(config), m_input_queue(config.max_queue_size),
-        m_output_queue(config.max_queue_size) {}
+        m_output_queue(config.max_queue_size) {
+        // GPU 并发闸门：限制同时处理帧的 worker 数（0 = 不限）
+        m_gate_enabled = config.max_concurrent_gpu_tasks > 0;
+        if (m_gate_enabled) { m_gpu_gate.release(config.max_concurrent_gpu_tasks); }
+    }
 
     ~Pipeline() override { stop(); }
 
@@ -106,6 +111,18 @@ private:
             }
 
             for (auto& frame : frames) {
+                // GPU 并发闸门：每帧处理前 acquire，作用域退出释放（含异常路径）
+                const bool gated = !frame.is_end_of_stream && m_gate_enabled;
+                if (gated) { m_gpu_gate.acquire(); }
+                struct GateGuard {
+                    std::counting_semaphore<>& sem;
+                    const bool active;
+                    explicit GateGuard(std::counting_semaphore<>& s, bool a) : sem(s), active(a) {}
+                    ~GateGuard() {
+                        if (active) sem.release();
+                    }
+                } guard{m_gpu_gate, gated};
+
                 if (!frame.is_end_of_stream) {
                     for (auto& processor : m_processors) {
                         if (processor) { processor->process(frame); }
@@ -150,6 +167,10 @@ private:
     std::mutex m_reorder_mutex;
     std::int64_t m_next_sequence_id = 0;
     std::map<std::int64_t, FrameData> m_reorder_buffer;
+
+    // GPU 并发闸门（max_concurrent_gpu_tasks，0 = 不限）
+    std::counting_semaphore<> m_gpu_gate{0};
+    bool m_gate_enabled = false;
 };
 
 } // namespace domain::pipeline

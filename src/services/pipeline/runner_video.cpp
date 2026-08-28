@@ -156,6 +156,7 @@ public:
         PipelineConfig pipeline_config;
         pipeline_config.worker_thread_count = task_config.resource.get_effective_thread_count();
         pipeline_config.max_queue_size = task_config.resource.max_queue_size;
+        pipeline_config.max_concurrent_gpu_tasks = 2;
 
         auto pipeline = std::make_shared<Pipeline>(pipeline_config);
 
@@ -434,6 +435,7 @@ private:
             PipelineConfig pipeline_config;
             pipeline_config.worker_thread_count = task_config.resource.get_effective_thread_count();
             pipeline_config.max_queue_size = task_config.resource.max_queue_size;
+            pipeline_config.max_concurrent_gpu_tasks = 2;
             auto pipeline = std::make_shared<Pipeline>(pipeline_config);
 
             ProcessorContext mutable_context = context;
@@ -691,6 +693,7 @@ private:
         // large. For now, let's just use the config value as requested.
         pipeline_config.max_queue_size = strict_queue_limit(task_config.resource.max_queue_size);
         pipeline_config.worker_thread_count = task_config.resource.get_effective_thread_count();
+        pipeline_config.max_concurrent_gpu_tasks = 2;
 
         auto pipeline = std::make_shared<Pipeline>(pipeline_config);
         ProcessorContext mutable_context = context;
