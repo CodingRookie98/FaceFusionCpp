@@ -2,8 +2,8 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-PLAN-PERF-P0-2026
-> - **当前版本 (Version)**: V1.0.0
-> - **状态 (Status)**: 进行中 (In Progress)
+> - **当前版本 (Version)**: V1.2.0
+> - **状态 (Status)**: 已完成 (Completed)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
@@ -13,6 +13,8 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.2.0** | 2026-08-28 | AI Agent | 王辉 | 验收完成：单元 296/296、集成 142/142、E2E 14/14 全绿。 |
+| **V1.1.0** | 2026-08-28 | AI Agent | 王辉 | T1-T4 实现完成：T4 会话容量 3→10（ca2afeb）、T1 面缓存开关（df805f2）、T2 embedding 缓存（87c03d3）、T3 DomainServiceCache（a61112a）。单元测试 296/296 全绿，集成验证进行中。 |
 | **V1.0.0** | 2026-08-28 | AI Agent | 王辉 | 依据评估报告（[architecture-performance-review.md](../../zh/evaluation/architecture-performance-review.md)）P0 优先级创建：消除视频路径 FaceStore 整帧哈希、InSwapper embedding 变换任务级缓存、domain 服务跨视频复用、SessionPool 容量修正。 |
 
 > **标准参考 & 跨文档链接**:
@@ -70,19 +72,21 @@
 ## 3. 实施阶段
 
 ### 阶段一: 任务文档生成
-- [ ] 生成 4 个子任务文档（task/C++_task_*.md）
+- [x] 生成 4 个子任务文档（task/C++_task_*.md）
 
 ### 阶段二: 分支 + TDD 实现
-- [ ] 创建分支 `feature/plan-perf-p0`
-- [ ] T1 → T4 依次按 🔴 Red → 🟢 Green → 🔵 Refactor 实现
-- [ ] 每任务提交 + 更新任务文档状态
+- [x] 创建分支 `feature/plan-perf-p0`
+- [x] T1 → T4 依次按 🔴 Red → 🟢 Green → 🔵 Refactor 实现
+  - T4 `ca2afeb`、T1 `df805f2`、T2 `87c03d3`、T3 `a61112a`
+- [x] 每任务提交 + 更新任务文档状态
 
 ### 阶段三: 集成验证
-- [ ] `python build.py --action test --test-label integration` 全绿
+- [x] `python build.py --action test --test-label integration` 全绿（142/142）
+- [x] 单元测试全量 296/296 通过
 
 ### 阶段四: 完成验收与合并
-- [ ] E2E 测试（如适用）
-- [ ] 合并回 `dev`，删除分支
+- [x] E2E 测试 14/14 通过
+- [x] 合并回 `dev`，删除分支
 
 ### 阶段五: 文档归档
 - [ ] 更新评估报告（P0 条目标记已修复）、配置文档（如涉及）

@@ -1,7 +1,7 @@
 # C++ 任务: SessionPool 容量修正（max_entries 3→10）
 
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 任务 T4
-> **状态**: 进行中
+> **状态**: 已完成（commit `ca2afeb`）
 
 ## 目标
 

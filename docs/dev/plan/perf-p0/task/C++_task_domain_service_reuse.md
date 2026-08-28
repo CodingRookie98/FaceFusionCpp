@@ -1,7 +1,7 @@
 # C++ 任务: domain 服务跨视频复用（消除每视频 ONNX 重解析）
 
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 任务 T3
-> **状态**: 进行中
+> **状态**: 已完成（commit `a61112a`）
 
 ## 目标
 

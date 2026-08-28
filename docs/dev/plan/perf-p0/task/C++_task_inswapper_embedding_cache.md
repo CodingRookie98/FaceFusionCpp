@@ -1,7 +1,7 @@
 # C++ 任务: InSwapper embedding 变换任务级缓存
 
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 任务 T2
-> **状态**: 进行中
+> **状态**: 已完成（commit `87c03d3`）
 
 ## 目标
 

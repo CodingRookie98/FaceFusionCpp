@@ -1,7 +1,7 @@
 # C++ 任务: 视频路径禁用 FaceStore 整帧哈希
 
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 任务 T1
-> **状态**: 进行中
+> **状态**: 已完成（commit `df805f2`）
 
 ## 目标
 
