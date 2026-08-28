@@ -103,6 +103,7 @@ docs/
 | 文档 | 说明 |
 | :--- | :--- |
 | [web-ui-design-completion-review.md](./dev/zh/evaluation/web-ui-design-completion-review.md) | Web UI M1-M4 完成度对抗性复核报告（已通过，整改闭环与二次复核） |
+| [architecture-performance-review.md](./dev/zh/evaluation/architecture-performance-review.md) | 推理架构与算法性能评估报告（P0/P1/P2 问题清单与 ROI 优化建议） |
 
 **模板 (Templates)**
 
