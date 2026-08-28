@@ -228,12 +228,16 @@ private:
 
         // 3. Process All Images as a single batch (Priority 1)
         if (!sorted_targets.images.empty() && !m_cancelled) {
+            // 图像/批量场景保留帧缓存（跨任务复用有意义）
+            context.face_analyser->set_face_cache_enabled(true);
             auto res = ProcessImageBatch(sorted_targets.images, task_config, progress_callback,
                                          context, add_processors);
             if (!res) return res;
         }
 
         // 4. Process Videos sequentially (Priority 2)
+        // 视频帧几乎不重复 → 禁用面缓存，避免每帧 2 次整帧 FNV1a 哈希开销
+        context.face_analyser->set_face_cache_enabled(false);
         for (const auto& video_path : sorted_targets.videos) {
             if (m_cancelled) break;
 
