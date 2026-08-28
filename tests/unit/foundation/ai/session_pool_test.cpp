@@ -2,6 +2,7 @@
 #include <gmock/gmock.h>
 #include <thread>
 #include <chrono>
+#include <future>
 #include <onnxruntime_cxx_api.h>
 
 import foundation.ai.session_pool;
@@ -250,4 +251,65 @@ TEST_F(SessionPoolTest, LazyCleanupThrottledByInterval) {
 
     EXPECT_EQ(pool.get_stats().expirations, 0);
     EXPECT_EQ(pool.size(), 2);
+}
+
+// ---- T3: 池锁重构（factory 移出锁） ----
+
+TEST_F(SessionPoolTest, FactoryRunsOutsideLock) {
+    SessionPool pool;
+    auto factory = [&pool]() -> std::shared_ptr<MockInferenceSession> {
+        // 若 factory 在池锁内执行，size()（需拿锁）会死锁（非递归 mutex）
+        (void)pool.size();
+        return std::make_shared<MockInferenceSession>();
+    };
+
+    auto fut =
+        std::async(std::launch::async, [&]() { return pool.get_or_create("key1", factory); });
+    EXPECT_NE(fut.wait_for(std::chrono::seconds(2)), std::future_status::timeout)
+        << "factory 内访问池导致死锁 = factory 仍在锁内执行";
+    auto session = fut.get();
+    ASSERT_NE(session, nullptr);
+}
+
+TEST_F(SessionPoolTest, ConcurrentSameKeySingleCreation) {
+    SessionPool pool;
+    std::atomic<int> factory_calls{0};
+    std::atomic<int> active{0};
+    std::atomic<int> peak{0};
+    auto factory = [&]() {
+        const int cur = ++active;
+        int m = peak.load();
+        while (cur > m && !peak.compare_exchange_weak(m, cur)) {}
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        --active;
+        factory_calls++;
+        return std::make_shared<MockInferenceSession>();
+    };
+
+    std::vector<std::thread> threads;
+    for (int i = 0; i < 8; ++i) {
+        threads.emplace_back([&]() { pool.get_or_create("same_key", factory); });
+    }
+    for (auto& t : threads) { t.join(); }
+
+    EXPECT_EQ(factory_calls, 1) << "并发同 key 应只创建一次";
+    EXPECT_EQ(pool.size(), 1);
+}
+
+TEST_F(SessionPoolTest, ConcurrentDistinctKeysAllCreated) {
+    SessionPool pool;
+    std::atomic<int> factory_calls{0};
+    auto factory = [&]() {
+        factory_calls++;
+        return std::make_shared<MockInferenceSession>();
+    };
+
+    std::vector<std::thread> threads;
+    for (int i = 0; i < 8; ++i) {
+        threads.emplace_back([&, i]() { pool.get_or_create("key" + std::to_string(i), factory); });
+    }
+    for (auto& t : threads) { t.join(); }
+
+    EXPECT_EQ(factory_calls, 8);
+    EXPECT_EQ(pool.size(), 8);
 }
