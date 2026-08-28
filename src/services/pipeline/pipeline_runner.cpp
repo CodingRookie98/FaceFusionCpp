@@ -156,6 +156,7 @@ private:
     std::shared_ptr<domain::face::analyser::FaceAnalyser> m_face_analyser;
     Options m_inference_options;
     std::unique_ptr<MetricsCollector> m_metrics_collector;
+    DomainServiceCache m_service_cache;
 
     std::shared_ptr<domain::face::analyser::FaceAnalyser> GetFaceAnalyser() {
         if (!m_face_analyser) {
@@ -228,12 +229,16 @@ private:
 
         // 3. Process All Images as a single batch (Priority 1)
         if (!sorted_targets.images.empty() && !m_cancelled) {
+            // 图像/批量场景保留帧缓存（跨任务复用有意义）
+            context.face_analyser->set_face_cache_enabled(true);
             auto res = ProcessImageBatch(sorted_targets.images, task_config, progress_callback,
                                          context, add_processors);
             if (!res) return res;
         }
 
         // 4. Process Videos sequentially (Priority 2)
+        // 视频帧几乎不重复 → 禁用面缓存，避免每帧 2 次整帧 FNV1a 哈希开销
+        context.face_analyser->set_face_cache_enabled(false);
         for (const auto& video_path : sorted_targets.videos) {
             if (m_cancelled) break;
 
@@ -361,9 +366,6 @@ private:
                 needs_face_detection = true;
                 reqs.need_swap_data = true;
                 if (!domain_ctx.swapper) {
-                    domain_ctx.swapper =
-                        domain::face::swapper::FaceSwapperFactory::create_inswapper();
-
                     std::string model_name = "inswapper_128_fp16";
                     if (const auto* params = std::get_if<config::FaceSwapperParams>(&step.params)) {
                         if (!params->model.empty()) { model_name = params->model; }
@@ -376,10 +378,19 @@ private:
                             config::ConfigError(config::ErrorCode::E302ModelFileMissing,
                                                 std::format("Model file not found: {}", model_name),
                                                 "pipeline.step[face_swapper].model"));
-                    } else {
-                        domain_ctx.swapper->load_model(model_path, context.inference_options);
-                        domain_ctx.swapper_model_path = model_path;
                     }
+
+                    // 跨视频/批次复用实例：避免每视频重建 + 重新解析 ONNX 初始化器
+                    domain_ctx
+                        .swapper = std::static_pointer_cast<domain::face::swapper::IFaceSwapper>(
+                        m_service_cache.get_or_create(
+                            "swapper:" + model_name, [&]() -> std::shared_ptr<void> {
+                                auto swapper =
+                                    domain::face::swapper::FaceSwapperFactory::create_inswapper();
+                                swapper->load_model(model_path, context.inference_options);
+                                return swapper;
+                            }));
+                    domain_ctx.swapper_model_path = model_path;
                 }
             } else if (step.step == "face_enhancer") {
                 needs_face_detection = true;
@@ -396,9 +407,6 @@ private:
                         type = domain::face::enhancer::FaceEnhancerFactory::Type::CodeFormer;
                     }
 
-                    domain_ctx.face_enhancer =
-                        domain::face::enhancer::FaceEnhancerFactory::create(type);
-
                     auto model_path = m_model_repo->ensure_model(model_name);
                     if (model_path.empty()) {
                         // [E302] 模型缺失，立即中止
@@ -406,17 +414,23 @@ private:
                             config::ConfigError(config::ErrorCode::E302ModelFileMissing,
                                                 std::format("Model file not found: {}", model_name),
                                                 "pipeline.step[face_enhancer].model"));
-                    } else {
-                        domain_ctx.face_enhancer->load_model(model_path, context.inference_options);
-                        domain_ctx.enhancer_model_path = model_path;
                     }
+
+                    domain_ctx.face_enhancer =
+                        std::static_pointer_cast<domain::face::enhancer::IFaceEnhancer>(
+                            m_service_cache.get_or_create(
+                                "enhancer:" + model_name, [&]() -> std::shared_ptr<void> {
+                                    auto enhancer =
+                                        domain::face::enhancer::FaceEnhancerFactory::create(type);
+                                    enhancer->load_model(model_path, context.inference_options);
+                                    return enhancer;
+                                }));
+                    domain_ctx.enhancer_model_path = model_path;
                 }
             } else if (step.step == "expression_restorer") {
                 needs_face_detection = true;
                 reqs.need_expression_data = true;
                 if (!domain_ctx.restorer) {
-                    domain_ctx.restorer = domain::face::expression::create_live_portrait_restorer();
-
                     std::string model_name = "live_portrait";
                     if (const auto* params =
                             std::get_if<config::ExpressionRestorerParams>(&step.params)) {
@@ -435,13 +449,21 @@ private:
                             config::ErrorCode::E302ModelFileMissing,
                             "Failed to find or download one of LivePortrait models",
                             "pipeline.step[expression_restorer].model"));
-                    } else {
-                        domain_ctx.restorer->load_model(feature_path, motion_path, gen_path,
-                                                        context.inference_options);
-                        domain_ctx.expression_feature_path = feature_path;
-                        domain_ctx.expression_motion_path = motion_path;
-                        domain_ctx.expression_generator_path = gen_path;
                     }
+
+                    domain_ctx.restorer =
+                        std::static_pointer_cast<domain::face::expression::IFaceExpressionRestorer>(
+                            m_service_cache.get_or_create(
+                                "restorer:" + model_name, [&]() -> std::shared_ptr<void> {
+                                    auto restorer =
+                                        domain::face::expression::create_live_portrait_restorer();
+                                    restorer->load_model(feature_path, motion_path, gen_path,
+                                                         context.inference_options);
+                                    return restorer;
+                                }));
+                    domain_ctx.expression_feature_path = feature_path;
+                    domain_ctx.expression_motion_path = motion_path;
+                    domain_ctx.expression_generator_path = gen_path;
                 }
             } else if (step.step == "frame_enhancer") {
                 if (!domain_ctx.frame_enhancer_factory) {
@@ -459,25 +481,33 @@ private:
                             config::ConfigError(config::ErrorCode::E302ModelFileMissing,
                                                 std::format("Model file not found: {}", model_name),
                                                 "pipeline.step[frame_enhancer].model"));
-                    } else {
-                        domain_ctx.frame_enhancer_model_path = model_path;
                     }
+                    domain_ctx.frame_enhancer_model_path = model_path;
 
                     // Capture context.inference_options by value to avoid lifetime issues
                     auto options = context.inference_options;
-                    // Capture resolved model_path instead of using m_model_repo inside lambda
-                    domain_ctx.frame_enhancer_factory = [model_name, model_path, options]() {
-                        auto type = domain::frame::enhancer::FrameEnhancerType::RealEsrGan;
-                        if (model_name.find("hat") != std::string::npos) {
-                            type = domain::frame::enhancer::FrameEnhancerType::RealHatGan;
-                        }
+                    // frame_enhancer 缓存工厂 lambda（惰性创建实例）而非实例本身
+                    auto factory_holder = std::static_pointer_cast<
+                        std::function<std::shared_ptr<domain::frame::enhancer::IFrameEnhancer>()>>(
+                        m_service_cache.get_or_create(
+                            "frame_enhancer:" + model_name, [model_name, model_path, options]() {
+                                auto type = domain::frame::enhancer::FrameEnhancerType::RealEsrGan;
+                                if (model_name.find("hat") != std::string::npos) {
+                                    type = domain::frame::enhancer::FrameEnhancerType::RealHatGan;
+                                }
 
-                        // Factory handles loading internally.
-                        // Note: Must pass model_name (key) not model_path, as factory derives scale
-                        // from name.
-                        return domain::frame::enhancer::FrameEnhancerFactory::create(
-                            type, model_name, options);
-                    };
+                                auto factory = [type, model_name, options]() {
+                                    // Factory handles loading internally.
+                                    // Note: Must pass model_name (key) not model_path, as
+                                    // factory derives scale from name.
+                                    return domain::frame::enhancer::FrameEnhancerFactory::create(
+                                        type, model_name, options);
+                                };
+                                return std::make_shared<std::function<
+                                    std::shared_ptr<domain::frame::enhancer::IFrameEnhancer>()>>(
+                                    factory);
+                            }));
+                    domain_ctx.frame_enhancer_factory = *factory_holder;
                 }
             }
         }

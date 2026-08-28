@@ -20,7 +20,7 @@ export namespace foundation::ai::session_pool {
  * @brief SessionPool Configuration
  */
 struct PoolConfig {
-    size_t max_entries{3};                         // LRU Capacity
+    size_t max_entries{10}; // LRU Capacity（默认 10：单任务 6 模型组合不驱逐）
     std::chrono::milliseconds idle_timeout{60000}; // TTL Timeout
     bool enable{true};                             // Enable caching
 };

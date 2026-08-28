@@ -19,3 +19,8 @@ add_facefusion_test(utils_test
     SOURCES utils_test.cpp
     LINK_LIBRARIES services_pipeline
 )
+
+add_facefusion_test(domain_service_cache_test
+    SOURCES domain_service_cache_test.cpp
+    LINK_LIBRARIES services_pipeline
+)
