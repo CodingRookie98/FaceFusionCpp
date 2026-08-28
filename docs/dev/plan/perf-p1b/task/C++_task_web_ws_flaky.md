@@ -1,7 +1,7 @@
 # C++ 任务: Web 集成 flaky 修复（WS 超时放宽）
 
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 任务 T2
-> **状态**: 进行中
+> **状态**: 已完成（commit `264b0af`）
 
 ## 目标
 
