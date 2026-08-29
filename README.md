@@ -21,10 +21,10 @@
 
 ## 🏆 Key Advantages (Why FaceFusionCpp?)
 
-- 🚀 **Extreme Performance**: Engineered with a highly optimized C++ core and multi-threading architecture, achieving maximum throughput for both images and videos.
-- 🧠 **Native Hardware Acceleration**: Deep, native integration with **NVIDIA CUDA** and **TensorRT** for lightning-fast AI inference without the overhead of Python wrappers.
+- 🚀 **Extreme Performance**: Engineered with a highly optimized C++20 core and a frame-level parallel pipeline (producer-consumer with ordered output), achieving high throughput for both images and videos. GPU inference is serialized through a concurrency gate to avoid contention between workers.
+- 🧠 **Native Hardware Acceleration**: GPU inference via **ONNX Runtime** with **TensorRT** / **CUDA** execution providers (auto-selected in that order, with TensorRT engine caching), without the overhead of Python wrappers.
 - 📦 **Zero Environment Hell**: Say goodbye to complex Python virtual environments, dependency conflicts, and package version hell. Just download the pre-built binary and run.
-- 💾 **Lower Memory Footprint**: Dramatically reduced RAM and VRAM consumption, allowing you to run larger batches or higher resolutions on modest hardware.
+- 💾 **Lower Memory Footprint**: Dramatically reduced RAM and VRAM consumption (session pooling with LRU + TTL, strict memory strategy), allowing you to run larger batches or higher resolutions on modest hardware.
 - 🌍 **Cross-Platform**: First-class support for both **Windows x64** and **Linux x64**, with seamless setup capabilities.
 
 ## ✨ Core Features
