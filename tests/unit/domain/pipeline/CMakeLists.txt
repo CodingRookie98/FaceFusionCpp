@@ -6,6 +6,7 @@ add_facefusion_test(
         processor_factory_test.cpp
         processor_param_registry_test.cpp
         pipeline_concurrency_test.cpp
+        face_enhancer_adapter_test.cpp
     LINK_LIBRARIES
         domain_pipeline
         test_helpers
