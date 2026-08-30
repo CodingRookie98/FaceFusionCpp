@@ -259,7 +259,9 @@ public:
                 auto& input = frame.enhance_input.value();
                 if (input.target_faces_landmarks.empty()) return;
 
-                cv::Mat working_frame = frame.image.clone();
+                // blend=100（全量替换）无需原始帧副本
+                const bool kFullBlend = input.face_blend >= 100;
+                cv::Mat working_frame = kFullBlend ? frame.image : frame.image.clone();
 
                 for (size_t face_index = 0; face_index < input.target_faces_landmarks.size();
                      ++face_index) {
@@ -295,8 +297,10 @@ public:
                     frame.image = working_frame;
                 } else if (input.face_blend > 0) {
                     const double kAlpha = input.face_blend / 100.0;
-                    cv::addWeighted(working_frame, kAlpha, frame.image, 1.0 - kAlpha, 0.0,
-                                    frame.image);
+                    // addWeighted 不支持 dst == src2（in-place 未定义）；用临时输出
+                    cv::Mat blended;
+                    cv::addWeighted(working_frame, kAlpha, frame.image, 1.0 - kAlpha, 0.0, blended);
+                    frame.image = std::move(blended);
                 }
                 // if 0, do nothing
 
