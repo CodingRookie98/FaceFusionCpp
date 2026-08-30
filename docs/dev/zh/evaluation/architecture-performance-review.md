@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.7.0** | 2026-08-29 | AI Agent | 王辉 | P2 小项验收合并（`422d5df`）：P2-5（`b19f451`，含 addWeighted in-place UB 修复——blend<100 输出无变化的真实缺陷）、P2-8（`baf2b70` README 校准）；单元 319/319、集成 142/142 全绿。评估报告 P0/P1/P2 修复项全部闭环。 |
 | **V1.6.0** | 2026-08-28 | AI Agent | 王辉 | P1 批次 B 验收合并（`d78b6fa`）：P1-2 mask 接线+共享（`cae010f`）、P-1 池锁重构（`93e6421`）、P2-7 checkpoint 节流（`613a1fd`）全部修复；WS 集成 flaky 根治（`264b0af`，Drogon 连接就绪 send 竞态产品侧修复）；单元 317/317、集成 142/142、E2E 14/14 全绿。 |
 | **V1.5.0** | 2026-08-28 | AI Agent | 王辉 | P1 批次 A 验收合并（`4d38789`）：P1-1（`84c4f5d`）、P1-5（`6a0cd1d`）、P-3（`10f5757`）、P-4（`4e4d311`）全部修复；单元 308/308、E2E 14/14；集成全量 2 次各有 1 例随机 Web flaky（单独复现通过，记录为既有测试稳定性问题）。 |
 | **V1.4.0** | 2026-08-28 | AI Agent | 王辉 | P0 优化批次验收合并（`18b6018`）：P0-1（`df805f2`）、P0-2（`87c03d3`）、P0-3（`a61112a`）、会话 P-2 容量（`ca2afeb`）全部修复；单元 296/296、集成 142/142、E2E 14/14 全绿。 |
@@ -209,10 +210,10 @@ for (i) for (j) sum += source_embedding[j] * m_initializer_array[j*len+i];  // 5
 > **结论**: 开销本身可控（建议并行上限 2），但收益面窄（仅 CPU-bound）+ 前置依赖 SessionPool 扩容（max_entries 调至 8-12）+ 并行前 free VRAM 检查 → **ROI 中等偏低，不建议优先投资**。
 | P2-3 | 全部模型 **batch=1**，同帧多人脸/帧间无 batch 累积 | 各 model impl |
 | P2-4 | SessionPool `max_entries=3`：换脸+增强+检测+关键点+识别同时用 → LRU 驱逐重建 | `session_pool.ixx:22-26` |
-| P2-5 | FaceEnhancerAdapter `frame.image.clone()` 整帧拷贝 | `pipeline_adapters.ixx:242` |
-| P2-6 | FaceStore 空 faces 不缓存（`face_store.cpp:72`）→ 无脸帧永远重检测 | `face_analyser.cpp:135` |
+| P2-5 | FaceEnhancerAdapter `frame.image.clone()` 整帧拷贝 ✅ **已修复（`b19f451`）**：blend=100 全量替换时跳过 clone；**顺带修复 addWeighted in-place UB**（dst==src2 使 blend<100 输出无变化，真实缺陷） | `pipeline_adapters.ixx:242` |
+| P2-6 | FaceStore 空 faces 不缓存（`face_store.cpp:72`）→ 无脸帧永远重检测 ✅ **已修复（`df805f2`）**：视频路径缓存整体禁用 | `face_analyser.cpp:135` |
 | P2-7 | Strict 模式 checkpoint **每帧保存**（无 `%100` 优化，普通路径有）✅ **已修复（`613a1fd`）**：`should_save_checkpoint()`（%100）两路径共用 | `runner_video.cpp:790-798` vs `:277` |
-| P2-8 | **宣传与实现落差**：README 宣称 "TensorRT + maximum throughput"，实际是 ONNX Runtime（EP 可选 TRT），且"多线程"在 GPU 场景收益有限 | `inference_session.cpp` |
+| P2-8 | **宣传与实现落差**：README 宣称 "TensorRT + maximum throughput"，实际是 ONNX Runtime（EP 可选 TRT），且"多线程"在 GPU 场景收益有限 ✅ **已修复（`baf2b70`）**：README/README_CN 校准为 "ONNX Runtime + TRT/CUDA EP + 帧级并行 + GPU 并发闸门" | `inference_session.cpp` |
 
 ---
 
