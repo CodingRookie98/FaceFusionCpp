@@ -5,11 +5,11 @@
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DOC-INDEX-2026
 > - **当前版本 (Version)**: V2.0.0
-> **状态 (Status)**: 正式 (Official)
-> **权威性 (Authority)**: 规范 (Normative)
-> **所有者 (Owner)**: 王辉
-> **审核人 (Reviewer)**: 王辉
-> **最后更新 (Last Updated)**: 2026-09-28
+> - **状态 (Status)**: 正式 (Official)
+> - **权威性 (Authority)**: 规范 (Normative)
+> - **所有者 (Owner)**: 王辉
+> - **审核人 (Reviewer)**: 王辉
+> - **最后更新 (Last Updated)**: 2026-09-28
 
 ## 修订历史记录 (Revision History)
 

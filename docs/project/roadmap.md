@@ -2,7 +2,7 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-PROJECT-ROADMAP-2026
-> - **当前版本 (Version)**: V1.0.0
+> - **当前版本 (Version)**: V1.1.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P0–P4 闭环后更新路线图：知识库治理移入已闭环，登记六象限迁移与 CI 门禁成果。 |
 | **V1.0.0** | 2026-09-28 | AI Agent | 王辉 | 建立路线图，依据已闭环计划文档、评估报告与当前分支状态归纳产品演进阶段。 |
 
 ---
@@ -36,11 +37,12 @@
 | 性能优化 P2（次要项） | 全帧 clone 跳过、addWeighted in-place UB 修复、README 口径校准 | [perf-p2minor/IMPLEMENTATION_PLAN.md](plans/perf-p2minor/IMPLEMENTATION_PLAN.md) |
 | Web 健壮性 | 配置序列化/接线、任务持久化、执行超时、WebSocket 稳定性 | [web-robustness/IMPLEMENTATION_PLAN.md](plans/web-robustness/IMPLEMENTATION_PLAN.md) |
 
-### 进行中
+### 已闭环（近期）
 
-| 主题 | 当前状态 | 计划 |
+| 主题 | 交付内容 | 证据 |
 | :--- | :--- | :--- |
-| 知识库治理（Diátaxis 标准化） | P0 自愈完成（健康度 37.2 → 100.0）；P1 立骨架进行中 | [docs-governance/IMPLEMENTATION_PLAN.md](plans/docs-governance/IMPLEMENTATION_PLAN.md) |
+| 知识库治理（Diátaxis 标准化） | P0 自愈（健康度 37.2 → 100.0，断链 41 → 0、控制头 68/68）→ P1 立骨架（GOVERNANCE/llms.txt/象限）→ P2 六象限迁移（67 篇）→ P3 拆分 design.md（1052 行 → 总纲 + 5 子册）→ P4 规范同步与 CI 门禁 | [docs-governance 计划](./plans/docs-governance/IMPLEMENTATION_PLAN.md) |
+
 
 ### 待评估 / 待裁决
 

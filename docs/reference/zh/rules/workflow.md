@@ -2,17 +2,18 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-PROC-WF-2026
-> - **当前版本 (Version)**: V1.0.0
+> - **当前版本 (Version)**: V1.1.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Normative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-08-13
+> - **最后更新 (Last Updated)**: 2026-09-28
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P4：路径约定对齐 Diátaxis 拓扑（评估报告 → `docs/explanation/zh/analysis/`、实施计划 → `docs/project/plans/`、技术决策 → `docs/explanation/zh/decisions/`、构建指南 → `docs/how-to/zh/`），并补充文档门禁命令。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
 
 ## 1. 流程概述
@@ -65,7 +66,7 @@
 > 仅当需要代码质量评估时执行此阶段，跳过则进入阶段一。
 
 1. 评估代码质量
-2. 编写评估文档（路径：`/docs/dev/evaluation/C++_evaluation_{title}.md`）
+2. 编写评估文档（路径：`/docs/explanation/zh/analysis/C++_evaluation_{title}.md`）
 
 **阶段一：计划制定**
 3. 制定实施计划（如已执行评估，则根据评估结果制定）
@@ -73,7 +74,7 @@
 
 **阶段二：任务文档生成**
 5. 根据计划批量生成子任务文档
-   - 路径：`/docs/dev/plan/{plan_name}/task/C++_task_{task_name}.md`
+   - 路径：`/docs/project/plans/{plan_name}/task/C++_task_{task_name}.md`
    - 格式：中文 Markdown
 6. 进入阶段三
 
@@ -135,7 +136,7 @@
 
 19. **文档变更检查**（按以下清单逐项确认）：
 
-    **📋 开发文档检查** (`docs/dev/{en,zh}/`)：
+    **📋 开发文档检查** (Diátaxis 象限：explanation / reference / how-to)：
 
     | 文档 | 检查条件 | 路径 |
     | :--- | :--- | :--- |
@@ -146,7 +147,7 @@
     | 工作流程 | 是否调整了开发流程 | `process/workflow.md` |
     | 疑难杂症 | 是否解决了新的技术问题 | `troubleshooting/README.md` |
 
-    **📋 用户文档检查** (`docs/user/{en,zh}/`)：
+    **📋 用户文档检查** (tutorials / how-to / reference)：
 
     | 文档 | 检查条件 | 路径 |
     | :--- | :--- | :--- |
@@ -161,19 +162,19 @@
 
     | 文档 | 检查条件 | 路径 |
     | :--- | :--- | :--- |
-    | 技术决策 (ADR) | 是否做出了重大技术选型决策 | `docs/dev/zh/guides/*.md` |
-    | 评估报告 | 是否完成了代码质量评估 | `docs/dev/evaluation/*.md` |
-    | 实施计划 | 是否有计划状态变更 | `docs/dev/plan/*/IMPLEMENTATION_PLAN.md` |
-    | 构建说明 | 是否有构建流程变更 | `docs/build.md` |
+    | 技术决策 (ADR) | 是否做出了重大技术选型决策 | `docs/explanation/zh/decisions/*.md` |
+    | 评估报告 | 是否完成了代码质量评估 | `docs/explanation/zh/analysis/*.md` |
+    | 实施计划 | 是否有计划状态变更 | `docs/project/plans/*/IMPLEMENTATION_PLAN.md` |
+    | 构建说明 | 是否有构建流程变更 | `docs/how-to/zh/build.md` |
 
 20. **更新受影响的文档**：
     - 对于每个"需要更新"的文档，执行更新并记录变更
-    - 开发文档和用户文档需同步更新中英文版本（`docs/dev/zh/` 和 `docs/dev/en/`，`docs/user/zh/` 和 `docs/user/en/`）
+    - 需要中英双份的象限（`tutorials/`、`how-to/`、`reference/`、`explanation/`）需同步更新 `zh/` 与 `en/` 版本
     - 文档变更使用独立 commit，message 格式：`docs: update {文档名} for {变更原因}`
 
 21. **归档评估报告**（如有）：
-    - 将阶段零产生的评估报告保存到 `docs/dev/evaluation/`
-    - 将技术决策记录 (ADR) 保存到 `docs/dev/zh/guides/`
+    - 将阶段零产生的评估报告保存到 `docs/explanation/zh/analysis/`
+    - 将技术决策记录 (ADR) 保存到 `docs/explanation/zh/decisions/`
 
 22. 更新计划状态为"已完成"
 23. 流程结束
