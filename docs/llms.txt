@@ -45,7 +45,7 @@
 - [配置指南 (Configuration Guide)](reference/zh/configuration_guide.md): "将视频 B 中的人脸替换为 A"
 - [硬件指南 (Hardware Guide)](reference/zh/hardware_guide.md): FaceFusionCpp 是一个高性能应用。本指南帮助您根据硬件规格（特别是 GPU）选择最优配置方案。
 - [C++ 代码质量与工程化标准（FaceFusionCpp）](reference/zh/rules/C++_quality_standard.md): 本文档用于统一 FaceFusionCpp 项目的代码质量要求、工程化质量门槛，以及在评审/验收时可执行的评估维度。它不是“风格偏好合集”，而是可落地的质量合约：写代码的人按它交付，审代码的人按它验收。
-- [工作流程 (Workflow)](reference/zh/rules/workflow.md): 本工作流程支持两种路径：**评估路径**（需要代码质量评估）和**直接实现路径**（无需评估）。两者共享相同的计划、实现和验收阶段，评估仅作为可选前置步骤（**MAY**）。
+- [工作流程 (Workflow)](reference/zh/rules/workflow.md): 本文档**只定义本仓库特有的执行契约**（命令、产物路径、失败阈值与文档清单）。通用工程方法论由技能库提供并随工具链演进，本文不再重复描述。
 
 ## Explanation (深度剖析 / 系统架构与 ADR 决策)
 
@@ -95,7 +95,8 @@
 
 ## Other Documentation (其他文档)
 
+- [C++ 代码质量评估报告模板（已废止归档）](archived/C++_evaluation_template.md): **典型违规代码片段 (如有)**:
+- [代码质量评分标准（已废止归档）](archived/quality-scoring-rubric.md): 术语约定（用于统一评审口径）：
 - [C++ Quality Standards & Development Checklist](archived/quality.md): Before submitting a PR, ensure:
-- [C++ 代码质量评估报告](templates/C++_evaluation_template.md): <!-- AI_CONTEXT
 - [{计划名称} 实施计划](templates/C++_plan_template.md): <!-- AI_CONTEXT
 - [{任务名称} 实施任务单](templates/C++_task_template.md): <!-- AI_CONTEXT

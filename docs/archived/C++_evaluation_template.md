@@ -1,31 +1,25 @@
-<!-- AI_CONTEXT
-你是一名严格的代码质量审计师 (Code Quality Auditor)。
-你的目标是根据客观证据对 C++ 模块进行"无情"的评估。
-原则：没有证据 = 0 分。
-⚠️ TDD 审计：必须验证代码是否通过 TDD 流程产生（测试先于实现）。
--->
-
-# C++ 代码质量评估报告
+# C++ 代码质量评估报告模板（已废止归档）
 
 > **文档控制信息 (Document Control)**
-> - **文档标识 (Document ID)**: FFC-DEV-TPL-EVAL-2026
+> - **文档标识 (Document ID)**: FFC-ARCHIVED-EVAL-TEMPLATE-2026
 > - **当前版本 (Version)**: V1.0.0
-> - **状态 (Status)**: 正式 (Official)
+> - **状态 (Status)**: 已废止 (Superseded)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-08-13
+> - **最后更新 (Last Updated)**: 2026-09-28
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
-| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
+| **V1.0.0** | 2026-09-28 | AI Agent | 王辉 | 自 `docs/templates/` 归档。采用率 0/3：仓库内 3 份真实评估（架构性能、Web UI 完成度、Vulkan 可行性）均采用自定义结构，因其评估对象差异大（模块质量 / 架构 / 可行性），单一评分表单不适用；且 §7 评分标准已废止，审查机制改由 `dual-round-review` / `code-review` 技能承担。 |
 
+---
 
-> **标准参考**:
-> *   评估标准与工具指南请参考: [C++代码质量与评估标准指南](../reference/zh/rules/C++_quality_standard.md)
-> *   TDD 与开发规范: [AGENTS.md](../../AGENTS.md)
+> ⚠️ **本模板已废止，不再要求使用**。评估报告请按对象性质自选结构（建议包含：评估背景与范围、证据分级、风险清单、结论与建议），并遵循 [GOVERNANCE.md](../GOVERNANCE.md) 的 explanation 象限定位与 [workflow.md](../reference/zh/rules/workflow.md) §2.4 的产物路径约定。
+
+---
 
 ## 0. 评估前准备 (Pre-Evaluation)
 > **指令**: 在开始评估前，必须完成以下动作。
@@ -165,7 +159,7 @@
 ## 5. 评估结论与评分
 
 ### 5.1 评分汇总表
-> 评分计算请参考 [C++质量标准指南](../reference/zh/rules/C++_quality_standard.md#7-评估与评分标准用于审查验收)
+> 评分计算请参考 [C++质量标准指南](../archived/quality-scoring-rubric.md)
 
 | 评估维度 | 权重 | 得分 (0-100) | 加权分 | 简评 |
 | :--- | :--- | :--- | :--- | :--- |

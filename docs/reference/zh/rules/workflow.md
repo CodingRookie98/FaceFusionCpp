@@ -2,7 +2,7 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-PROC-WF-2026
-> - **当前版本 (Version)**: V1.1.0
+> - **当前版本 (Version)**: V2.2.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Normative
 > - **所有者 (Owner)**: 王辉
@@ -13,87 +13,104 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
-| **V1.1.0** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P4：路径约定对齐 Diátaxis 拓扑（评估报告 → `docs/explanation/zh/analysis/`、实施计划 → `docs/project/plans/`、技术决策 → `docs/explanation/zh/decisions/`、构建指南 → `docs/how-to/zh/`），并补充文档门禁命令。 |
+| **V2.2.0** | 2026-09-28 | AI Agent | 王辉 | §1 技能路由表补充触发性提示：implement / to-spec / to-tickets / wayfinder 标记为不可自动触发，自动化流水线须避开隐式依赖。 |
+| **V2.1.0** | 2026-09-28 | AI Agent | 王辉 | 新增 §1.1「跨技能冲突裁决」：针对技能库中 tdd 与 goal-loop（重构归属）、implement 与 software-engineer（提交许可）、goal-loop 与 doc-governance（治理强度）等相反指令，给出项目权威口径。 |
+| **V2.0.0** | 2026-09-28 | AI Agent | 王辉 | 减法治理：本文档收敛为「项目执行契约」，通用方法论（上下文管理规则、TDD 循环详述、阶段编排、分支规范、流程图）移交技能库，新增「技能路由」章节；完整保留命令族、失败处理矩阵、产物路径与文档变更清单。 |
+| **V1.1.0** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P4：路径约定对齐 Diátaxis 拓扑。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
 
-## 1. 流程概述
-本工作流程支持两种路径：**评估路径**（需要代码质量评估）和**直接实现路径**（无需评估）。两者共享相同的计划、实现和验收阶段，评估仅作为可选前置步骤（**MAY**）。
+---
 
-**核心原则**：
-1. 所有开发工作 **MUST** 在独立的功能/修复分支上进行，**MUST NOT** 直接修改 `master` 或 `dev` 分支。
-2. **TDD 强制**：遵循项目 TDD 开发原则（详见 [AGENTS.md](../../../../AGENTS.md#-tdd-开发原则-mandatory---最高优先级)），所有适用代码 **MUST** 通过 TDD 流程产生。
+## 1. 定位：契约在此，方法在技能
+
+本文档**只定义本仓库特有的执行契约**（命令、产物路径、失败阈值与文档清单）。通用工程方法论由技能库提供并随工具链演进，本文不再重复描述。
+
+| 场景 | 技能 | 提供的能力 |
+| :--- | :--- | :--- |
+| 长程 / 多模块 / 跨层任务（> 10 分钟） | `goal-loop` | 阶段路由与检查点持久化、P-1 用户认可门禁、3-Tries 熔断、交付前 Zero Blockers 裁决 |
+| 新功能 / 缺陷修复的编码循环 | `tdd` | Red-Green-Refactor 循环、测试缝隙选择与反模式 |
+| 交付 / PR 合并前 | `dual-round-review` | 双轮对抗审查：红队穿透 + 元架构师审判 |
+| 变更审查 | `code-review` | Standards 与 Spec 双轴并行审查 |
+| 文档变更 | `doc-governance` | Diátaxis 拓扑、控制头基线、断链与健康度门禁 |
+| 缺陷诊断 | `diagnosing-bugs` | 复现优先的诊断循环 |
+
+> **冲突裁决**：项目特有契约（本文档与 [AGENTS.md](../../../../AGENTS.md)）优先于技能中的通用建议；方法论细节以技能为准。
+
+> **触发性提示**：上表技能均可由模型自动路由；但 `implement` / `to-spec` / `to-tickets` / `wayfinder` 在当前技能包中被标记为**不可自动触发**（`disable-model-invocation`），需由人显式调用。设计自动化流水线时须避开对这四个技能的隐式依赖。
+
+### 1.1 跨技能冲突裁决（项目侧裁决，优先于技能默认）
+
+技能库由不同来源维护，彼此存在相反指令。以下裁决为**本项目权威口径**：
+
+| 冲突点 | 技能分歧 | 本项目裁决 |
+| :--- | :--- | :--- |
+| 重构是否属于 TDD 循环 | `tdd`：重构不在循环内（归审查阶段）；`goal-loop` P3：循环内强制 🔵 Refactor | **含重构**（遵循 goal-loop P3 的五步：Red → Green → Refactor → Verify → Atomic Commit） |
+| 何时允许提交 | `implement`：无条件提交；`software-engineer`：未获授权禁止提交 | 按任务粒度原子提交（见 [AGENTS.md](../../../../AGENTS.md) 的 Git 白名单）；涉及公共契约、破坏性操作或跨模块大改时先获用户确认 |
+| 文档治理强度 | `goal-loop` P5 标注"doc-governance（可选）"；`doc-governance` 自称"必须触发" | **强制**：凡改动 `docs/`，必过 `scripts/doc/` 三门禁（详见 [GOVERNANCE.md](../../../GOVERNANCE.md)） |
+| 分支命名与合并目标 | 技能默认 `feature/goal-<name>`、合并至"主干或开发分支" | `feature/plan-{name}` / `fix/task-{name}` → 合并回 **`dev`**，严禁直推 `master`/`dev`（见 §2.1） |
+| 计划与评估产物路径 | 技能默认 `docs/project/evaluation/`、`docs/architecture/`、`docs/adr/` | 按本项目 Diátaxis 六象限落盘（见 §2.4）：评估 → `docs/explanation/zh/analysis/`；计划 → `docs/project/plans/{plan}/IMPLEMENTATION_PLAN.md` |
+| 子任务工件形态 | `goal-loop` 的原子子任务提示词 vs `to-tickets` 的可认领 ticket | 仓库内**任务单**用 [C++_task_template.md](../../../templates/C++_task_template.md) 落盘（可审计）；派发给执行体时使用 goal-loop 的 `atomic-task-template`（含 8 段输出契约） |
+
+> 该表的意义：技能之间互相矛盾时，**只有项目规范能给出唯一裁决**——这正是本文件与 [AGENTS.md](../../../../AGENTS.md) 不可被技能取代的原因。
+
+**流程骨架**（方法细节见上表技能）：
+
+| 阶段 | 产出 | 契约约束 |
+| :--- | :--- | :--- |
+| 评估（MAY） | 评估报告 → `docs/explanation/zh/analysis/` | 按需触发，非必需 |
+| 计划 | `docs/project/plans/{plan}/IMPLEMENTATION_PLAN.md` | 未获用户明确认可不得编码 |
+| 子任务 | `docs/project/plans/{plan}/task/C++_task_{name}.md` | 建议使用 [C++_task_template.md](../../../templates/C++_task_template.md) |
+| 编码 | 功能分支 + 原子提交 | 见 §2.1、§2.3 |
+| 验证与合并 | 测试全绿 → 合并回 `dev` | 见 §2.2、§3 |
+| 文档归档 | 受影响的文档同步更新 | 见 §4 |
 
 ---
 
-## 2. 上下文管理规则 (Context Management)
+## 2. 项目特有契约
 
-> 基于 Manus AI 的"上下文工程"理念，确保关键信息不丢失。
+### 2.1 分支模型
 
-**1. 2-Action Rule（双操作规则）**
-> 每 2 次查看/浏览/研究操作后，**立即**将关键发现写入文档。
+完整规范见 [AGENTS.md](../../../../AGENTS.md)（单一真相源，不在本文重复）。摘要：基于 `dev` 创建 `feature/plan-{name}` 或 `fix/task-{name}`，验收后合并回 `dev` 并删除；严禁直推 `master` / `dev`。
 
-| 操作类型 | 示例                   | 记录位置                 |
-| -------- | ---------------------- | ------------------------ |
-| 代码浏览 | 阅读源码、查看接口     | 计划文档的"研究发现"章节 |
-| 文档阅读 | 查阅 API 文档、规范    | 计划文档的"研究发现"章节 |
-| 测试运行 | 执行测试、观察输出     | 任务文档的"问题记录"章节 |
-| 搜索研究 | 搜索解决方案、查阅示例 | 计划文档的"研究发现"章节 |
+### 2.2 测试分层
 
-**2. 持久化优先原则**
+按变更类型选择测试层级，完整表格见 [AGENTS.md](../../../../AGENTS.md) 的「测试分层策略」（单一真相源）。
+
+**项目特有例外**：纯文档变更（`docs/` 下的 `.md` 文件，无 `.cpp`/`.ixx` 改动）**可跳过全部测试直接提交**，并须在提交说明中注明跳过原因。
+
+### 2.3 交付命令
+
+```bash
+# 单元测试（每个子任务完成即执行）
+python build.py --action test --test-label unit
+
+# 集成测试（跨模块/跨层变更必跑，10–40 分钟，建议后台执行）
+python build.py --action test --test-label integration
+
+# 完整测试套件（合并前最终验证）
+python build.py --action test
+
+# E2E（发布准备与重大架构变更；工作目录须为可执行文件所在目录）
+cd build/<preset>/bin && python3 ../../../tests/e2e/scripts/run_e2e.py
 ```
-上下文窗口 = 内存 (易失性, 有限)
-文件系统 = 磁盘 (持久性, 无限)
 
-→ 任何重要信息都应写入磁盘。
-```
+### 2.4 产物路径约定
 
-**3. 读写决策矩阵**
-
-| 场景           | 操作                 | 原因                     |
-| -------------- | -------------------- | ------------------------ |
-| 刚写完文件     | **不读**             | 内容仍在上下文中         |
-| 查看了图像/PDF | **立即写**           | 多模态信息需转为文本保存 |
-| 研究返回数据   | **写入文件**         | 研究结果不会持久保留     |
-| 开始新阶段     | **读取计划**         | 重新定位目标             |
-| 发生错误       | **读取相关文件**     | 需要当前状态来修复       |
-| 中断后恢复     | **读取所有计划文件** | 恢复工作状态             |
+| 产物 | 路径 |
+| :--- | :--- |
+| 评估报告 | `docs/explanation/zh/analysis/C++_evaluation_{title}.md` |
+| 实施计划 | `docs/project/plans/{plan_name}/IMPLEMENTATION_PLAN.md` |
+| 子任务文档 | `docs/project/plans/{plan_name}/task/C++_task_{task_name}.md` |
+| 技术决策 (ADR) | `docs/explanation/zh/decisions/` |
+| 构建流程说明 | `docs/how-to/zh/build.md` |
 
 ---
 
-## 3. 统一流程
+## 3. 失败处理矩阵
 
-**阶段零（**MAY**）：代码评估**
-> 仅当需要代码质量评估时执行此阶段，跳过则进入阶段一。
+> 通用重试上限与熔断规则（3-Tries、升级人工）见 [AGENTS.md](../../../../AGENTS.md)；下表为**本项目特有的分类阈值**。
 
-1. 评估代码质量
-2. 编写评估文档（路径：`/docs/explanation/zh/analysis/C++_evaluation_{title}.md`）
-
-**阶段一：计划制定**
-3. 制定实施计划（如已执行评估，则根据评估结果制定）
-4. 进入阶段二
-
-**阶段二：任务文档生成**
-5. 根据计划批量生成子任务文档
-   - 路径：`/docs/project/plans/{plan_name}/task/C++_task_{task_name}.md`
-   - 格式：中文 Markdown
-6. 进入阶段三
-
-**阶段三：任务实现（分支操作 + TDD）**
-7. **创建功能分支**：基于 `dev` 分支新建分支（例如：`feature/plan-{plan_name}`）
-8. **TDD 循环实现子任务**（详见 [AGENTS.md TDD 原则](../../../../AGENTS.md#-tdd-开发原则-mandatory---最高优先级)）：
-   - 🔴 为当前子任务编写失败测试
-   - 🟢 编写最少量代码使测试通过
-   - 🔵 重构优化代码结构
-   - ✅ 运行 `python build.py --action test --test-label unit` 确保单元测试通过
-9. 提交子任务更改到 git
-   - 代码变更：**MUST** 先通过单元测试再提交
-   - 纯文档变更（`docs/` 目录、`.md` 文件）：**MAY** 无需运行测试，可直接提交
-10. 更新任务文档状态
-    - 将对应的子任务文档状态标记为"已完成"
-    - 记录完成时间与相关 commit ID
-11. 重复步骤 8-10 直到所有子任务完成
-
-**TDD 失败处理协议**：
+**实现阶段**：
 
 | 失败场景 | 检测方式 | 重试策略 | 回退路径 | 升级条件 |
 | :--- | :--- | :--- | :--- | :--- |
@@ -101,168 +118,52 @@
 | 编译失败 | `build.py --action build` 返回非零 | 最多重试 2 次修复 | 回退到上一个编译通过的状态 | 2 次失败后检查依赖/环境 |
 | 重构后测试失败 | 重构后运行测试 | 回退重构，重新尝试 | 放弃本次重构，保持原代码 | 3 次失败后跳过重构步骤 |
 
-**3-Tries 规则**：每个子任务最多尝试 **3 次**。如果失败：
-1. **STOP**：停止尝试，不要盲目试错
-2. **RECORD**：记录失败原因、错误信息、已尝试的方法
-3. **RESEARCH**：利用检索工具寻找替代方案
-4. **ASK**：主动向用户求助
-
-**阶段三.五：集成验证**
-> 所有子任务完成后、合并前执行。验证跨模块协作无回归。
-
-12. **运行集成测试**：`python build.py --action test --test-label integration`
-13. 若集成测试失败，定位并修复问题，回到阶段三的 TDD 循环
-14. 集成测试全部通过后，进入阶段四
-
-**集成测试失败处理协议**：
+**集成验证阶段**：
 
 | 失败场景 | 检测方式 | 处理策略 | 回退路径 | 升级条件 |
 | :--- | :--- | :--- | :--- | :--- |
-| 单个测试用例失败 | 测试报告显示具体失败用例 | 定位到具体模块，回到阶段三修复 | 回退到最后一次集成通过的状态 | 3 次修复失败后升级 |
+| 单个测试用例失败 | 测试报告显示具体失败用例 | 定位到具体模块后修复 | 回退到最后一次集成通过的状态 | 3 次修复失败后升级 |
 | 多个测试用例失败 | 测试报告显示多个失败 | 按失败优先级逐个修复 | 回退到最后一次集成通过的状态 | 失败数 > 5 时升级 |
-| 环境依赖失败 | CUDA/ONNX Runtime 不可用 | 检查环境配置，修复后重试 | 不回退代码，修复环境 | 环境无法修复时升级 |
+| 环境依赖失败 | CUDA / ONNX Runtime 不可用 | 检查环境配置，修复后重试 | 不回退代码，修复环境 | 环境无法修复时升级 |
 | 超时失败 | 测试执行超过预期时间 2x | 检查是否有死锁或无限循环 | 回退到最后一次集成通过的状态 | 超时 > 10min 时升级 |
 
-**阶段四：完成验收与合并**
-15. **E2E 测试**：运行端到端测试验证完整业务流程（如适用）
-    - 命令：`cd build/<preset>/bin && python3 ../../../tests/e2e/scripts/run_e2e.py`
-    - 详细说明参见 `tests/e2e/README.md`
-16. **最终验证**：运行完整测试套件 `python build.py --action test` 确保所有测试通过
-17. **合并分支**：将功能分支合并回 `dev` 分支
-18. **清理分支**：删除已合并的功能分支
-
-**阶段五：文档归档与更新**
-> 合并完成后执行。确保所有文档与代码变更保持同步。
-
-19. **文档变更检查**（按以下清单逐项确认）：
-
-    **📋 开发文档检查** (Diátaxis 象限：explanation / reference / how-to)：
-
-    | 文档 | 检查条件 | 路径 |
-    | :--- | :--- | :--- |
-    | 架构设计 | 是否新增/修改了模块、分层、接口 | `architecture/design.md` |
-    | 分层结构 | 是否调整了层级依赖关系 | `architecture/layers.md` |
-    | 构建指南 | 是否新增/变更了构建依赖或配置 | `guides/setup.md` |
-    | 质量标准 | 是否新增/修改了代码规范 | `process/quality.md`, `process/C++_quality_standard.md` |
-    | 工作流程 | 是否调整了开发流程 | `process/workflow.md` |
-    | 疑难杂症 | 是否解决了新的技术问题 | `troubleshooting/README.md` |
-
-    **📋 用户文档检查** (tutorials / how-to / reference)：
-
-    | 文档 | 检查条件 | 路径 |
-    | :--- | :--- | :--- |
-    | 快速上手 | 是否影响了安装/首次使用流程 | `getting_started.md` |
-    | 用户指南 | 是否新增/修改了功能特性 | `user_guide.md` |
-    | 配置指南 | 是否新增/修改了配置参数 | `configuration_guide.md` |
-    | CLI 参考 | 是否新增/修改了命令行参数 | `cli_reference.md` |
-    | 硬件指南 | 是否有新的硬件适配信息 | `hardware_guide.md` |
-    | FAQ | 是否有新的常见问题 | `faq.md` |
-
-    **📋 其他文档检查**：
-
-    | 文档 | 检查条件 | 路径 |
-    | :--- | :--- | :--- |
-    | 技术决策 (ADR) | 是否做出了重大技术选型决策 | `docs/explanation/zh/decisions/*.md` |
-    | 评估报告 | 是否完成了代码质量评估 | `docs/explanation/zh/analysis/*.md` |
-    | 实施计划 | 是否有计划状态变更 | `docs/project/plans/*/IMPLEMENTATION_PLAN.md` |
-    | 构建说明 | 是否有构建流程变更 | `docs/how-to/zh/build.md` |
-
-20. **更新受影响的文档**：
-    - 对于每个"需要更新"的文档，执行更新并记录变更
-    - 需要中英双份的象限（`tutorials/`、`how-to/`、`reference/`、`explanation/`）需同步更新 `zh/` 与 `en/` 版本
-    - 文档变更使用独立 commit，message 格式：`docs: update {文档名} for {变更原因}`
-
-21. **归档评估报告**（如有）：
-    - 将阶段零产生的评估报告保存到 `docs/explanation/zh/analysis/`
-    - 将技术决策记录 (ADR) 保存到 `docs/explanation/zh/decisions/`
-
-22. 更新计划状态为"已完成"
-23. 流程结束
-
 ---
 
-## 4. 流程特性说明
+## 4. 文档变更检查清单（合并后执行）
 
-**1. 评估 **MAY****
-- 评估阶段（阶段零）适用于需要代码质量评估的场景
-- 简单任务或无需评估的场景可直接从阶段一开始
+**开发文档**：
 
-**2. TDD 强制集成**
-- 每个子任务实现 **MUST** 遵循 Red-Green-Refactor 循环（适用范围详见 [AGENTS.md](../../../../AGENTS.md)）
-- 测试通过是提交代码的前提条件
-- 无测试代码不得合并
+| 文档 | 检查条件 | 路径 |
+| :--- | :--- | :--- |
+| 架构设计 | 是否新增/修改了模块、分层、接口 | `explanation/zh/architecture/design.md`（总纲 + 子册） |
+| 分层结构 | 是否调整了层级依赖关系 | `explanation/zh/architecture/layers.md` |
+| 构建指南 | 是否新增/变更了构建依赖或配置 | `how-to/zh/setup.md`、`how-to/zh/build.md` |
+| 质量标准 | 是否新增/修改了代码规范 | `reference/zh/rules/C++_quality_standard.md` |
+| 工作流程 | 是否调整了开发流程 | `reference/zh/rules/workflow.md` |
+| 疑难杂症 | 是否解决了新的技术问题 | `how-to/zh/troubleshooting/README.md` |
 
-**3. 批量处理机制**
-- 子任务文档支持批量生成
-- 子任务按顺序自动执行
+**用户文档**：
 
-**4. 状态管理**
-- 每个阶段完成后更新状态，确保流程可追溯
-- 支持回滚到任意阶段，便于调整和修正
+| 文档 | 检查条件 | 路径 |
+| :--- | :--- | :--- |
+| 快速上手 | 是否影响安装/首次使用流程 | `tutorials/zh/getting_started.md` |
+| 用户指南 | 是否新增/修改了功能特性 | `how-to/zh/user_guide.md`、`how-to/zh/web_guide.md` |
+| 配置指南 | 是否新增/修改了配置参数 | `reference/zh/configuration_guide.md` |
+| CLI 参考 | 是否新增/修改了命令行参数 | `reference/zh/cli_reference.md` |
+| 硬件指南 | 是否有新的硬件适配信息 | `reference/zh/hardware_guide.md` |
+| FAQ | 是否有新的常见问题 | `how-to/zh/faq.md` |
 
-**5. 异常处理**
-- 测试失败时，修复代码直到测试通过
-- 支持部分完成后的继续执行，避免全量重做
+**其他**：
 
-**6. 版本控制与分支规范（标准 Git Flow）**
-- **长期分支**：`master`（生产/发布）+ `dev`（开发集成），**MUST NOT** 直接提交
-- **临时分支**：
-  - `feature/plan-{name}`：新功能，基于 `dev` 创建 → 合并回 `dev`
-  - `fix/task-{name}`：bug 修复，基于 `dev` 创建 → 合并回 `dev`
-  - `release/v{version}`：发布准备，基于 `dev` 创建 → 合并到 `master` + `dev`，打 Tag
-  - `hotfix/v{version}-{desc}`：紧急修复，基于 `master` 创建 → 合并到 `master` + `dev`
-- **原子提交**：每个子任务完成后，提交代码更改到当前分支
-- **合并清理**：任务验收后合并并删除分支，保持仓库整洁
+| 文档 | 检查条件 | 路径 |
+| :--- | :--- | :--- |
+| 技术决策 (ADR) | 是否做出重大技术选型决策 | `docs/explanation/zh/decisions/*.md` |
+| 评估报告 | 是否完成代码质量评估 | `docs/explanation/zh/analysis/*.md` |
+| 实施计划 | 是否有计划状态变更 | `docs/project/plans/*/IMPLEMENTATION_PLAN.md` |
 
----
+**收尾**：中英双份象限（`tutorials/`、`how-to/`、`reference/`、`explanation/`）需同步 `zh/` 与 `en/`；文档变更使用独立 commit（`docs: update {文档名} for {原因}`）；最后刷新索引与机器地图：
 
-## 5. 流程图
-
-```mermaid
-graph TD
-    Start[工作流程入口] --> IsEvaluationNeeded{是否需要代码评估?}
-
-    IsEvaluationNeeded -->|是| EvalCode[阶段零: 评估代码质量]
-    IsEvaluationNeeded -->|否| CreatePlan
-
-    EvalCode --> WriteEvalDoc[编写评估文档]
-    WriteEvalDoc --> CreatePlan
-
-    CreatePlan[阶段一: 制定实施计划] --> GenTaskDocs[阶段二: 生成子任务文档]
-    GenTaskDocs --> CreateBranch[阶段三: 创建功能分支]
-
-    CreateBranch --> TDDCycle[TDD 循环]
-
-    subgraph TDDCycle[TDD 实现循环]
-        WriteTest["🔴 编写失败测试"] --> WriteCode["🟢 编写最少代码"]
-        WriteCode --> Refactor["🔵 重构优化"]
-        Refactor --> RunTests["✅ 运行单元测试"]
-    end
-
-    TDDCycle --> TestPass{测试通过?}
-    TestPass -->|否| FixCode[修复代码]
-    FixCode --> TDDCycle
-
-    TestPass -->|是| CommitGit[提交更改到当前分支]
-    CommitGit --> UpdateTaskDoc[更新任务文档状态]
-
-    UpdateTaskDoc --> AllTasksDone{所有子任务完成?}
-    AllTasksDone -->|否| NextTask[继续下一子任务]
-    NextTask --> TDDCycle
-
-    AllTasksDone -->|是| IntegrationTest[阶段三.五: 集成测试]
-    IntegrationTest --> IntegPass{集成测试通过?}
-    IntegPass -->|否| FixCode
-    IntegPass -->|是| E2ETest[阶段四: E2E 测试]
-    E2ETest --> FinalTest[最终验证: 完整测试套件]
-    FinalTest --> MergeBranch[合并并删除分支]
-    MergeBranch --> DocAudit[阶段五: 文档归档与更新]
-
-    subgraph DocAudit[阶段五: 文档归档]
-        CheckDocs["📋 检查文档变更清单"] --> UpdateDocs["更新受影响的文档"]
-        UpdateDocs --> ArchiveReports["归档评估报告/ADR"]
-    end
-
-    DocAudit --> UpdatePlanStatus[更新计划状态]
-    UpdatePlanStatus --> End[流程结束]
+```bash
+python3 scripts/doc/generate-llms-txt.py --root docs --output docs/llms.txt
+python3 scripts/doc/check-doc-links.py --root docs   # 零断链门禁
 ```
