@@ -235,4 +235,4 @@
 - [design.md](../architecture/design.md) —— 系统设计与推理基础设施章节
 - [layers.md](../architecture/layers.md) —— 分层结构与 foundation/ai 职责边界
 - [architecture-performance-review.md](architecture-performance-review.md) —— 推理架构既有性能评估（含会话层/池层问题清单）
-- [C++_evaluation_template.md](../../../dev/templates/C++_evaluation_template.md) —— 评估文档模板
+- [C++_evaluation_template.md](../../../templates/C++_evaluation_template.md) —— 评估文档模板

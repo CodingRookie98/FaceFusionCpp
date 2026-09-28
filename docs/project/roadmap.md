@@ -31,16 +31,16 @@
 
 | 主题 | 交付内容 | 证据 |
 | :--- | :--- | :--- |
-| 性能优化 P0 | 会话池容量、FaceStore 缓存、InSwapper 初始化器解析复用、领域服务复用 | [perf-p0/IMPLEMENTATION_PLAN.md](../dev/plan/perf-p0/IMPLEMENTATION_PLAN.md) |
-| 性能优化 P1（批次 A/B） | GPU 并发闸门、会话 Key 指纹、TTL 惰性清理、池锁重构、mask 链路接线、checkpoint 节流 | [perf-p1a](../dev/plan/perf-p1a/IMPLEMENTATION_PLAN.md)、[perf-p1b](../dev/plan/perf-p1b/IMPLEMENTATION_PLAN.md) |
-| 性能优化 P2（次要项） | 全帧 clone 跳过、addWeighted in-place UB 修复、README 口径校准 | [perf-p2minor/IMPLEMENTATION_PLAN.md](../dev/plan/perf-p2minor/IMPLEMENTATION_PLAN.md) |
-| Web 健壮性 | 配置序列化/接线、任务持久化、执行超时、WebSocket 稳定性 | [web-robustness/IMPLEMENTATION_PLAN.md](../dev/plan/web-robustness/IMPLEMENTATION_PLAN.md) |
+| 性能优化 P0 | 会话池容量、FaceStore 缓存、InSwapper 初始化器解析复用、领域服务复用 | [perf-p0/IMPLEMENTATION_PLAN.md](plans/perf-p0/IMPLEMENTATION_PLAN.md) |
+| 性能优化 P1（批次 A/B） | GPU 并发闸门、会话 Key 指纹、TTL 惰性清理、池锁重构、mask 链路接线、checkpoint 节流 | [perf-p1a](plans/perf-p1a/IMPLEMENTATION_PLAN.md)、[perf-p1b](plans/perf-p1b/IMPLEMENTATION_PLAN.md) |
+| 性能优化 P2（次要项） | 全帧 clone 跳过、addWeighted in-place UB 修复、README 口径校准 | [perf-p2minor/IMPLEMENTATION_PLAN.md](plans/perf-p2minor/IMPLEMENTATION_PLAN.md) |
+| Web 健壮性 | 配置序列化/接线、任务持久化、执行超时、WebSocket 稳定性 | [web-robustness/IMPLEMENTATION_PLAN.md](plans/web-robustness/IMPLEMENTATION_PLAN.md) |
 
 ### 进行中
 
 | 主题 | 当前状态 | 计划 |
 | :--- | :--- | :--- |
-| 知识库治理（Diátaxis 标准化） | P0 自愈完成（健康度 37.2 → 100.0）；P1 立骨架进行中 | [docs-governance/IMPLEMENTATION_PLAN.md](../dev/plan/docs-governance/IMPLEMENTATION_PLAN.md) |
+| 知识库治理（Diátaxis 标准化） | P0 自愈完成（健康度 37.2 → 100.0）；P1 立骨架进行中 | [docs-governance/IMPLEMENTATION_PLAN.md](plans/docs-governance/IMPLEMENTATION_PLAN.md) |
 
 ### 待评估 / 待裁决
 

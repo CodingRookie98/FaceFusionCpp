@@ -72,7 +72,7 @@
 
 查阅我们详实精美的官方文档，掌握 FaceFusionCpp 的全部潜能：
 
-- **[快速开始指南](docs/user/zh/getting_started.md)**：包含安装说明、依赖检查与入门 Demo。
+- **[快速开始指南](docs/tutorials/zh/getting_started.md)**：包含安装说明、依赖检查与入门 Demo。
 - **[完整用户手册](docs/how-to/zh/user_guide.md)**：深入剖析各类功能模块的组合使用技巧。
 - **[CLI 参数参考](docs/reference/zh/cli_reference.md)**：命令行参数的详细检索字典。
 - **[核心配置指南](docs/reference/zh/configuration_guide.md)**：教你玩转 `app_config.yaml` 和 `task_config.yaml` 进阶设定。

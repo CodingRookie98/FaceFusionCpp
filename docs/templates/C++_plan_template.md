@@ -23,15 +23,15 @@
 
 
 > **标准参考 & 跨文档链接**:
-> *   TDD 与开发规范: [AGENTS.md](../../../AGENTS.md)
-> *   质量与评估标准: [C++代码质量与评估标准指南](../../reference/zh/rules/C++_quality_standard.md)
+> *   TDD 与开发规范: [AGENTS.md](../../AGENTS.md)
+> *   质量与评估标准: [C++代码质量与评估标准指南](../reference/zh/rules/C++_quality_standard.md)
 > *   相关任务单: 见各阶段的 "对应 Task" 链接
 > *   评估报告: 链接至对应评估 `../../evaluation/C++_evaluation_{title}.md` (计划完成后创建)
 
 ## 0. 计划前验证 (AI Agent 自检)
 > **指令**: 在编写本计划其余部分之前，列出你已阅读和分析的具体文件，以确保本计划基于事实。
 
-*   [ ] 我已阅读 [AGENTS.md](../../../AGENTS.md) 中的 C++20 开发规范。
+*   [ ] 我已阅读 [AGENTS.md](../../AGENTS.md) 中的 C++20 开发规范。
 *   [ ] 我已阅读相关现有模块的 `CMakeLists.txt` (如有)。
 *   [ ] 我已确认建议的模块名称不与现有的冲突。
 *   [ ] **TDD 承诺**: 我确认本计划的所有实施阶段将严格遵循 TDD 流程 (🔴 Red → 🟢 Green → 🔵 Refactor)。
@@ -55,7 +55,7 @@
 *   [ ] **构建**: CMake + Ninja (支持并行构建)
 *   [ ] **模块化**: 严格遵循 "逻辑模块(Module) != 物理库(Library)" 原则。
 *   [ ] **依赖**: 禁止反向依赖 (App -> Service -> Domain -> Platform -> Foundation)。
-*   [ ] **验证**: 我已阅读 [AGENTS.md](../../../AGENTS.md) 中的模块开发规范并将在设计中应用。
+*   [ ] **验证**: 我已阅读 [AGENTS.md](../../AGENTS.md) 中的模块开发规范并将在设计中应用。
 
 > **验证指令**: 如果无法勾选某项，请**停止**并优化计划。
 
@@ -106,7 +106,7 @@ graph TD
 *   [ ] **任务 1.1**: {任务描述} → 对应 Task: 链接 `../plan/{name}/task/C++_task_{title}.md`
 *   [ ] **任务 1.2**: {任务描述} → 对应 Task: 链接 `../plan/{name}/task/C++_task_{title}.md`
 *   [ ] **验收标准**:
-    *   🔴 **TDD 合规**: 适用代码必须有对应的失败测试先行编写（适用范围详见 [AGENTS.md](../../../AGENTS.md)）
+    *   🔴 **TDD 合规**: 适用代码必须有对应的失败测试先行编写（适用范围详见 [AGENTS.md](../../AGENTS.md)）
     *   编译通过 (无警告)
     *   核心接口定义冻结
     *   🧪 单元测试全部通过
@@ -121,7 +121,7 @@ graph TD
 ### 3.2 阶段二: {阶段名称} (实现/功能/测试)
 **目标**: {简述目标，如：完成主要业务逻辑并添加单元测试}
 
-> ⚠️ **TDD 强制**: 本阶段适用代码必须严格遵循 Red-Green-Refactor 循环（适用范围详见 [AGENTS.md](../../../AGENTS.md)）。
+> ⚠️ **TDD 强制**: 本阶段适用代码必须严格遵循 Red-Green-Refactor 循环（适用范围详见 [AGENTS.md](../../AGENTS.md)）。
 
 *   [ ] **任务 2.1**: {任务描述} → 对应 Task: 链接 `../plan/{name}/task/C++_task_{title}.md`
 *   [ ] **任务 2.2**: {任务描述} → 对应 Task: 链接 `../plan/{name}/task/C++_task_{title}.md`
@@ -148,7 +148,7 @@ graph TD
     *   🧪 **测试完整性**: 行为测试覆盖所有关键路径
     *   通过集成测试
     *   性能指标达标 ({具体指标})
-    *   **TDD 审计**: 确认所有适用的新增代码均由测试驱动产生（适用范围详见 [AGENTS.md](../../../AGENTS.md)）
+    *   **TDD 审计**: 确认所有适用的新增代码均由测试驱动产生（适用范围详见 [AGENTS.md](../../AGENTS.md)）
 
 **阶段内研究检查点** (2-Action Rule 实施):
 > 每完成 2 个小任务，停下来更新下方研究表，记录关键发现。

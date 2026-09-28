@@ -24,8 +24,8 @@
 
 
 > **标准参考**:
-> *   评估标准与工具指南请参考: [C++代码质量与评估标准指南](../../reference/zh/rules/C++_quality_standard.md)
-> *   TDD 与开发规范: [AGENTS.md](../../../AGENTS.md)
+> *   评估标准与工具指南请参考: [C++代码质量与评估标准指南](../reference/zh/rules/C++_quality_standard.md)
+> *   TDD 与开发规范: [AGENTS.md](../../AGENTS.md)
 
 ## 0. 评估前准备 (Pre-Evaluation)
 > **指令**: 在开始评估前，必须完成以下动作。
@@ -165,7 +165,7 @@
 ## 5. 评估结论与评分
 
 ### 5.1 评分汇总表
-> 评分计算请参考 [C++质量标准指南](../../reference/zh/rules/C++_quality_standard.md#7-评估与评分标准用于审查验收)
+> 评分计算请参考 [C++质量标准指南](../reference/zh/rules/C++_quality_standard.md#7-评估与评分标准用于审查验收)
 
 | 评估维度 | 权重 | 得分 (0-100) | 加权分 | 简评 |
 | :--- | :--- | :--- | :--- | :--- |

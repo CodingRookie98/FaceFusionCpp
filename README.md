@@ -72,7 +72,7 @@ Extract the downloaded release archive, open a terminal in the folder, and run:
 
 Explore our comprehensive documentation portal to unlock the full potential of FaceFusionCpp:
 
-- **[Getting Started](docs/user/en/getting_started.md)**: Installation, system prerequisites, and your first run.
+- **[Getting Started](docs/tutorials/en/getting_started.md)**: Installation, system prerequisites, and your first run.
 - **[User Guide](docs/how-to/en/user_guide.md)**: In-depth explanations of modules and workflows.
 - **[CLI Reference](docs/reference/en/cli_reference.md)**: Exhaustive command-line argument handbook.
 - **[Configuration Guide](docs/reference/en/configuration_guide.md)**: Advanced tuning via `app_config.yaml` and `task_config.yaml`.
