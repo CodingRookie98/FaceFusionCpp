@@ -2,7 +2,7 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-PROC-WF-2026
-> - **当前版本 (Version)**: V2.0.0
+> - **当前版本 (Version)**: V2.1.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Normative
 > - **所有者 (Owner)**: 王辉
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V2.1.0** | 2026-09-28 | AI Agent | 王辉 | 新增 §1.1「跨技能冲突裁决」：针对技能库中 tdd 与 goal-loop（重构归属）、implement 与 software-engineer（提交许可）、goal-loop 与 doc-governance（治理强度）等相反指令，给出项目权威口径。 |
 | **V2.0.0** | 2026-09-28 | AI Agent | 王辉 | 减法治理：本文档收敛为「项目执行契约」，通用方法论（上下文管理规则、TDD 循环详述、阶段编排、分支规范、流程图）移交技能库，新增「技能路由」章节；完整保留命令族、失败处理矩阵、产物路径与文档变更清单。 |
 | **V1.1.0** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P4：路径约定对齐 Diátaxis 拓扑。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
@@ -33,6 +34,21 @@
 | 缺陷诊断 | `diagnosing-bugs` | 复现优先的诊断循环 |
 
 > **冲突裁决**：项目特有契约（本文档与 [AGENTS.md](../../../../AGENTS.md)）优先于技能中的通用建议；方法论细节以技能为准。
+
+### 1.1 跨技能冲突裁决（项目侧裁决，优先于技能默认）
+
+技能库由不同来源维护，彼此存在相反指令。以下裁决为**本项目权威口径**：
+
+| 冲突点 | 技能分歧 | 本项目裁决 |
+| :--- | :--- | :--- |
+| 重构是否属于 TDD 循环 | `tdd`：重构不在循环内（归审查阶段）；`goal-loop` P3：循环内强制 🔵 Refactor | **含重构**（遵循 goal-loop P3 的五步：Red → Green → Refactor → Verify → Atomic Commit） |
+| 何时允许提交 | `implement`：无条件提交；`software-engineer`：未获授权禁止提交 | 按任务粒度原子提交（见 [AGENTS.md](../../../../AGENTS.md) 的 Git 白名单）；涉及公共契约、破坏性操作或跨模块大改时先获用户确认 |
+| 文档治理强度 | `goal-loop` P5 标注"doc-governance（可选）"；`doc-governance` 自称"必须触发" | **强制**：凡改动 `docs/`，必过 `scripts/doc/` 三门禁（详见 [GOVERNANCE.md](../../../GOVERNANCE.md)） |
+| 分支命名与合并目标 | 技能默认 `feature/goal-<name>`、合并至"主干或开发分支" | `feature/plan-{name}` / `fix/task-{name}` → 合并回 **`dev`**，严禁直推 `master`/`dev`（见 §2.1） |
+| 计划与评估产物路径 | 技能默认 `docs/project/evaluation/`、`docs/architecture/`、`docs/adr/` | 按本项目 Diátaxis 六象限落盘（见 §2.4）：评估 → `docs/explanation/zh/analysis/`；计划 → `docs/project/plans/{plan}/IMPLEMENTATION_PLAN.md` |
+| 子任务工件形态 | `goal-loop` 的原子子任务提示词 vs `to-tickets` 的可认领 ticket | 仓库内**任务单**用 [C++_task_template.md](../../../templates/C++_task_template.md) 落盘（可审计）；派发给执行体时使用 goal-loop 的 `atomic-task-template`（含 8 段输出契约） |
+
+> 该表的意义：技能之间互相矛盾时，**只有项目规范能给出唯一裁决**——这正是本文件与 [AGENTS.md](../../../../AGENTS.md) 不可被技能取代的原因。
 
 **流程骨架**（方法细节见上表技能）：
 

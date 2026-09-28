@@ -5,11 +5,11 @@
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DOC-INDEX-2026
 > - **当前版本 (Version)**: V2.0.0
-> - **状态 (Status)**: 正式 (Official)
-> - **权威性 (Authority)**: 规范 (Normative)
-> - **所有者 (Owner)**: 王辉
-> - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-09-28
+> **状态 (Status)**: 正式 (Official)
+> **权威性 (Authority)**: 规范 (Normative)
+> **所有者 (Owner)**: 王辉
+> **审核人 (Reviewer)**: 王辉
+> **最后更新 (Last Updated)**: 2026-09-28
 
 ## 修订历史记录 (Revision History)
 
@@ -169,7 +169,6 @@ docs/
 
 | 文档 | 标题 |
 | :--- | :--- |
-| [C++_evaluation_template.md](./templates/C++_evaluation_template.md) | C++ 代码质量评估报告 |
 | [C++_plan_template.md](./templates/C++_plan_template.md) | {计划名称} 实施计划 |
 | [C++_task_template.md](./templates/C++_task_template.md) | {任务名称} 实施任务单 |
 
@@ -179,6 +178,8 @@ docs/
 
 | 文档 | 标题 |
 | :--- | :--- |
+| [C++_evaluation_template.md](./archived/C++_evaluation_template.md) | C++ 代码质量评估报告模板（已废止归档） |
+| [quality-scoring-rubric.md](./archived/quality-scoring-rubric.md) | 代码质量评分标准（已废止归档） |
 | [quality.md](./archived/quality.md) | C++ Quality Standards & Development Checklist |
 
 ## 📐 治理规范
