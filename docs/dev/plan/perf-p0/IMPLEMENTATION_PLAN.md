@@ -18,13 +18,13 @@
 | **V1.0.0** | 2026-08-28 | AI Agent | 王辉 | 依据评估报告（[architecture-performance-review.md](../../zh/evaluation/architecture-performance-review.md)）P0 优先级创建：消除视频路径 FaceStore 整帧哈希、InSwapper embedding 变换任务级缓存、domain 服务跨视频复用、SessionPool 容量修正。 |
 
 > **标准参考 & 跨文档链接**:
-> *   TDD 与开发规范: [AGENTS.md](../../../AGENTS.md)
+> *   TDD 与开发规范: [AGENTS.md](../../../../AGENTS.md)
 > *   工作流程: [workflow.md](../../zh/process/workflow.md)
 > *   评估报告: [architecture-performance-review.md](../../zh/evaluation/architecture-performance-review.md)
 
 ## 0. 计划前验证 (AI Agent 自检)
 
-*   [x] 我已阅读 [AGENTS.md](../../../AGENTS.md) 中的 C++20 开发规范。
+*   [x] 我已阅读 [AGENTS.md](../../../../AGENTS.md) 中的 C++20 开发规范。
 *   [x] 我已阅读相关现有模块接口（domain.face.analyser / domain.face.store / domain.face.swapper / services.pipeline.runner / foundation.ai.session_pool）。
 *   [x] 我已确认新增接口不与现有冲突。
 *   [x] **TDD 承诺**: 本计划所有实施阶段将严格遵循 TDD 流程 (🔴 Red → 🟢 Green → 🔵 Refactor)。
@@ -68,6 +68,16 @@
 | T4 | SessionPool 容量修正 | `PoolConfig.max_entries` 默认 3→10 | - |
 
 > 各任务详细设计、TDD 用例与验收标准见 `task/C++_task_{name}.md`。
+
+### 子任务清单
+
+| 子任务 | 文档 |
+| :--- | :--- |
+| domain 服务跨视频复用（消除每视频 ONNX 重解析） | [C++_task_domain_service_reuse.md](./task/C++_task_domain_service_reuse.md) |
+| 视频路径禁用 FaceStore 整帧哈希 | [C++_task_face_store_cache_disable.md](./task/C++_task_face_store_cache_disable.md) |
+| InSwapper embedding 变换任务级缓存 | [C++_task_inswapper_embedding_cache.md](./task/C++_task_inswapper_embedding_cache.md) |
+| SessionPool 容量修正（max_entries 3→10） | [C++_task_session_pool_capacity.md](./task/C++_task_session_pool_capacity.md) |
+
 
 ## 3. 实施阶段
 

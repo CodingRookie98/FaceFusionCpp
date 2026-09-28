@@ -27,8 +27,8 @@
 > **标准参考 & 跨文档链接**:
 > *   TDD 与开发规范: [AGENTS.md](../../../AGENTS.md)
 > *   质量与评估标准: [C++代码质量与评估标准指南](../zh/process/C++_quality_standard.md)
-> *   所属计划: [链接至对应计划](../../plan/C++_plan_{plan_name}.md) (见第 1.1 节)
-> *   相关评估: [链接至对应评估](../../evaluation/C++_evaluation_{title}.md) (任务完成后创建)
+> *   所属计划: 链接至对应计划 `../../plan/C++_plan_{plan_name}.md` (见第 1.1 节)
+> *   相关评估: 链接至对应评估 `../../evaluation/C++_evaluation_{title}.md` (任务完成后创建)
 
 ## 0. 任务前验证 (AI Agent 自检)
 > **指令**: 在验证以下内容之前，不要编写任何代码或详细设计。
@@ -44,7 +44,7 @@
 > @brief 一句话描述本任务的具体产出（如：实现 Order 模块的 Pricing 分区）
 
 *   **目标**: {目标描述}
-*   **所属计划**: [计划名称](../../plan/C++_plan_{plan_name}.md)
+*   **所属计划**: 计划名称 `../../plan/C++_plan_{plan_name}.md`
 *   **优先级**: {High/Medium/Low}
 
 ### 1.2 模块变更清单 (关键)

@@ -13,7 +13,7 @@
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| **V2.0.0** | 2026-08-14 | AI Agent | 王辉 | Refactored per [layers_doc_assessment.md](../../evaluation/layers_doc_assessment.md): removed the fictitious Platform layer, corrected to the actual **4-layer structure**; fixed FFmpeg wrapper ownership (Foundation/media); added layer↔directory↔CMake target mapping and per-layer module inventory; added dependency enforcement notes. |
+| **V2.0.0** | 2026-08-14 | AI Agent | 王辉 | Refactored per layers_doc_assessment.md: removed the fictitious Platform layer, corrected to the actual **4-layer structure**; fixed FFmpeg wrapper ownership (Foundation/media); added layer↔directory↔CMake target mapping and per-layer module inventory; added dependency enforcement notes. |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
 
 ---

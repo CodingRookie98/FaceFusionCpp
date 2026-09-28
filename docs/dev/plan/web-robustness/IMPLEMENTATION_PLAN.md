@@ -17,13 +17,13 @@
 | **V1.0.0** | 2026-08-27 | AI Agent | 王辉 | 依据 Web 功能设计评估（[web_ui_design.md](../../zh/architecture/web_ui_design.md) V0.7.0 §8.2）创建：改进项 1（任务持久化）+ 改进项 2（任务超时机制）。 |
 
 > **标准参考 & 跨文档链接**:
-> *   TDD 与开发规范: [AGENTS.md](../../../AGENTS.md)
-> *   工作流程: [workflow.md](../zh/process/workflow.md)
+> *   TDD 与开发规范: [AGENTS.md](../../../../AGENTS.md)
+> *   工作流程: [workflow.md](../../zh/process/workflow.md)
 > *   设计规格: [web_ui_design.md](../../zh/architecture/web_ui_design.md)
 
 ## 0. 计划前验证 (AI Agent 自检)
 
-*   [x] 我已阅读 [AGENTS.md](../../../AGENTS.md) 中的 C++20 开发规范。
+*   [x] 我已阅读 [AGENTS.md](../../../../AGENTS.md) 中的 C++20 开发规范。
 *   [x] 我已阅读相关现有模块接口（app.web.task_manager / task_types / config.app / config.parser）。
 *   [x] 我已确认新增接口不与现有冲突。
 *   [x] **TDD 承诺**: 本计划所有实施阶段将严格遵循 TDD 流程 (🔴 Red → 🟢 Green → 🔵 Refactor)。

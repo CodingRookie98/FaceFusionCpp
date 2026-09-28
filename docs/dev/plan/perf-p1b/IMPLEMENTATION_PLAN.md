@@ -17,13 +17,13 @@
 | **V1.0.0** | 2026-08-28 | AI Agent | 王辉 | 依据评估报告（[architecture-performance-review.md](../../zh/evaluation/architecture-performance-review.md)）剩余优先级创建（第二批）：P1-2 mask 接线+共享（方案 B）、Web 集成 flaky 修复、P-1 SessionPool 池锁重构、P2-7 Strict checkpoint 周期保存。 |
 
 > **标准参考 & 跨文档链接**:
-> *   TDD 与开发规范: [AGENTS.md](../../../AGENTS.md)
+> *   TDD 与开发规范: [AGENTS.md](../../../../AGENTS.md)
 > *   工作流程: [workflow.md](../../zh/process/workflow.md)
 > *   评估报告: [architecture-performance-review.md](../../zh/evaluation/architecture-performance-review.md)
 
 ## 0. 计划前验证 (AI Agent 自检)
 
-*   [x] 我已阅读 [AGENTS.md](../../../AGENTS.md) 中的 C++20 开发规范。
+*   [x] 我已阅读 [AGENTS.md](../../../../AGENTS.md) 中的 C++20 开发规范。
 *   [x] 我已阅读相关现有模块接口（domain.face.masker / domain.pipeline:adapters / foundation.ai.session_pool / services.pipeline.runner / tests integration web_ws）。
 *   [x] 我已确认新增接口不与现有冲突。
 *   [x] **TDD 承诺**: 本计划所有实施阶段将严格遵循 TDD 流程 (🔴 Red → 🟢 Green → 🔵 Refactor)。
@@ -67,6 +67,16 @@
 | T4 | Strict checkpoint 周期保存 | %100 优化 | - |
 
 > 各任务详细设计、TDD 用例与验收标准见 `task/C++_task_{name}.md`。
+
+### 子任务清单
+
+| 子任务 | 文档 |
+| :--- | :--- |
+| mask 链路接线 + 共享（P1-2 方案 B） | [C++_task_mask_chain_wiring.md](./task/C++_task_mask_chain_wiring.md) |
+| SessionPool 池锁重构（factory 移出锁） | [C++_task_session_pool_lock.md](./task/C++_task_session_pool_lock.md) |
+| Strict 模式 checkpoint 周期保存 | [C++_task_strict_checkpoint_throttle.md](./task/C++_task_strict_checkpoint_throttle.md) |
+| Web 集成 flaky 修复（WS 超时放宽） | [C++_task_web_ws_flaky.md](./task/C++_task_web_ws_flaky.md) |
+
 
 ## 3. 实施阶段
 

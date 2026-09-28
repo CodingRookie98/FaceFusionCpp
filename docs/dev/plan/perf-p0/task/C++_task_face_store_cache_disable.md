@@ -1,5 +1,20 @@
 # C++ 任务: 视频路径禁用 FaceStore 整帧哈希
 
+> **文档控制信息 (Document Control)**
+> - **文档标识 (Document ID)**: FFC-DEV-ZH-TASK-FACE-STORE-CACHE-DISABLE-2026
+> - **当前版本 (Version)**: V1.0.0
+> - **状态 (Status)**: 已完成（commit `df805f2`）
+> - **权威性 (Authority)**: Informative
+> - **所有者 (Owner)**: 王辉
+> - **审核人 (Reviewer)**: 王辉
+> - **最后更新 (Last Updated)**: 2026-08-28
+
+## 修订历史记录 (Revision History)
+
+| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-28 | AI Agent | 王辉 | 依据文档治理规范补齐文档控制信息与修订历史记录。 |
+
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 任务 T1
 > **状态**: 已完成（commit `df805f2`）
 

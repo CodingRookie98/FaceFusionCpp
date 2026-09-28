@@ -26,7 +26,7 @@
 > *   TDD 与开发规范: [AGENTS.md](../../../AGENTS.md)
 > *   质量与评估标准: [C++代码质量与评估标准指南](../zh/process/C++_quality_standard.md)
 > *   相关任务单: 见各阶段的 "对应 Task" 链接
-> *   评估报告: [链接至对应评估](../../evaluation/C++_evaluation_{title}.md) (计划完成后创建)
+> *   评估报告: 链接至对应评估 `../../evaluation/C++_evaluation_{title}.md` (计划完成后创建)
 
 ## 0. 计划前验证 (AI Agent 自检)
 > **指令**: 在编写本计划其余部分之前，列出你已阅读和分析的具体文件，以确保本计划基于事实。
@@ -103,8 +103,8 @@ graph TD
 ### 3.1 阶段一: {阶段名称} (原型/核心/基础)
 **目标**: {简述目标，如：完成核心数据结构定义与基础编译通过}
 
-*   [ ] **任务 1.1**: {任务描述} → 对应 Task: [链接](../plan/{name}/task/C++_task_{title}.md)
-*   [ ] **任务 1.2**: {任务描述} → 对应 Task: [链接](../plan/{name}/task/C++_task_{title}.md)
+*   [ ] **任务 1.1**: {任务描述} → 对应 Task: 链接 `../plan/{name}/task/C++_task_{title}.md`
+*   [ ] **任务 1.2**: {任务描述} → 对应 Task: 链接 `../plan/{name}/task/C++_task_{title}.md`
 *   [ ] **验收标准**:
     *   🔴 **TDD 合规**: 适用代码必须有对应的失败测试先行编写（适用范围详见 [AGENTS.md](../../../AGENTS.md)）
     *   编译通过 (无警告)
@@ -123,8 +123,8 @@ graph TD
 
 > ⚠️ **TDD 强制**: 本阶段适用代码必须严格遵循 Red-Green-Refactor 循环（适用范围详见 [AGENTS.md](../../../AGENTS.md)）。
 
-*   [ ] **任务 2.1**: {任务描述} → 对应 Task: [链接](../plan/{name}/task/C++_task_{title}.md)
-*   [ ] **任务 2.2**: {任务描述} → 对应 Task: [链接](../plan/{name}/task/C++_task_{title}.md)
+*   [ ] **任务 2.1**: {任务描述} → 对应 Task: 链接 `../plan/{name}/task/C++_task_{title}.md`
+*   [ ] **任务 2.2**: {任务描述} → 对应 Task: 链接 `../plan/{name}/task/C++_task_{title}.md`
 *   [ ] **验收标准**:
     *   🔴 **TDD 合规**: 每个功能实现前必须有失败测试
     *   🟢 **测试驱动**: 代码仅满足当前测试需求，无过度设计
@@ -142,8 +142,8 @@ graph TD
 ### 3.3 阶段三: {阶段名称} (集成/优化/交付)
 **目标**: {简述目标，如：集成到主系统并进行性能优化}
 
-*   [ ] **任务 3.1**: {任务描述} → 对应 Task: [链接](../plan/{name}/task/C++_task_{title}.md)
-*   [ ] **任务 3.2**: {任务描述} → 对应 Task: [链接](../plan/{name}/task/C++_task_{title}.md)
+*   [ ] **任务 3.1**: {任务描述} → 对应 Task: 链接 `../plan/{name}/task/C++_task_{title}.md`
+*   [ ] **任务 3.2**: {任务描述} → 对应 Task: 链接 `../plan/{name}/task/C++_task_{title}.md`
 *   [ ] **验收标准**:
     *   🧪 **测试完整性**: 行为测试覆盖所有关键路径
     *   通过集成测试

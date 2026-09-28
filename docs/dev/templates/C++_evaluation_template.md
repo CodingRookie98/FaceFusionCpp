@@ -165,7 +165,7 @@
 ## 5. 评估结论与评分
 
 ### 5.1 评分汇总表
-> 评分计算请参考 [C++质量标准指南](../zh/process/C++_quality_standard.md#2-评分标准)
+> 评分计算请参考 [C++质量标准指南](../zh/process/C++_quality_standard.md#7-评估与评分标准用于审查验收)
 
 | 评估维度 | 权重 | 得分 (0-100) | 加权分 | 简评 |
 | :--- | :--- | :--- | :--- | :--- |
@@ -190,7 +190,7 @@
 > 若发现重大架构缺陷或规范偏离，需创建新 Task 链接至原计划。
 
 **关键缺陷反馈**:
-- [ ] {缺陷1} → 创建对应 Task [链接](../../plan/{name}/task/C++_task_{title}.md) 或更新计划 [链接](../../plan/C++_plan_{title}.md)
+- [ ] {缺陷1} → 创建对应 Task 链接 `../../plan/{name}/task/C++_task_{title}.md` 或更新计划 链接 `../../plan/C++_plan_{title}.md`
 - [ ] {缺陷2} → 优先级: {High/Medium/Low}，目标完成时间: {日期}
 
 **量化改进指标**:
@@ -200,5 +200,5 @@
 ---
 **评估人**: {姓名}
 **日期**: {YYYY-MM-DD}
-**关联任务**: [{任务链接}](../../plan/{name}/task/C++_task_{title}.md)
-**关联计划**: [{计划链接}](../../plan/C++_plan_{title}.md)
+**关联任务**: {任务链接} `../../plan/{name}/task/C++_task_{title}.md`
+**关联计划**: {计划链接} `../../plan/C++_plan_{title}.md`

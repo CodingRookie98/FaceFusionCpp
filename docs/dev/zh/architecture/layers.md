@@ -13,7 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
-| **V2.0.0** | 2026-08-14 | AI Agent | 王辉 | 依据 [layers_doc_assessment.md](../../evaluation/layers_doc_assessment.md) 评估结果重构：删除虚构的 Platform 层，修正为实际 **4 层结构**；修正 FFmpeg 封装归属（Foundation/media）；补全层↔目录↔CMake target 映射与每层模块清单；新增依赖落地保障说明。 |
+| **V2.0.0** | 2026-08-14 | AI Agent | 王辉 | 依据 layers_doc_assessment.md 评估结果重构：删除虚构的 Platform 层，修正为实际 **4 层结构**；修正 FFmpeg 封装归属（Foundation/media）；补全层↔目录↔CMake target 映射与每层模块清单；新增依赖落地保障说明。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
 
 ---

@@ -50,12 +50,12 @@
 | **P1-1** | 🟠 P1 | WS 断线补偿双缺失（无 progress 查询，前端无重连） | **已彻底修复**<br>提供 `GET /api/tasks/{id}/progress`，前端实现指数退避重连并在连接建立时由服务端重放状态 | [web_server.cpp:664-684](../../../../src/app/web/web_server.cpp#L664-L684)<br>[client.ts:88-131](../../../../web/src/api/client.ts#L88-L131) |
 | **P1-2** | 🟠 P1 | `/api/processors` 未实现，前端处理器/参数硬编码 | **已彻底修复**<br>后端提供参数元数据注册表与接口，前端动态生成表单 | [processor_param_registry.ixx](../../../../src/domain/pipeline/processor_param_registry.ixx)<br>[TaskCreatePage.tsx:357-434](../../../../web/src/pages/TaskCreatePage.tsx#L357-L434) |
 | **P1-3** | 🟠 P1 | 视频预览缺失 HTTP Range，`/media` 强制 PNG | **已彻底修复**<br>`newFileResponse` 支持 206 Partial Content 与 `Accept-Ranges`，前端支持 `<video>` 播放 | [web_server.cpp:236-261](../../../../src/app/web/web_server.cpp#L236-L261)<br>[TaskDetailPage.tsx:103-118](../../../../web/src/pages/TaskDetailPage.tsx#L103-L118) |
-| **P1-4** | 🟠 P1 | Priority 调度语义文档写反 | **已彻底修复**<br>设计文档（中/英）、代码和前端 UI 全部统一为「数值大优先」 | [web_ui_design.md:155](../architecture/web_ui_design.md#L155)<br>[task_types.ixx:38](../../../../src/app/web/task_types.ixx#L38) |
+| **P1-4** | 🟠 P1 | Priority 调度语义文档写反 | **已彻底修复**<br>设计文档（中/英）、代码和前端 UI 全部统一为「数值大优先」 | [web_ui_design.md](../architecture/web_ui_design.md)<br>[task_types.ixx:38](../../../../src/app/web/task_types.ixx#L38) |
 | **P2-1** | 🟡 P2 | `web_api_tests` 偶发端口冲突 flaky | **已优化**<br>测试改为 20000-39999 随机端口池，增强测试清理 | [web_api_test.cpp:29-35](../../../../tests/integration/app/web_api_test.cpp#L29-L35) |
 | **P2-2** | 🟡 P2 | `build.py --action web` 对 `NODE_ENV=production` 无防御 | **已修复**<br>`web_env.pop("NODE_ENV")` + 显式 `--include=dev` | [build.py:167-171](../../../../build.py#L167-L171) |
 | **P2-3** | 🟡 P2 | 英文版设计文档缺失 | **已修复**<br>新增英文设计规格并同步登记全局索引 | [web_ui_design.md](../../en/architecture/web_ui_design.md)<br>[index.md](../../../index.md) |
 | **P2-4** | 🟡 P2 | E2E 闭环声称未完全兑现 | **已增强**<br>扩充 E2E 脚本，覆盖上传、人脸检测字段校验、Range 206 等 | [web_api_test.py](../../../../tests/e2e/scripts/web_api_test.py) |
-| **P2-5** | 🟡 P2 | 组件清单未按设计拆分 | **已改善**<br>抽离独立 FaceSelector / FrameExtractor / FileUploader / ProgressBar | [web/src/components/](../../../../web/src/components/) |
+| **P2-5** | 🟡 P2 | 组件清单未按设计拆分 | **已改善**<br>抽离独立 FaceSelector / FrameExtractor / FileUploader / ProgressBar | `web/src/components/` |
 
 ---
 

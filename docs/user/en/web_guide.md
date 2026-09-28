@@ -18,8 +18,6 @@
 | **V2.2.1** | 2026-08-21 | AI Agent | 王辉 | Added media preview lifecycle persistence & recovery documentation (seamless /api/preview fallback upon page reload, auto face detection recovery on active target media). |
 | **V2.2.0** | 2026-08-21 | AI Agent | 王辉 | Upgraded task queue & omni-preview architecture: renamed submit CTA to "Add to Task Queue", left sidebar 3-tab layout (Source Assets / Target Media / Task Queue), priority up/down & cancel actions on task cards, and omni canvas preview for source/target/queue items. |
 | **V2.1.0** | 2026-08-21 | AI Agent | 王辉 | Added multi-file concurrent & drag-and-drop uploads, multi-face selection/toggle with batch controls, standalone result preview with download action, and smart split-slider matching. |
-| **V2.0.0** | 2026-08-20 | AI Agent | 王辉 | Completely overhauled for Studio Workbench: 3-column responsive layout, multi-instance dynamic pipeline, WYSIWYG face overlay, split-slider/loupe comparison matrix, and live telemetry HUD. |
-| **V1.2.0** | 2026-08-18 | AI Agent | 王辉 | Added dynamic processor parameters, video Range streaming playback, /api/processors, /api/tasks/{id}/progress, and one-click dev mode. |
 
 ## 1. Starting the Web UI
 

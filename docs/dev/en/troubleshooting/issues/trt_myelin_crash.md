@@ -27,4 +27,4 @@ The process crashes during the exit phase after all test cases pass. The error o
 - **Forced Exit**: After manual resource release, utilize `_exit(0)` to bypass the static destruction phase that causes the conflict.
 
 ## Related Links
-- [Resource Management in Architecture](../../architecture/layers.md#56-graceful-shutdown)
+- [Resource Management in Architecture](../../architecture/design.md#4-engineering-constraints)

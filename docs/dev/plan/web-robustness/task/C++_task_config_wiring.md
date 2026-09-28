@@ -1,5 +1,20 @@
 # C++ 任务: 配置接线（WebConfig + parser + app_cli）
 
+> **文档控制信息 (Document Control)**
+> - **文档标识 (Document ID)**: FFC-DEV-ZH-TASK-CONFIG-WIRING-2026
+> - **当前版本 (Version)**: V1.0.0
+> - **状态 (Status)**: 已完成
+> - **权威性 (Authority)**: Informative
+> - **所有者 (Owner)**: 王辉
+> - **审核人 (Reviewer)**: 王辉
+> - **最后更新 (Last Updated)**: 2026-08-27
+
+## 修订历史记录 (Revision History)
+
+| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-27 | AI Agent | 王辉 | 依据文档治理规范补齐文档控制信息与修订历史记录。 |
+
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 阶段四（3.4）
 > **状态**: 已完成
 

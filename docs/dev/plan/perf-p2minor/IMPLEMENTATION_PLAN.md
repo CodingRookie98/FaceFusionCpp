@@ -17,13 +17,13 @@
 | **V1.0.0** | 2026-08-28 | AI Agent | 王辉 | P2 小项批次：P2-5（FaceEnhancerAdapter blend=100 跳过整帧 clone）+ P2-8（README 宣传口径校准）。P2-1（4 角度检测，标准鲁棒性做法）与 P2-3（batch，模型 batch=1 硬约束）经讨论确认**不做**。 |
 
 > **标准参考 & 跨文档链接**:
-> *   TDD 与开发规范: [AGENTS.md](../../../AGENTS.md)
+> *   TDD 与开发规范: [AGENTS.md](../../../../AGENTS.md)
 > *   工作流程: [workflow.md](../../zh/process/workflow.md)
 > *   评估报告: [architecture-performance-review.md](../../zh/evaluation/architecture-performance-review.md)
 
 ## 0. 计划前验证 (AI Agent 自检)
 
-*   [x] 我已阅读 [AGENTS.md](../../../AGENTS.md) 中的 C++20 开发规范。
+*   [x] 我已阅读 [AGENTS.md](../../../../AGENTS.md) 中的 C++20 开发规范。
 *   [x] 我已阅读相关现有模块接口（domain.pipeline:adapters FaceEnhancerAdapter / README.md）。
 *   [x] 我已确认新增接口不与现有冲突。
 *   [x] **TDD 承诺**: 本计划所有实施阶段将严格遵循 TDD 流程。

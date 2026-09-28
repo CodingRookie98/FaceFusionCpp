@@ -1,5 +1,20 @@
 # C++ 任务: Web 集成 flaky 修复（WS 超时放宽）
 
+> **文档控制信息 (Document Control)**
+> - **文档标识 (Document ID)**: FFC-DEV-ZH-TASK-WEB-WS-FLAKY-2026
+> - **当前版本 (Version)**: V1.0.0
+> - **状态 (Status)**: 已完成（commit `264b0af`）
+> - **权威性 (Authority)**: Informative
+> - **所有者 (Owner)**: 王辉
+> - **审核人 (Reviewer)**: 王辉
+> - **最后更新 (Last Updated)**: 2026-08-28
+
+## 修订历史记录 (Revision History)
+
+| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-28 | AI Agent | 王辉 | 依据文档治理规范补齐文档控制信息与修订历史记录。 |
+
 > **所属计划**: [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) 任务 T2
 > **状态**: 已完成（commit `264b0af`）
 
