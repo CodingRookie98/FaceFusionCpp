@@ -4,7 +4,7 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DOC-INDEX-2026
-> - **当前版本 (Version)**: V1.2.7
+> - **当前版本 (Version)**: V1.2.8
 > **状态 (Status)**: 正式 (Official)
 > **权威性 (Authority)**: 规范 (Normative)
 > **所有者 (Owner)**: 王辉
@@ -15,11 +15,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.2.8** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P1 立骨架：新增「知识库治理」导航小节，登记 GOVERNANCE.md、llms.txt、project（roadmap/backlog/changelog）与 proposals 孵化层说明。 |
 | **V1.2.7** | 2026-09-28 | AI Agent | 王辉 | 新增「计划与任务归档」小节，收录 6 份实施计划（消除 plan 目录孤儿文档）；配合文档治理 P0 自愈（零断链、控制头 68/68 合规）。 |
 | **V1.2.6** | 2026-09-25 | AI Agent | 王辉 | 新增评估文档 [vulkan-backend-feasibility-review.md](./dev/zh/evaluation/vulkan-backend-feasibility-review.md)（issue #1 Vulkan 可行性评估：推理层耦合度实测、ORT WebGPU EP 路线、风险分级与 PoC 门禁）并登记至「评估 (Evaluation)」索引。 |
 | **V1.2.5** | 2026-08-21 | AI Agent | 王辉 | 同步更新配置文件名称（`app.yaml`, `task.yaml`）与 cli_reference.md、configuration_guide.md、web_guide.md、web_ui_design.md（即时渲染预览、加入队列精简、输出目录隔离）。 |
 | **V1.2.4** | 2026-08-21 | AI Agent | 王辉 | 同步更新 web_ui_design.md (zh/en) 与 web_guide.md (zh/en) 至 V0.5.1 / V2.2.1（素材生命周期持久化智能回退 /api/preview、localStorage 状态清洗、页面刷新自动感知恢复目标人脸检测）。 |
-| **V1.2.3** | 2026-08-21 | AI Agent | 王辉 | 同步更新 build.md 至 V1.2.0（记录 build.py 将 --action web 前端构建与产物同步默认集成至 --action build / package，并增补 --no-web 跳过选项）。 |
 
 > 仅保留最近 5 条记录，更早的历史可通过 `git log --oneline docs/index.md` 查阅。
 
@@ -42,6 +42,17 @@ docs/
     │       └── issues/         #       具体问题记录
     └── en/                     #   英文（结构与 zh 对齐，部分文档仅中文）
 ```
+
+## 🧭 知识库治理 (Governance)
+
+| 文档 | 说明 |
+| :--- | :--- |
+| [GOVERNANCE.md](./GOVERNANCE.md) | 知识库治理规程：目录拓扑、控制头规范、链接规则、门禁与生命周期 |
+| [llms.txt](./llms.txt) | AI 智能体机器地图（由 `generate-llms-txt.py` 自动生成，勿手改） |
+| [project/roadmap.md](./project/roadmap.md) | 产品规划路线图（已闭环 / 进行中 / 待评估） |
+| [project/backlog.md](./project/backlog.md) | 待办与技术债汇总（含来源与优先级） |
+| [project/changelog.md](./project/changelog.md) | 版本变更日志索引（指向根目录 CHANGELOG.md） |
+| [proposals/README.md](./proposals/README.md) | 需求与设计孵化层（RFC 提案使用规则） |
 
 ## 📖 用户文档 (User Documentation)
 
