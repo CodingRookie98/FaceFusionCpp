@@ -2,7 +2,7 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-PROC-WF-2026
-> - **当前版本 (Version)**: V2.2.0
+> - **当前版本 (Version)**: V2.3.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Normative
 > - **所有者 (Owner)**: 王辉
@@ -13,11 +13,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V2.3.0** | 2026-09-28 | AI Agent | 王辉 | 技能包补齐 brainstorming / writing-plans（原 BL-8 悬空引用），§1 技能路由表登记二者在 goal-loop P-1 / P1 阶段的配套位置。 |
 | **V2.2.0** | 2026-09-28 | AI Agent | 王辉 | §1 技能路由表补充触发性提示：implement / to-spec / to-tickets / wayfinder 标记为不可自动触发，自动化流水线须避开隐式依赖。 |
 | **V2.1.0** | 2026-09-28 | AI Agent | 王辉 | 新增 §1.1「跨技能冲突裁决」：针对技能库中 tdd 与 goal-loop（重构归属）、implement 与 software-engineer（提交许可）、goal-loop 与 doc-governance（治理强度）等相反指令，给出项目权威口径。 |
 | **V2.0.0** | 2026-09-28 | AI Agent | 王辉 | 减法治理：本文档收敛为「项目执行契约」，通用方法论（上下文管理规则、TDD 循环详述、阶段编排、分支规范、流程图）移交技能库，新增「技能路由」章节；完整保留命令族、失败处理矩阵、产物路径与文档变更清单。 |
 | **V1.1.0** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P4：路径约定对齐 Diátaxis 拓扑。 |
-| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
 
 ---
 
@@ -33,6 +33,8 @@
 | 变更审查 | `code-review` | Standards 与 Spec 双轴并行审查 |
 | 文档变更 | `doc-governance` | Diátaxis 拓扑、控制头基线、断链与健康度门禁 |
 | 缺陷诊断 | `diagnosing-bugs` | 复现优先的诊断循环 |
+| 需求探索与方案发散（P-1 前） | `brainstorming` | 意图、需求与设计探索——由 `goal-loop` 的 P-1 意图对齐阶段调用 |
+| 多步任务计划撰写（P1） | `writing-plans` | 计划结构、验收口径与原子切片——由 `goal-loop` 的 P1 阶段调用 |
 
 > **冲突裁决**：项目特有契约（本文档与 [AGENTS.md](../../../../AGENTS.md)）优先于技能中的通用建议；方法论细节以技能为准。
 
