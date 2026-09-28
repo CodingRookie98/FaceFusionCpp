@@ -4,22 +4,22 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DOC-INDEX-2026
-> - **当前版本 (Version)**: V1.2.5
+> - **当前版本 (Version)**: V1.2.6
 > **状态 (Status)**: 正式 (Official)
 > **权威性 (Authority)**: 规范 (Normative)
 > **所有者 (Owner)**: 王辉
 > **审核人 (Reviewer)**: 王辉
-> **最后更新 (Last Updated)**: 2026-08-21
+> **最后更新 (Last Updated)**: 2026-09-25
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.2.6** | 2026-09-25 | AI Agent | 王辉 | 新增评估文档 [vulkan-backend-feasibility-review.md](./dev/zh/evaluation/vulkan-backend-feasibility-review.md)（issue #1 Vulkan 可行性评估：推理层耦合度实测、ORT WebGPU EP 路线、风险分级与 PoC 门禁）并登记至「评估 (Evaluation)」索引。 |
 | **V1.2.5** | 2026-08-21 | AI Agent | 王辉 | 同步更新配置文件名称（`app.yaml`, `task.yaml`）与 cli_reference.md、configuration_guide.md、web_guide.md、web_ui_design.md（即时渲染预览、加入队列精简、输出目录隔离）。 |
 | **V1.2.4** | 2026-08-21 | AI Agent | 王辉 | 同步更新 web_ui_design.md (zh/en) 与 web_guide.md (zh/en) 至 V0.5.1 / V2.2.1（素材生命周期持久化智能回退 /api/preview、localStorage 状态清洗、页面刷新自动感知恢复目标人脸检测）。 |
 | **V1.2.3** | 2026-08-21 | AI Agent | 王辉 | 同步更新 build.md 至 V1.2.0（记录 build.py 将 --action web 前端构建与产物同步默认集成至 --action build / package，并增补 --no-web 跳过选项）。 |
 | **V1.2.2** | 2026-08-21 | AI Agent | 王辉 | 同步更新 web_ui_design.md (zh/en) 与 web_guide.md (zh/en) 至 V0.5.0 / V2.2.0（任务队列面板、队列优先级升降级与取消、添加到任务队列 CTA、全态画布联动预览）。 |
-| **V1.2.1** | 2026-08-21 | AI Agent | 王辉 | 同步更新 web_ui_design.md (zh/en) 与 web_guide.md (zh/en) 至最新设计（多文件并发上传、人脸多选/反选与批量控制、结果独立全图预览与下载、结构化日志与 Playwright E2E 测试）。 |
 
 > 仅保留最近 5 条记录，更早的历史可通过 `git log --oneline docs/index.md` 查阅。
 
@@ -104,6 +104,7 @@ docs/
 | :--- | :--- |
 | [web-ui-design-completion-review.md](./dev/zh/evaluation/web-ui-design-completion-review.md) | Web UI M1-M4 完成度对抗性复核报告（已通过，整改闭环与二次复核） |
 | [architecture-performance-review.md](./dev/zh/evaluation/architecture-performance-review.md) | 推理架构与算法性能评估报告（P0/P1/P2 问题清单与 ROI 优化建议） |
+| [vulkan-backend-feasibility-review.md](./dev/zh/evaluation/vulkan-backend-feasibility-review.md) | Vulkan 后端支持可行性评估报告（ORT WebGPU EP 路线、推理层耦合度实测与 PoC 立项门禁，对应 issue #1） |
 
 **模板 (Templates)**
 
