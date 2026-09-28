@@ -98,12 +98,12 @@ FaceFusionCpp 基于模块化的流水线架构。核心处理单元称为 **Pro
 .\ffc.exe -s source.jpg -t target.mp4 -o output.mp4
 ```
 *   **音频**: 默认情况下，目标视频的音频会复制到输出视频中。
-*   **性能**: 视频处理资源消耗较大。请参阅 [硬件指南](../../user/zh/hardware_guide.md) 进行优化。
+*   **性能**: 视频处理资源消耗较大。请参阅 [硬件指南](../../reference/zh/hardware_guide.md) 进行优化。
 
 ### 2.3 批量处理 (Batch Processing)
 要处理多个文件或配置复杂的流水线，请使用配置文件。
 
-1.  创建 `my_task.yaml` (参见 [配置指南](../../user/zh/configuration_guide.md))。
+1.  创建 `my_task.yaml` (参见 [配置指南](../../reference/zh/configuration_guide.md))。
 2. 运行:
 
     **Linux (Bash)**:

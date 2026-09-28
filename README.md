@@ -74,9 +74,9 @@ Explore our comprehensive documentation portal to unlock the full potential of F
 
 - **[Getting Started](docs/user/en/getting_started.md)**: Installation, system prerequisites, and your first run.
 - **[User Guide](docs/how-to/en/user_guide.md)**: In-depth explanations of modules and workflows.
-- **[CLI Reference](docs/user/en/cli_reference.md)**: Exhaustive command-line argument handbook.
-- **[Configuration Guide](docs/user/en/configuration_guide.md)**: Advanced tuning via `app_config.yaml` and `task_config.yaml`.
-- **[Hardware Guide](docs/user/en/hardware_guide.md)**: Hardware compatibility specifics and optimization strategies.
+- **[CLI Reference](docs/reference/en/cli_reference.md)**: Exhaustive command-line argument handbook.
+- **[Configuration Guide](docs/reference/en/configuration_guide.md)**: Advanced tuning via `app_config.yaml` and `task_config.yaml`.
+- **[Hardware Guide](docs/reference/en/hardware_guide.md)**: Hardware compatibility specifics and optimization strategies.
 - **[FAQ](docs/how-to/en/faq.md)**: Solutions to common questions and troubleshooting.
 - **[Developer Documentation](docs/explanation/en/architecture/design.md)**: Architecture deep dives, processes, and contribution rules.
 

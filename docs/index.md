@@ -63,9 +63,9 @@ docs/
 | [getting_started.md](user/zh/getting_started.md) | 快速上手：环境初探与首次运行 |
 | [user_guide.md](how-to/zh/user_guide.md) | 功能介绍与操作指南 |
 | [web_guide.md](how-to/zh/web_guide.md) | Web 界面使用指南（含即时渲染预览与任务队列调度） |
-| [configuration_guide.md](user/zh/configuration_guide.md) | 核心配置参数说明 (`app.yaml`, `task.yaml`) |
-| [cli_reference.md](user/zh/cli_reference.md) | 命令行参数详解 |
-| [hardware_guide.md](user/zh/hardware_guide.md) | 硬件性能优化建议 |
+| [configuration_guide.md](reference/zh/configuration_guide.md) | 核心配置参数说明 (`app.yaml`, `task.yaml`) |
+| [cli_reference.md](reference/zh/cli_reference.md) | 命令行参数详解 |
+| [hardware_guide.md](reference/zh/hardware_guide.md) | 硬件性能优化建议 |
 | [faq.md](how-to/zh/faq.md) | 常见问题解答 |
 
 ### English
@@ -75,9 +75,9 @@ docs/
 | [getting_started.md](user/en/getting_started.md) | Quick start: setup and first run |
 | [user_guide.md](how-to/en/user_guide.md) | Feature introduction and operation guide |
 | [web_guide.md](how-to/en/web_guide.md) | Web UI Guide (with instant preview rendering and task queue scheduler) |
-| [configuration_guide.md](user/en/configuration_guide.md) | Core configuration parameters (`app.yaml`, `task.yaml`) |
-| [cli_reference.md](user/en/cli_reference.md) | Command-line arguments reference |
-| [hardware_guide.md](user/en/hardware_guide.md) | Hardware performance optimization advice |
+| [configuration_guide.md](reference/en/configuration_guide.md) | Core configuration parameters (`app.yaml`, `task.yaml`) |
+| [cli_reference.md](reference/en/cli_reference.md) | Command-line arguments reference |
+| [hardware_guide.md](reference/en/hardware_guide.md) | Hardware performance optimization advice |
 | [faq.md](how-to/en/faq.md) | Frequently Asked Questions |
 
 ## 🛠️ 开发文档 (Developer Documentation)
@@ -96,8 +96,8 @@ docs/
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [workflow.md](dev/zh/process/workflow.md) | 开发流水线 Checklist（必读） |
-| [C++_quality_standard.md](dev/zh/process/C++_quality_standard.md) | C++ 代码规范与工程化标准（含原 quality.md 内容） |
+| [workflow.md](reference/zh/rules/workflow.md) | 开发流水线 Checklist（必读） |
+| [C++_quality_standard.md](reference/zh/rules/C++_quality_standard.md) | C++ 代码规范与工程化标准（含原 quality.md 内容） |
 | [vcpkg_best_practice.md](how-to/zh/vcpkg_best_practice.md) | vcpkg 最佳实践 |
 | [CI_CD_recommendations.md](how-to/zh/CI_CD_recommendations.md) | CI/CD 开发与运行建议 |
 
@@ -160,7 +160,7 @@ docs/
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [quality.md](dev/en/process/quality.md) | Quality standards and development checklist |
+| [quality.md](archived/quality.md) | Quality standards and development checklist |
 
 > ℹ️ `workflow.md`、`C++_quality_standard.md`、`vcpkg_best_practice.md`、`CI_CD_recommendations.md` 目前仅提供中文版，参见 [中文索引](#中文-chinese)。
 

@@ -24,7 +24,7 @@
 
 > **标准参考 & 跨文档链接**:
 > *   TDD 与开发规范: [AGENTS.md](../../../AGENTS.md)
-> *   质量与评估标准: [C++代码质量与评估标准指南](../zh/process/C++_quality_standard.md)
+> *   质量与评估标准: [C++代码质量与评估标准指南](../../reference/zh/rules/C++_quality_standard.md)
 > *   相关任务单: 见各阶段的 "对应 Task" 链接
 > *   评估报告: 链接至对应评估 `../../evaluation/C++_evaluation_{title}.md` (计划完成后创建)
 

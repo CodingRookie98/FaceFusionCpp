@@ -18,7 +18,7 @@
 
 > **标准参考 & 跨文档链接**:
 > *   TDD 与开发规范: [AGENTS.md](../../../../AGENTS.md)
-> *   工作流程: [workflow.md](../../zh/process/workflow.md)
+> *   工作流程: [workflow.md](../../../reference/zh/rules/workflow.md)
 > *   设计规格: [web_ui_design.md](../../../explanation/zh/architecture/web_ui_design.md)
 
 ## 0. 计划前验证 (AI Agent 自检)
