@@ -14,12 +14,12 @@
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
 | **V1.1.0** | 2026-08-27 | AI Agent | 王辉 | 全部任务完成：TaskConfig 序列化（5 单测）、持久化（7 单测）、超时（4 单测）、配置接线；修复静态析构顺序 fiasco（logger_guard）与 web_api 隔离断言失配。验收：单元 282/282、集成 142/142、e2e 8/8 全绿。 |
-| **V1.0.0** | 2026-08-27 | AI Agent | 王辉 | 依据 Web 功能设计评估（[web_ui_design.md](../../zh/architecture/web_ui_design.md) V0.7.0 §8.2）创建：改进项 1（任务持久化）+ 改进项 2（任务超时机制）。 |
+| **V1.0.0** | 2026-08-27 | AI Agent | 王辉 | 依据 Web 功能设计评估（[web_ui_design.md](../../../explanation/zh/architecture/web_ui_design.md) V0.7.0 §8.2）创建：改进项 1（任务持久化）+ 改进项 2（任务超时机制）。 |
 
 > **标准参考 & 跨文档链接**:
 > *   TDD 与开发规范: [AGENTS.md](../../../../AGENTS.md)
 > *   工作流程: [workflow.md](../../zh/process/workflow.md)
-> *   设计规格: [web_ui_design.md](../../zh/architecture/web_ui_design.md)
+> *   设计规格: [web_ui_design.md](../../../explanation/zh/architecture/web_ui_design.md)
 
 ## 0. 计划前验证 (AI Agent 自检)
 
@@ -104,7 +104,7 @@
 **目标**: config 层 TaskConfig 序列化 + app.web 层 TaskEntry 序列化，全部可单测。
 
 *   [ ] **任务 1.1**: 编写失败测试 `SerializeTaskConfig`/`DeserializeTaskConfig`（config_serialize_test.cpp）：往返一致性、variant 分发、枚举字符串化、optional 空值。
-*   [ ] **任务 1.2**: 实现 config 层序列化函数 → 对应 Task: [C++_task_config_serialize.md](./task/C++_task_config_serialize.md)
+*   [ ] **任务 1.2**: 实现 config 层序列化函数 → 对应 Task: [C++_task_config_serialize.md](task/C++_task_config_serialize.md)
 *   [ ] **任务 1.3**: 编写失败测试 + 实现 TaskEntry ↔ JSON（task_entry_serialize_test.cpp）：状态/进度/时间戳/结果文件。
 *   [ ] **验收标准**: 🔴 失败测试先行；编译通过（无警告）；单元测试全部通过。
 
@@ -113,7 +113,7 @@
 **目标**: submit 落盘、状态迁移更新、启动恢复。
 
 *   [ ] **任务 2.1**: 编写失败测试（task_manager_persist_test.cpp）：submit 生成快照文件；模拟重启（新 TaskManager 同 persist_dir）queued 恢复、running→failed、终态保留；损坏快照跳过。
-*   [ ] **任务 2.2**: TaskManager 集成持久化（构造恢复 + submit/状态迁移落盘）→ 对应 Task: [C++_task_persistence.md](./task/C++_task_persistence.md)
+*   [ ] **任务 2.2**: TaskManager 集成持久化（构造恢复 + submit/状态迁移落盘）→ 对应 Task: [C++_task_persistence.md](task/C++_task_persistence.md)
 *   [ ] **验收标准**: 🧪 单元测试全绿；模拟重启场景测试通过。
 
 ### 3.3 阶段三: 任务超时机制（TDD）
@@ -121,12 +121,12 @@
 **目标**: 超时检测与处理。
 
 *   [ ] **任务 3.1**: 编写失败测试（task_manager_timeout_test.cpp）：FakeExecutor block + 短超时（如 200ms）→ 任务自动 failed、error_message 含 timeout、cancel 被调用。
-*   [ ] **任务 3.2**: worker_loop 集成超时检测 → 对应 Task: [C++_task_timeout.md](./task/C++_task_timeout.md)
+*   [ ] **任务 3.2**: worker_loop 集成超时检测 → 对应 Task: [C++_task_timeout.md](task/C++_task_timeout.md)
 *   [ ] **验收标准**: 🧪 单元测试全绿；非超时任务不受影响。
 
 ### 3.4 阶段四: 配置接线与集成验证
 
-*   [ ] **任务 4.1**: WebConfig + config_parser + app.yaml 追加字段 → 对应 Task: [C++_task_config_wiring.md](./task/C++_task_config_wiring.md)
+*   [ ] **任务 4.1**: WebConfig + config_parser + app.yaml 追加字段 → 对应 Task: [C++_task_config_wiring.md](task/C++_task_config_wiring.md)
 *   [ ] **任务 4.2**: app_cli 接线 TaskManager 新参数。
 *   [ ] **任务 4.3**: 集成测试 `python build.py --action test --test-label integration`（web_api_test 增补持久化/超时场景或手动验证）。
 *   [ ] **验收标准**: 完整测试套件通过；手动验证：提交任务→重启 ffc→任务恢复/标记 failed。

@@ -19,7 +19,7 @@
 > **标准参考 & 跨文档链接**:
 > *   TDD 与开发规范: [AGENTS.md](../../../../AGENTS.md)
 > *   工作流程: [workflow.md](../../zh/process/workflow.md)
-> *   评估报告: [architecture-performance-review.md](../../zh/evaluation/architecture-performance-review.md)
+> *   评估报告: [architecture-performance-review.md](../../../explanation/zh/analysis/architecture-performance-review.md)
 
 ## 0. 计划前验证 (AI Agent 自检)
 

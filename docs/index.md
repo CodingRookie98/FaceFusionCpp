@@ -17,7 +17,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **V1.2.8** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P1 立骨架：新增「知识库治理」导航小节，登记 GOVERNANCE.md、llms.txt、project（roadmap/backlog/changelog）与 proposals 孵化层说明。 |
 | **V1.2.7** | 2026-09-28 | AI Agent | 王辉 | 新增「计划与任务归档」小节，收录 6 份实施计划（消除 plan 目录孤儿文档）；配合文档治理 P0 自愈（零断链、控制头 68/68 合规）。 |
-| **V1.2.6** | 2026-09-25 | AI Agent | 王辉 | 新增评估文档 [vulkan-backend-feasibility-review.md](./dev/zh/evaluation/vulkan-backend-feasibility-review.md)（issue #1 Vulkan 可行性评估：推理层耦合度实测、ORT WebGPU EP 路线、风险分级与 PoC 门禁）并登记至「评估 (Evaluation)」索引。 |
+| **V1.2.6** | 2026-09-25 | AI Agent | 王辉 | 新增评估文档 [vulkan-backend-feasibility-review.md](explanation/zh/analysis/vulkan-backend-feasibility-review.md)（issue #1 Vulkan 可行性评估：推理层耦合度实测、ORT WebGPU EP 路线、风险分级与 PoC 门禁）并登记至「评估 (Evaluation)」索引。 |
 | **V1.2.5** | 2026-08-21 | AI Agent | 王辉 | 同步更新配置文件名称（`app.yaml`, `task.yaml`）与 cli_reference.md、configuration_guide.md、web_guide.md、web_ui_design.md（即时渲染预览、加入队列精简、输出目录隔离）。 |
 | **V1.2.4** | 2026-08-21 | AI Agent | 王辉 | 同步更新 web_ui_design.md (zh/en) 与 web_guide.md (zh/en) 至 V0.5.1 / V2.2.1（素材生命周期持久化智能回退 /api/preview、localStorage 状态清洗、页面刷新自动感知恢复目标人脸检测）。 |
 
@@ -47,12 +47,12 @@ docs/
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [GOVERNANCE.md](./GOVERNANCE.md) | 知识库治理规程：目录拓扑、控制头规范、链接规则、门禁与生命周期 |
-| [llms.txt](./llms.txt) | AI 智能体机器地图（由 `generate-llms-txt.py` 自动生成，勿手改） |
-| [project/roadmap.md](./project/roadmap.md) | 产品规划路线图（已闭环 / 进行中 / 待评估） |
-| [project/backlog.md](./project/backlog.md) | 待办与技术债汇总（含来源与优先级） |
-| [project/changelog.md](./project/changelog.md) | 版本变更日志索引（指向根目录 CHANGELOG.md） |
-| [proposals/README.md](./proposals/README.md) | 需求与设计孵化层（RFC 提案使用规则） |
+| [GOVERNANCE.md](GOVERNANCE.md) | 知识库治理规程：目录拓扑、控制头规范、链接规则、门禁与生命周期 |
+| [llms.txt](llms.txt) | AI 智能体机器地图（由 `generate-llms-txt.py` 自动生成，勿手改） |
+| [project/roadmap.md](project/roadmap.md) | 产品规划路线图（已闭环 / 进行中 / 待评估） |
+| [project/backlog.md](project/backlog.md) | 待办与技术债汇总（含来源与优先级） |
+| [project/changelog.md](project/changelog.md) | 版本变更日志索引（指向根目录 CHANGELOG.md） |
+| [proposals/README.md](proposals/README.md) | 需求与设计孵化层（RFC 提案使用规则） |
 
 ## 📖 用户文档 (User Documentation)
 
@@ -60,25 +60,25 @@ docs/
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [getting_started.md](./user/zh/getting_started.md) | 快速上手：环境初探与首次运行 |
-| [user_guide.md](./user/zh/user_guide.md) | 功能介绍与操作指南 |
-| [web_guide.md](./user/zh/web_guide.md) | Web 界面使用指南（含即时渲染预览与任务队列调度） |
-| [configuration_guide.md](./user/zh/configuration_guide.md) | 核心配置参数说明 (`app.yaml`, `task.yaml`) |
-| [cli_reference.md](./user/zh/cli_reference.md) | 命令行参数详解 |
-| [hardware_guide.md](./user/zh/hardware_guide.md) | 硬件性能优化建议 |
-| [faq.md](./user/zh/faq.md) | 常见问题解答 |
+| [getting_started.md](user/zh/getting_started.md) | 快速上手：环境初探与首次运行 |
+| [user_guide.md](how-to/zh/user_guide.md) | 功能介绍与操作指南 |
+| [web_guide.md](how-to/zh/web_guide.md) | Web 界面使用指南（含即时渲染预览与任务队列调度） |
+| [configuration_guide.md](user/zh/configuration_guide.md) | 核心配置参数说明 (`app.yaml`, `task.yaml`) |
+| [cli_reference.md](user/zh/cli_reference.md) | 命令行参数详解 |
+| [hardware_guide.md](user/zh/hardware_guide.md) | 硬件性能优化建议 |
+| [faq.md](how-to/zh/faq.md) | 常见问题解答 |
 
 ### English
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [getting_started.md](./user/en/getting_started.md) | Quick start: setup and first run |
-| [user_guide.md](./user/en/user_guide.md) | Feature introduction and operation guide |
-| [web_guide.md](./user/en/web_guide.md) | Web UI Guide (with instant preview rendering and task queue scheduler) |
-| [configuration_guide.md](./user/en/configuration_guide.md) | Core configuration parameters (`app.yaml`, `task.yaml`) |
-| [cli_reference.md](./user/en/cli_reference.md) | Command-line arguments reference |
-| [hardware_guide.md](./user/en/hardware_guide.md) | Hardware performance optimization advice |
-| [faq.md](./user/en/faq.md) | Frequently Asked Questions |
+| [getting_started.md](user/en/getting_started.md) | Quick start: setup and first run |
+| [user_guide.md](how-to/en/user_guide.md) | Feature introduction and operation guide |
+| [web_guide.md](how-to/en/web_guide.md) | Web UI Guide (with instant preview rendering and task queue scheduler) |
+| [configuration_guide.md](user/en/configuration_guide.md) | Core configuration parameters (`app.yaml`, `task.yaml`) |
+| [cli_reference.md](user/en/cli_reference.md) | Command-line arguments reference |
+| [hardware_guide.md](user/en/hardware_guide.md) | Hardware performance optimization advice |
+| [faq.md](how-to/en/faq.md) | Frequently Asked Questions |
 
 ## 🛠️ 开发文档 (Developer Documentation)
 
@@ -88,63 +88,63 @@ docs/
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [design.md](./dev/zh/architecture/design.md) | 系统设计与原则（总纲） |
-| [layers.md](./dev/zh/architecture/layers.md) | 分层结构实现细节 |
-| [web_ui_design.md](./dev/zh/architecture/web_ui_design.md) | Web 界面设计规格（V2 Studio 架构与多实例管线） |
+| [design.md](explanation/zh/architecture/design.md) | 系统设计与原则（总纲） |
+| [layers.md](explanation/zh/architecture/layers.md) | 分层结构实现细节 |
+| [web_ui_design.md](explanation/zh/architecture/web_ui_design.md) | Web 界面设计规格（V2 Studio 架构与多实例管线） |
 
 **流程 (Process)**
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [workflow.md](./dev/zh/process/workflow.md) | 开发流水线 Checklist（必读） |
-| [C++_quality_standard.md](./dev/zh/process/C++_quality_standard.md) | C++ 代码规范与工程化标准（含原 quality.md 内容） |
-| [vcpkg_best_practice.md](./dev/zh/process/vcpkg_best_practice.md) | vcpkg 最佳实践 |
-| [CI_CD_recommendations.md](./dev/zh/process/CI_CD_recommendations.md) | CI/CD 开发与运行建议 |
+| [workflow.md](dev/zh/process/workflow.md) | 开发流水线 Checklist（必读） |
+| [C++_quality_standard.md](dev/zh/process/C++_quality_standard.md) | C++ 代码规范与工程化标准（含原 quality.md 内容） |
+| [vcpkg_best_practice.md](how-to/zh/vcpkg_best_practice.md) | vcpkg 最佳实践 |
+| [CI_CD_recommendations.md](how-to/zh/CI_CD_recommendations.md) | CI/CD 开发与运行建议 |
 
 **指南 (Guides)**
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [setup.md](./dev/zh/guides/setup.md) | 技术构建环境搭建指南 |
-| [build.md](./dev/zh/guides/build.md) | 使用 `build.py` 脚本配置和构建 |
-| [compiler_selection.md](./dev/zh/guides/compiler_selection.md) | 编译器选型决策记录 (ADR) |
+| [setup.md](how-to/zh/setup.md) | 技术构建环境搭建指南 |
+| [build.md](how-to/zh/build.md) | 使用 `build.py` 脚本配置和构建 |
+| [compiler_selection.md](explanation/zh/decisions/compiler_selection.md) | 编译器选型决策记录 (ADR) |
 
 **评估 (Evaluation)**
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [web-ui-design-completion-review.md](./dev/zh/evaluation/web-ui-design-completion-review.md) | Web UI M1-M4 完成度对抗性复核报告（已通过，整改闭环与二次复核） |
-| [architecture-performance-review.md](./dev/zh/evaluation/architecture-performance-review.md) | 推理架构与算法性能评估报告（P0/P1/P2 问题清单与 ROI 优化建议） |
-| [vulkan-backend-feasibility-review.md](./dev/zh/evaluation/vulkan-backend-feasibility-review.md) | Vulkan 后端支持可行性评估报告（ORT WebGPU EP 路线、推理层耦合度实测与 PoC 立项门禁，对应 issue #1） |
+| [web-ui-design-completion-review.md](explanation/zh/analysis/web-ui-design-completion-review.md) | Web UI M1-M4 完成度对抗性复核报告（已通过，整改闭环与二次复核） |
+| [architecture-performance-review.md](explanation/zh/analysis/architecture-performance-review.md) | 推理架构与算法性能评估报告（P0/P1/P2 问题清单与 ROI 优化建议） |
+| [vulkan-backend-feasibility-review.md](explanation/zh/analysis/vulkan-backend-feasibility-review.md) | Vulkan 后端支持可行性评估报告（ORT WebGPU EP 路线、推理层耦合度实测与 PoC 立项门禁，对应 issue #1） |
 
 **计划与任务归档 (Plans & Tasks)**
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [perf-p0/IMPLEMENTATION_PLAN.md](./dev/plan/perf-p0/IMPLEMENTATION_PLAN.md) | P0 性能优化计划（含 4 个子任务文档，已闭环） |
-| [perf-p1a/IMPLEMENTATION_PLAN.md](./dev/plan/perf-p1a/IMPLEMENTATION_PLAN.md) | P1 批次 A 计划（含 4 个子任务文档，已闭环） |
-| [perf-p1b/IMPLEMENTATION_PLAN.md](./dev/plan/perf-p1b/IMPLEMENTATION_PLAN.md) | P1 批次 B 计划（含 4 个子任务文档，已闭环） |
-| [perf-p2minor/IMPLEMENTATION_PLAN.md](./dev/plan/perf-p2minor/IMPLEMENTATION_PLAN.md) | P2 次要优化计划（已闭环） |
-| [web-robustness/IMPLEMENTATION_PLAN.md](./dev/plan/web-robustness/IMPLEMENTATION_PLAN.md) | Web 健壮性计划（含 4 个子任务文档，已闭环） |
-| [docs-governance/IMPLEMENTATION_PLAN.md](./dev/plan/docs-governance/IMPLEMENTATION_PLAN.md) | 文档治理 Diátaxis 标准化迁移计划（执行中） |
+| [perf-p0/IMPLEMENTATION_PLAN.md](dev/plan/perf-p0/IMPLEMENTATION_PLAN.md) | P0 性能优化计划（含 4 个子任务文档，已闭环） |
+| [perf-p1a/IMPLEMENTATION_PLAN.md](dev/plan/perf-p1a/IMPLEMENTATION_PLAN.md) | P1 批次 A 计划（含 4 个子任务文档，已闭环） |
+| [perf-p1b/IMPLEMENTATION_PLAN.md](dev/plan/perf-p1b/IMPLEMENTATION_PLAN.md) | P1 批次 B 计划（含 4 个子任务文档，已闭环） |
+| [perf-p2minor/IMPLEMENTATION_PLAN.md](dev/plan/perf-p2minor/IMPLEMENTATION_PLAN.md) | P2 次要优化计划（已闭环） |
+| [web-robustness/IMPLEMENTATION_PLAN.md](dev/plan/web-robustness/IMPLEMENTATION_PLAN.md) | Web 健壮性计划（含 4 个子任务文档，已闭环） |
+| [docs-governance/IMPLEMENTATION_PLAN.md](dev/plan/docs-governance/IMPLEMENTATION_PLAN.md) | 文档治理 Diátaxis 标准化迁移计划（执行中） |
 
 **模板 (Templates)**
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [C++_evaluation_template.md](./dev/templates/C++_evaluation_template.md) | 评估文档模板 |
-| [C++_plan_template.md](./dev/templates/C++_plan_template.md) | 计划文档模板 |
-| [C++_task_template.md](./dev/templates/C++_task_template.md) | 任务文档模板 |
+| [C++_evaluation_template.md](dev/templates/C++_evaluation_template.md) | 评估文档模板 |
+| [C++_plan_template.md](dev/templates/C++_plan_template.md) | 计划文档模板 |
+| [C++_task_template.md](dev/templates/C++_task_template.md) | 任务文档模板 |
 
 **故障排查 (Troubleshooting)**
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [README.md](./dev/zh/troubleshooting/README.md) | 疑难杂症分级检索索引 |
-| [issues/cpp20_modules.md](./dev/zh/troubleshooting/issues/cpp20_modules.md) | C++20 Modules 编译支持问题 |
-| [issues/trt_myelin_crash.md](./dev/zh/troubleshooting/issues/trt_myelin_crash.md) | TensorRT Myelin 进程退出崩溃 |
-| [issues/video_timeout.md](./dev/zh/troubleshooting/issues/video_timeout.md) | 视频测试超时（严格内存模式） |
-| [issues/videowriter_dimensions.md](./dev/zh/troubleshooting/issues/videowriter_dimensions.md) | VideoWriter 帧尺寸无效 |
+| [README.md](how-to/zh/troubleshooting/README.md) | 疑难杂症分级检索索引 |
+| [issues/cpp20_modules.md](how-to/zh/troubleshooting/issues/cpp20_modules.md) | C++20 Modules 编译支持问题 |
+| [issues/trt_myelin_crash.md](how-to/zh/troubleshooting/issues/trt_myelin_crash.md) | TensorRT Myelin 进程退出崩溃 |
+| [issues/video_timeout.md](how-to/zh/troubleshooting/issues/video_timeout.md) | 视频测试超时（严格内存模式） |
+| [issues/videowriter_dimensions.md](how-to/zh/troubleshooting/issues/videowriter_dimensions.md) | VideoWriter 帧尺寸无效 |
 
 ### English
 
@@ -152,15 +152,15 @@ docs/
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [design.md](./dev/en/architecture/design.md) | System design and principles (overview) |
-| [layers.md](./dev/en/architecture/layers.md) | Layered architecture implementation details |
-| [web_ui_design.md](./dev/en/architecture/web_ui_design.md) | Web UI design specification |
+| [design.md](explanation/en/architecture/design.md) | System design and principles (overview) |
+| [layers.md](explanation/en/architecture/layers.md) | Layered architecture implementation details |
+| [web_ui_design.md](explanation/en/architecture/web_ui_design.md) | Web UI design specification |
 
 **Process**
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [quality.md](./dev/en/process/quality.md) | Quality standards and development checklist |
+| [quality.md](dev/en/process/quality.md) | Quality standards and development checklist |
 
 > ℹ️ `workflow.md`、`C++_quality_standard.md`、`vcpkg_best_practice.md`、`CI_CD_recommendations.md` 目前仅提供中文版，参见 [中文索引](#中文-chinese)。
 
@@ -168,17 +168,17 @@ docs/
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [setup.md](./dev/en/guides/setup.md) | Environment setup and build guide |
+| [setup.md](how-to/en/setup.md) | Environment setup and build guide |
 
 **Troubleshooting**
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [README.md](./dev/en/troubleshooting/README.md) | Troubleshooting knowledge base index |
-| [issues/cpp20_modules.md](./dev/en/troubleshooting/issues/cpp20_modules.md) | C++20 Modules compiler support issue |
-| [issues/trt_myelin_crash.md](./dev/en/troubleshooting/issues/trt_myelin_crash.md) | TensorRT Myelin crash on exit |
-| [issues/video_timeout.md](./dev/en/troubleshooting/issues/video_timeout.md) | Video test timeout (strict memory) |
-| [issues/videowriter_dimensions.md](./dev/en/troubleshooting/issues/videowriter_dimensions.md) | Invalid frame dimensions (VideoWriter) |
+| [README.md](how-to/en/troubleshooting/README.md) | Troubleshooting knowledge base index |
+| [issues/cpp20_modules.md](how-to/en/troubleshooting/issues/cpp20_modules.md) | C++20 Modules compiler support issue |
+| [issues/trt_myelin_crash.md](how-to/en/troubleshooting/issues/trt_myelin_crash.md) | TensorRT Myelin crash on exit |
+| [issues/video_timeout.md](how-to/en/troubleshooting/issues/video_timeout.md) | Video test timeout (strict memory) |
+| [issues/videowriter_dimensions.md](how-to/en/troubleshooting/issues/videowriter_dimensions.md) | Invalid frame dimensions (VideoWriter) |
 
 ---
 

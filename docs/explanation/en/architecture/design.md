@@ -52,7 +52,7 @@ Specific to a single execution run:
 
 ### 3.1 4-Layer Dependency Rule
 `Application -> Services -> Domain -> Foundation`
-Refer to [Architecture Layers](../architecture/layers.md) for implementation details.
+Refer to [Architecture Layers](layers.md) for implementation details.
 
 ### 3.2 Pipeline Model
 Implemented as a `std::queue` based producer-consumer system with:

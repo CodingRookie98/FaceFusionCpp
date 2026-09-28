@@ -31,10 +31,10 @@
 
 | 类别 | 问题摘要 | 状态 | 详细链接 |
 | :--- | :--- | :--- | :--- |
-| Build | C++20 Modules 不被支持 | 已解决 | [Issue #1](./issues/cpp20_modules.md) |
-| Device | TensorRT Myelin 进程退出崩溃 | 已解决 | [Issue #2](./issues/trt_myelin_crash.md) |
-| Memory | 视频测试超时 (严格内存模式) | 已分析 | [Issue #3](./issues/video_timeout.md) |
-| Logic | VideoWriter 帧尺寸无效 | 已修复 | [Issue #4](./issues/videowriter_dimensions.md) |
+| Build | C++20 Modules 不被支持 | 已解决 | [Issue #1](issues/cpp20_modules.md) |
+| Device | TensorRT Myelin 进程退出崩溃 | 已解决 | [Issue #2](issues/trt_myelin_crash.md) |
+| Memory | 视频测试超时 (严格内存模式) | 已分析 | [Issue #3](issues/video_timeout.md) |
+| Logic | VideoWriter 帧尺寸无效 | 已修复 | [Issue #4](issues/videowriter_dimensions.md) |
 
 ## 3. 贡献规范
 

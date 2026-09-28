@@ -152,6 +152,6 @@ docs/
 
 ## 10. 相关文档
 
-- [index.md](./index.md) —— 知识库全景导航
-- [workflow.md](./dev/zh/process/workflow.md) —— 开发流水线 Checklist
+- [index.md](index.md) —— 知识库全景导航
+- [workflow.md](dev/zh/process/workflow.md) —— 开发流水线 Checklist
 - [AGENTS.md](../AGENTS.md) —— 项目级文档维护规范

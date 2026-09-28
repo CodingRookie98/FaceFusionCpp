@@ -94,7 +94,7 @@ Foundation 内部按职责分为 3 个子分组：
 | | `progress.ixx`, `network.ixx`, `process.ixx`, `core_utils.ixx` | 进度回调、网络、子进程、工具（背压信号量/UUID 等） |
 | `media/` | `ffmpeg.ixx`, `ffmpeg_reader.cpp`, `ffmpeg_writer.cpp`, `vision.cpp` | FFmpeg 动态库封装（读/写/重采样）、OpenCV 视觉工具 |
 
-> **注意**: FFmpeg 以**动态库 API**（`avcodec_open2`/`av_read_frame` 等）集成，不依赖命令行工具。详见 [design.md](./design.md) 附录 A.4。
+> **注意**: FFmpeg 以**动态库 API**（`avcodec_open2`/`av_read_frame` 等）集成，不依赖命令行工具。详见 [design.md](design.md) 附录 A.4。
 
 ---
 

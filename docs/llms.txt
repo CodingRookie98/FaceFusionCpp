@@ -7,6 +7,43 @@
 
 - [需求与设计孵化层 (Proposals / RFC)](proposals/README.md): 本目录用于**集中孵化**尚未定案的功能提案、架构设想与选型方案，采用单文件 RFC 形式对齐，避免未定案内容污染 `reference/` 等权威象限。
 
+## How-To Guides (操作指南 / 问题与任务 SOP)
+
+- [Frequently Asked Questions (FAQ)](how-to/en/faq.md): This document addresses common installation issues, runtime errors, and performance-related questions.
+- [Setup & Build Guide](how-to/en/setup.md): This guide is intended to help developers set up their development environment and successfully compile FaceFusionCpp on...
+- [Troubleshooting Knowledge Base](how-to/en/troubleshooting/README.md): This knowledge base collects common issues encountered during the development process, along with root cause analysis an...
+- [Issue: C++20 Modules Not Supported (Compiler)](how-to/en/troubleshooting/issues/cpp20_modules.md): Compilation fails with errors indicating that module semantics are not recognized or `ixx` files cannot be processed.
+- [Issue: TensorRT Myelin Crash on Exit](how-to/en/troubleshooting/issues/trt_myelin_crash.md): The process crashes during the exit phase after all test cases pass. The error often contains `Myelin free callback call...
+- [Issue: Video Test Timeout (Strict Memory)](how-to/en/troubleshooting/issues/video_timeout.md): During integration testing, `PipelineRunnerVideoTest.ProcessVideoStrictMemory` failed to complete within 120 seconds, tr...
+- [Issue: Invalid Frame Dimensions (VideoWriter)](how-to/en/troubleshooting/issues/videowriter_dimensions.md): The pipeline fails during processing with the error: `VideoWriter: Invalid frame dimensions`, leading to output failure.
+- [User Guide](how-to/en/user_guide.md): This guide details the core features of FaceFusionCpp and how to effectively use them for image and video processing.
+- [Web UI Guide](how-to/en/web_guide.md): Run from the executable directory:
+- [CI/CD 开发与运行建议](how-to/zh/CI_CD_recommendations.md): 为了确保 FaceFusionCpp 在持续集成（CI）和持续交付（CD）环境中的稳定性，建议遵循以下准则。
+- [使用 build.py 脚本配置和构建](how-to/zh/build.md): 本项目提供了 `build.py` 脚本，旨在简化配置、构建、测试和打包的流程。该脚本会自动检测系统环境，并支持 Windows、Linux 和 macOS（实验性）。
+- [常见问题解答 (FAQ)](how-to/zh/faq.md): 本文档解答常见的安装、运行时错误及性能相关问题。
+- [环境搭建与构建指南 (Setup & Build Guide)](how-to/zh/setup.md): 本指南旨在指导开发者如何在 Windows 和 Linux 环境下搭建开发环境并成功编译 FaceFusionCpp。
+- [故障排查知识库 (Troubleshooting Knowledge Base)](how-to/zh/troubleshooting/README.md): 本知识库收集了开发过程中遇到的常见问题、根因分析及解决方案。
+- [Issue: C++20 Modules 不被支持 (Compiler Support)](how-to/zh/troubleshooting/issues/cpp20_modules.md): 编译时报错提示无法识别模块语义，或提示 `ixx` 文件无法被处理。
+- [Issue: TensorRT Myelin 进程退出崩溃 (Process Exit Crash)](how-to/zh/troubleshooting/issues/trt_myelin_crash.md): 测试用例全部通过后，在进程退出阶段发生 SIGSEGV 或 SIGABRT 崩溃。错误信息包含 `Myelin free callback called with invalid MyelinAllocator`。
+- [Issue: 视频测试超时 (Strict Memory Timeout)](how-to/zh/troubleshooting/issues/video_timeout.md): 在集成测试中，`PipelineRunnerVideoTest.ProcessVideoStrictMemory` 在 120 秒内未能完成，触发超时。
+- [Issue: VideoWriter 帧尺寸无效 (Invalid Frame Dimensions)](how-to/zh/troubleshooting/issues/videowriter_dimensions.md): 流水线在处理过程中报错：`VideoWriter: Invalid frame dimensions`，导致视频输出失败。
+- [用户指南 (User Guide)](how-to/zh/user_guide.md): 本指南详细介绍了 FaceFusionCpp 的核心功能以及如何高效使用它们进行图像和视频处理。
+- [vcpkg 最佳实践 (vcpkg Best Practice)](how-to/zh/vcpkg_best_practice.md): 在现代 C++ 工程化实践中，`vcpkg.json` 是 **清单模式 (Manifest Mode)** 的核心。一个“标准”且具备工程化水准的 `vcpkg.json` 不仅仅是列出依赖，更要解决**版本锁定、模块化功能开启**以及*...
+- [Web 界面使用指南 (Web UI Guide)](how-to/zh/web_guide.md): 在可执行文件所在目录运行：
+
+## Explanation (深度剖析 / 系统架构与 ADR 决策)
+
+- [Application Layer Architecture Design (V2.10)](explanation/en/architecture/design.md): FaceFusionCpp is a high-performance face swapping application and library designed for efficiency, modularity, and cross...
+- [Layered Architecture Implementation Details](explanation/en/architecture/layers.md): FaceFusionCpp follows a strict **4-layer unidirectional dependency** (Application → Services → Domain → Foundation):
+- [Web User Interface (Web UI) Design Specification](explanation/en/architecture/web_ui_design.md): FaceFusionCpp originally provided a CLI entry point. To deliver a first-class user experience comparable to modern creat...
+- [推理架构与算法性能评估报告](explanation/zh/analysis/architecture-performance-review.md): **评估对象**: FaceFusionCpp 的推理管理管道/流水线设计、任务调度并发模型、以及人脸处理算法实现。
+- [Vulkan 后端支持可行性评估报告](explanation/zh/analysis/vulkan-backend-feasibility-review.md): **触发来源**：远端 issue [#1 add support vulkan](https://github.com/CodingRookie98/FaceFusionCpp/issues/1)（2026-09-24 由外部用户 Mar...
+- [Web UI 设计文档（webuidesign.md）M1-M4 完成度对抗性复核报告](explanation/zh/analysis/web-ui-design-completion-review.md): **复核对象**: [web_ui_design.md](../architecture/web_ui_design.md)（V0.3.2）及对应的 C++ 后端与 Web 前端实现。
+- [应用层架构设计说明书 (Application Layer Architecture Design Specification)](explanation/zh/architecture/design.md): "Face swap and enhancement pipeline"
+- [分层架构实现细节 (Layered Architecture Implementation)](explanation/zh/architecture/layers.md): FaceFusionCpp 采用严格的 **4 层单向依赖**（Application → Services → Domain → Foundation）：
+- [Web 界面（Web UI）设计规格](explanation/zh/architecture/web_ui_design.md): FaceFusionCpp 提供了 CLI 与基于 Drogon 的 Web 服务入口。前期 M1-M4 阶段验证了任务生命周期闭环、排队调度与人脸检测 API。为了提供媲美专业数字创意软件（如 DaVinci、Figma、ComfyUI）...
+- [编译器选型技术决策记录 (Compiler Selection ADR)](explanation/zh/decisions/compiler_selection.md): 项目 faceFusionCpp 是一个重度依赖 C++20 Modules 的高性能人脸处理管线，当前使用 LLVM/Clang 工具链。随着 GCC 16 发布（默认 C++20 标准）和 Clang 22 发布（最新稳定版），需要评估...
+
 ## Project Governance (工程演进 / 发布日志与待办)
 
 - [待办与技术债汇总 (Backlog)](project/backlog.md)
@@ -15,16 +52,7 @@
 
 ## Other Documentation (其他文档)
 
-- [Application Layer Architecture Design (V2.10)](dev/en/architecture/design.md): FaceFusionCpp is a high-performance face swapping application and library designed for efficiency, modularity, and cross...
-- [Layered Architecture Implementation Details](dev/en/architecture/layers.md): FaceFusionCpp follows a strict **4-layer unidirectional dependency** (Application → Services → Domain → Foundation):
-- [Web User Interface (Web UI) Design Specification](dev/en/architecture/web_ui_design.md): FaceFusionCpp originally provided a CLI entry point. To deliver a first-class user experience comparable to modern creat...
-- [Setup & Build Guide](dev/en/guides/setup.md): This guide is intended to help developers set up their development environment and successfully compile FaceFusionCpp on...
 - [C++ Quality Standards & Development Checklist](dev/en/process/quality.md): Before submitting a PR, ensure:
-- [Troubleshooting Knowledge Base](dev/en/troubleshooting/README.md): This knowledge base collects common issues encountered during the development process, along with root cause analysis an...
-- [Issue: C++20 Modules Not Supported (Compiler)](dev/en/troubleshooting/issues/cpp20_modules.md): Compilation fails with errors indicating that module semantics are not recognized or `ixx` files cannot be processed.
-- [Issue: TensorRT Myelin Crash on Exit](dev/en/troubleshooting/issues/trt_myelin_crash.md): The process crashes during the exit phase after all test cases pass. The error often contains `Myelin free callback call...
-- [Issue: Video Test Timeout (Strict Memory)](dev/en/troubleshooting/issues/video_timeout.md): During integration testing, `PipelineRunnerVideoTest.ProcessVideoStrictMemory` failed to complete within 120 seconds, tr...
-- [Issue: Invalid Frame Dimensions (VideoWriter)](dev/en/troubleshooting/issues/videowriter_dimensions.md): The pipeline fails during processing with the error: `VideoWriter: Invalid frame dimensions`, leading to output failure.
 - [实施计划：文档治理 Diátaxis 标准化迁移](dev/plan/docs-governance/IMPLEMENTATION_PLAN.md): 用户要求按 `doc-governance` 技能（`.agents/skills/doc-governance/`）对本项目知识库执行**严格治理**。该技能提供 Diátaxis 四象限拓扑、RFC 孵化流转、Docs-as-Code ...
 - [性能优化 P0 批次 实施计划](dev/plan/perf-p0/IMPLEMENTATION_PLAN.md): *   [x] 我已阅读 [AGENTS.md](../../../../AGENTS.md) 中的 C++20 开发规范。
 - [C++ 任务: domain 服务跨视频复用（消除每视频 ONNX 重解析）](dev/plan/perf-p0/task/C++_task_domain_service_reuse.md): 消除 `PipelineRunner::AddProcessorsToPipeline()` 每视频/每批次重建 swapper/enhancer/restorer 并重新解析 ONNX 初始化器的浪费，改为任务级缓存复用。
@@ -50,35 +78,13 @@
 - [C++ 代码质量评估报告](dev/templates/C++_evaluation_template.md): <!-- AI_CONTEXT
 - [{计划名称} 实施计划](dev/templates/C++_plan_template.md): <!-- AI_CONTEXT
 - [{任务名称} 实施任务单](dev/templates/C++_task_template.md): <!-- AI_CONTEXT
-- [应用层架构设计说明书 (Application Layer Architecture Design Specification)](dev/zh/architecture/design.md): "Face swap and enhancement pipeline"
-- [分层架构实现细节 (Layered Architecture Implementation)](dev/zh/architecture/layers.md): FaceFusionCpp 采用严格的 **4 层单向依赖**（Application → Services → Domain → Foundation）：
-- [Web 界面（Web UI）设计规格](dev/zh/architecture/web_ui_design.md): FaceFusionCpp 提供了 CLI 与基于 Drogon 的 Web 服务入口。前期 M1-M4 阶段验证了任务生命周期闭环、排队调度与人脸检测 API。为了提供媲美专业数字创意软件（如 DaVinci、Figma、ComfyUI）...
-- [推理架构与算法性能评估报告](dev/zh/evaluation/architecture-performance-review.md): **评估对象**: FaceFusionCpp 的推理管理管道/流水线设计、任务调度并发模型、以及人脸处理算法实现。
-- [Vulkan 后端支持可行性评估报告](dev/zh/evaluation/vulkan-backend-feasibility-review.md): **触发来源**：远端 issue [#1 add support vulkan](https://github.com/CodingRookie98/FaceFusionCpp/issues/1)（2026-09-24 由外部用户 Mar...
-- [Web UI 设计文档（webuidesign.md）M1-M4 完成度对抗性复核报告](dev/zh/evaluation/web-ui-design-completion-review.md): **复核对象**: [web_ui_design.md](../architecture/web_ui_design.md)（V0.3.2）及对应的 C++ 后端与 Web 前端实现。
-- [使用 build.py 脚本配置和构建](dev/zh/guides/build.md): 本项目提供了 `build.py` 脚本，旨在简化配置、构建、测试和打包的流程。该脚本会自动检测系统环境，并支持 Windows、Linux 和 macOS（实验性）。
-- [编译器选型技术决策记录 (Compiler Selection ADR)](dev/zh/guides/compiler_selection.md): 项目 faceFusionCpp 是一个重度依赖 C++20 Modules 的高性能人脸处理管线，当前使用 LLVM/Clang 工具链。随着 GCC 16 发布（默认 C++20 标准）和 Clang 22 发布（最新稳定版），需要评估...
-- [环境搭建与构建指南 (Setup & Build Guide)](dev/zh/guides/setup.md): 本指南旨在指导开发者如何在 Windows 和 Linux 环境下搭建开发环境并成功编译 FaceFusionCpp。
 - [C++ 代码质量与工程化标准（FaceFusionCpp）](dev/zh/process/C++_quality_standard.md): 本文档用于统一 FaceFusionCpp 项目的代码质量要求、工程化质量门槛，以及在评审/验收时可执行的评估维度。它不是“风格偏好合集”，而是可落地的质量合约：写代码的人按它交付，审代码的人按它验收。
-- [CI/CD 开发与运行建议](dev/zh/process/CI_CD_recommendations.md): 为了确保 FaceFusionCpp 在持续集成（CI）和持续交付（CD）环境中的稳定性，建议遵循以下准则。
-- [vcpkg 最佳实践 (vcpkg Best Practice)](dev/zh/process/vcpkg_best_practice.md): 在现代 C++ 工程化实践中，`vcpkg.json` 是 **清单模式 (Manifest Mode)** 的核心。一个“标准”且具备工程化水准的 `vcpkg.json` 不仅仅是列出依赖，更要解决**版本锁定、模块化功能开启**以及*...
 - [工作流程 (Workflow)](dev/zh/process/workflow.md): 本工作流程支持两种路径：**评估路径**（需要代码质量评估）和**直接实现路径**（无需评估）。两者共享相同的计划、实现和验收阶段，评估仅作为可选前置步骤（**MAY**）。
-- [故障排查知识库 (Troubleshooting Knowledge Base)](dev/zh/troubleshooting/README.md): 本知识库收集了开发过程中遇到的常见问题、根因分析及解决方案。
-- [Issue: C++20 Modules 不被支持 (Compiler Support)](dev/zh/troubleshooting/issues/cpp20_modules.md): 编译时报错提示无法识别模块语义，或提示 `ixx` 文件无法被处理。
-- [Issue: TensorRT Myelin 进程退出崩溃 (Process Exit Crash)](dev/zh/troubleshooting/issues/trt_myelin_crash.md): 测试用例全部通过后，在进程退出阶段发生 SIGSEGV 或 SIGABRT 崩溃。错误信息包含 `Myelin free callback called with invalid MyelinAllocator`。
-- [Issue: 视频测试超时 (Strict Memory Timeout)](dev/zh/troubleshooting/issues/video_timeout.md): 在集成测试中，`PipelineRunnerVideoTest.ProcessVideoStrictMemory` 在 120 秒内未能完成，触发超时。
-- [Issue: VideoWriter 帧尺寸无效 (Invalid Frame Dimensions)](dev/zh/troubleshooting/issues/videowriter_dimensions.md): 流水线在处理过程中报错：`VideoWriter: Invalid frame dimensions`，导致视频输出失败。
 - [CLI Reference](user/en/cli_reference.md): The ffc executable provides a powerful command-line interface (CLI) for both quick tasks and complex production pipeline...
 - [Configuration Guide](user/en/configuration_guide.md): "Swap face A into video B"
-- [Frequently Asked Questions (FAQ)](user/en/faq.md): This document addresses common installation issues, runtime errors, and performance-related questions.
 - [Getting Started](user/en/getting_started.md): Welcome to **FaceFusionCpp**, the high-performance C++ implementation of the popular open-source project [facefusion](ht...
 - [Hardware Guide](user/en/hardware_guide.md): FaceFusionCpp is a high-performance application. This guide helps you choose the optimal configuration based on your har...
-- [User Guide](user/en/user_guide.md): This guide details the core features of FaceFusionCpp and how to effectively use them for image and video processing.
-- [Web UI Guide](user/en/web_guide.md): Run from the executable directory:
 - [命令行参考 (CLI Reference)](user/zh/cli_reference.md): FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作和复杂的批量处理任务。
 - [配置指南 (Configuration Guide)](user/zh/configuration_guide.md): "将视频 B 中的人脸替换为 A"
-- [常见问题解答 (FAQ)](user/zh/faq.md): 本文档解答常见的安装、运行时错误及性能相关问题。
 - [快速开始 (Getting Started)](user/zh/getting_started.md): 欢迎使用 **FaceFusionCpp**，这是热门开源项目 [facefusion](https://github.com/facefusion/facefusion) 的高性能 C++ 实现。本文档将指导您完成环境准备、安装和首次人脸...
 - [硬件指南 (Hardware Guide)](user/zh/hardware_guide.md): FaceFusionCpp 是一个高性能应用。本指南帮助您根据硬件规格（特别是 GPU）选择最优配置方案。
-- [用户指南 (User Guide)](user/zh/user_guide.md): 本指南详细介绍了 FaceFusionCpp 的核心功能以及如何高效使用它们进行图像和视频处理。
-- [Web 界面使用指南 (Web UI Guide)](user/zh/web_guide.md): 在可执行文件所在目录运行：

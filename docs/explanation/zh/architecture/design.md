@@ -111,7 +111,7 @@ graph TD
     Svc -.->|公共底座直连| Fdn
 ```
 
-*   **依赖单向性 (Unidirectional Dependency)**: 上层仅依赖下层，严禁反向依赖或跨层跳跃调用。Foundation 作为公共底座，允许任何上层直接依赖（实现细节见 [layers.md](./layers.md)）。
+*   **依赖单向性 (Unidirectional Dependency)**: 上层仅依赖下层，严禁反向依赖或跨层跳跃调用。Foundation 作为公共底座，允许任何上层直接依赖（实现细节见 [layers.md](layers.md)）。
 *   **模块化 (Modularity)**: 基于 **C++20 Modules** (`.ixx` / `.cppm`) 构建，强制物理隔离接口与实现，子系统间仅通过明确定义的接口交互。
 
 ---

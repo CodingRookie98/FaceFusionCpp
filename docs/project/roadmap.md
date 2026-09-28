@@ -46,9 +46,9 @@
 
 | 主题 | 触发来源 | 门禁条件 |
 | :--- | :--- | :--- |
-| 非 NVIDIA GPU 加速（Vulkan 路径） | 远端 issue #1「add support vulkan」 | ORT WebGPU plugin EP 的 PoC 三个判定点（节点覆盖 / 并发稳定性 / 数值一致性）通过；详见 [vulkan-backend-feasibility-review.md](../dev/zh/evaluation/vulkan-backend-feasibility-review.md) |
+| 非 NVIDIA GPU 加速（Vulkan 路径） | 远端 issue #1「add support vulkan」 | ORT WebGPU plugin EP 的 PoC 三个判定点（节点覆盖 / 并发稳定性 / 数值一致性）通过；详见 [vulkan-backend-feasibility-review.md](../explanation/zh/analysis/vulkan-backend-feasibility-review.md) |
 
 ## 说明
 
 - 本路线图只登记**已发生事实**与**已立项事项**，不做无依据的时间承诺；
-- 待办与技术债明细见 [backlog.md](./backlog.md)；逐版本变更见 [changelog.md](./changelog.md)。
+- 待办与技术债明细见 [backlog.md](backlog.md)；逐版本变更见 [changelog.md](changelog.md)。

@@ -137,4 +137,4 @@
 *   **"CUDA error"**: 将 NVIDIA 显卡驱动更新到最新版本。
 *   **"Model not found"**: 确保 `models/` 目录存在并包含所需的 `.onnx` 文件。
 
-有关更详细的配置选项，请参阅 [用户指南](user_guide.md) 或 [CLI 参考](cli_reference.md)。
+有关更详细的配置选项，请参阅 [用户指南](../../how-to/zh/user_guide.md) 或 [CLI 参考](cli_reference.md)。

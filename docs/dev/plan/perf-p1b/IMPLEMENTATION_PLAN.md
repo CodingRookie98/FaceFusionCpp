@@ -14,12 +14,12 @@
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
 | **V1.1.0** | 2026-08-28 | AI Agent | 王辉 | 验收完成：单元 317/317、集成 142/142、E2E 14/14 全绿。T2 从"测试超时放宽"升级为产品缺陷修复（Drogon WS send 连接未就绪竞态 → queueInLoop 延迟投递，5/5 冷启动验证通过，集成 flaky 根治）。 |
-| **V1.0.0** | 2026-08-28 | AI Agent | 王辉 | 依据评估报告（[architecture-performance-review.md](../../zh/evaluation/architecture-performance-review.md)）剩余优先级创建（第二批）：P1-2 mask 接线+共享（方案 B）、Web 集成 flaky 修复、P-1 SessionPool 池锁重构、P2-7 Strict checkpoint 周期保存。 |
+| **V1.0.0** | 2026-08-28 | AI Agent | 王辉 | 依据评估报告（[architecture-performance-review.md](../../../explanation/zh/analysis/architecture-performance-review.md)）剩余优先级创建（第二批）：P1-2 mask 接线+共享（方案 B）、Web 集成 flaky 修复、P-1 SessionPool 池锁重构、P2-7 Strict checkpoint 周期保存。 |
 
 > **标准参考 & 跨文档链接**:
 > *   TDD 与开发规范: [AGENTS.md](../../../../AGENTS.md)
 > *   工作流程: [workflow.md](../../zh/process/workflow.md)
-> *   评估报告: [architecture-performance-review.md](../../zh/evaluation/architecture-performance-review.md)
+> *   评估报告: [architecture-performance-review.md](../../../explanation/zh/analysis/architecture-performance-review.md)
 
 ## 0. 计划前验证 (AI Agent 自检)
 
@@ -72,10 +72,10 @@
 
 | 子任务 | 文档 |
 | :--- | :--- |
-| mask 链路接线 + 共享（P1-2 方案 B） | [C++_task_mask_chain_wiring.md](./task/C++_task_mask_chain_wiring.md) |
-| SessionPool 池锁重构（factory 移出锁） | [C++_task_session_pool_lock.md](./task/C++_task_session_pool_lock.md) |
-| Strict 模式 checkpoint 周期保存 | [C++_task_strict_checkpoint_throttle.md](./task/C++_task_strict_checkpoint_throttle.md) |
-| Web 集成 flaky 修复（WS 超时放宽） | [C++_task_web_ws_flaky.md](./task/C++_task_web_ws_flaky.md) |
+| mask 链路接线 + 共享（P1-2 方案 B） | [C++_task_mask_chain_wiring.md](task/C++_task_mask_chain_wiring.md) |
+| SessionPool 池锁重构（factory 移出锁） | [C++_task_session_pool_lock.md](task/C++_task_session_pool_lock.md) |
+| Strict 模式 checkpoint 周期保存 | [C++_task_strict_checkpoint_throttle.md](task/C++_task_strict_checkpoint_throttle.md) |
+| Web 集成 flaky 修复（WS 超时放宽） | [C++_task_web_ws_flaky.md](task/C++_task_web_ws_flaky.md) |
 
 
 ## 3. 实施阶段

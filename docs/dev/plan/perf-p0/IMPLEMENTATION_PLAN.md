@@ -15,12 +15,12 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **V1.2.0** | 2026-08-28 | AI Agent | 王辉 | 验收完成：单元 296/296、集成 142/142、E2E 14/14 全绿。 |
 | **V1.1.0** | 2026-08-28 | AI Agent | 王辉 | T1-T4 实现完成：T4 会话容量 3→10（ca2afeb）、T1 面缓存开关（df805f2）、T2 embedding 缓存（87c03d3）、T3 DomainServiceCache（a61112a）。单元测试 296/296 全绿，集成验证进行中。 |
-| **V1.0.0** | 2026-08-28 | AI Agent | 王辉 | 依据评估报告（[architecture-performance-review.md](../../zh/evaluation/architecture-performance-review.md)）P0 优先级创建：消除视频路径 FaceStore 整帧哈希、InSwapper embedding 变换任务级缓存、domain 服务跨视频复用、SessionPool 容量修正。 |
+| **V1.0.0** | 2026-08-28 | AI Agent | 王辉 | 依据评估报告（[architecture-performance-review.md](../../../explanation/zh/analysis/architecture-performance-review.md)）P0 优先级创建：消除视频路径 FaceStore 整帧哈希、InSwapper embedding 变换任务级缓存、domain 服务跨视频复用、SessionPool 容量修正。 |
 
 > **标准参考 & 跨文档链接**:
 > *   TDD 与开发规范: [AGENTS.md](../../../../AGENTS.md)
 > *   工作流程: [workflow.md](../../zh/process/workflow.md)
-> *   评估报告: [architecture-performance-review.md](../../zh/evaluation/architecture-performance-review.md)
+> *   评估报告: [architecture-performance-review.md](../../../explanation/zh/analysis/architecture-performance-review.md)
 
 ## 0. 计划前验证 (AI Agent 自检)
 
@@ -73,10 +73,10 @@
 
 | 子任务 | 文档 |
 | :--- | :--- |
-| domain 服务跨视频复用（消除每视频 ONNX 重解析） | [C++_task_domain_service_reuse.md](./task/C++_task_domain_service_reuse.md) |
-| 视频路径禁用 FaceStore 整帧哈希 | [C++_task_face_store_cache_disable.md](./task/C++_task_face_store_cache_disable.md) |
-| InSwapper embedding 变换任务级缓存 | [C++_task_inswapper_embedding_cache.md](./task/C++_task_inswapper_embedding_cache.md) |
-| SessionPool 容量修正（max_entries 3→10） | [C++_task_session_pool_capacity.md](./task/C++_task_session_pool_capacity.md) |
+| domain 服务跨视频复用（消除每视频 ONNX 重解析） | [C++_task_domain_service_reuse.md](task/C++_task_domain_service_reuse.md) |
+| 视频路径禁用 FaceStore 整帧哈希 | [C++_task_face_store_cache_disable.md](task/C++_task_face_store_cache_disable.md) |
+| InSwapper embedding 变换任务级缓存 | [C++_task_inswapper_embedding_cache.md](task/C++_task_inswapper_embedding_cache.md) |
+| SessionPool 容量修正（max_entries 3→10） | [C++_task_session_pool_capacity.md](task/C++_task_session_pool_capacity.md) |
 
 
 ## 3. 实施阶段

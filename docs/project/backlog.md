@@ -21,7 +21,7 @@
 
 | ID | 事项 | 来源 | 优先级 | 状态 |
 | :--- | :--- | :--- | :--- | :--- |
-| **BL-1** | 非 NVIDIA GPU 加速：接入 ORT WebGPU plugin EP，需先通过 PoC 三判定点 | [vulkan-backend-feasibility-review.md](../dev/zh/evaluation/vulkan-backend-feasibility-review.md) R-1~R-8、issue #1 | P0 | 待 PoC |
+| **BL-1** | 非 NVIDIA GPU 加速：接入 ORT WebGPU plugin EP，需先通过 PoC 三判定点 | [vulkan-backend-feasibility-review.md](../explanation/zh/analysis/vulkan-backend-feasibility-review.md) R-1~R-8、issue #1 | P0 | 待 PoC |
 | **BL-2** | `inference.default_providers` 配置未接线：YAML 解析后从未映射为 `ExecutionProvider`，实际全走自动探测 | 同上 §3.2（`config_parser.cpp:330-332`） | P1 | 未开始 |
 | **BL-3** | 用户 FAQ 与实现不一致：`docs/user/zh/faq.md` 建议优先 TensorRT，但该配置当前不生效 | 同上 §3.2 | P1 | 未开始 |
 | **BL-4** | `design.md` 1052 行超出单文档 800 行红线，需拆分为「总纲 + 子册」 | 治理计划 P3 | P1 | 待 P3 |

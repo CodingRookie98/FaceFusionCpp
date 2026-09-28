@@ -27,4 +27,4 @@
 - **延迟开启 (Deferred Open)**: 修改 `PipelineRunner` 逻辑，在第一帧有效结果产生后再根据结果帧的 `width`/`height` 动态打开 Writer。
 
 ## 相关链接
-- [设计文档](../../architecture/design.md)
+- [设计文档](../../../../explanation/zh/architecture/design.md)

@@ -141,4 +141,4 @@ If the application fails to start or crashes abruptly:
 * **"CUDA error"**: Update your NVIDIA graphics card driver to the newest version.
 * **"Model not found"**: Ensure the `models/` directory exists and houses the required `.onnx` files.
 
-For a significantly more detailed explanation of configuration options, please refer to the [User Guide](user_guide.md) or the [CLI Reference](cli_reference.md).
+For a significantly more detailed explanation of configuration options, please refer to the [User Guide](../../how-to/en/user_guide.md) or the [CLI Reference](cli_reference.md).

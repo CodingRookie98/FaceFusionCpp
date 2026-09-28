@@ -14,12 +14,12 @@
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
 | **V1.1.0** | 2026-08-28 | AI Agent | 王辉 | 验收完成：单元 308/308、E2E 14/14 全绿；集成 142 例全量跑出现 2 次不同用例的随机 flaky（TaskProgressEndpointWorks / UnknownTaskGetsErrorMessage，均为 Web 时序敏感，单独复现通过），记录为既有测试稳定性问题，非本批回归。 |
-| **V1.0.0** | 2026-08-28 | AI Agent | 王辉 | 依据评估报告（[architecture-performance-review.md](../../zh/evaluation/architecture-performance-review.md)）P1 优先级创建（第一批）：Strict 模式 queue 上限放宽、GPU 并发信号量闸门、session key 文件指纹、TTL 惰性清理。 |
+| **V1.0.0** | 2026-08-28 | AI Agent | 王辉 | 依据评估报告（[architecture-performance-review.md](../../../explanation/zh/analysis/architecture-performance-review.md)）P1 优先级创建（第一批）：Strict 模式 queue 上限放宽、GPU 并发信号量闸门、session key 文件指纹、TTL 惰性清理。 |
 
 > **标准参考 & 跨文档链接**:
 > *   TDD 与开发规范: [AGENTS.md](../../../../AGENTS.md)
 > *   工作流程: [workflow.md](../../zh/process/workflow.md)
-> *   评估报告: [architecture-performance-review.md](../../zh/evaluation/architecture-performance-review.md)
+> *   评估报告: [architecture-performance-review.md](../../../explanation/zh/analysis/architecture-performance-review.md)
 
 ## 0. 计划前验证 (AI Agent 自检)
 
@@ -69,10 +69,10 @@
 
 | 子任务 | 文档 |
 | :--- | :--- |
-| GPU 并发信号量闸门（max_concurrent_gpu_tasks） | [C++_task_gpu_concurrency_gate.md](./task/C++_task_gpu_concurrency_gate.md) |
-| session key 加入模型文件指纹 | [C++_task_session_key_fingerprint.md](./task/C++_task_session_key_fingerprint.md) |
-| SessionPool TTL 惰性清理 | [C++_task_session_ttl_lazy_cleanup.md](./task/C++_task_session_ttl_lazy_cleanup.md) |
-| Strict 模式 queue 上限放宽 | [C++_task_strict_queue_capacity.md](./task/C++_task_strict_queue_capacity.md) |
+| GPU 并发信号量闸门（max_concurrent_gpu_tasks） | [C++_task_gpu_concurrency_gate.md](task/C++_task_gpu_concurrency_gate.md) |
+| session key 加入模型文件指纹 | [C++_task_session_key_fingerprint.md](task/C++_task_session_key_fingerprint.md) |
+| SessionPool TTL 惰性清理 | [C++_task_session_ttl_lazy_cleanup.md](task/C++_task_session_ttl_lazy_cleanup.md) |
+| Strict 模式 queue 上限放宽 | [C++_task_strict_queue_capacity.md](task/C++_task_strict_queue_capacity.md) |
 
 
 ## 3. 实施阶段

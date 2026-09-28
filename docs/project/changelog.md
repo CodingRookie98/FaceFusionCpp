@@ -31,6 +31,6 @@
 
 ## 相关文档
 
-- [roadmap.md](./roadmap.md) —— 产品规划路线图
-- [backlog.md](./backlog.md) —— 待办事项与技术债汇总
+- [roadmap.md](roadmap.md) —— 产品规划路线图
+- [backlog.md](backlog.md) —— 待办事项与技术债汇总
 - [GOVERNANCE.md](../GOVERNANCE.md) —— 知识库治理规程

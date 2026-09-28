@@ -94,7 +94,7 @@ Foundation is organized into 3 responsibility subgroups:
 | | `progress.ixx`, `network.ixx`, `process.ixx`, `core_utils.ixx` | Progress callbacks, networking, subprocess, utilities (backpressure semaphores/UUID etc.) |
 | `media/` | `ffmpeg.ixx`, `ffmpeg_reader.cpp`, `ffmpeg_writer.cpp`, `vision.cpp` | FFmpeg shared-library wrappers (read/write/resample), OpenCV vision utilities |
 
-> **Note**: FFmpeg is integrated via **shared-library APIs** (`avcodec_open2`/`av_read_frame` etc.), not the CLI tool. See [design.md](./design.md) Appendix A.4.
+> **Note**: FFmpeg is integrated via **shared-library APIs** (`avcodec_open2`/`av_read_frame` etc.), not the CLI tool. See [design.md](design.md) Appendix A.4.
 
 ---
 
