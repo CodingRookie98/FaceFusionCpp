@@ -54,3 +54,17 @@
 
 **规避方案**:
 目前没有完美的规避方案。建议关注非模块相关的代码质量警告（如命名风格、性能建议等），并忽略模块导入错误。
+
+## 文档治理工具 (scripts/doc/)
+
+依据 [GOVERNANCE.md](../docs/GOVERNANCE.md) 的知识库门禁，随文档变更执行：
+
+| 脚本 | 用途 | 命令 |
+| :--- | :--- | :--- |
+| `check-doc-links.py` | 断链与锚点静态审计 | `python3 scripts/doc/check-doc-links.py --root docs` |
+| `trim-revision.py` | 修订历史 5 条滑动窗口（`--fix` 自愈） | `python3 scripts/doc/trim-revision.py --root docs [--fix]` |
+| `audit-doc-health.py` | 综合健康度体检（门槛 80 分） | `python3 scripts/doc/audit-doc-health.py --root docs` |
+| `generate-llms-txt.py` | 生成 AI 机器地图 | `python3 scripts/doc/generate-llms-txt.py --root docs --output docs/llms.txt` |
+| `scaffold-doc.sh` | 按模板创建合规新文档 | `bash scripts/doc/scaffold-doc.sh <type> <name>` |
+
+CI 门禁见 `.github/workflows/docs-governance.yml`。

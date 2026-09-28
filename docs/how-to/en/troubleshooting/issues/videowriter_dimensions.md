@@ -1,0 +1,30 @@
+# Issue: Invalid Frame Dimensions (VideoWriter)
+
+> **Document Control**
+> - **Document ID**: FFC-DEV-EN-TS-ISSUE-VWD-2026
+> - **Version**: V1.0.0
+> - **Status**: Official
+> - **Authority**: Informative
+> - **Owner**: 王辉
+> - **Reviewer**: 王辉
+> - **Last Updated**: 2026-08-13
+
+## Revision History
+
+| Version | Date | Author | Reviewer | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
+
+
+## Description
+The pipeline fails during processing with the error: `VideoWriter: Invalid frame dimensions`, leading to output failure.
+
+## Root Cause Analysis
+- **Premature Initialization**: `PipelineRunner.cpp` attempts to open the `VideoWriter` using the original input video dimensions before the first AI-enhanced frame (e.g., 4x upsampled) arrives.
+- **Dimension Mismatch**: When the first 4K enhanced frame reaches a Writer already locked to 720p, the underlying FFmpeg adapter throws an error.
+
+## Solution
+- **Deferred Open**: Modify the `PipelineRunner` logic to dynamically open the Writer only after the first valid result frame is produced, using that frame's `width`/`height`.
+
+## Related Links
+- [设计文档](../../../../explanation/en/architecture/design.md)

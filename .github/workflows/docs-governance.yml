@@ -1,0 +1,39 @@
+name: Docs Governance
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'scripts/doc/**'
+      - '.github/workflows/docs-governance.yml'
+  push:
+    branches: [dev, master]
+    paths:
+      - 'docs/**'
+      - 'scripts/doc/**'
+      - '.github/workflows/docs-governance.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    name: Documentation gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Broken links and anchors
+        run: python3 scripts/doc/check-doc-links.py --root docs
+
+      - name: Revision history window (max 5 entries)
+        run: python3 scripts/doc/trim-revision.py --root docs
+
+      - name: Knowledge base health (min score 80)
+        run: python3 scripts/doc/audit-doc-health.py --root docs

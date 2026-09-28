@@ -1,0 +1,101 @@
+# System Machine-Readable Knowledge Base Map
+
+> 本文件遵循 llmstxt.org 规范，为 AI 智能体提供全景知识拓扑与物理文件导航地图。
+> 严禁凭空猜测路径，查阅具体模块前请通过下述相对链接精准索引对应文件。
+
+## Proposals & RFCs (需求与设计孵化层)
+
+- [需求与设计孵化层 (Proposals / RFC)](proposals/README.md): 本目录用于**集中孵化**尚未定案的功能提案、架构设想与选型方案，采用单文件 RFC 形式对齐，避免未定案内容污染 `reference/` 等权威象限。
+
+## Tutorials (学习导向 / 新手上手教程)
+
+- [Getting Started](tutorials/en/getting_started.md): Welcome to **FaceFusionCpp**, the high-performance C++ implementation of the popular open-source project [facefusion](ht...
+- [快速开始 (Getting Started)](tutorials/zh/getting_started.md): 欢迎使用 **FaceFusionCpp**，这是热门开源项目 [facefusion](https://github.com/facefusion/facefusion) 的高性能 C++ 实现。本文档将指导您完成环境准备、安装和首次人脸...
+
+## How-To Guides (操作指南 / 问题与任务 SOP)
+
+- [Frequently Asked Questions (FAQ)](how-to/en/faq.md): This document addresses common installation issues, runtime errors, and performance-related questions.
+- [Setup & Build Guide](how-to/en/setup.md): This guide is intended to help developers set up their development environment and successfully compile FaceFusionCpp on...
+- [Troubleshooting Knowledge Base](how-to/en/troubleshooting/README.md): This knowledge base collects common issues encountered during the development process, along with root cause analysis an...
+- [Issue: C++20 Modules Not Supported (Compiler)](how-to/en/troubleshooting/issues/cpp20_modules.md): Compilation fails with errors indicating that module semantics are not recognized or `ixx` files cannot be processed.
+- [Issue: TensorRT Myelin Crash on Exit](how-to/en/troubleshooting/issues/trt_myelin_crash.md): The process crashes during the exit phase after all test cases pass. The error often contains `Myelin free callback call...
+- [Issue: Video Test Timeout (Strict Memory)](how-to/en/troubleshooting/issues/video_timeout.md): During integration testing, `PipelineRunnerVideoTest.ProcessVideoStrictMemory` failed to complete within 120 seconds, tr...
+- [Issue: Invalid Frame Dimensions (VideoWriter)](how-to/en/troubleshooting/issues/videowriter_dimensions.md): The pipeline fails during processing with the error: `VideoWriter: Invalid frame dimensions`, leading to output failure.
+- [User Guide](how-to/en/user_guide.md): This guide details the core features of FaceFusionCpp and how to effectively use them for image and video processing.
+- [Web UI Guide](how-to/en/web_guide.md): Run from the executable directory:
+- [CI/CD 开发与运行建议](how-to/zh/CI_CD_recommendations.md): 为了确保 FaceFusionCpp 在持续集成（CI）和持续交付（CD）环境中的稳定性，建议遵循以下准则。
+- [使用 build.py 脚本配置和构建](how-to/zh/build.md): 本项目提供了 `build.py` 脚本，旨在简化配置、构建、测试和打包的流程。该脚本会自动检测系统环境，并支持 Windows、Linux 和 macOS（实验性）。
+- [常见问题解答 (FAQ)](how-to/zh/faq.md): 本文档解答常见的安装、运行时错误及性能相关问题。
+- [环境搭建与构建指南 (Setup & Build Guide)](how-to/zh/setup.md): 本指南旨在指导开发者如何在 Windows 和 Linux 环境下搭建开发环境并成功编译 FaceFusionCpp。
+- [故障排查知识库 (Troubleshooting Knowledge Base)](how-to/zh/troubleshooting/README.md): 本知识库收集了开发过程中遇到的常见问题、根因分析及解决方案。
+- [Issue: C++20 Modules 不被支持 (Compiler Support)](how-to/zh/troubleshooting/issues/cpp20_modules.md): 编译时报错提示无法识别模块语义，或提示 `ixx` 文件无法被处理。
+- [Issue: TensorRT Myelin 进程退出崩溃 (Process Exit Crash)](how-to/zh/troubleshooting/issues/trt_myelin_crash.md): 测试用例全部通过后，在进程退出阶段发生 SIGSEGV 或 SIGABRT 崩溃。错误信息包含 `Myelin free callback called with invalid MyelinAllocator`。
+- [Issue: 视频测试超时 (Strict Memory Timeout)](how-to/zh/troubleshooting/issues/video_timeout.md): 在集成测试中，`PipelineRunnerVideoTest.ProcessVideoStrictMemory` 在 120 秒内未能完成，触发超时。
+- [Issue: VideoWriter 帧尺寸无效 (Invalid Frame Dimensions)](how-to/zh/troubleshooting/issues/videowriter_dimensions.md): 流水线在处理过程中报错：`VideoWriter: Invalid frame dimensions`，导致视频输出失败。
+- [用户指南 (User Guide)](how-to/zh/user_guide.md): 本指南详细介绍了 FaceFusionCpp 的核心功能以及如何高效使用它们进行图像和视频处理。
+- [vcpkg 最佳实践 (vcpkg Best Practice)](how-to/zh/vcpkg_best_practice.md): 在现代 C++ 工程化实践中，`vcpkg.json` 是 **清单模式 (Manifest Mode)** 的核心。一个“标准”且具备工程化水准的 `vcpkg.json` 不仅仅是列出依赖，更要解决**版本锁定、模块化功能开启**以及*...
+- [Web 界面使用指南 (Web UI Guide)](how-to/zh/web_guide.md): 在可执行文件所在目录运行：
+
+## Reference (技术参考 / 机器事实唯一真相源)
+
+- [CLI Reference](reference/en/cli_reference.md): The ffc executable provides a powerful command-line interface (CLI) for both quick tasks and complex production pipeline...
+- [Configuration Guide](reference/en/configuration_guide.md): "Swap face A into video B"
+- [Hardware Guide](reference/en/hardware_guide.md): FaceFusionCpp is a high-performance application. This guide helps you choose the optimal configuration based on your har...
+- [命令行参考 (CLI Reference)](reference/zh/cli_reference.md): FaceFusionCpp 提供了一个强大的命令行界面 (CLI)，支持快速操作和复杂的批量处理任务。
+- [配置指南 (Configuration Guide)](reference/zh/configuration_guide.md): "将视频 B 中的人脸替换为 A"
+- [硬件指南 (Hardware Guide)](reference/zh/hardware_guide.md): FaceFusionCpp 是一个高性能应用。本指南帮助您根据硬件规格（特别是 GPU）选择最优配置方案。
+- [C++ 代码质量与工程化标准（FaceFusionCpp）](reference/zh/rules/C++_quality_standard.md): 本文档用于统一 FaceFusionCpp 项目的代码质量要求、工程化质量门槛，以及在评审/验收时可执行的评估维度。它不是“风格偏好合集”，而是可落地的质量合约：写代码的人按它交付，审代码的人按它验收。
+- [工作流程 (Workflow)](reference/zh/rules/workflow.md): 本工作流程支持两种路径：**评估路径**（需要代码质量评估）和**直接实现路径**（无需评估）。两者共享相同的计划、实现和验收阶段，评估仅作为可选前置步骤（**MAY**）。
+
+## Explanation (深度剖析 / 系统架构与 ADR 决策)
+
+- [Application Layer Architecture Design (V2.10)](explanation/en/architecture/design.md): FaceFusionCpp is a high-performance face swapping application and library designed for efficiency, modularity, and cross...
+- [Layered Architecture Implementation Details](explanation/en/architecture/layers.md): FaceFusionCpp follows a strict **4-layer unidirectional dependency** (Application → Services → Domain → Foundation):
+- [Web User Interface (Web UI) Design Specification](explanation/en/architecture/web_ui_design.md): FaceFusionCpp originally provided a CLI entry point. To deliver a first-class user experience comparable to modern creat...
+- [推理架构与算法性能评估报告](explanation/zh/analysis/architecture-performance-review.md): **评估对象**: FaceFusionCpp 的推理管理管道/流水线设计、任务调度并发模型、以及人脸处理算法实现。
+- [Vulkan 后端支持可行性评估报告](explanation/zh/analysis/vulkan-backend-feasibility-review.md): **触发来源**：远端 issue [#1 add support vulkan](https://github.com/CodingRookie98/FaceFusionCpp/issues/1)（2026-09-24 由外部用户 Mar...
+- [Web UI 设计文档（webuidesign.md）M1-M4 完成度对抗性复核报告](explanation/zh/analysis/web-ui-design-completion-review.md): **复核对象**: [web_ui_design.md](../architecture/web_ui_design.md)（V0.3.2）及对应的 C++ 后端与 Web 前端实现。
+- [设计附录 (Design Appendix)](explanation/zh/architecture/design-appendix.md): 为确保集成测试的一致性与可重复性，项目提供以下标准测试素材：
+- [配置体系设计 (Configuration Design)](explanation/zh/architecture/design-configuration.md): "Face swap and enhancement pipeline"
+- [工程化约束与最佳实践 (Engineering Constraints)](explanation/zh/architecture/design-engineering.md): 为确保代码达到工业级交付标准，必须严格遵守以下工程规范。
+- [接口与构建规范 (Interfaces & Build Specification)](explanation/zh/architecture/design-interfaces.md): *   **单一事实来源 (Single Source of Truth)**: 必须使用 `CMakePresets.json` 定义所有构建预设 (Presets)，禁止在脚本中硬编码编译器标志。
+- [核心业务处理逻辑 (Core Business Logic)](explanation/zh/architecture/design-pipeline.md): 系统采用 **AI 核心与图像编排分离 (Core-Orchestration Decoupling)** 的设计原则。
+- [应用层架构设计说明书 (Application Layer Architecture Design Specification)](explanation/zh/architecture/design.md): 本文档旨在规范 **FaceFusionCpp** 项目应用层 (Application Layer) 的架构设计、配置管理规范及核心业务流程。作为应用层开发的最高指导原则，本文档明确了静态环境与动态作业的边界，规定了工程化实现的约束条件，...
+- [分层架构实现细节 (Layered Architecture Implementation)](explanation/zh/architecture/layers.md): FaceFusionCpp 采用严格的 **4 层单向依赖**（Application → Services → Domain → Foundation）：
+- [Web 界面（Web UI）设计规格](explanation/zh/architecture/web_ui_design.md): FaceFusionCpp 提供了 CLI 与基于 Drogon 的 Web 服务入口。前期 M1-M4 阶段验证了任务生命周期闭环、排队调度与人脸检测 API。为了提供媲美专业数字创意软件（如 DaVinci、Figma、ComfyUI）...
+- [编译器选型技术决策记录 (Compiler Selection ADR)](explanation/zh/decisions/compiler_selection.md): 项目 faceFusionCpp 是一个重度依赖 C++20 Modules 的高性能人脸处理管线，当前使用 LLVM/Clang 工具链。随着 GCC 16 发布（默认 C++20 标准）和 Clang 22 发布（最新稳定版），需要评估...
+
+## Project Governance (工程演进 / 发布日志与待办)
+
+- [待办与技术债汇总 (Backlog)](project/backlog.md)
+- [版本变更日志索引 (Changelog Index)](project/changelog.md): 本项目的版本发布日志维护在仓库根目录 [CHANGELOG.md](../../CHANGELOG.md) —— 该文件由 `.github/workflows/release.yml` 在打 Tag 时自动提取正文用于生成 GitHub ...
+- [实施计划：文档治理 Diátaxis 标准化迁移](project/plans/docs-governance/IMPLEMENTATION_PLAN.md): 用户要求按 `doc-governance` 技能（`.agents/skills/doc-governance/`）对本项目知识库执行**严格治理**。该技能提供 Diátaxis 四象限拓扑、RFC 孵化流转、Docs-as-Code ...
+- [性能优化 P0 批次 实施计划](project/plans/perf-p0/IMPLEMENTATION_PLAN.md): *   [x] 我已阅读 [AGENTS.md](../../../../AGENTS.md) 中的 C++20 开发规范。
+- [C++ 任务: domain 服务跨视频复用（消除每视频 ONNX 重解析）](project/plans/perf-p0/task/C++_task_domain_service_reuse.md): 消除 `PipelineRunner::AddProcessorsToPipeline()` 每视频/每批次重建 swapper/enhancer/restorer 并重新解析 ONNX 初始化器的浪费，改为任务级缓存复用。
+- [C++ 任务: 视频路径禁用 FaceStore 整帧哈希](project/plans/perf-p0/task/C++_task_face_store_cache_disable.md): 为 `FaceAnalyser` 增加面缓存开关，视频处理路径关闭后不再执行整帧 FNV1a 哈希（消除每帧 2 次全帧哈希的纯浪费），图像路径保留缓存能力。
+- [C++ 任务: InSwapper embedding 变换任务级缓存](project/plans/perf-p0/task/C++_task_inswapper_embedding_cache.md): 缓存 InSwapper 的 embedding→初始变换结果（O(n²) 矩阵向量乘），同一 `source_embedding` 在任务内恒定 → 每帧/每脸省 262,144 次乘加。
+- [C++ 任务: SessionPool 容量修正（maxentries 3→10）](project/plans/perf-p0/task/C++_task_session_pool_capacity.md): 将 `SessionPool::PoolConfig.max_entries` 默认值 3→10，消除单任务（换脸+增强+分割 = 6 session > 3）LRU 驱逐/重建（显存抖动 + TRT 引擎重载秒级延迟）。
+- [性能优化 P1 批次（第一批）实施计划](project/plans/perf-p1a/IMPLEMENTATION_PLAN.md): *   [x] 我已阅读 [AGENTS.md](../../../../AGENTS.md) 中的 C++20 开发规范。
+- [C++ 任务: GPU 并发信号量闸门（maxconcurrentgputasks）](project/plans/perf-p1a/task/C++_task_gpu_concurrency_gate.md): 实现 `PipelineConfig.max_concurrent_gpu_tasks`（已定义默认 2，从未使用）：Pipeline worker_loop 用 `std::counting_semaphore` 限制并发处理帧数，消除多...
+- [C++ 任务: session key 加入模型文件指纹](project/plans/perf-p1a/task/C++_task_session_key_fingerprint.md): `InferenceSessionRegistry::generate_key` 追加模型文件 `size + last_write_time`，解决模型热更新（同路径覆盖）后命中旧 session、新权重不生效的问题。
+- [C++ 任务: SessionPool TTL 惰性清理](project/plans/perf-p1a/task/C++_task_session_ttl_lazy_cleanup.md): 让 `SessionPool` 的 TTL 过期清理真正生效：`get_or_create` 周期（30s）惰性触发清理，替代当前无调度者的 `cleanup_expired()`。
+- [C++ 任务: Strict 模式 queue 上限放宽](project/plans/perf-p1a/task/C++_task_strict_queue_capacity.md): Strict 内存模式下 Pipeline 帧队列上限从 4 放宽到 16，缓解 reader 频繁阻塞导致的 GPU 空闲窗口。
+- [性能优化 P1 批次（第二批）实施计划](project/plans/perf-p1b/IMPLEMENTATION_PLAN.md): *   [x] 我已阅读 [AGENTS.md](../../../../AGENTS.md) 中的 C++20 开发规范。
+- [C++ 任务: mask 链路接线 + 共享（P1-2 方案 B）](project/plans/perf-p1b/task/C++_task_mask_chain_wiring.md): 接通 Box/Occlusion/Region mask 链路：config → FaceAnalysisProcessor 计算（512 参考尺度）→ FrameData 共享 → 两个 adapter 缩放复用。默认 Box 保底，Oc...
+- [C++ 任务: SessionPool 池锁重构（factory 移出锁）](project/plans/perf-p1b/task/C++_task_session_pool_lock.md): 消除 `SessionPool::get_or_create` 持池锁调用 factory 的问题（TRT 引擎加载秒级阻塞全局 session 操作），改为 factory 在锁外执行（double-check + per-key 在建标...
+- [C++ 任务: Strict 模式 checkpoint 周期保存](project/plans/perf-p1b/task/C++_task_strict_checkpoint_throttle.md): Strict 内存模式（默认路径）的 checkpoint 保存改为每 100 帧一次，对齐普通路径（`runner_video.cpp:277`），消除 resume 开启时每帧磁盘 IO。
+- [C++ 任务: Web 集成 flaky 修复（WS 超时放宽）](project/plans/perf-p1b/task/C++_task_web_ws_flaky.md): 消除 Web 集成测试的随机 flaky：`web_ws_test.cpp` WS 读取超时 3s 在长跑负载下不足（消息延迟），放宽至 10s。
+- [性能优化 P2 小项 实施计划](project/plans/perf-p2minor/IMPLEMENTATION_PLAN.md): *   [x] 我已阅读 [AGENTS.md](../../../../AGENTS.md) 中的 C++20 开发规范。
+- [Web 任务持久化与超时机制 实施计划](project/plans/web-robustness/IMPLEMENTATION_PLAN.md): *   [x] 我已阅读 [AGENTS.md](../../../../AGENTS.md) 中的 C++20 开发规范。
+- [C++ 任务: TaskConfig/TaskEntry JSON 序列化](project/plans/web-robustness/task/C++_task_config_serialize.md): 实现 config 层 `TaskConfig` 与 app.web 层 `TaskEntry` 的 JSON 序列化/反序列化，为任务持久化提供基础能力。
+- [C++ 任务: 配置接线（WebConfig + parser + appcli）](project/plans/web-robustness/task/C++_task_config_wiring.md): 将 `persist_dir` 与 `max_execution_seconds` 接入配置系统与 CLI 启动链路，使持久化/超时可通过 `config/app.yaml` 配置。
+- [C++ 任务: TaskManager 任务持久化集成](project/plans/web-robustness/task/C++_task_persistence.md): TaskManager 集成任务持久化：submit 落盘 JSON 快照、状态迁移更新快照、构造时从 `persist_dir` 恢复任务。
+- [C++ 任务: TaskManager 任务超时机制](project/plans/web-robustness/task/C++_task_timeout.md): 为运行中的任务增加超时检测：超过 `max_execution_seconds` 后自动取消并标记 failed，保留已产出部分帧。
+- [产品规划路线图 (Roadmap)](project/roadmap.md)
+
+## Other Documentation (其他文档)
+
+- [C++ Quality Standards & Development Checklist](archived/quality.md): Before submitting a PR, ensure:
+- [C++ 代码质量评估报告](templates/C++_evaluation_template.md): <!-- AI_CONTEXT
+- [{计划名称} 实施计划](templates/C++_plan_template.md): <!-- AI_CONTEXT
+- [{任务名称} 实施任务单](templates/C++_task_template.md): <!-- AI_CONTEXT

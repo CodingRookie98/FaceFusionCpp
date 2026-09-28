@@ -66,19 +66,19 @@
 ./facefusion_cpp --task_config config/task_config.yaml
 ```
 
-*如需根据您的系统从源码编译，请参阅[源码构建指南](docs/dev/zh/guides/setup.md)。*
+*如需根据您的系统从源码编译，请参阅[源码构建指南](docs/how-to/zh/setup.md)。*
 
 ## 📖 文档中心
 
 查阅我们详实精美的官方文档，掌握 FaceFusionCpp 的全部潜能：
 
-- **[快速开始指南](docs/user/zh/getting_started.md)**：包含安装说明、依赖检查与入门 Demo。
-- **[完整用户手册](docs/user/zh/user_guide.md)**：深入剖析各类功能模块的组合使用技巧。
-- **[CLI 参数参考](docs/user/zh/cli_reference.md)**：命令行参数的详细检索字典。
-- **[核心配置指南](docs/user/zh/configuration_guide.md)**：教你玩转 `app_config.yaml` 和 `task_config.yaml` 进阶设定。
-- **[硬件性能指南](docs/user/zh/hardware_guide.md)**：不同硬件的兼容与算力最大化兵法。
-- **[常见问题 (FAQ)](docs/user/zh/faq.md)**：遇到报错怎么办？来这里寻找答案。
-- **[开发者中心](docs/dev/zh/architecture/design.md)**：如果你想参与贡献代码或了解架构，此处必读。
+- **[快速开始指南](docs/tutorials/zh/getting_started.md)**：包含安装说明、依赖检查与入门 Demo。
+- **[完整用户手册](docs/how-to/zh/user_guide.md)**：深入剖析各类功能模块的组合使用技巧。
+- **[CLI 参数参考](docs/reference/zh/cli_reference.md)**：命令行参数的详细检索字典。
+- **[核心配置指南](docs/reference/zh/configuration_guide.md)**：教你玩转 `app_config.yaml` 和 `task_config.yaml` 进阶设定。
+- **[硬件性能指南](docs/reference/zh/hardware_guide.md)**：不同硬件的兼容与算力最大化兵法。
+- **[常见问题 (FAQ)](docs/how-to/zh/faq.md)**：遇到报错怎么办？来这里寻找答案。
+- **[开发者中心](docs/explanation/zh/architecture/design.md)**：如果你想参与贡献代码或了解架构，此处必读。
 
 ## 🙏 鸣谢
 

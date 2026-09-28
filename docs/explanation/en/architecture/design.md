@@ -1,0 +1,89 @@
+# Application Layer Architecture Design (V2.10)
+
+> **Document Control**
+> - **Document ID**: FFC-DEV-EN-ARCH-DESIGN-2026
+> - **Version**: V2.10
+> - **Status**: Official
+> - **Authority**: Normative
+> - **Owner**: 王辉
+> - **Reviewer**: 王辉
+> - **Last Updated**: 2026-08-14
+
+## Revision History
+
+| Version | Date | Author | Reviewer | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| V2.8 | 2026-02-05 | ArchTeam | - | Synced with zh design.md V2.8 |
+| **V2.9** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
+| **V2.10** | 2026-08-14 | AI Agent | 王辉 | Fixed layering references per layers_doc_assessment.md: 5-layer → actual 4-layer (removed fictitious Platform layer); `platform.fs` → foundation infrastructure file_system. |
+
+
+## 1. Design Philosophy
+
+FaceFusionCpp is a high-performance face swapping application and library designed for efficiency, modularity, and cross-platform compatibility.
+
+### 1.1 Core Principles
+- **Performance First**: Native C++ implementation with TensorRT/CUDA acceleration.
+- **Asynchronous Pipeline**: Producer-consumer model with backpressure management.
+- **Strict Layering**: 4-layer architecture with unidirectional dependencies.
+- **Developer Friendly**: Unified Python build script and clear documentation.
+
+---
+
+## 2. Configuration System
+
+The system uses a hierarchical configuration approach using YAML for persistence.
+
+### 2.1 App Configuration (`config/app_config.yaml`)
+Global settings that persist across different tasks:
+- `log_level`: (DEBUG, INFO, WARN, ERROR)
+- `model_path`: Base directory for AI models.
+- `gpu_id`: Target NVIDIA GPU for execution.
+
+### 2.2 Task Configuration (`config/task_config.yaml`)
+Specific to a single execution run:
+- **IO**: Input/Output paths.
+- **Pipeline**: List of processors (e.g., `face_swapper`, `face_enhancer`).
+- **Memory Strategy**: `strict` (low VRAM) or `tolerant` (high performance).
+
+---
+
+## 3. Core Architecture
+
+### 3.1 4-Layer Dependency Rule
+`Application -> Services -> Domain -> Foundation`
+Refer to [Architecture Layers](layers.md) for implementation details.
+
+### 3.2 Pipeline Model
+Implemented as a `std::queue` based producer-consumer system with:
+- **Parallel Decoding**: FFmpeg threads decoding frames into a pool.
+- **Inference Batching**: Grouping frames for optimal TensorRT throughput.
+- **Backpressure**: Semaphore-based capping of the frame queue to prevent OOM.
+
+---
+
+## 4. Engineering Constraints
+
+### 4.1 Path Resolution
+All internal paths are resolved relative to `FACEFUSION_HOME` using the `file_system` module in `src/foundation/infrastructure/` to ensure portability between Windows (UNC paths) and Linux.
+
+### 4.2 Resource Management (RAII)
+- No raw `new`/`delete`.
+- Smart pointers for inference engines.
+- `std::unique_ptr` for PIMPL implementations to hide third-party header noise.
+
+---
+
+## 5. Metrics & Diagnostics
+
+The system generates detailed performance reports in JSON format upon task completion:
+- **Throughput**: Mean FPS and P99 latency.
+- **Hardware**: Peak VRAM usage and CPU utilization.
+- **Status**: Per-processor execution breakdown.
+
+---
+
+## 6. Roadmap
+- **ABI Stable Plugins**: Dynamic loading of external processors.
+- **REST API Subsystem**: Decoupling the CLI from the backend for server usage.
+- **Advanced Batching**: Dynamic batch size adjustment based on VRAM availability.
