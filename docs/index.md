@@ -113,6 +113,11 @@ docs/
 | [architecture-performance-review.md](./explanation/zh/analysis/architecture-performance-review.md) | 推理架构与算法性能评估报告 |
 | [vulkan-backend-feasibility-review.md](./explanation/zh/analysis/vulkan-backend-feasibility-review.md) | Vulkan 后端支持可行性评估报告 |
 | [web-ui-design-completion-review.md](./explanation/zh/analysis/web-ui-design-completion-review.md) | Web UI 设计文档（web_ui_design.md）M1-M4 完成度对抗性复核报告 |
+| [design-appendix.md](./explanation/zh/architecture/design-appendix.md) | 设计附录 (Design Appendix) |
+| [design-configuration.md](./explanation/zh/architecture/design-configuration.md) | 配置体系设计 (Configuration Design) |
+| [design-engineering.md](./explanation/zh/architecture/design-engineering.md) | 工程化约束与最佳实践 (Engineering Constraints) |
+| [design-interfaces.md](./explanation/zh/architecture/design-interfaces.md) | 接口与构建规范 (Interfaces & Build Specification) |
+| [design-pipeline.md](./explanation/zh/architecture/design-pipeline.md) | 核心业务处理逻辑 (Core Business Logic) |
 | [design.md](./explanation/zh/architecture/design.md) | 应用层架构设计说明书 (Application Layer Architecture Design Specification) |
 | [layers.md](./explanation/zh/architecture/layers.md) | 分层架构实现细节 (Layered Architecture Implementation) |
 | [web_ui_design.md](./explanation/zh/architecture/web_ui_design.md) | Web 界面（Web UI）设计规格 |

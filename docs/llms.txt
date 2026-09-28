@@ -55,7 +55,12 @@
 - [推理架构与算法性能评估报告](explanation/zh/analysis/architecture-performance-review.md): **评估对象**: FaceFusionCpp 的推理管理管道/流水线设计、任务调度并发模型、以及人脸处理算法实现。
 - [Vulkan 后端支持可行性评估报告](explanation/zh/analysis/vulkan-backend-feasibility-review.md): **触发来源**：远端 issue [#1 add support vulkan](https://github.com/CodingRookie98/FaceFusionCpp/issues/1)（2026-09-24 由外部用户 Mar...
 - [Web UI 设计文档（webuidesign.md）M1-M4 完成度对抗性复核报告](explanation/zh/analysis/web-ui-design-completion-review.md): **复核对象**: [web_ui_design.md](../architecture/web_ui_design.md)（V0.3.2）及对应的 C++ 后端与 Web 前端实现。
-- [应用层架构设计说明书 (Application Layer Architecture Design Specification)](explanation/zh/architecture/design.md): "Face swap and enhancement pipeline"
+- [设计附录 (Design Appendix)](explanation/zh/architecture/design-appendix.md): 为确保集成测试的一致性与可重复性，项目提供以下标准测试素材：
+- [配置体系设计 (Configuration Design)](explanation/zh/architecture/design-configuration.md): "Face swap and enhancement pipeline"
+- [工程化约束与最佳实践 (Engineering Constraints)](explanation/zh/architecture/design-engineering.md): 为确保代码达到工业级交付标准，必须严格遵守以下工程规范。
+- [接口与构建规范 (Interfaces & Build Specification)](explanation/zh/architecture/design-interfaces.md): *   **单一事实来源 (Single Source of Truth)**: 必须使用 `CMakePresets.json` 定义所有构建预设 (Presets)，禁止在脚本中硬编码编译器标志。
+- [核心业务处理逻辑 (Core Business Logic)](explanation/zh/architecture/design-pipeline.md): 系统采用 **AI 核心与图像编排分离 (Core-Orchestration Decoupling)** 的设计原则。
+- [应用层架构设计说明书 (Application Layer Architecture Design Specification)](explanation/zh/architecture/design.md): 本文档旨在规范 **FaceFusionCpp** 项目应用层 (Application Layer) 的架构设计、配置管理规范及核心业务流程。作为应用层开发的最高指导原则，本文档明确了静态环境与动态作业的边界，规定了工程化实现的约束条件，...
 - [分层架构实现细节 (Layered Architecture Implementation)](explanation/zh/architecture/layers.md): FaceFusionCpp 采用严格的 **4 层单向依赖**（Application → Services → Domain → Foundation）：
 - [Web 界面（Web UI）设计规格](explanation/zh/architecture/web_ui_design.md): FaceFusionCpp 提供了 CLI 与基于 Drogon 的 Web 服务入口。前期 M1-M4 阶段验证了任务生命周期闭环、排队调度与人脸检测 API。为了提供媲美专业数字创意软件（如 DaVinci、Figma、ComfyUI）...
 - [编译器选型技术决策记录 (Compiler Selection ADR)](explanation/zh/decisions/compiler_selection.md): 项目 faceFusionCpp 是一个重度依赖 C++20 Modules 的高性能人脸处理管线，当前使用 LLVM/Clang 工具链。随着 GCC 16 发布（默认 C++20 标准）和 Clang 22 发布（最新稳定版），需要评估...

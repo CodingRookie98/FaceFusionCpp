@@ -2,7 +2,7 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-PROJECT-BACKLOG-2026
-> - **当前版本 (Version)**: V1.0.0
+> - **当前版本 (Version)**: V1.1.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P3 闭环 BL-4（design.md 拆分）；BL-3 来源路径随 Diátaxis 迁移更新。 |
 | **V1.0.0** | 2026-09-28 | AI Agent | 王辉 | 建立待办汇总，收录 Vulkan 评估风险项、配置未接线项与文档治理遗留项。 |
 
 ---
