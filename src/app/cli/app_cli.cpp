@@ -18,6 +18,7 @@ module app.cli;
 import config.parser;
 import config.merger;
 import config.validator;
+import config.inference_options;
 import services.pipeline.runner;
 import services.pipeline.shutdown;
 import foundation.infrastructure.logger;
@@ -346,8 +347,7 @@ int App::run_web_mode(const std::string& host, uint16_t port, const std::string&
 
             auto model_repo = domain::ai::model_repository::ModelRepository::get_instance();
             domain::face::analyser::Options opts;
-            opts.inference_session_options =
-                foundation::ai::inference_session::Options::with_best_providers();
+            opts.inference_session_options = config::make_inference_options(app_config.inference);
             opts.model_paths.face_detector_yolo =
                 model_repo->ensure_model(app_config.default_models.face_detector);
             opts.model_paths.face_recognizer_arcface =

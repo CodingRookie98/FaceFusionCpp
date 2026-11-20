@@ -33,6 +33,7 @@ import foundation.ai.inference_session;
 import foundation.media.ffmpeg;
 import foundation.infrastructure.logger;
 import foundation.infrastructure.scoped_timer;
+import config.inference_options;
 
 import services.pipeline.processors.face_analysis;
 import services.pipeline.metrics;
@@ -85,7 +86,7 @@ struct PipelineRunner::Impl {
     explicit Impl(const config::AppConfig& app_config) :
         m_app_config(app_config), m_running(false), m_cancelled(false) {
         m_model_repo = domain::ai::model_repository::ModelRepository::get_instance();
-        m_inference_options = Options::with_best_providers();
+        m_inference_options = config::make_inference_options(app_config.inference);
 
         // Ensure builtin adapters are registered
         domain::pipeline::register_builtin_adapters();

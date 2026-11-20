@@ -16,7 +16,12 @@ target_sources(config_core
             task_config.ixx
             config_validator.ixx
             config_merger.ixx
+            inference_options.ixx
 )
+
+# Inference provider resolution depends on the ONNX Runtime session contract
+# (Foundation layer, legitimate App -> Foundation dependency).
+target_link_libraries(config_core PUBLIC foundation_ai)
 
 # Parser subdirectory
 add_subdirectory(parser)
