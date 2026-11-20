@@ -69,7 +69,11 @@ TaskStatus WaitForTerminal(TaskManager& mgr, const std::string& id,
     auto deadline = std::chrono::steady_clock::now() + timeout;
     while (std::chrono::steady_clock::now() < deadline) {
         auto entry = mgr.get(id);
-        if (entry && entry->status != TaskStatus::Queued) { return entry->status; }
+        if (entry
+            && (entry->status == TaskStatus::Done || entry->status == TaskStatus::Failed
+                || entry->status == TaskStatus::Cancelled)) {
+            return entry->status;
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     return TaskStatus::Queued;

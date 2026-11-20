@@ -57,13 +57,17 @@ TaskConfig MakeConfig() {
     return cfg;
 }
 
-/// Poll until the task leaves Queued or timeout (returns current status)
+/// Poll until the task reaches a terminal status (Done/Failed/Cancelled), else timeout
 TaskStatus WaitForTerminal(TaskManager& mgr, const std::string& id,
                            std::chrono::milliseconds timeout = std::chrono::seconds(5)) {
     auto deadline = std::chrono::steady_clock::now() + timeout;
     while (std::chrono::steady_clock::now() < deadline) {
         auto entry = mgr.get(id);
-        if (entry && entry->status != TaskStatus::Queued) { return entry->status; }
+        if (entry
+            && (entry->status == TaskStatus::Done || entry->status == TaskStatus::Failed
+                || entry->status == TaskStatus::Cancelled)) {
+            return entry->status;
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     return TaskStatus::Queued;
