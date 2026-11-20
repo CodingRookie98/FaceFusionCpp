@@ -1,25 +1,25 @@
 # FaceFusionCpp 文档索引 (Documentation Index)
 
-本索引是项目文档知识库的全局导航入口。所有存放在 `docs/` 目录下的文档（含子目录）均在此登记，任何新增、删除、移动或重命名操作必须同步更新本索引。
+本索引是项目文档知识库的全局导航入口，按 **Diátaxis 六象限**组织。任何新增、删除、移动或重命名操作必须同步更新本索引。
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DOC-INDEX-2026
-> **当前版本 (Version)**: V1.1.1
+> - **当前版本 (Version)**: V2.2.0
 > **状态 (Status)**: 正式 (Official)
 > **权威性 (Authority)**: 规范 (Normative)
 > **所有者 (Owner)**: 王辉
 > **审核人 (Reviewer)**: 王辉
-> **最后更新 (Last Updated)**: 2026-08-14
+> **最后更新 (Last Updated)**: 2026-11-20
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
-| **V1.1.3** | 2026-08-14 | AI Agent | 王辉 | 清理已实施完成的评估/计划文档：删除 docs/dev/evaluation、docs/dev/plan、docs/dev/zh/evaluation、docs/superpowers 全部文档及空目录，同步移除索引登记。 |
-| **V1.1.2** | 2026-08-14 | AI Agent | 王辉 | 登记新增评估文档 layers_doc_assessment.md（分层架构文档一致性评估报告）。 |
-| **V1.1.1** | 2026-08-13 | AI Agent | 王辉 | 登记新增评估文档 design_doc_assessment.md（功能设计文档完整性评估报告）。 |
-| **V1.1.0** | 2026-08-13 | AI Agent | 王辉 | 合并 dev 分支后更新索引：删除 quality.md（并入 C++_quality_standard.md），新增 evaluation/plan/templates/superpowers/compiler_selection 等 18 篇文档。 |
-| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范创建全局索引，收录全部 35 篇文档；修复全仓断链并统一文档目录结构。 |
+| **V2.2.0** | 2026-11-20 | AI Agent | 王辉 | ADR 重编号：`decisions/compiler_selection.md` → `decisions/0001-compiler-selection.md`（BL-6），索引条目与 llms.txt 同步。 |
+| **V2.1.0** | 2026-11-20 | AI Agent | 王辉 | 登记新增计划 [provider-wiring](./project/plans/provider-wiring/IMPLEMENTATION_PLAN.md)（BL-2/BL-3 闭环），工程文档增至 26 篇。 |
+| **V2.0.0** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P2 完成：索引按 Diátaxis 六象限重构，全量登记 73 篇文档；原「用户文档/开发文档」双语分区废止，迁移映射见 [docs-governance 计划](./project/plans/docs-governance/IMPLEMENTATION_PLAN.md)。 |
+| **V1.2.8** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P1 立骨架：登记 GOVERNANCE.md、llms.txt、project 与 proposals。 |
+| **V1.2.7** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P0 自愈：断链清零、控制头全量合规、孤儿文档收录。 |
 
 > 仅保留最近 5 条记录，更早的历史可通过 `git log --oneline docs/index.md` 查阅。
 
@@ -27,129 +27,165 @@
 
 ## 📁 文档目录拓扑
 
-```
+```text
 docs/
-├── index.md                    # 本索引
-├── user/                       # 用户文档（面向终端用户）
-│   ├── zh/                     #   中文
-│   └── en/                     #   英文
-└── dev/                        # 开发文档（面向开发者与 AI Agent）
-    ├── zh/                     #   中文
-    │   ├── architecture/       #     架构核心
-    │   ├── process/            #     流程军规
-    │   ├── guides/             #     构建与环境指南
-    │   └── troubleshooting/    #     疑难杂症
-    │       └── issues/         #       具体问题记录
-    └── en/                     #   英文（结构与 zh 对齐，部分文档仅中文）
+├── index.md                 # 本索引（人类总入口）
+├── llms.txt                 # AI 智能体机器地图（自动生成）
+├── GOVERNANCE.md            # 知识库治理规程
+├── proposals/               # 💡 孵化层：RFC 提案
+├── tutorials/               # 🎓 教程象限
+├── how-to/                  # 🛠️ 操作指南象限
+├── reference/               # 📖 技术参考象限
+├── explanation/             # 💡 深度剖析象限
+├── project/                 # 🚀 工程演进与项目管理
+├── templates/               # 文档模板
+└── archived/                # 已废止文档
 ```
 
-## 📖 用户文档 (User Documentation)
-
-### 中文 (Chinese)
+## 🧭 知识库治理 (Governance)
 
 | 文档 | 说明 |
 | :--- | :--- |
-| [getting_started.md](./user/zh/getting_started.md) | 快速上手：环境初探与首次运行 |
-| [user_guide.md](./user/zh/user_guide.md) | 功能介绍与操作指南 |
-| [configuration_guide.md](./user/zh/configuration_guide.md) | 核心配置参数说明 (`app_config.yaml`, `task_config.yaml`) |
-| [cli_reference.md](./user/zh/cli_reference.md) | 命令行参数详解 |
-| [hardware_guide.md](./user/zh/hardware_guide.md) | 硬件性能优化建议 |
-| [faq.md](./user/zh/faq.md) | 常见问题解答 |
+| [GOVERNANCE.md](./GOVERNANCE.md) | 知识库治理规程：拓扑职责、控制头、链接规则、门禁与生命周期 |
+| [llms.txt](./llms.txt) | AI 智能体机器地图（由 `generate-llms-txt.py` 自动生成，勿手改） |
 
-### English
+## 🎓 教程 (Tutorials)
 
-| 文档 | 说明 |
+> 学习导向：新手从零到首次成功
+
+| 文档 | 标题 |
 | :--- | :--- |
-| [getting_started.md](./user/en/getting_started.md) | Quick start: setup and first run |
-| [user_guide.md](./user/en/user_guide.md) | Feature introduction and operation guide |
-| [configuration_guide.md](./user/en/configuration_guide.md) | Core configuration parameters (`app_config.yaml`, `task_config.yaml`) |
-| [cli_reference.md](./user/en/cli_reference.md) | Command-line arguments reference |
-| [hardware_guide.md](./user/en/hardware_guide.md) | Hardware performance optimization advice |
-| [faq.md](./user/en/faq.md) | Frequently Asked Questions |
+| [getting_started.md](./tutorials/en/getting_started.md) | Getting Started |
+| [getting_started.md](./tutorials/zh/getting_started.md) | 快速开始 (Getting Started) |
 
-## 🛠️ 开发文档 (Developer Documentation)
+## 🛠️ 操作指南 (How-To Guides)
 
-### 中文 (Chinese)
+> 任务导向：完成具体任务的步骤与排障手册
 
-**架构 (Architecture)**
-
-| 文档 | 说明 |
+| 文档 | 标题 |
 | :--- | :--- |
-| [design.md](./dev/zh/architecture/design.md) | 系统设计与原则（总纲） |
-| [layers.md](./dev/zh/architecture/layers.md) | 分层结构实现细节 |
+| [faq.md](./how-to/en/faq.md) | Frequently Asked Questions (FAQ) |
+| [setup.md](./how-to/en/setup.md) | Setup & Build Guide |
+| [README.md](./how-to/en/troubleshooting/README.md) | Troubleshooting Knowledge Base |
+| [cpp20_modules.md](./how-to/en/troubleshooting/issues/cpp20_modules.md) | Issue: C++20 Modules Not Supported (Compiler) |
+| [trt_myelin_crash.md](./how-to/en/troubleshooting/issues/trt_myelin_crash.md) | Issue: TensorRT Myelin Crash on Exit |
+| [video_timeout.md](./how-to/en/troubleshooting/issues/video_timeout.md) | Issue: Video Test Timeout (Strict Memory) |
+| [videowriter_dimensions.md](./how-to/en/troubleshooting/issues/videowriter_dimensions.md) | Issue: Invalid Frame Dimensions (VideoWriter) |
+| [user_guide.md](./how-to/en/user_guide.md) | User Guide |
+| [web_guide.md](./how-to/en/web_guide.md) | Web UI Guide |
+| [CI_CD_recommendations.md](./how-to/zh/CI_CD_recommendations.md) | CI/CD 开发与运行建议 |
+| [build.md](./how-to/zh/build.md) | 使用 `build.py` 脚本配置和构建 |
+| [faq.md](./how-to/zh/faq.md) | 常见问题解答 (FAQ) |
+| [setup.md](./how-to/zh/setup.md) | 环境搭建与构建指南 (Setup & Build Guide) |
+| [README.md](./how-to/zh/troubleshooting/README.md) | 故障排查知识库 (Troubleshooting Knowledge Base) |
+| [cpp20_modules.md](./how-to/zh/troubleshooting/issues/cpp20_modules.md) | Issue: C++20 Modules 不被支持 (Compiler Support) |
+| [trt_myelin_crash.md](./how-to/zh/troubleshooting/issues/trt_myelin_crash.md) | Issue: TensorRT Myelin 进程退出崩溃 (Process Exit Crash) |
+| [video_timeout.md](./how-to/zh/troubleshooting/issues/video_timeout.md) | Issue: 视频测试超时 (Strict Memory Timeout) |
+| [videowriter_dimensions.md](./how-to/zh/troubleshooting/issues/videowriter_dimensions.md) | Issue: VideoWriter 帧尺寸无效 (Invalid Frame Dimensions) |
+| [user_guide.md](./how-to/zh/user_guide.md) | 用户指南 (User Guide) |
+| [vcpkg_best_practice.md](./how-to/zh/vcpkg_best_practice.md) | vcpkg 最佳实践 (vcpkg Best Practice) |
+| [web_guide.md](./how-to/zh/web_guide.md) | Web 界面使用指南 (Web UI Guide) |
 
-**流程 (Process)**
+## 📖 技术参考 (Reference)
 
-| 文档 | 说明 |
+> 信息导向：配置项、CLI、规则等机械事实真相源
+
+| 文档 | 标题 |
 | :--- | :--- |
-| [workflow.md](./dev/zh/process/workflow.md) | 开发流水线 Checklist（必读） |
-| [C++_quality_standard.md](./dev/zh/process/C++_quality_standard.md) | C++ 代码规范与工程化标准（含原 quality.md 内容） |
-| [vcpkg_best_practice.md](./dev/zh/process/vcpkg_best_practice.md) | vcpkg 最佳实践 |
-| [CI_CD_recommendations.md](./dev/zh/process/CI_CD_recommendations.md) | CI/CD 开发与运行建议 |
+| [cli_reference.md](./reference/en/cli_reference.md) | CLI Reference |
+| [configuration_guide.md](./reference/en/configuration_guide.md) | Configuration Guide |
+| [hardware_guide.md](./reference/en/hardware_guide.md) | Hardware Guide |
+| [cli_reference.md](./reference/zh/cli_reference.md) | 命令行参考 (CLI Reference) |
+| [configuration_guide.md](./reference/zh/configuration_guide.md) | 配置指南 (Configuration Guide) |
+| [hardware_guide.md](./reference/zh/hardware_guide.md) | 硬件指南 (Hardware Guide) |
+| [C++_quality_standard.md](./reference/zh/rules/C++_quality_standard.md) | C++ 代码质量与工程化标准（FaceFusionCpp） |
+| [workflow.md](./reference/zh/rules/workflow.md) | 工作流程 (Workflow) |
 
-**指南 (Guides)**
+## 💡 深度剖析 (Explanation)
 
-| 文档 | 说明 |
+> 理解导向：架构设计、评估分析与决策记录
+
+| 文档 | 标题 |
 | :--- | :--- |
-| [setup.md](./dev/zh/guides/setup.md) | 技术构建环境搭建指南 |
-| [build.md](./dev/zh/guides/build.md) | 使用 `build.py` 脚本配置和构建 |
-| [compiler_selection.md](./dev/zh/guides/compiler_selection.md) | 编译器选型决策记录 (ADR) |
+| [design.md](./explanation/en/architecture/design.md) | Application Layer Architecture Design (V2.10) |
+| [layers.md](./explanation/en/architecture/layers.md) | Layered Architecture Implementation Details |
+| [web_ui_design.md](./explanation/en/architecture/web_ui_design.md) | Web User Interface (Web UI) Design Specification |
+| [architecture-performance-review.md](./explanation/zh/analysis/architecture-performance-review.md) | 推理架构与算法性能评估报告 |
+| [vulkan-backend-feasibility-review.md](./explanation/zh/analysis/vulkan-backend-feasibility-review.md) | Vulkan 后端支持可行性评估报告 |
+| [web-ui-design-completion-review.md](./explanation/zh/analysis/web-ui-design-completion-review.md) | Web UI 设计文档（web_ui_design.md）M1-M4 完成度对抗性复核报告 |
+| [design-appendix.md](./explanation/zh/architecture/design-appendix.md) | 设计附录 (Design Appendix) |
+| [design-configuration.md](./explanation/zh/architecture/design-configuration.md) | 配置体系设计 (Configuration Design) |
+| [design-engineering.md](./explanation/zh/architecture/design-engineering.md) | 工程化约束与最佳实践 (Engineering Constraints) |
+| [design-interfaces.md](./explanation/zh/architecture/design-interfaces.md) | 接口与构建规范 (Interfaces & Build Specification) |
+| [design-pipeline.md](./explanation/zh/architecture/design-pipeline.md) | 核心业务处理逻辑 (Core Business Logic) |
+| [design.md](./explanation/zh/architecture/design.md) | 应用层架构设计说明书 (Application Layer Architecture Design Specification) |
+| [layers.md](./explanation/zh/architecture/layers.md) | 分层架构实现细节 (Layered Architecture Implementation) |
+| [web_ui_design.md](./explanation/zh/architecture/web_ui_design.md) | Web 界面（Web UI）设计规格 |
+| [0001-compiler-selection.md](./explanation/zh/decisions/0001-compiler-selection.md) | ADR-0001: 编译器选型（保持 Clang 21，含决策矩阵） |
 
-**模板 (Templates)**
+## 💡 需求孵化 (Proposals / RFC)
 
-| 文档 | 说明 |
+> 尚未定案的提案集中对齐空间
+
+| 文档 | 标题 |
 | :--- | :--- |
-| [C++_evaluation_template.md](./dev/templates/C++_evaluation_template.md) | 评估文档模板 |
-| [C++_plan_template.md](./dev/templates/C++_plan_template.md) | 计划文档模板 |
-| [C++_task_template.md](./dev/templates/C++_task_template.md) | 任务文档模板 |
+| [README.md](./proposals/README.md) | 需求与设计孵化层 (Proposals / RFC) |
 
-**故障排查 (Troubleshooting)**
+## 🚀 工程演进 (Project)
 
-| 文档 | 说明 |
+> 路线图、待办、变更日志与历史计划归档
+
+| 文档 | 标题 |
 | :--- | :--- |
-| [README.md](./dev/zh/troubleshooting/README.md) | 疑难杂症分级检索索引 |
-| [issues/cpp20_modules.md](./dev/zh/troubleshooting/issues/cpp20_modules.md) | C++20 Modules 编译支持问题 |
-| [issues/trt_myelin_crash.md](./dev/zh/troubleshooting/issues/trt_myelin_crash.md) | TensorRT Myelin 进程退出崩溃 |
-| [issues/video_timeout.md](./dev/zh/troubleshooting/issues/video_timeout.md) | 视频测试超时（严格内存模式） |
-| [issues/videowriter_dimensions.md](./dev/zh/troubleshooting/issues/videowriter_dimensions.md) | VideoWriter 帧尺寸无效 |
+| [backlog.md](./project/backlog.md) | 待办与技术债汇总 (Backlog) |
+| [changelog.md](./project/changelog.md) | 版本变更日志索引 (Changelog Index) |
+| [IMPLEMENTATION_PLAN.md](./project/plans/docs-governance/IMPLEMENTATION_PLAN.md) | 实施计划：文档治理 Diátaxis 标准化迁移 |
+| [IMPLEMENTATION_PLAN.md](./project/plans/perf-p0/IMPLEMENTATION_PLAN.md) | 性能优化 P0 批次 实施计划 |
+| [C++_task_domain_service_reuse.md](./project/plans/perf-p0/task/C++_task_domain_service_reuse.md) | C++ 任务: domain 服务跨视频复用（消除每视频 ONNX 重解析） |
+| [C++_task_face_store_cache_disable.md](./project/plans/perf-p0/task/C++_task_face_store_cache_disable.md) | C++ 任务: 视频路径禁用 FaceStore 整帧哈希 |
+| [C++_task_inswapper_embedding_cache.md](./project/plans/perf-p0/task/C++_task_inswapper_embedding_cache.md) | C++ 任务: InSwapper embedding 变换任务级缓存 |
+| [C++_task_session_pool_capacity.md](./project/plans/perf-p0/task/C++_task_session_pool_capacity.md) | C++ 任务: SessionPool 容量修正（max_entries 3→10） |
+| [IMPLEMENTATION_PLAN.md](./project/plans/perf-p1a/IMPLEMENTATION_PLAN.md) | 性能优化 P1 批次（第一批）实施计划 |
+| [C++_task_gpu_concurrency_gate.md](./project/plans/perf-p1a/task/C++_task_gpu_concurrency_gate.md) | C++ 任务: GPU 并发信号量闸门（max_concurrent_gpu_tasks） |
+| [C++_task_session_key_fingerprint.md](./project/plans/perf-p1a/task/C++_task_session_key_fingerprint.md) | C++ 任务: session key 加入模型文件指纹 |
+| [C++_task_session_ttl_lazy_cleanup.md](./project/plans/perf-p1a/task/C++_task_session_ttl_lazy_cleanup.md) | C++ 任务: SessionPool TTL 惰性清理 |
+| [C++_task_strict_queue_capacity.md](./project/plans/perf-p1a/task/C++_task_strict_queue_capacity.md) | C++ 任务: Strict 模式 queue 上限放宽 |
+| [IMPLEMENTATION_PLAN.md](./project/plans/perf-p1b/IMPLEMENTATION_PLAN.md) | 性能优化 P1 批次（第二批）实施计划 |
+| [C++_task_mask_chain_wiring.md](./project/plans/perf-p1b/task/C++_task_mask_chain_wiring.md) | C++ 任务: mask 链路接线 + 共享（P1-2 方案 B） |
+| [C++_task_session_pool_lock.md](./project/plans/perf-p1b/task/C++_task_session_pool_lock.md) | C++ 任务: SessionPool 池锁重构（factory 移出锁） |
+| [C++_task_strict_checkpoint_throttle.md](./project/plans/perf-p1b/task/C++_task_strict_checkpoint_throttle.md) | C++ 任务: Strict 模式 checkpoint 周期保存 |
+| [C++_task_web_ws_flaky.md](./project/plans/perf-p1b/task/C++_task_web_ws_flaky.md) | C++ 任务: Web 集成 flaky 修复（WS 超时放宽） |
+| [IMPLEMENTATION_PLAN.md](./project/plans/perf-p2minor/IMPLEMENTATION_PLAN.md) | 性能优化 P2 小项 实施计划 |
+| [IMPLEMENTATION_PLAN.md](./project/plans/provider-wiring/IMPLEMENTATION_PLAN.md) | 推理 Provider 配置接线（BL-2 + BL-3）实施计划 |
+| [IMPLEMENTATION_PLAN.md](./project/plans/web-robustness/IMPLEMENTATION_PLAN.md) | Web 任务持久化与超时机制 实施计划 |
+| [C++_task_config_serialize.md](./project/plans/web-robustness/task/C++_task_config_serialize.md) | C++ 任务: TaskConfig/TaskEntry JSON 序列化 |
+| [C++_task_config_wiring.md](./project/plans/web-robustness/task/C++_task_config_wiring.md) | C++ 任务: 配置接线（WebConfig + parser + app_cli） |
+| [C++_task_persistence.md](./project/plans/web-robustness/task/C++_task_persistence.md) | C++ 任务: TaskManager 任务持久化集成 |
+| [C++_task_timeout.md](./project/plans/web-robustness/task/C++_task_timeout.md) | C++ 任务: TaskManager 任务超时机制 |
+| [roadmap.md](./project/roadmap.md) | 产品规划路线图 (Roadmap) |
 
-### English
+## 📄 文档模板 (Templates)
 
-**Architecture**
+> 按规范创建新文档的脚手架
 
-| 文档 | 说明 |
+| 文档 | 标题 |
 | :--- | :--- |
-| [design.md](./dev/en/architecture/design.md) | System design and principles (overview) |
-| [layers.md](./dev/en/architecture/layers.md) | Layered architecture implementation details |
+| [C++_plan_template.md](./templates/C++_plan_template.md) | {计划名称} 实施计划 |
+| [C++_task_template.md](./templates/C++_task_template.md) | {任务名称} 实施任务单 |
 
-**Process**
+## 📦 归档 (Archived)
 
-| 文档 | 说明 |
+> 已废止文档（保留可追溯性）
+
+| 文档 | 标题 |
 | :--- | :--- |
-| [quality.md](./dev/en/process/quality.md) | Quality standards and development checklist |
-
-> ℹ️ `workflow.md`、`C++_quality_standard.md`、`vcpkg_best_practice.md`、`CI_CD_recommendations.md` 目前仅提供中文版，参见 [中文索引](#中文-chinese)。
-
-**Guides**
-
-| 文档 | 说明 |
-| :--- | :--- |
-| [setup.md](./dev/en/guides/setup.md) | Environment setup and build guide |
-
-**Troubleshooting**
-
-| 文档 | 说明 |
-| :--- | :--- |
-| [README.md](./dev/en/troubleshooting/README.md) | Troubleshooting knowledge base index |
-| [issues/cpp20_modules.md](./dev/en/troubleshooting/issues/cpp20_modules.md) | C++20 Modules compiler support issue |
-| [issues/trt_myelin_crash.md](./dev/en/troubleshooting/issues/trt_myelin_crash.md) | TensorRT Myelin crash on exit |
-| [issues/video_timeout.md](./dev/en/troubleshooting/issues/video_timeout.md) | Video test timeout (strict memory) |
-| [issues/videowriter_dimensions.md](./dev/en/troubleshooting/issues/videowriter_dimensions.md) | Invalid frame dimensions (VideoWriter) |
-
----
+| [C++_evaluation_template.md](./archived/C++_evaluation_template.md) | C++ 代码质量评估报告模板（已废止归档） |
+| [quality-scoring-rubric.md](./archived/quality-scoring-rubric.md) | 代码质量评分标准（已废止归档） |
+| [quality.md](./archived/quality.md) | C++ Quality Standards & Development Checklist |
 
 ## 📐 治理规范
 
-- 文档治理规则详见根目录 [AGENTS.md](../AGENTS.md) 的「📝 文档维护规范 (Documentation Standards)」章节。
-- 所有文档必须包含「文档控制信息」与「修订历史记录」头部模块（修订历史最多保留最近 5 条）。
-- 内部交叉引用必须采用显式物理文件链接，显示文本保留 `.md` 后缀。
+- 治理规则与门禁详见 [GOVERNANCE.md](./GOVERNANCE.md)；
+- 所有文档必须包含「文档控制信息」与「修订历史记录」头部模块（修订历史最多保留最近 5 条）；
+- 内部交叉引用必须采用显式物理文件链接，显示文本保留 `.md` 后缀；
+- 新增/移动/删除文档后必须同步更新本索引与 [llms.txt](./llms.txt)。

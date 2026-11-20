@@ -77,12 +77,45 @@ def main():
     log("Running pre-commit checks...", "info")
 
     # Check required tools
-    clang_format = shutil.which("clang-format")
+    clang_format = None
+    llvm_path = os.environ.get("LLVM_PATH")
+    if llvm_path:
+        candidate = Path(llvm_path) / "bin" / "clang-format"
+        if sys.platform == "win32":
+            candidate = candidate.with_suffix(".exe")
+        if candidate.exists():
+            clang_format = str(candidate)
+
+    if not clang_format:
+        for version in range(21, 13, -1):
+            clang_format = shutil.which(f"clang-format-{version}")
+            if clang_format:
+                break
+
+    if not clang_format:
+        clang_format = shutil.which("clang-format")
+
     if not clang_format:
         log("Error: clang-format not found in PATH.", "error")
         sys.exit(1)
 
-    clang_tidy = shutil.which("clang-tidy")
+    clang_tidy = None
+    if llvm_path:
+        candidate = Path(llvm_path) / "bin" / "clang-tidy"
+        if sys.platform == "win32":
+            candidate = candidate.with_suffix(".exe")
+        if candidate.exists():
+            clang_tidy = str(candidate)
+
+    if not clang_tidy:
+        for version in range(21, 13, -1):
+            clang_tidy = shutil.which(f"clang-tidy-{version}")
+            if clang_tidy:
+                break
+
+    if not clang_tidy:
+        clang_tidy = shutil.which("clang-tidy")
+
     if not clang_tidy:
         log(
             "Warning: clang-tidy not found in PATH. Skipping static analysis.",

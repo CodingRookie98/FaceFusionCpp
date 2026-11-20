@@ -9,8 +9,8 @@ def find_executable() -> Optional[Path]:
     script_dir = Path(__file__).resolve().parent
     project_root = script_dir.parents[2]
     
-    candidates = list(project_root.glob("build/**/FaceFusionCpp")) + \
-                 list(project_root.glob("build/**/FaceFusionCpp.exe"))
+    candidates = list(project_root.glob("build/bin/*/ffc")) + \
+                 list(project_root.glob("build/bin/*/ffc.exe"))
                  
     candidates = [p for p in candidates if p.is_file()]
                  

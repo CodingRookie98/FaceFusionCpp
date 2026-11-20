@@ -11,6 +11,10 @@ module;
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <optional>
+#include <format>
+#include <filesystem>
+#include <system_error>
 
 module foundation.ai.inference_session_registry;
 
@@ -35,6 +39,18 @@ std::shared_ptr<InferenceSessionRegistry> InferenceSessionRegistry::get_instance
     return instance;
 }
 
+namespace {
+// 模型文件指纹：size + last_write_time；stat 失败返回 nullopt（省略指纹段）
+std::optional<std::string> file_fingerprint(const std::string& model_path) {
+    std::error_code ec;
+    const auto size = std::filesystem::file_size(model_path, ec);
+    if (ec) return std::nullopt;
+    const auto mtime = std::filesystem::last_write_time(model_path, ec);
+    if (ec) return std::nullopt;
+    return std::format("{}:{}", size, mtime.time_since_epoch().count());
+}
+} // namespace
+
 std::string InferenceSessionRegistry::generate_key(const std::string& model_path,
                                                    const Options& options) {
     std::stringstream ss;
@@ -49,6 +65,9 @@ std::string InferenceSessionRegistry::generate_key(const std::string& model_path
     ss << "|Dev:" << options.execution_device_id;
     ss << "|TRT:" << options.trt_max_workspace_size << "," << options.enable_tensorrt_embed_engine
        << "," << options.enable_tensorrt_cache;
+
+    // 文件指纹：模型文件更新（同路径覆盖）后 key 变化 → 热更新生效
+    if (auto fp = file_fingerprint(model_path)) { ss << "|File:" << *fp; }
 
     return ss.str();
 }

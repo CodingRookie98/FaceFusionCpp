@@ -9,6 +9,7 @@ module;
 
 #include <filesystem>
 #include <string>
+#include <nlohmann/json.hpp>
 
 export module config.parser;
 
@@ -122,5 +123,23 @@ export namespace config {
 /// LogRotation <-> string
 [[nodiscard]] Result<LogRotation> parse_log_rotation(const std::string& str);
 [[nodiscard]] std::string to_string(LogRotation value);
+
+// ============================================================================
+// TaskConfig JSON 序列化 API (用于任务持久化)
+// ============================================================================
+
+/**
+ * @brief Serialize a TaskConfig to JSON
+ * @param config Task configuration to serialize
+ * @return Result containing the JSON object on success
+ */
+[[nodiscard]] Result<nlohmann::json> SerializeTaskConfig(const TaskConfig& config);
+
+/**
+ * @brief Deserialize a TaskConfig from JSON
+ * @param json JSON object previously produced by SerializeTaskConfig
+ * @return Result containing the restored TaskConfig on success
+ */
+[[nodiscard]] Result<TaskConfig> DeserializeTaskConfig(const nlohmann::json& json);
 
 } // namespace config

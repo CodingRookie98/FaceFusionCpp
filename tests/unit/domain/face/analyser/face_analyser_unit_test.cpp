@@ -216,3 +216,66 @@ TEST_F(FaceAnalyserUnitTest, CompareFace) {
 
     EXPECT_TRUE(FaceAnalyser::compare_face(f1, f2, 0.5f));
 }
+
+// ---- Face cache toggle tests (T1: video path must skip full-frame hashing) ----
+
+namespace {
+DetectionResults MakeSingleDetection() {
+    DetectionResult det;
+    det.box = cv::Rect2f(10, 10, 100, 100);
+    det.score = 0.9f;
+    det.landmarks = {{10, 10}, {20, 20}, {30, 30}, {40, 40}, {50, 50}};
+    return {det};
+}
+} // namespace
+
+TEST_F(FaceAnalyserUnitTest, CacheDisabledSkipsFaceStoreAccess) {
+    auto store = std::make_shared<FaceStore>();
+    EXPECT_CALL(*mock_detector, detect(_)).WillOnce(Return(MakeSingleDetection()));
+
+    FaceAnalyser analyser(options, mock_detector, mock_landmarker, mock_recognizer, mock_classifier,
+                          store);
+    analyser.set_face_cache_enabled(false);
+
+    cv::Mat dummy_frame = cv::Mat::zeros(200, 200, CV_8UC3);
+    auto faces = analyser.get_many_faces(dummy_frame, FaceAnalysisType::Detection);
+
+    ASSERT_EQ(faces.size(), 1u);
+    EXPECT_FALSE(store->is_contains(dummy_frame));
+}
+
+TEST_F(FaceAnalyserUnitTest, CacheEnabledStoresFaces) {
+    auto store = std::make_shared<FaceStore>();
+    EXPECT_CALL(*mock_detector, detect(_)).WillOnce(Return(MakeSingleDetection()));
+
+    FaceAnalyser analyser(options, mock_detector, mock_landmarker, mock_recognizer, mock_classifier,
+                          store);
+
+    cv::Mat dummy_frame = cv::Mat::zeros(200, 200, CV_8UC3);
+    auto faces = analyser.get_many_faces(dummy_frame, FaceAnalysisType::Detection);
+
+    ASSERT_EQ(faces.size(), 1u);
+    EXPECT_TRUE(store->is_contains(dummy_frame));
+}
+
+TEST_F(FaceAnalyserUnitTest, CacheToggleAffectsBehavior) {
+    auto store = std::make_shared<FaceStore>();
+    EXPECT_CALL(*mock_detector, detect(_)).Times(2).WillRepeatedly(Return(MakeSingleDetection()));
+
+    FaceAnalyser analyser(options, mock_detector, mock_landmarker, mock_recognizer, mock_classifier,
+                          store);
+
+    cv::Mat dummy_frame = cv::Mat::zeros(200, 200, CV_8UC3);
+
+    // Disabled first: no store write
+    analyser.set_face_cache_enabled(false);
+    auto faces_off = analyser.get_many_faces(dummy_frame, FaceAnalysisType::Detection);
+    ASSERT_EQ(faces_off.size(), 1u);
+    EXPECT_FALSE(store->is_contains(dummy_frame));
+
+    // Enabled: store write
+    analyser.set_face_cache_enabled(true);
+    auto faces_on = analyser.get_many_faces(dummy_frame, FaceAnalysisType::Detection);
+    ASSERT_EQ(faces_on.size(), 1u);
+    EXPECT_TRUE(store->is_contains(dummy_frame));
+}

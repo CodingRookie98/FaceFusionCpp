@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.30)
-project(FaceFusionCpp
-        VERSION 0.34.1
+project(ffc
+        VERSION 0.34.2
         DESCRIPTION "This project is the C++ version of the open-source project FaceFusion."
 )
 
@@ -35,7 +35,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_link_options(-static-libgcc -static-libstdc++)
 endif ()
 
-set(app_facefusioncpp "FaceFusionCpp")
+set(app_facefusioncpp "ffc")
 add_executable(${app_facefusioncpp})
 if (LINUX)
     set_target_properties(${app_facefusioncpp} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
@@ -201,8 +201,8 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/README.md"
         COMPONENT "doc"
 )
 
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/config/app_config.yaml"
-        "${CMAKE_CURRENT_SOURCE_DIR}/config/task_config.yaml"
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/config/app.yaml"
+        "${CMAKE_CURRENT_SOURCE_DIR}/config/task.yaml"
         DESTINATION "config"
         COMPONENT "config"
 )

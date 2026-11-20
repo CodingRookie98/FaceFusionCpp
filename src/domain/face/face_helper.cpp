@@ -10,8 +10,11 @@ module;
 #include <foundation/infrastructure/opencv_workaround.hpp>
 #endif
 #include <opencv2/opencv.hpp>
+#include <cstdint>
+#include <cstring>
 #include <limits>
 #include <algorithm>
+#include <string>
 #include <numeric>
 #include <vector>
 #include <tuple>
@@ -452,6 +455,56 @@ cv::Mat apply_color_match(const cv::Mat& target_crop, const cv::Mat& swapped_cro
     cv::Mat result_bgr;
     cv::cvtColor(result_lab, result_bgr, cv::COLOR_Lab2BGR);
     return result_bgr;
+}
+
+std::vector<float> convert_fp16_raw_to_fp32(const std::string& raw_data) {
+    constexpr std::uint32_t sign_mask = 0x8000u;
+    constexpr std::uint32_t exp_mask = 0x7C00u;
+    constexpr std::uint32_t mant_mask = 0x03FFu;
+    constexpr std::uint32_t fp32_inf = 0x7F800000u;
+
+    // Raw data is assumed to be little-endian IEEE 754 half-precision (standard for ONNX).
+    const size_t count = raw_data.size() / sizeof(std::uint16_t);
+    std::vector<float> result;
+    result.reserve(count);
+    for (size_t i = 0; i < count; ++i) {
+        std::uint16_t half = 0;
+        std::memcpy(&half, raw_data.data() + i * sizeof(std::uint16_t), sizeof(std::uint16_t));
+
+        const std::uint32_t sign = static_cast<std::uint32_t>(half & sign_mask) << 16;
+        const std::uint32_t exponent = static_cast<std::uint32_t>(half) & exp_mask;
+        const std::uint32_t mantissa = static_cast<std::uint32_t>(half) & mant_mask;
+
+        std::uint32_t bits = 0;
+        if (exponent == exp_mask) {
+            // Infinity or NaN: propagate sign, mark exponent and shift the mantissa payload
+            bits = sign | fp32_inf | (mantissa << 13);
+        } else if (exponent == 0) {
+            if (mantissa == 0) {
+                bits = sign; // +/- 0.0
+            } else {
+                // Subnormal: normalize the mantissa to derive the FP32 exponent
+                std::uint32_t mant = mantissa;
+                int32_t exponent_bias = -14;
+                while ((mant & 0x0400u) == 0) {
+                    mant <<= 1;
+                    --exponent_bias;
+                }
+                mant &= 0x03FFu;
+                bits =
+                    sign | (static_cast<std::uint32_t>(exponent_bias + 127) << 23) | (mant << 13);
+            }
+        } else {
+            // Normal: FP16 exponent bias is 15, FP32 bias is 127
+            const std::uint32_t fp32_exponent = (exponent >> 10) + 112u;
+            bits = sign | (fp32_exponent << 23) | (mantissa << 13);
+        }
+
+        float value = 0.0f;
+        std::memcpy(&value, &bits, sizeof(value));
+        result.push_back(value);
+    }
+    return result;
 }
 
 } // namespace domain::face::helper

@@ -18,10 +18,10 @@
 **当工作流程被触发时（参见 META-RULES 第2条），在执行任何 [代码修改] 或 [重构任务] 之前，你必须执行以下动作：**
 
 1. 🛑 **HALT**：停止所有代码编写意图。
-2. 📖 **READ**：使用 `read` 工具读取 `docs/dev/zh/process/workflow.md`。
-3. ✅ **CHECK**：严格按照 `docs/dev/zh/process/workflow.md` 中的 Checklists 逐项执行（切分支 -> 写计划 -> 获批准 -> 编码）。
+2. 📖 **READ**：使用 `read` 工具读取 `docs/reference/zh/rules/workflow.md`。
+3. ✅ **CHECK**：严格按照 `docs/reference/zh/rules/workflow.md` 中的 Checklists 逐项执行（切分支 -> 写计划 -> 获批准 -> 编码）。
 
-> **违规警告**：在触发工作流程的情况下，未读取 `docs/dev/zh/process/workflow.md` 而直接修改代码将被视为严重违规。
+> **违规警告**：在触发工作流程的情况下，未读取 `docs/reference/zh/rules/workflow.md` 而直接修改代码将被视为严重违规。
 
 ## C++ 20 开发规范
 - **标准与模块**：强制 C++20。使用模块化（`.ixx`/`.cppm` 接口，`.cpp` 实现）替代传统头文件。
@@ -31,7 +31,7 @@
   - Release 模式仅用于最终发布验证
   - 二进制输出路径 (Debug): `build/bin/<preset>` (例如 Windows 下为 `build/bin/msvc-x64-debug`，Linux 下为 `build/bin/linux-x64-debug`)
   - **运行要求**：禁止在项目根目录直接运行程序。运行程序时，工作目录（`Cwd`）**必须**设置为可执行文件输出目录（如 `build/bin/<preset>`），以确保相对路径资源加载正确，防止重复下载资源以及 TensorRT 引擎重新构建。
-  - 🚨 **详细用法 (必读)**：`docs/dev/zh/guides/setup.md` —— **请务必阅读以避免环境配置错误**
+  - 🚨 **详细用法 (必读)**：`docs/how-to/zh/setup.md` —— **请务必阅读以避免环境配置错误**
 - **质量控制**：
   - 格式化：`python scripts/format_code.py`
   - 静态分析：`python scripts/run_clang_tidy.py` (Windows + MSVC 环境下跳过)
@@ -60,27 +60,38 @@
     - **`hotfix/*`**：生产紧急修复，基于 `master` 创建，完成后同时合并到 `master` 和 `dev`。命名：`hotfix/v{version}-{desc}`。
   - **日常开发流程**：基于 `dev` 新建 `feature/*` → 实现与测试 → 验收通过 → 合并回 `dev` 并删除分支。
 - **文档管理** (`docs/`)：
-  - **用户文档** (`docs/user/{en,zh}/`)：面向终端用户。
-    - `getting_started.md`：快速上手，环境初探。
-    - `user_guide.md`：功能介绍与操作指南。
-    - `configuration_guide.md`：**核心配置参数**说明 (`app_config.yaml`, `task_config.yaml`)。
-    - `cli_reference.md`：命令行参数详解。
-    - `hardware_guide.md`：硬件性能优化建议。
-  - **开发文档** (`docs/dev/{en,zh}/`)：面向开发者与 AI Agent。
-    - `architecture/`：**架构核心**。`design.md` (系统设计与原则)；`layers.md` (分层结构)。
-    - `process/`：**流程军规**。`workflow.md` (必读！开发流水线 Checklist)；`C++_quality_standard.md` (质量标准与代码规范，含原 quality.md 内容)。
-    - `guides/setup.md`：技术构建环境搭建指南。
-    - `troubleshooting/README.md`：疑难杂症的分级检索索引。
+  - 遵循 [GOVERNANCE.md](./docs/GOVERNANCE.md) 定义的 **Diátaxis 六象限**拓扑：
+    - **六象限**：`tutorials/`（教程）、`how-to/`（操作指南）、`reference/`（技术参考）、`explanation/`（深度剖析）、`proposals/`（提案孵化）、`project/`（工程演进）。
+    - **双语布局**：需要中英双份的象限采用 `<象限>/{zh,en}/` 子目录。
+    - **全局入口**：[index.md](./docs/index.md)（人类导航）与 [llms.txt](./docs/llms.txt)（AI 机器地图，自动生成）。
+    - **关键文档位置**：
+      - 架构设计：[design.md](./docs/explanation/zh/architecture/design.md)（总纲 + 子册）、[layers.md](./docs/explanation/zh/architecture/layers.md)（分层结构）
+      - 流程军规：[workflow.md](./docs/reference/zh/rules/workflow.md)（必读）、[C++_quality_standard.md](./docs/reference/zh/rules/C++_quality_standard.md)（质量标准）
+      - 构建指南：[setup.md](./docs/how-to/zh/setup.md)、[build.md](./docs/how-to/zh/build.md)
+      - 疑难排查：[troubleshooting/README.md](./docs/how-to/zh/troubleshooting/README.md)
+      - 评估报告：`docs/explanation/zh/analysis/`；技术决策：`docs/explanation/zh/decisions/`
+      - 实施计划：`docs/project/plans/{plan}/IMPLEMENTATION_PLAN.md`
 - **提交要求**：
   - 提交文档相关文件时跳过编译测试验证。
-  - 提交前必须通过 `python build.py --action test --test-label unit`。
-  - **测试职责划分**：智能体/AI 允许运行全部测试（单元测试、集成测试、端到端测试、基准测试），不限层级。长时间测试可采用后台执行，但提交代码前必须确认相关测试通过。
+  - **测试分层策略**（按变更类型选择测试层级；长时间测试一律后台执行）：
+
+    | 变更类型 | 单元测试 (unit) | 集成测试 (integration) | 端到端测试 (e2e) |
+    | :--- | :---: | :---: | :---: |
+    | 纯文档 / 配置示例（无 `.cpp`/`.ixx` 改动） | 跳过 | 跳过 | 跳过 |
+    | 单模块小型修复（< 20 行） | **MUST** | MAY（视影响面） | 跳过 |
+    | 新功能 / 跨模块跨层变更 | **MUST** | **MUST**（后台，10-40 分钟） | MAY |
+    | 发布准备（`release/*`）/ 重大架构变更 | **MUST** | **MUST** | **MUST** |
+
+  - 命令：`python build.py --action test --test-label unit|integration`；e2e 见 `tests/e2e/README.md`。
+  - 提交前必须确认**按上表应运行的层级**全部通过；跳过的层级须在提交说明中注明原因（如"单模块修复，集成测试跳过"）。
+  - **测试职责划分**：智能体/AI 允许运行全部测试（单元测试、集成测试、端到端测试、基准测试），不限层级。
 
 ## 📝 文档维护规范 (Documentation Standards)
 
-- **文档交叉引用（链接）规范**：在项目工程规范文档（如 FRD、SRS 及服务模块设计说明等）中进行内部文档的交叉引用时，必须采用**显式物理文件链接**风格。超链接的显示文本中**必须保留 `.md` 后缀**（例如：`[design.md](./docs/dev/zh/architecture/design.md)`）。此举旨在消除业务概念指代歧义，时刻强调其作为 "Docs-as-Code" 架构中的物理实体，并确保 IDE（如 VSCode）内实现精准的一键点击溯源跳转。
+- **文档交叉引用（链接）规范**：在项目工程规范文档（如 FRD、SRS 及服务模块设计说明等）中进行内部文档的交叉引用时，必须采用**显式物理文件链接**风格。超链接的显示文本中**必须保留 `.md` 后缀**（例如：`[design.md](docs/explanation/zh/architecture/design.md)`）。此举旨在消除业务概念指代歧义，时刻强调其作为 "Docs-as-Code" 架构中的物理实体，并确保 IDE（如 VSCode）内实现精准的一键点击溯源跳转。
 - **文档版本同步**：每次修改并提交重要的项目文档（如规格说明书、设计文档）时，**必须**同步更新该文档头部的"修订历史记录 (Revision History)"及"当前版本号 (Version)"等控制信息，保证文档内部状态与工程开发进度完全对齐。
 - **目录索引规范**：在 `docs/` 目录下建立并维护全局索引文档 [index.md](./docs/index.md)。当新增、删除、移动或重命名 `docs/` 目录下的任何项目工程文档时，**必须**同步更新 [index.md](./docs/index.md) 中的分类链接与说明，确保索引文档实时准确地反映项目最新的知识库拓扑结构。
+- **文档门禁**（工具位于 `scripts/doc/`，可进 CI）：`python3 scripts/doc/check-doc-links.py --root docs`（零断链）、`trim-revision.py --root docs`（修订窗口）、`audit-doc-health.py --root docs`（健康度 ≥ 80）。
 - **文档基线控制**：所有存储在 `docs/` 目录下的 Markdown 文档必须配置"文档控制信息"与"修订历史记录"头部模块。
   - **文档标识**：由项目标识（如 PRJ）、阶段简称、文档简称及年份组成。
   - **当前版本**：每次由于功能需求或架构设计的变化修改文档时，必须在头部更新语义化版本号。
@@ -89,7 +100,7 @@
 - **总纲-子册导航规则**：采用"总纲-子册"架构解决大型文档维护难题：
   - **总纲**（如 functional-spec-overview.md 等）：负责描述大方向、核心拓扑与限界上下文，屏蔽具体代码实现与底层细节。
   - **快捷导航同步**：总纲头部的 `📂 子文档快捷导航` 必须实时同步指向具体的子册相对路径。
-  - **引用机制**：正文论述中，需使用超链接加注方式指向细节子册（如"*关于核心架构的具体设计，请参阅 [design.md](./docs/dev/zh/architecture/design.md)*"）。
+  - **引用机制**：正文论述中，需使用超链接加注方式指向细节子册（如"*关于核心架构的具体设计，请参阅 [design.md](docs/explanation/zh/architecture/design.md)*"）。
 
 ## ⛔ 绝对禁令 (Violations trigger STOP)
 - **直接在 `master` 或 `dev` 分支开发**：检测到 `git status` 为 `dev` 或 `master` 时修改代码。

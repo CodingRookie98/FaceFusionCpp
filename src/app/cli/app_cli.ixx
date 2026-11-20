@@ -4,6 +4,7 @@ module;
 #include <iostream>
 #include <optional>
 #include <map>
+#include <cstdint>
 
 export module app.cli;
 
@@ -24,6 +25,7 @@ private:
     static void print_version();
     static void print_startup_banner();
     static void log_config_summary(const config::AppConfig& app_config);
+    static void configure_inference_registry(const config::AppConfig& app_config);
     static void log_hardware_info();
 
     static int run_pipeline(const std::string& config_path, const config::AppConfig& app_config);
@@ -31,6 +33,10 @@ private:
                                      const config::AppConfig& app_config);
 
     static int run_system_check(bool json_output);
+
+    /// Run the embedded web UI server (blocking until process exit)
+    static int run_web_mode(const std::string& host, uint16_t port, const std::string& web_root,
+                            const config::AppConfig& app_config);
 
     /// Validate a TaskConfig (unified entry for both YAML and quick mode)
     static int run_validate(const config::TaskConfig& task_config,

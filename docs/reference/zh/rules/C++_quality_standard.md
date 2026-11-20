@@ -1,0 +1,259 @@
+# C++ 代码质量与工程化标准（FaceFusionCpp）
+
+> **文档控制信息 (Document Control)**
+> - **文档标识 (Document ID)**: FFC-DEV-ZH-PROC-CPPQA-2026
+> - **当前版本 (Version)**: V1.1.0
+> - **状态 (Status)**: 正式 (Official)
+> - **权威性 (Authority)**: Normative
+> - **所有者 (Owner)**: 王辉
+> - **审核人 (Reviewer)**: 王辉
+> - **最后更新 (Last Updated)**: 2026-09-28
+
+## 修订历史记录 (Revision History)
+
+| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-09-28 | AI Agent | 王辉 | 减法治理：§7 评估与评分标准（190 行）归档至 [docs/archived/quality-scoring-rubric.md](../../../archived/quality-scoring-rubric.md)——原章节面向阶段性评审与对外展示，非日常开发依据；本文档聚焦可执行的质量门槛与规范正文。 |
+| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
+
+
+本文档用于统一 FaceFusionCpp 项目的代码质量要求、工程化质量门槛，以及在评审/验收时可执行的评估维度。它不是“风格偏好合集”，而是可落地的质量合约：写代码的人按它交付，审代码的人按它验收。
+
+## 0. 总体原则
+
+- **C++20 为基线**：以 C++20（含模块）作为默认语言标准，不写“退回到头文件时代”的新代码。
+- **工程化优先于个人技巧**：优先通过构建脚本、静态分析与测试来保证质量，而不是靠经验“看着像对的”。
+- **接口稳定、实现可变**：接口（尤其是导出模块接口）要求更高的清晰度与兼容性；实现允许快速迭代，但必须被测试与工具保护。
+- **可重复构建与可诊断**：任何改动必须可复现、可定位问题；禁止引入“只在我机器上能跑”的隐性依赖。
+
+## 1. 质量门槛（Definition of Done）
+
+提交或交付一个变更（尤其是新增模块/公共 API）时，至少满足：
+
+- **可构建**：使用项目统一入口构建（`build.py` + CMake Presets），Debug 为开发默认配置。
+- **无新增告警**：不引入新的编译告警（必要时先降噪再开启更严格的告警级别，不接受长期"忽略"）。
+- **格式化一致**：运行项目格式化脚本后无差异（使用仓库内 `.clang-format`）。
+- **静态分析通过**：运行项目静态分析脚本（使用仓库内 `.clang-tidy`，基于 `compile_commands.json`）。
+- **测试覆盖到行为**：对新增/修改的行为补齐单元测试或集成测试；测试可稳定重复执行。
+- **文档同步**：公共模块接口的 Doxygen 注释齐全；若引入新的工程约束（构建参数、目录结构、使用方式），同步更新对应文档。
+- **提交前自检**：建议运行 `scripts/pre_commit_check.py` 作为本地质量门禁。
+
+### 1.1 Pre-Commit 检查清单
+
+在提交 PR 之前，**MUST** 确保以下检查项全部通过：
+
+| # | 检查项 | 验证命令 | 优先级 |
+| :--- | :--- | :--- | :--- |
+| 1 | 编译无误 | `python build.py --action build` | **MUST** |
+| 2 | 单元测试通过 | `python build.py --action test --test-label unit` | **MUST** |
+| 3 | 集成测试通过 | `python build.py --action test --test-label integration` | **MUST** |
+| 4 | 代码格式化 | `python scripts/format_code.py` | **MUST** |
+| 5 | 静态分析通过 | `python scripts/run_clang_tidy.py` | **SHOULD** |
+| 6 | 预提交检查 | `python scripts/pre_commit_check.py` | **SHOULD** |
+
+**代码规范检查**：
+
+| # | 检查项 | 验证方式 | 优先级 |
+| :--- | :--- | :--- | :--- |
+| 7 | 命名约定 | 人工审查（参见 3.1 节） | **SHOULD** |
+| 8 | 模块化 | 新增类是否使用 C++20 模块？是否隐藏实现细节？ | **MUST** |
+| 9 | 路径解析 | 是否使用 `platform.fs` 而非硬编码绝对路径？ | **SHOULD** |
+| 10 | 日志埋点 | 关键逻辑节点是否有 INFO/DEBUG 级别日志？ | **SHOULD** |
+
+## 2. 注释与 API 文档（Doxygen）
+
+> **范围**：对外可见的模块接口（Public Module Interface：`.ixx/.cppm` 中的 `export` 声明）必须具备可读、可维护的文档。实现文件与内部分区只需关键决策处说明“为什么”。
+
+### 2.1 模块文件头模板（推荐）
+
+```cpp
+/**
+ * @file {filename}
+ * @brief {一句话说明该模块职责}
+ * @details {可选：约束、线程安全、异常策略、性能特征等}
+ */
+```
+
+### 2.2 导出类型/函数模板（推荐）
+
+```cpp
+/**
+ * @brief {一句话说明用途}
+ * @details {可选：边界条件、复杂度、线程安全、异常保证}
+ * @param {name} {参数语义，不要复述类型}
+ * @return {返回值语义；若用错误码/状态对象，需要说明}
+ * @throws {可选：抛出异常的条件与类型}
+ */
+```
+
+### 2.3 示例（模块 + 导出类）
+
+```cpp
+/**
+ * @file inference_session.ixx
+ * @brief ONNX Runtime inference session wrapper
+ * @details Thread-safety: not thread-safe. Exception: strong guarantee on load.
+ */
+
+export module foundation.ai.inference_session;
+
+namespace foundation::ai {
+
+    /**
+     * @brief High-level wrapper for an ONNX Runtime inference session.
+     */
+    export class InferenceSession {
+    public:
+        /**
+         * @brief Load an ONNX model with specified options.
+         * @param model_path Path to the ONNX model file.
+         * @param options Session options.
+         */
+        void load_model(const std::string& model_path, const Options& options);
+    };
+}
+```
+
+## 3. 代码层面的现代 C++ 质量标准
+
+### 3.1 命名约定
+
+| 元素 | 风格 | 示例 | 说明 |
+| :--- | :--- | :--- | :--- |
+| **类/结构体** | `PascalCase` | `FaceSwapper`, `PipelineRunner` | 类型名称 |
+| **函数/方法** | `snake_case` | `process_frame()`, `load_model()` | 操作动词开头 |
+| **变量** | `snake_case` | `frame_count`, `model_path` | 局部变量和参数 |
+| **成员变量** | `m_snake_case` | `m_session`, `m_is_ready` | 类成员变量 |
+| **常量** | `kPascalCase` | `kMaxQueueSize`, `kDefaultTimeout` | 编译期常量 |
+| **枚举值** | `PascalCase` | `ErrorCode::ModelLoadFailed` | 枚举成员 |
+| **命名空间** | `snake_case` | `domain::face::swapper` | 模块命名空间 |
+| **文件名** | `snake_case` | `face_swapper.ixx`, `pipeline_runner.cpp` | 源文件 |
+
+### 3.2 资源管理与所有权
+
+- **RAII 强制**：资源（文件、句柄、GPU/ONNX 资源等）必须由对象生命周期管理，禁止“成对调用”式的手动释放约定。
+- **智能指针优先**：用 `std::unique_ptr` 表达唯一所有权；共享所有权必须有明确原因并尽量局部化。
+- **避免隐式所有权**：禁止在 API 中返回/传入“谁负责释放不清楚”的裸指针；需要借用语义时，用引用/`std::span`/迭代器表达。
+
+### 3.3 错误处理与异常安全
+
+- **异常策略必须一致**：同一层级（例如 foundation / domain / app）对错误的表达方式要统一（异常、返回值、状态对象等），不要混用导致调用方复杂化。
+- **明确异常保证**：关键 API 至少说明 basic/strong/no-throw 期望；不要随意标注 `noexcept`（会放大崩溃面）。
+- **永远不吞异常**：捕获异常必须做可诊断处理（增加上下文并重新抛出/转换），不得静默忽略。
+- **防御性编程**：
+  - 优先使用 `Early Return` 减少嵌套层级。
+  - 对第三方库（FFmpeg, ONNX Runtime）的调用必须有完善的错误检查。
+  - 所有异常必须在合适的层级被捕获并转化为错误码（Exxx）或记录日志。
+
+### 3.4 并发与线程安全
+
+- **默认非线程安全**：除非文档明确声明并提供同步策略，否则类型视为非线程安全。
+- **优先使用现代并发设施**：在需要取消/停止语义时，优先使用 `std::jthread` + `std::stop_token`。
+- **数据竞争零容忍**：共享状态必须有清晰同步边界；出现竞态时优先通过设计消除共享，而不是“补锁”。
+
+### 3.5 API 设计与可维护性
+
+- **值语义优先**：能用值语义就不要暴露复杂的生命周期管理；对大对象用移动语义与 `std::span`/`std::string_view` 等视图类型。
+- **强类型优先**：对单位/语义敏感的参数（时间、尺寸、阈值等）优先使用 `std::chrono` 与强类型封装，避免“裸 int/float”满天飞。
+- **避免宏与隐式魔法**：尽量用 `constexpr`、模板与类型系统表达；宏只允许用于跨平台极少数必要场景。
+
+## 4. 模块化（C++20 Modules）与物理依赖标准
+
+### 4.1 接口最小化
+
+- **`.ixx/.cppm` 只放必要导出**：接口文件中尽量只保留声明与轻量内联；避免把重依赖（大型第三方头、实现细节）暴露进 BMI。
+- **实现下沉到 `.cpp` 或内部分区**：不导出的实现细节放到 `.cpp` 或 internal partition，减少重编译与依赖扩散。
+- **导出边界清晰**：`export` 语义是对外承诺，新增导出需要同步文档与测试。
+
+### 4.2 依赖规则（工程约束）
+
+- **分层依赖单向**：高层只能依赖低层，禁止环依赖；模块依赖出现“绕层”需要在评审中解释并得到认可。
+- **CMake 模块文件集合必须完整且顺序正确**：`CMakeLists.txt` 中 `FILE_SET cxx_modules` 必须包含所有 `.ixx/.cppm`，并保证依赖方在后。
+
+## 5. 工具链与自动化（以仓库配置为准）
+
+> **原则**：本项目不鼓励“手敲一堆编译器命令”。统一通过仓库脚本与预设保证一致性，可减少环境差异与排障成本。
+
+### 5.1 构建与测试入口
+
+- 统一入口为 `build.py`（内部使用 CMake Presets + CTest）。
+- 测试按标签组织（unit/integration/benchmark 等），便于分层执行与 CI 拆分。
+- 运行程序或测试时，遵循项目构建文档中的约定（例如从构建输出目录运行以确保相对路径资源正确加载）。
+
+### 5.2 格式化与静态分析
+
+- **clang-format**：使用仓库根目录 `.clang-format`，通过 `scripts/format_code.py` 执行。
+- **clang-tidy**：使用仓库根目录 `.clang-tidy`，通过 `scripts/run_clang_tidy.py` 执行（依赖 `compile_commands.json`）。
+
+### 5.3 动态分析（建议项）
+
+- **AddressSanitizer / ThreadSanitizer**：用于定位内存与并发问题，优先在 Debug/专用配置下运行。
+- **Valgrind / perf / VS Profiler**：用于专项排障与性能回归分析，按需启用，不作为日常门槛。
+
+## 6. 测试工程化标准
+
+### 6.1 测试框架与分层
+
+- 本项目单元测试采用 **GoogleTest/GoogleMock**，由 `tests/` 下的 CMake 封装统一创建测试目标并接入 CTest。
+- 测试分层建议遵循“单元测试为主、集成测试覆盖边界、端到端测试用于主路径”的金字塔模型。
+
+| 类型 | 目录 | CTest/CMake 标签 | 特征 | 典型耗时 |
+|------|------|------------------|------|----------|
+| 单元测试 | `tests/unit/` | `unit` | 无外部依赖，纯 Mock/Stub | 毫秒级 |
+| 集成测试 | `tests/integration/` | `integration` | 依赖真实模型/文件/组件边界 | 秒级 |
+| 性能测试 | `tests/benchmark/` | `benchmark` | 测量 FPS/延迟/内存 | 分钟级 |
+| 端到端测试 | （按需新增） | `e2e` | 完整用户流程验证（可选，仓库当前未创建目录） | 分钟级 |
+
+### 6.2 命名与组织（保持一致即可）
+
+#### 6.2.1 文件命名规范
+
+**推荐格式**：`<模块名>_test.cpp`
+
+| 规范 | 示例 | 说明 |
+|------|------|------|
+| ✅ 推荐 | `face_store_test.cpp` | 模块名 + `_test` 后缀 |
+| ✅ 可接受 | `config_parser_tests.cpp` | 历史遗留：复数后缀 |
+| ❌ 避免 | `test_shutdown_handler.cpp` | `test_` 前缀（与其他生态命名习惯混淆） |
+
+#### 6.2.2 测试用例命名规范（GTest）
+
+> ⚠️ 避免在 `TestSuiteName` 和 `TestName` 中使用下划线。GTest 使用下划线作为内部分隔符，可能导致命名冲突。
+
+```cpp
+TEST(FaceStoreTest, InsertValidFaceCanRetrieveByFrame)
+TEST(FaceStoreTest, InsertExceedsCapacityEvictsLRU)
+TEST(BufferTest, ResizeNegativeSizeThrowsException)
+```
+
+### 6.3 覆盖率策略（风险驱动）
+
+- 覆盖率是**质量下限**，不是目标本身；优先覆盖高风险逻辑（算法、边界条件、错误处理、并发）。
+- 覆盖率评估与快照结果不写进“标准”，统一放在评估文档中（评估完成后归档清理，实施结论沉淀于对应设计文档修订历史）。
+
+### 6.4 测试金字塔参考
+
+基于 Google Testing Blog 的 **70/20/10 法则**：
+
+```
+        /\
+       /  \    E2E Tests (~10%)
+      /    \   大规模测试，验证用户流程
+     /------\
+    /        \  Integration Tests (~20%)
+   /          \ 组件交互，2-3 个模块协作
+  /------------\
+ /              \ Unit Tests (~70%)
+/________________\ 小型、快速、隔离，测试单一类/函数
+```
+
+
+## 8. 参考资料
+
+| 资源 | 说明 |
+|------|------|
+| [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) | 现代 C++ 设计与工程化最佳实践 |
+| [Google C++ Style Guide - Testing](https://google.github.io/styleguide/cppguide.html#Testing) | 单元测试命名与组织建议 |
+| [GoogleTest FAQ](https://google.github.io/googletest/faq.html#why-should-test-suite-names-and-test-names-not-contain-underscore) | GTest 下划线限制解释 |
+| [Google Testing Blog](https://testing.googleblog.com/2015/04/just-say-no-to-more-end-to-end-tests.html) | 70/20/10 与测试金字塔 |
+| [Martin Fowler - TestPyramid](https://martinfowler.com/articles/practical-test-pyramid.html) | 测试层级平衡的综合指南 |

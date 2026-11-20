@@ -11,6 +11,8 @@ module;
 #include <string>
 #include <vector>
 #include <optional>
+#include <cstdint>
+#include <cstddef>
 
 export module config.app;
 
@@ -24,7 +26,7 @@ export namespace config {
 struct EngineCacheConfig {
     bool enable = true;                     ///< Enable or disable engine caching
     std::string path = "./.cache/tensorrt"; ///< Path to store cached engines
-    size_t max_entries = 3;                 ///< LRU Cache Capacity
+    size_t max_entries = 10;                ///< LRU Cache Capacity (>= 6: one task's model mix)
     int idle_timeout_seconds = 60;          ///< TTL Timeout in seconds
 };
 
@@ -130,18 +132,31 @@ struct DefaultTaskSettings {
 };
 
 /**
+ * @brief Web server and frontend hosting configuration
+ */
+struct WebConfig {
+    std::string host = "0.0.0.0";             ///< Bind host address
+    uint16_t port = 8000;                     ///< Bind port number
+    std::string web_root = "assets/web";      ///< Frontend static assets root
+    std::string temp_dir = "./temp/uploads";  ///< Upload & temporary frame directory
+    std::string persist_dir = "./temp/tasks"; ///< Task snapshot persistence directory
+    int max_execution_seconds = 3600;         ///< Per-task execution timeout (seconds)
+};
+
+/**
  * @brief Global application configuration
  */
 struct AppConfig {
-    std::string config_version = "0.34.0";     ///< Config schema version
-    InferenceConfig inference;                 ///< Inference-specific settings
-    ResourceConfig resource;                   ///< Resource limits
-    LoggingConfig logging;                     ///< Logging settings
-    MetricsConfig metrics;                     ///< Metrics collection settings
-    ModelsConfig models;                       ///< Model management settings
-    DefaultModels default_models;              ///< Default model selections
-    DefaultTaskSettings default_task_settings; ///< NEW: Default task-specific settings
-    std::string temp_directory = "./temp";     ///< Temp file storage
+    std::string config_version = kSupportedConfigVersion; ///< Config schema version
+    InferenceConfig inference;                            ///< Inference-specific settings
+    ResourceConfig resource;                              ///< Resource limits
+    LoggingConfig logging;                                ///< Logging settings
+    MetricsConfig metrics;                                ///< Metrics collection settings
+    ModelsConfig models;                                  ///< Model management settings
+    DefaultModels default_models;                         ///< Default model selections
+    DefaultTaskSettings default_task_settings;            ///< NEW: Default task-specific settings
+    WebConfig web;                                        ///< Web UI and API server configuration
+    std::string temp_directory = "./temp";                ///< Temp file storage
 };
 
 } // namespace config

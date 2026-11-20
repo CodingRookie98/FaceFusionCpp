@@ -13,6 +13,7 @@ module;
 #include <optional>
 #include <map>
 #include <any>
+#include <algorithm>
 #include <opencv2/core/mat.hpp>
 
 export module services.pipeline.runner:types;
@@ -22,6 +23,7 @@ import domain.ai.model_repository;
 import domain.face.masker;
 import domain.face.analyser;
 import foundation.ai.inference_session;
+import config.task; // FaceMaskerConfig
 import services.pipeline.metrics;
 
 export namespace services::pipeline {
@@ -60,6 +62,62 @@ struct ProcessorContext {
     foundation::ai::inference_session::Options
         inference_options;                         ///< Configuration for ONNX inference
     MetricsCollector* metrics_collector = nullptr; ///< Performance metrics collector
+    config::FaceMaskerConfig face_masker_config;   ///< Face masker configuration (shared masks)
 };
+
+/**
+ * @brief Keyed cache for domain service instances
+ * @details Reuses services (e.g. swapper/enhancer/restorer) across pipeline builds
+ *          (multi-video tasks, segmented mode) so per-video ONNX initializer reparse
+ *          and object reconstruction are avoided. Type-erased storage; callers
+ *          static_pointer_cast to the concrete interface.
+ */
+class DomainServiceCache {
+public:
+    std::shared_ptr<void> get_or_create(const std::string& key,
+                                        std::function<std::shared_ptr<void>()> factory) {
+        const std::lock_guard kLock(m_mutex);
+        auto it = m_cache.find(key);
+        if (it != m_cache.end()) { return it->second; }
+        auto instance = factory();
+        if (instance) { m_cache.emplace(key, instance); }
+        return instance;
+    }
+
+    [[nodiscard]] size_t size() const {
+        const std::lock_guard kLock(m_mutex);
+        return m_cache.size();
+    }
+
+    void clear() {
+        const std::lock_guard kLock(m_mutex);
+        m_cache.clear();
+    }
+
+private:
+    mutable std::mutex m_mutex;
+    std::map<std::string, std::shared_ptr<void>> m_cache;
+};
+
+inline constexpr int kStrictQueueCap = 16; ///< Strict 内存模式 Pipeline 帧队列上限
+
+/**
+ * @brief Strict 内存模式下 Pipeline 帧队列容量上限
+ * @param configured 用户配置的 max_queue_size（<=0 表示未配置）
+ * @return min(configured, kStrictQueueCap)，未配置时返回 kStrictQueueCap
+ */
+int strict_queue_limit(int configured) {
+    if (configured <= 0) return kStrictQueueCap;
+    return std::min(configured, kStrictQueueCap);
+}
+
+inline constexpr int64_t kCheckpointInterval = 100; ///< Checkpoint 保存帧间隔
+
+/**
+ * @brief 是否应保存 checkpoint（每 kCheckpointInterval 帧一次）
+ */
+bool should_save_checkpoint(int64_t seq_id) {
+    return seq_id > 0 && seq_id % kCheckpointInterval == 0;
+}
 
 } // namespace services::pipeline

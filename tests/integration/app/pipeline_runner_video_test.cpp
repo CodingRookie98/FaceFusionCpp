@@ -197,7 +197,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoStrictMemoryOneStep) {
     auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
-    task_config.config_version = "0.34.1";
+    task_config.config_version = config::kSupportedConfigVersion;
     task_config.task_info.id = "test_video_strict";
     task_config.io.source_paths.push_back(source_path.string());
     task_config.io.target_paths.push_back(video_path.string());
@@ -243,7 +243,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoTolerantMemoryOneStep) {
     auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
-    task_config.config_version = "0.34.1";
+    task_config.config_version = config::kSupportedConfigVersion;
     task_config.task_info.id = "test_video_tolerant";
     task_config.io.source_paths.push_back(source_path.string());
     task_config.io.target_paths.push_back(video_path.string());
@@ -289,7 +289,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSequentialMultiStep) {
     auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
-    task_config.config_version = "0.34.1";
+    task_config.config_version = config::kSupportedConfigVersion;
     task_config.task_info.id = "test_video_seq_multi_step";
     task_config.io.source_paths.push_back(source_path.string());
     task_config.io.target_paths.push_back(video_path.string());
@@ -361,7 +361,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoBatchMutiStep) {
     auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
-    task_config.config_version = "0.34.1";
+    task_config.config_version = config::kSupportedConfigVersion;
     task_config.task_info.id = "test_video_batch_multi_step";
     task_config.io.source_paths.push_back(source_path.string());
 
@@ -570,7 +570,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSegmentedFrameCountConserved) {
     auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
-    task_config.config_version = "0.34.1";
+    task_config.config_version = config::kSupportedConfigVersion;
     task_config.task_info.id = "test_video_segmented";
     task_config.io.source_paths.push_back(source_path.string());
     task_config.io.target_paths.push_back(video_path.string());
@@ -616,8 +616,8 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSegmentedFrameCountConserved) {
     // No intermediate segment files may remain
     int segment_files = 0;
     for (const auto& entry : std::filesystem::directory_iterator(output_dir)) {
-        if (entry.path().extension() == ".mp4" &&
-            entry.path().filename().string().find("segment_") != std::string::npos) {
+        if (entry.path().extension() == ".mp4"
+            && entry.path().filename().string().find("segment_") != std::string::npos) {
             segment_files++;
         }
     }
@@ -633,7 +633,7 @@ TEST_F(PipelineRunnerVideoTest, ProcessVideoSegmentedStrictMemory) {
     auto runner = create_pipeline_runner(app_config);
 
     config::TaskConfig task_config;
-    task_config.config_version = "0.34.1";
+    task_config.config_version = config::kSupportedConfigVersion;
     task_config.task_info.id = "test_video_segmented_strict";
     task_config.io.source_paths.push_back(source_path.string());
     task_config.io.target_paths.push_back(video_path.string());

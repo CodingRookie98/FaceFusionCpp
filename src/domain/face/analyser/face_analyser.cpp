@@ -37,6 +37,7 @@ public:
     Impl(const Options& options) : m_options(options) {
         apply_options(options);
         m_face_store = FaceStore::get_instance();
+        m_face_cache_enabled.store(options.enable_face_cache);
     }
 
     Impl(const Options& options, std::shared_ptr<IFaceDetector> detector,
@@ -46,9 +47,12 @@ public:
         m_recognizer(std::move(recognizer)), m_classifier(std::move(classifier)) {
         if (store) m_face_store = std::move(store);
         else m_face_store = FaceStore::get_instance();
+        m_face_cache_enabled.store(options.enable_face_cache);
     }
 
     void update_options(const Options& options) { apply_options(options); }
+
+    void set_face_cache_enabled(bool enabled) { m_face_cache_enabled.store(enabled); }
 
     std::vector<Face> get_many_faces(const cv::Mat& vision_frame, FaceAnalysisType type) {
         ScopedTimer timer("FaceAnalyser::get_many_faces", LogLevel::Debug);
@@ -63,7 +67,7 @@ public:
         double detected_angle = 0;
 
         // 1. Check Cache
-        if (m_face_store->is_contains(vision_frame)) {
+        if (m_face_cache_enabled.load() && m_face_store->is_contains(vision_frame)) {
             auto cached_faces = m_face_store->get_faces(vision_frame);
             bool cache_satisfies = true;
 
@@ -132,14 +136,15 @@ public:
 
         if (detection_results.empty()) {
             logger.debug("FaceAnalyser: No faces detected.");
-            m_face_store->insert_faces(vision_frame, {});
+            if (m_face_cache_enabled.load()) { m_face_store->insert_faces(vision_frame, {}); }
             return {};
         }
 
         auto result_faces = create_faces(vision_frame, detection_results, detected_angle, type);
 
         // Merge with cached faces
-        if (!detection_results.empty() && m_face_store->is_contains(vision_frame)) {
+        if (m_face_cache_enabled.load() && !detection_results.empty()
+            && m_face_store->is_contains(vision_frame)) {
             auto cached_faces = m_face_store->get_faces(vision_frame);
             if (cached_faces.size() == result_faces.size()) {
                 for (size_t i = 0; i < result_faces.size(); ++i) {
@@ -167,7 +172,7 @@ public:
             }
         }
 
-        m_face_store->insert_faces(vision_frame, result_faces);
+        if (m_face_cache_enabled.load()) { m_face_store->insert_faces(vision_frame, result_faces); }
 
         if (result_faces.empty()) return {};
 
@@ -349,6 +354,7 @@ private:
     std::shared_ptr<FaceRecognizer> m_recognizer;
     std::shared_ptr<IFaceClassifier> m_classifier;
     std::shared_ptr<FaceStore> m_face_store;
+    std::atomic<bool> m_face_cache_enabled{true};
 };
 
 // FaceAnalyser Implementation using PIMPL
@@ -368,6 +374,10 @@ FaceAnalyser::~FaceAnalyser() = default;
 
 void FaceAnalyser::update_options(const Options& options) {
     m_impl->update_options(options);
+}
+
+void FaceAnalyser::set_face_cache_enabled(bool enabled) {
+    m_impl->set_face_cache_enabled(enabled);
 }
 
 std::vector<Face> FaceAnalyser::get_many_faces(const cv::Mat& vision_frame, FaceAnalysisType type) {

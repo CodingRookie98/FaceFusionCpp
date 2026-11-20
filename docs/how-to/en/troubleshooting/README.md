@@ -1,0 +1,41 @@
+# Troubleshooting Knowledge Base
+
+> **Document Control**
+> - **Document ID**: FFC-DEV-EN-TS-README-2026
+> - **Version**: V1.0.0
+> - **Status**: Official
+> - **Authority**: Informative
+> - **Owner**: 王辉
+> - **Reviewer**: 王辉
+> - **Last Updated**: 2026-08-13
+
+## Revision History
+
+| Version | Date | Author | Reviewer | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
+
+
+This knowledge base collects common issues encountered during the development process, along with root cause analysis and solutions.
+
+## 1. Issue Categories
+
+For easier retrieval, issues are organized into the following categories:
+
+- **Build**: Compiler versions, missing libraries, vcpkg download failures, etc.
+- **Memory**: Out of Memory (OOM), backpressure failure, resource leaks.
+- **Device (CUDA/TensorRT)**: Driver incompatibility, operator non-support, engine loading crashes.
+- **Logic**: Face detection failure, video sync issues, pipeline hang.
+
+## 2. Issue Index
+
+| Category | Summary | Status | Details |
+| :--- | :--- | :--- | :--- |
+| Build | C++20 Modules not supported | Solved | [Issue #1](issues/cpp20_modules.md) |
+| Device | TensorRT Myelin crash on exit | Solved | [Issue #2](issues/trt_myelin_crash.md) |
+| Memory | Video test timeout (Strict Memory) | Investigated | [Issue #3](issues/video_timeout.md) |
+| Logic | VideoWriter invalid dimensions | Fixed | [Issue #4](issues/videowriter_dimensions.md) |
+
+## 3. Contribution Guidelines
+
+If you find a new issue and solve it, please record it in the `zh/issues/` directory (or `en/issues/`) following the Maintenance Guide and add an index here.

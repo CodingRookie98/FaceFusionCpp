@@ -66,6 +66,7 @@ struct Options {
         classifier::ClassifierType::FairFace; ///< Preferred classifier model
     selector::Options face_selector_options;  ///< Configuration for face selection
     foundation::ai::inference_session::Options inference_session_options; ///< ONNX runtime settings
+    bool enable_face_cache = true; ///< Cache detected faces per frame (video path should disable)
 };
 
 /**
@@ -144,6 +145,14 @@ public:
      * @param options New configuration options
      */
     void update_options(const Options& options);
+
+    /**
+     * @brief Enable or disable the per-frame face cache
+     * @param enabled True to cache detected faces per frame (default), false to skip
+     *        (recommended for video processing where frames rarely repeat, avoiding
+     *        full-frame hashing overhead)
+     */
+    void set_face_cache_enabled(bool enabled);
 
     /**
      * @brief Detect and analyze multiple faces in a frame

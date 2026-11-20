@@ -112,9 +112,7 @@ def run_test(ctest_exe, preset, regex, label, env, project_root, build_dir):
     log("\n=== Action: test ===", "info")
 
     if label == "e2e":
-        exe_name = (
-            "FaceFusionCpp.exe" if platform.system() == "Windows" else "FaceFusionCpp"
-        )
+        exe_name = "ffc.exe" if platform.system() == "Windows" else "ffc"
         # Determine the bin directory based on the preset name (which corresponds to the build/bin/{preset} structure)
         bin_dir_name = build_dir.name
         executable = project_root / "build" / "bin" / bin_dir_name / exe_name
@@ -158,6 +156,177 @@ def run_test(ctest_exe, preset, regex, label, env, project_root, build_dir):
         sys.exit(e.returncode)
 
 
+def run_web_build(project_root, preset=None):
+    """Build the frontend (web/) and sync static assets to assets/web/ (and bin dir if present)."""
+    log("\n=== Building Web Frontend (web/) ===", "info")
+    web_dir = project_root / "web"
+    if not (web_dir / "package.json").exists():
+        log("web/ not found, skipping frontend build", "warning")
+        return
+
+    npm_exe = "npm.cmd" if platform.system() == "Windows" else "npm"
+    if not shutil.which(npm_exe) and not shutil.which("npm"):
+        log("npm not found in PATH, skipping frontend build", "warning")
+        return
+
+    web_env = os.environ.copy()
+    web_env.pop("NODE_ENV", None)
+
+    if not (web_dir / "node_modules").exists():
+        log("Installing frontend dependencies (npm ci)...", "info")
+        run_command([npm_exe, "ci", "--include=dev"], env=web_env, cwd=web_dir)
+
+    log("Building frontend (npm run build)...", "info")
+    run_command([npm_exe, "run", "build"], env=web_env, cwd=web_dir)
+
+    dist_dir = web_dir / "dist"
+    if not dist_dir.exists():
+        log("Frontend build produced no dist/ directory", "error")
+        sys.exit(1)
+
+    target = project_root / "assets" / "web"
+    if target.exists():
+        shutil.rmtree(target)
+    shutil.copytree(dist_dir, target)
+    log(f"Web assets synced to {target}", "success")
+
+    # If preset is provided, also sync directly to build/bin/<preset>/assets/web if bin dir exists
+    if preset:
+        bin_dir_name = preset
+        if (
+            platform.system() == "Linux"
+            and preset.startswith("linux-")
+            and "x64" not in preset
+        ):
+            bin_dir_name = preset.replace("linux-", "linux-x64-")
+        bin_assets_web = project_root / "build" / "bin" / bin_dir_name / "assets" / "web"
+        if bin_assets_web.parent.exists():
+            if bin_assets_web.exists():
+                shutil.rmtree(bin_assets_web)
+            shutil.copytree(dist_dir, bin_assets_web)
+            log(f"Web assets synced to active bin directory {bin_assets_web}", "success")
+
+
+def sync_config(project_root, preset=None):
+    """Sync config/ directory to build/bin/<preset>/config/ if bin dir exists."""
+    config_src = project_root / "config"
+    if not config_src.exists():
+        return
+    if preset:
+        bin_dir_name = preset
+        if (
+            platform.system() == "Linux"
+            and preset.startswith("linux-")
+            and "x64" not in preset
+        ):
+            bin_dir_name = preset.replace("linux-", "linux-x64-")
+        bin_config = project_root / "build" / "bin" / bin_dir_name / "config"
+        if bin_config.parent.exists():
+            if bin_config.exists():
+                shutil.rmtree(bin_config)
+            shutil.copytree(config_src, bin_config)
+            log(f"Config files synced to active bin directory {bin_config}", "success")
+
+
+def _is_port_in_use(host, port):
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.5)
+        return s.connect_ex((host, port)) == 0
+
+
+def _wait_for_health(host, port, timeout=30):
+    import time
+    import urllib.request
+
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(
+                f"http://{host}:{port}/api/health", timeout=1
+            ) as resp:
+                if resp.status == 200:
+                    return True
+        except OSError:
+            time.sleep(0.5)
+    return False
+
+
+def run_dev(project_root, preset, env, web_port):
+    """Start the C++ web backend + Vite dev server for local development.
+
+    Launches `ffc --web` in the build bin dir (background), waits for
+    /api/health, then starts `vite dev` in the foreground. The backend is
+    terminated when vite exits (Ctrl-C or otherwise).
+    """
+    log("\n=== Action: dev ===", "info")
+
+    exe_name = "ffc.exe" if platform.system() == "Windows" else "ffc"
+    bin_dir_name = preset
+    if (
+        platform.system() == "Linux"
+        and preset.startswith("linux-")
+        and "x64" not in preset
+    ):
+        bin_dir_name = preset.replace("linux-", "linux-x64-")
+    bin_dir = project_root / "build" / "bin" / bin_dir_name
+    exe = bin_dir / exe_name
+
+    if not exe.exists():
+        log(
+            f"Executable not found at {exe}. Run 'python build.py --action build' first.",
+            "error",
+        )
+        sys.exit(1)
+
+    host = "127.0.0.1"
+    if _is_port_in_use(host, web_port):
+        log(
+            f"Port {host}:{web_port} is already in use. "
+            "A previous `ffc --web` instance may still be running; stop it first "
+            f"(e.g. `ss -tlnp | grep {web_port}` / Task Manager) to avoid "
+            "hitting stale code on the old instance.",
+            "error",
+        )
+        sys.exit(1)
+
+    # NODE_ENV=production makes npm skip devDependencies; neutralize for dev.
+    web_env = env.copy()
+    web_env.pop("NODE_ENV", None)
+    # Keep Vite's proxy in sync with the backend port/host (vite.config.ts reads these).
+    web_env["FFC_WEB_PORT"] = str(web_port)
+    web_env["FFC_WEB_HOST"] = host
+
+    backend = subprocess.Popen(
+        [str(exe), "--web", "--web-port", str(web_port), "--web-host", host],
+        cwd=str(bin_dir),
+        env=web_env,
+    )
+    try:
+        if not _wait_for_health(host, web_port):
+            log(
+                f"Backend did not become ready on {host}:{web_port} within timeout.",
+                "error",
+            )
+            sys.exit(1)
+        log(f"Backend ready: http://{host}:{web_port}/ (Ctrl-C to stop)", "success")
+
+        web_dir = project_root / "web"
+        if not (web_dir / "package.json").exists():
+            log("web/ not found; cannot start Vite dev server", "error")
+            sys.exit(1)
+        log("Starting Vite dev server...", "info")
+        run_command(["npm", "run", "dev"], env=web_env, cwd=web_dir, exit_on_error=False)
+    finally:
+        backend.terminate()
+        try:
+            backend.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            backend.kill()
+        log("Backend stopped.", "info")
+
+
 def run_install(cmake_exe, build_dir, env, project_root):
     log("\n=== Action: install ===", "info")
     cmd = [cmake_exe, "--install", str(build_dir)]
@@ -188,9 +357,15 @@ def main():
     parser.add_argument("--target", default="all", help="Build target")
     parser.add_argument(
         "--action",
-        choices=["configure", "build", "test", "install", "package"],
+        choices=["configure", "build", "test", "install", "package", "web", "dev"],
         default="build",
         help="Action to perform (default: build)",
+    )
+    parser.add_argument(
+        "--web-port",
+        type=int,
+        default=8000,
+        help="Port for the dev web backend (action: dev; also honored by Vite via FFC_WEB_PORT)",
     )
     parser.add_argument("--preset", help="Override CMake preset")
     parser.add_argument(
@@ -210,6 +385,13 @@ def main():
         help="Skip the build step when action is test",
     )
     parser.add_argument(
+        "--no-web",
+        "--skip-web",
+        action="store_true",
+        dest="no_web",
+        help="Skip building the frontend (web/) during build/package actions",
+    )
+    parser.add_argument(
         "-j",
         "--jobs",
         type=int,
@@ -223,7 +405,10 @@ def main():
     parser.add_argument(
         "--enable-gpu",
         action="store_true",
-        help="Enable GPU support (activates FACEFUSION_ENABLE_GPU=ON)",
+        help=(
+            "Deprecated no-op: CUDA/TensorRT execution providers are always compiled in; "
+            "runtime provider selection follows inference.default_providers"
+        ),
     )
 
     args = parser.parse_args()
@@ -282,15 +467,23 @@ def main():
         extra_cmake_args.append("-DBUILD_TESTING=OFF")
 
     if args.enable_gpu:
-        extra_cmake_args.append("-DFACEFUSION_ENABLE_GPU=ON")
+        log(
+            "--enable-gpu is a no-op: GPU support (CUDA/TensorRT execution providers) is "
+            "always compiled in. Select providers at runtime via "
+            "inference.default_providers.",
+            "warning",
+        )
 
     # Action Dispatcher
     if args.action == "configure":
         run_configure(cmake_exe, preset, env, project_root, extra_cmake_args)
 
     elif args.action == "build":
+        if not args.no_web:
+            run_web_build(project_root, preset)
         ensure_configured(cmake_exe, preset, env, project_root, extra_cmake_args)
         run_build(cmake_exe, preset, args.target, jobs, env, project_root)
+        sync_config(project_root, preset)
 
     elif args.action == "test":
         if not args.no_build:
@@ -313,6 +506,9 @@ def main():
         run_install(cmake_exe, build_dir, env, project_root)
 
     elif args.action == "package":
+        if not args.no_web:
+            run_web_build(project_root, preset)
+
         # Ensure configured and built before packaging
         ensure_configured(cmake_exe, preset, env, project_root, extra_cmake_args)
 
@@ -320,6 +516,12 @@ def main():
         run_build(cmake_exe, preset, "all", jobs, env, project_root)
 
         run_package(cpack_exe, build_dir, env)
+
+    elif args.action == "web":
+        run_web_build(project_root, preset)
+
+    elif args.action == "dev":
+        run_dev(project_root, preset, env, args.web_port)
 
     log("\nOperation completed successfully!", "success")
 

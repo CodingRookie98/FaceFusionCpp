@@ -10,6 +10,23 @@ import config.types;
 using namespace config;
 using namespace testing;
 
+namespace {
+
+/// YAML fixtures carry an intentionally invalid version and are rewritten to the
+/// supported schema version here, so a release bump cannot break these tests.
+std::string WithSupportedVersion(std::string yaml) {
+    const std::string key = "config_version: ";
+    const auto pos = yaml.find(key);
+    if (pos == std::string::npos) { return yaml; }
+
+    auto line_end = yaml.find('\n', pos);
+    if (line_end == std::string::npos) { line_end = yaml.size(); }
+    yaml.replace(pos, line_end - pos, key + "\"" + kSupportedConfigVersion + "\"");
+    return yaml;
+}
+
+} // namespace
+
 // ============================================================================
 // Result<T, E> 类型测试
 // ============================================================================
@@ -225,10 +242,10 @@ TEST(ConfigParserTest, ParseSourceDirectory) {
     std::ofstream(temp_dir / "img2.jpg").close();
     std::ofstream(temp_dir / "note.txt").close(); // Should be ignored
 
-    // 3. YAML content (Must use current version 0.34.0)
+    // 3. YAML content (version pinned to kSupportedConfigVersion below)
     std::string path_str = temp_dir.generic_string(); // Use generic separators
     std::string yaml = R"(
-config_version: "0.34.0"
+config_version: "0.0.0"
 task_info:
   id: "test_dir_scan"
 io:
@@ -254,6 +271,7 @@ pipeline: []
 )";
 
     // 4. Act
+    yaml = WithSupportedVersion(std::move(yaml));
     auto result = parse_task_config_from_string(yaml);
 
     // 5. Assert
@@ -273,6 +291,179 @@ pipeline: []
 
     // Cleanup
     std::filesystem::remove_all(temp_dir);
+}
+
+// ============================================================================
+// TaskConfig max_frames 解析测试
+// ============================================================================
+
+TEST(TaskConfigParseTest, MaxFramesParsed) {
+    std::string yaml = R"(
+config_version: "0.0.0"
+task_info:
+  id: "test_max_frames"
+io:
+  source_paths: ["src.jpg"]
+  target_paths: ["tgt.jpg"]
+  output:
+    path: "out.jpg"
+resource:
+  max_frames: 100
+pipeline: []
+)";
+
+    yaml = WithSupportedVersion(std::move(yaml));
+    auto result = parse_task_config_from_string(yaml);
+    ASSERT_TRUE(result.is_ok()) << (result.is_err() ? result.error().formatted() : "");
+    EXPECT_EQ(result.value().resource.max_frames, 100);
+}
+
+TEST(TaskConfigParseTest, MaxFramesDefaultZero) {
+    std::string yaml = R"(
+config_version: "0.0.0"
+task_info:
+  id: "test_max_frames_default"
+io:
+  source_paths: ["src.jpg"]
+  target_paths: ["tgt.jpg"]
+  output:
+    path: "out.jpg"
+pipeline: []
+)";
+
+    yaml = WithSupportedVersion(std::move(yaml));
+    auto result = parse_task_config_from_string(yaml);
+    ASSERT_TRUE(result.is_ok()) << (result.is_err() ? result.error().formatted() : "");
+    EXPECT_EQ(result.value().resource.max_frames, 0);
+}
+
+// ============================================================================
+// load_task_config / load_app_config 版本校验测试
+// ============================================================================
+
+TEST(LoadTaskConfigTest, VersionMismatchRejected) {
+    auto temp_file = std::filesystem::temp_directory_path()
+                   / ("task_cfg_mismatch_" + std::to_string(std::rand()) + ".yaml");
+    {
+        std::ofstream f(temp_file);
+        f << R"(
+config_version: "0.34.0"
+task_info:
+  id: "test_version_mismatch"
+io:
+  source_paths: ["src.jpg"]
+  target_paths: ["tgt.jpg"]
+  output:
+    path: "out.jpg"
+pipeline: []
+)";
+    }
+
+    auto result = load_task_config(temp_file);
+    EXPECT_TRUE(result.is_err());
+    EXPECT_EQ(result.error().code, ErrorCode::E204ConfigVersionMismatch);
+    EXPECT_EQ(result.error().yaml_path, "config_version");
+
+    std::filesystem::remove(temp_file);
+}
+
+TEST(LoadTaskConfigTest, SupportedVersionAccepted) {
+    auto temp_file = std::filesystem::temp_directory_path()
+                   / ("task_cfg_ok_" + std::to_string(std::rand()) + ".yaml");
+    {
+        std::ofstream f(temp_file);
+        f << R"(
+config_version: ")"
+          << kSupportedConfigVersion << R"("
+task_info:
+  id: "test_version_ok"
+io:
+  source_paths: ["src.jpg"]
+  target_paths: ["tgt.jpg"]
+  output:
+    path: "out.jpg"
+pipeline: []
+)";
+    }
+
+    auto result = load_task_config(temp_file);
+    EXPECT_TRUE(result.is_ok()) << (result.is_err() ? result.error().formatted() : "");
+
+    std::filesystem::remove(temp_file);
+}
+
+TEST(LoadAppConfigTest, VersionMismatchRejected) {
+    auto temp_file = std::filesystem::temp_directory_path()
+                   / ("app_cfg_mismatch_" + std::to_string(std::rand()) + ".yaml");
+    {
+        std::ofstream f(temp_file);
+        f << R"(
+config_version: "0.34.0"
+models:
+  path: "."
+)";
+    }
+
+    auto result = load_app_config(temp_file);
+    EXPECT_TRUE(result.is_err());
+    EXPECT_EQ(result.error().code, ErrorCode::E204ConfigVersionMismatch);
+    EXPECT_EQ(result.error().yaml_path, "config_version");
+
+    std::filesystem::remove(temp_file);
+}
+
+TEST(LoadAppConfigTest, SupportedVersionAccepted) {
+    auto temp_file = std::filesystem::temp_directory_path()
+                   / ("app_cfg_ok_" + std::to_string(std::rand()) + ".yaml");
+    {
+        std::ofstream f(temp_file);
+        f << R"(
+config_version: ")"
+          << kSupportedConfigVersion << R"("
+models:
+  path: "."
+)";
+    }
+
+    auto result = load_app_config(temp_file);
+    EXPECT_TRUE(result.is_ok()) << (result.is_err() ? result.error().formatted() : "");
+
+    std::filesystem::remove(temp_file);
+}
+
+TEST(LoadAppConfigTest, WebSectionParsedCorrectly) {
+    auto temp_file = std::filesystem::temp_directory_path()
+                   / ("app_cfg_web_" + std::to_string(std::rand()) + ".yaml");
+    {
+        std::ofstream f(temp_file);
+        f << R"(
+config_version: ")"
+          << kSupportedConfigVersion << R"("
+models:
+  path: "."
+web:
+  host: "127.0.0.1"
+  port: 9090
+  web_root: "assets/custom_web"
+  temp_dir: "./custom_temp"
+  persist_dir: "./custom_tasks"
+  max_execution_seconds: 7200
+)";
+    }
+
+    auto result = load_app_config(temp_file);
+    EXPECT_TRUE(result.is_ok()) << (result.is_err() ? result.error().formatted() : "");
+    if (result.is_ok()) {
+        auto cfg = result.value();
+        EXPECT_EQ(cfg.web.host, "127.0.0.1");
+        EXPECT_EQ(cfg.web.port, 9090);
+        EXPECT_EQ(cfg.web.web_root, "assets/custom_web");
+        EXPECT_EQ(cfg.web.temp_dir, "./custom_temp");
+        EXPECT_EQ(cfg.web.persist_dir, "./custom_tasks");
+        EXPECT_EQ(cfg.web.max_execution_seconds, 7200);
+    }
+
+    std::filesystem::remove(temp_file);
 }
 
 int main(int argc, char** argv) {

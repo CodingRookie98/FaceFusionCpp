@@ -23,6 +23,16 @@ import domain.face.expression;
 export namespace domain::pipeline {
 
 /**
+ * @brief 共享的人脸 mask 缓存（512 参考尺度，与 target_faces_landmarks 索引对应）
+ * @details 由 FaceAnalysisProcessor 计算一次，swapper/enhancer adapter 缩放复用，
+ *          避免每个 adapter 各自重复推理 occlusion/region 分割模型
+ */
+struct FaceMaskCache {
+    std::vector<cv::Mat> masks; ///< 每张脸的组合 mask（CV_32FC1，0-1），与 landmarks 同序
+    int reference_size = 512;   ///< 参考尺度（Ffhq512 warp）
+};
+
+/**
  * @brief Container for a single frame and its associated metadata
  * @details This structure is passed through the pipeline processors.
  */
@@ -41,6 +51,9 @@ struct FrameData {
     std::optional<domain::face::swapper::SwapInput> swap_input;
     std::optional<domain::face::enhancer::EnhanceInput> enhance_input;
     std::optional<domain::face::expression::RestoreExpressionInput> expression_input;
+
+    // 共享 mask 缓存（FaceAnalysisProcessor 计算，adapter 复用；仅 masker 启用时存在）
+    std::optional<FaceMaskCache> mask_cache;
 
     /**
      * @brief Intermediate results shared between processors

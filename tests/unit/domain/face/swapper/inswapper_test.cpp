@@ -2,6 +2,7 @@
 #include <gmock/gmock.h>
 #include <onnx/onnx_pb.h>
 #include <onnxruntime_cxx_api.h>
+#include <cmath>
 #include <fstream>
 #include <filesystem>
 #include <opencv2/core.hpp>
@@ -104,4 +105,189 @@ TEST_F(InSwapperTest, SwapFaceThrowsIfNotLoaded) {
     std::vector<float> source_embedding(512, 0.1f);
 
     EXPECT_THROW(swapper.swap_face(target_img, source_embedding), std::runtime_error);
+}
+
+class InSwapperFp16Test : public ::testing::Test {
+protected:
+    std::string model_path = "dummy_inswapper_fp16.onnx";
+    std::shared_ptr<MockInferenceSession> mock_session;
+
+    void SetUp() override {
+        // Create a dummy FP16 ONNX model with a 512x512 initializer of 1.0
+        onnx::ModelProto model;
+        auto* graph = model.mutable_graph();
+        auto* initializer = graph->add_initializer();
+        initializer->set_name("arcface_embedding");
+        initializer->add_dims(512);
+        initializer->add_dims(512);
+        initializer->set_data_type(onnx::TensorProto_DataType_FLOAT16);
+        std::string raw_data;
+        raw_data.reserve(static_cast<size_t>(512) * 512 * 2);
+        for (int i = 0; i < 512 * 512; ++i) {
+            raw_data.push_back(static_cast<char>(0x00));
+            raw_data.push_back(static_cast<char>(0x3C));
+        }
+        initializer->set_raw_data(raw_data);
+
+        std::fstream output(model_path, std::ios::out | std::ios::trunc | std::ios::binary);
+        model.SerializeToOstream(&output);
+        output.close();
+
+        mock_session = std::make_shared<NiceMock<MockInferenceSession>>();
+        InferenceSessionRegistry::get_instance()->preload_session(model_path, Options(),
+                                                                  mock_session);
+    }
+
+    void TearDown() override {
+        InferenceSessionRegistry::get_instance()->clear();
+        if (std::filesystem::exists(model_path)) { std::filesystem::remove(model_path); }
+    }
+};
+
+TEST_F(InSwapperFp16Test, LoadModelReadsFp16InitializerCorrectly) {
+    InSwapper swapper;
+    Options options;
+
+    EXPECT_CALL(*mock_session, is_model_loaded()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_session, get_loaded_model_path()).WillRepeatedly(Return(model_path));
+
+    std::vector<std::vector<int64_t>> input_dims = {{1, 3, 128, 128}};
+    EXPECT_CALL(*mock_session, get_input_node_dims()).WillRepeatedly(Return(input_dims));
+
+    std::vector<std::string> input_names = {"source", "target"};
+    EXPECT_CALL(*mock_session, get_input_names()).WillRepeatedly(Return(input_names));
+
+    std::vector<int64_t> output_shape = {1, 3, 128, 128};
+    size_t output_size = 1 * 3 * 128 * 128;
+    std::vector<float> output_data(output_size, 0.5f);
+
+    bool embedding_ok = false;
+    EXPECT_CALL(*mock_session, run(_)).WillOnce([&](const std::vector<Ort::Value>& input_tensors) {
+        // The "source" embedding tensor is the one with 512 elements.
+        for (const auto& tensor : input_tensors) {
+            const auto shape = tensor.GetTensorTypeAndShapeInfo().GetShape();
+            size_t elements = 1;
+            for (const auto dim : shape) { elements *= static_cast<size_t>(dim); }
+            if (elements != 512) { continue; }
+            const float* data = tensor.GetTensorData<float>();
+            // src[j] = 0.1 (512x), initializer M = 1.0 (FP16 converted) ->
+            // sum = 512 * 0.1 * 1.0 = 51.2, norm = sqrt(512 * 0.1^2) = sqrt(5.12)
+            const float expected = 51.2f / static_cast<float>(std::sqrt(5.12));
+            embedding_ok = true;
+            for (size_t i = 0; i < 512; ++i) {
+                if (std::fabs(data[i] - expected) > 1e-3f) { embedding_ok = false; }
+            }
+        }
+        auto mem = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+        std::vector<Ort::Value> outs;
+        outs.push_back(Ort::Value::CreateTensor<float>(mem, output_data.data(), output_size,
+                                                       output_shape.data(), output_shape.size()));
+        return outs;
+    });
+
+    EXPECT_NO_THROW(swapper.load_model(model_path, options));
+
+    cv::Mat target_img = cv::Mat::zeros(128, 128, CV_8UC3);
+    std::vector<float> source_embedding(512, 0.1f);
+
+    cv::Mat result = swapper.swap_face(target_img, source_embedding);
+
+    EXPECT_FALSE(result.empty());
+    EXPECT_EQ(result.rows, 128);
+    EXPECT_EQ(result.cols, 128);
+    EXPECT_EQ(result.type(), CV_8UC3);
+    EXPECT_TRUE(embedding_ok) << "FP16 initializer was not decoded correctly";
+}
+
+// ---- Embedding transform caching tests (T2) ----
+
+namespace {
+
+void SetupSwapperMocks(const std::shared_ptr<MockInferenceSession>& mock_session,
+                       const std::string& model_path) {
+    EXPECT_CALL(*mock_session, is_model_loaded()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_session, get_loaded_model_path()).WillRepeatedly(Return(model_path));
+
+    std::vector<std::vector<int64_t>> input_dims = {{1, 3, 128, 128}};
+    EXPECT_CALL(*mock_session, get_input_node_dims()).WillRepeatedly(Return(input_dims));
+
+    std::vector<std::string> input_names = {"source", "target"};
+    EXPECT_CALL(*mock_session, get_input_names()).WillRepeatedly(Return(input_names));
+
+    std::vector<int64_t> output_shape = {1, 3, 128, 128};
+    size_t output_size = 1 * 3 * 128 * 128;
+    std::vector<float> output_data(output_size, 0.5f);
+    // 值捕获 output_data/output_shape：lambda 生命周期超出本函数，引用捕获会悬空
+    EXPECT_CALL(*mock_session, run(_))
+        .WillRepeatedly([output_data, output_shape](const std::vector<Ort::Value>&) {
+            auto mem = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+            std::vector<Ort::Value> outs;
+            size_t output_size = output_data.size();
+            outs.push_back(Ort::Value::CreateTensor<float>(
+                mem, const_cast<float*>(output_data.data()), output_size, output_shape.data(),
+                output_shape.size()));
+            return outs;
+        });
+}
+
+} // namespace
+
+TEST_F(InSwapperTest, EmbeddingTransformComputedOncePerEmbedding) {
+    SetupSwapperMocks(mock_session, model_path);
+
+    InSwapper swapper;
+    Options options;
+    EXPECT_NO_THROW(swapper.load_model(model_path, options));
+
+    cv::Mat target_img = cv::Mat::zeros(128, 128, CV_8UC3);
+    std::vector<float> source_embedding(512, 0.1f);
+
+    auto r1 = swapper.swap_face(target_img, source_embedding);
+    ASSERT_FALSE(r1.empty());
+    EXPECT_EQ(swapper.embedding_transform_count(), 1u);
+
+    auto r2 = swapper.swap_face(target_img, source_embedding);
+    ASSERT_FALSE(r2.empty());
+    EXPECT_EQ(swapper.embedding_transform_count(), 1u) << "同 embedding 应命中缓存，不重算";
+}
+
+TEST_F(InSwapperTest, EmbeddingTransformInvalidatedOnChange) {
+    SetupSwapperMocks(mock_session, model_path);
+
+    InSwapper swapper;
+    Options options;
+    EXPECT_NO_THROW(swapper.load_model(model_path, options));
+
+    cv::Mat target_img = cv::Mat::zeros(128, 128, CV_8UC3);
+
+    std::vector<float> emb_a(512, 0.1f);
+    swapper.swap_face(target_img, emb_a);
+    EXPECT_EQ(swapper.embedding_transform_count(), 1u);
+
+    std::vector<float> emb_b(512, 0.2f);
+    swapper.swap_face(target_img, emb_b);
+    EXPECT_EQ(swapper.embedding_transform_count(), 2u);
+}
+
+TEST_F(InSwapperTest, SwapResultCorrectAcrossCalls) {
+    SetupSwapperMocks(mock_session, model_path);
+
+    InSwapper swapper;
+    Options options;
+    EXPECT_NO_THROW(swapper.load_model(model_path, options));
+
+    cv::Mat target_img = cv::Mat::zeros(128, 128, CV_8UC3);
+    std::vector<float> source_embedding(512, 0.1f);
+
+    auto r1 = swapper.swap_face(target_img, source_embedding);
+    ASSERT_FALSE(r1.empty());
+    EXPECT_EQ(swapper.embedding_transform_count(), 1u);
+
+    auto r2 = swapper.swap_face(target_img, source_embedding);
+    ASSERT_FALSE(r2.empty());
+    // 第二次应命中缓存（不重算变换）；输出非空且尺寸一致。
+    // 像素级一致性由模型确定性保证，mock 的 Ort::Value 包装不适用于像素对比。
+    EXPECT_EQ(swapper.embedding_transform_count(), 1u);
+    EXPECT_EQ(r1.size(), r2.size());
+    EXPECT_EQ(r1.type(), r2.type());
 }

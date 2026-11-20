@@ -68,6 +68,14 @@ public:
     void preload_session(const std::string& model_path, const Options& options,
                          std::shared_ptr<InferenceSession> session);
 
+    /**
+     * @brief Generate a unique key for a model and options combination
+     * @param model_path Path to the ONNX model file
+     * @param options Session options
+     * @return Key string（含模型文件指纹：size+mtime，热更新后 key 变化）
+     */
+    std::string generate_key(const std::string& model_path, const Options& options);
+
     InferenceSessionRegistry(const InferenceSessionRegistry&) = delete;
     InferenceSessionRegistry& operator=(const InferenceSessionRegistry&) = delete;
     InferenceSessionRegistry(InferenceSessionRegistry&&) = delete;
@@ -79,11 +87,6 @@ public:
 private:
     session_pool::SessionPool m_pool;
     std::string m_cache_path = "./.cache/tensorrt"; ///< Cache path for TensorRT engines
-
-    /**
-     * @brief Generate a unique key for a model and options combination
-     */
-    std::string generate_key(const std::string& model_path, const Options& options);
 };
 
 } // namespace foundation::ai::inference_session

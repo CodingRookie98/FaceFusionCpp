@@ -1,8 +1,8 @@
 project:
   name: "FaceFusionCpp"
   description: "High-Performance C++ Implementation of FaceFusion"
-  version: "0.34.1"
+  version: "0.34.2"
   author: "CodingRookie"
-  date: "2026-02-23"
+  date: "2026-11-20"
   license: "GPL-3.0-or-later"
   repository: "https://github.com/CodingRookie98/faceFusionCpp"
