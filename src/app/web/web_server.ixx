@@ -46,7 +46,7 @@ struct WebServerDeps {
 
 /**
  * @brief Generate the /api/health response JSON body
- * @return e.g. {"status":"ok","version":"0.34.1"}
+ * @return e.g. {"status":"ok","version":"<kSupportedConfigVersion>"}
  */
 std::string health_json();
 

@@ -147,16 +147,16 @@ struct WebConfig {
  * @brief Global application configuration
  */
 struct AppConfig {
-    std::string config_version = "0.34.1";     ///< Config schema version
-    InferenceConfig inference;                 ///< Inference-specific settings
-    ResourceConfig resource;                   ///< Resource limits
-    LoggingConfig logging;                     ///< Logging settings
-    MetricsConfig metrics;                     ///< Metrics collection settings
-    ModelsConfig models;                       ///< Model management settings
-    DefaultModels default_models;              ///< Default model selections
-    DefaultTaskSettings default_task_settings; ///< NEW: Default task-specific settings
-    WebConfig web;                             ///< Web UI and API server configuration
-    std::string temp_directory = "./temp";     ///< Temp file storage
+    std::string config_version = kSupportedConfigVersion; ///< Config schema version
+    InferenceConfig inference;                            ///< Inference-specific settings
+    ResourceConfig resource;                              ///< Resource limits
+    LoggingConfig logging;                                ///< Logging settings
+    MetricsConfig metrics;                                ///< Metrics collection settings
+    ModelsConfig models;                                  ///< Model management settings
+    DefaultModels default_models;                         ///< Default model selections
+    DefaultTaskSettings default_task_settings;            ///< NEW: Default task-specific settings
+    WebConfig web;                                        ///< Web UI and API server configuration
+    std::string temp_directory = "./temp";                ///< Temp file storage
 };
 
 } // namespace config

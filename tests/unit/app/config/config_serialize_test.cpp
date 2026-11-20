@@ -16,7 +16,7 @@ namespace {
 
 TaskConfig MakeFullConfig() {
     TaskConfig cfg;
-    cfg.config_version = "0.34.1";
+    cfg.config_version = kSupportedConfigVersion;
 
     cfg.task_info.id = "task_serialize_test";
     cfg.task_info.description = "roundtrip test";
@@ -229,7 +229,7 @@ TEST(TaskConfigSerializeTest, DeserializeInvalidJsonReturnsError) {
 // 5. 空 pipeline 可序列化
 TEST(TaskConfigSerializeTest, EmptyPipelineRoundTrips) {
     TaskConfig cfg;
-    cfg.config_version = "0.34.1";
+    cfg.config_version = kSupportedConfigVersion;
     cfg.io.source_paths = {"s.jpg"};
     cfg.io.target_paths = {"t.jpg"};
 
@@ -243,7 +243,7 @@ TEST(TaskConfigSerializeTest, EmptyPipelineRoundTrips) {
 // 6. 已知 step 类型的 cli_params 原始记录往返保留
 TEST(TaskConfigSerializeTest, CliParamsPreservedOnRoundTrip) {
     TaskConfig cfg;
-    cfg.config_version = "0.34.1";
+    cfg.config_version = kSupportedConfigVersion;
     cfg.io.source_paths = {"s.jpg"};
     cfg.io.target_paths = {"t.jpg"};
 

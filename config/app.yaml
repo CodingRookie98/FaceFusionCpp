@@ -1,6 +1,6 @@
 # FaceFusionCpp 全局应用配置文件 (Application Configuration)
 # 作用: 定义全局硬件基础、推理后端引擎、显存与系统资源策略、日志级别与路径、可观测性指标、默认模型以及 Web UI 服务器参数。
-config_version: "0.34.1"
+config_version: "0.34.2"
 
 # --- 推理基础设施 (Inference Infrastructure) ---
 inference:

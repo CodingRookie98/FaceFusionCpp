@@ -10,6 +10,23 @@ import config.types;
 using namespace config;
 using namespace testing;
 
+namespace {
+
+/// YAML fixtures carry an intentionally invalid version and are rewritten to the
+/// supported schema version here, so a release bump cannot break these tests.
+std::string WithSupportedVersion(std::string yaml) {
+    const std::string key = "config_version: ";
+    const auto pos = yaml.find(key);
+    if (pos == std::string::npos) { return yaml; }
+
+    auto line_end = yaml.find('\n', pos);
+    if (line_end == std::string::npos) { line_end = yaml.size(); }
+    yaml.replace(pos, line_end - pos, key + "\"" + kSupportedConfigVersion + "\"");
+    return yaml;
+}
+
+} // namespace
+
 // ============================================================================
 // Result<T, E> 类型测试
 // ============================================================================
@@ -225,10 +242,10 @@ TEST(ConfigParserTest, ParseSourceDirectory) {
     std::ofstream(temp_dir / "img2.jpg").close();
     std::ofstream(temp_dir / "note.txt").close(); // Should be ignored
 
-    // 3. YAML content (Must use current version 0.34.1)
+    // 3. YAML content (version pinned to kSupportedConfigVersion below)
     std::string path_str = temp_dir.generic_string(); // Use generic separators
     std::string yaml = R"(
-config_version: "0.34.1"
+config_version: "0.0.0"
 task_info:
   id: "test_dir_scan"
 io:
@@ -254,6 +271,7 @@ pipeline: []
 )";
 
     // 4. Act
+    yaml = WithSupportedVersion(std::move(yaml));
     auto result = parse_task_config_from_string(yaml);
 
     // 5. Assert
@@ -281,7 +299,7 @@ pipeline: []
 
 TEST(TaskConfigParseTest, MaxFramesParsed) {
     std::string yaml = R"(
-config_version: "0.34.1"
+config_version: "0.0.0"
 task_info:
   id: "test_max_frames"
 io:
@@ -294,6 +312,7 @@ resource:
 pipeline: []
 )";
 
+    yaml = WithSupportedVersion(std::move(yaml));
     auto result = parse_task_config_from_string(yaml);
     ASSERT_TRUE(result.is_ok()) << (result.is_err() ? result.error().formatted() : "");
     EXPECT_EQ(result.value().resource.max_frames, 100);
@@ -301,7 +320,7 @@ pipeline: []
 
 TEST(TaskConfigParseTest, MaxFramesDefaultZero) {
     std::string yaml = R"(
-config_version: "0.34.1"
+config_version: "0.0.0"
 task_info:
   id: "test_max_frames_default"
 io:
@@ -312,6 +331,7 @@ io:
 pipeline: []
 )";
 
+    yaml = WithSupportedVersion(std::move(yaml));
     auto result = parse_task_config_from_string(yaml);
     ASSERT_TRUE(result.is_ok()) << (result.is_err() ? result.error().formatted() : "");
     EXPECT_EQ(result.value().resource.max_frames, 0);
@@ -353,7 +373,8 @@ TEST(LoadTaskConfigTest, SupportedVersionAccepted) {
     {
         std::ofstream f(temp_file);
         f << R"(
-config_version: "0.34.1"
+config_version: ")"
+          << kSupportedConfigVersion << R"("
 task_info:
   id: "test_version_ok"
 io:
@@ -397,7 +418,8 @@ TEST(LoadAppConfigTest, SupportedVersionAccepted) {
     {
         std::ofstream f(temp_file);
         f << R"(
-config_version: "0.34.1"
+config_version: ")"
+          << kSupportedConfigVersion << R"("
 models:
   path: "."
 )";
@@ -415,7 +437,8 @@ TEST(LoadAppConfigTest, WebSectionParsedCorrectly) {
     {
         std::ofstream f(temp_file);
         f << R"(
-config_version: "0.34.1"
+config_version: ")"
+          << kSupportedConfigVersion << R"("
 models:
   path: "."
 web:
