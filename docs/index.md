@@ -4,7 +4,7 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DOC-INDEX-2026
-> - **当前版本 (Version)**: V2.1.0
+> - **当前版本 (Version)**: V2.2.0
 > **状态 (Status)**: 正式 (Official)
 > **权威性 (Authority)**: 规范 (Normative)
 > **所有者 (Owner)**: 王辉
@@ -15,11 +15,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V2.2.0** | 2026-11-20 | AI Agent | 王辉 | ADR 重编号：`decisions/compiler_selection.md` → `decisions/0001-compiler-selection.md`（BL-6），索引条目与 llms.txt 同步。 |
 | **V2.1.0** | 2026-11-20 | AI Agent | 王辉 | 登记新增计划 [provider-wiring](./project/plans/provider-wiring/IMPLEMENTATION_PLAN.md)（BL-2/BL-3 闭环），工程文档增至 26 篇。 |
 | **V2.0.0** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P2 完成：索引按 Diátaxis 六象限重构，全量登记 73 篇文档；原「用户文档/开发文档」双语分区废止，迁移映射见 [docs-governance 计划](./project/plans/docs-governance/IMPLEMENTATION_PLAN.md)。 |
 | **V1.2.8** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P1 立骨架：登记 GOVERNANCE.md、llms.txt、project 与 proposals。 |
 | **V1.2.7** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P0 自愈：断链清零、控制头全量合规、孤儿文档收录。 |
-| **V1.2.6** | 2026-09-25 | AI Agent | 王辉 | 新增 Vulkan 后端可行性评估报告并登记至评估索引。 |
 
 > 仅保留最近 5 条记录，更早的历史可通过 `git log --oneline docs/index.md` 查阅。
 
@@ -121,7 +121,7 @@ docs/
 | [design.md](./explanation/zh/architecture/design.md) | 应用层架构设计说明书 (Application Layer Architecture Design Specification) |
 | [layers.md](./explanation/zh/architecture/layers.md) | 分层架构实现细节 (Layered Architecture Implementation) |
 | [web_ui_design.md](./explanation/zh/architecture/web_ui_design.md) | Web 界面（Web UI）设计规格 |
-| [compiler_selection.md](./explanation/zh/decisions/compiler_selection.md) | 编译器选型技术决策记录 (Compiler Selection ADR) |
+| [0001-compiler-selection.md](./explanation/zh/decisions/0001-compiler-selection.md) | ADR-0001: 编译器选型（保持 Clang 21，含决策矩阵） |
 
 ## 💡 需求孵化 (Proposals / RFC)
 
