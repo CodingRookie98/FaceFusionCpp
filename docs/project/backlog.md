@@ -2,7 +2,7 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-PROJECT-BACKLOG-2026
-> - **当前版本 (Version)**: V1.7.0
+> - **当前版本 (Version)**: V1.8.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
@@ -13,11 +13,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.8.0** | 2026-11-20 | AI Agent | 王辉 | 新增 BL-10：TaskManager 在持有状态锁时执行快照落盘/日志，磁盘抖动会阻塞 `get()`/`submit()`（lost-wakeup 修复过程中发现）。 |
 | **V1.7.0** | 2026-11-20 | AI Agent | 王辉 | BL-6 闭环：ADR 重编号 `0001-compiler-selection.md` 并补齐 MADR 3.0 结构（驱动因素、后果、加权决策矩阵）。 |
 | **V1.6.0** | 2026-11-20 | AI Agent | 王辉 | BL-5 闭环：`--enable-gpu` 由空转开关改为显式 no-op + 运行告警，`build.py` 不再传无消费点的 CMake 参数。 |
 | **V1.5.0** | 2026-11-20 | AI Agent | 王辉 | BL-9 闭环：`engine_cache.max_entries` / `idle_timeout_seconds` 接入 `SessionPool`（默认容量 3→10）；启动日志新增 `Session Pool:` 行，`--validate` 冒烟确认 4/30 配置生效。 |
 | **V1.4.0** | 2026-11-20 | AI Agent | 王辉 | BL-2 / BL-3 闭环：`inference.default_providers` 经 `config.inference_options` 接线为优先级序列并覆盖 PipelineRunner 与 Web 人脸检测两条路径；FAQ 与配置指南口径对齐。新登记 BL-9（`engine_cache.max_entries` / `idle_timeout_seconds` 解析未接线）。 |
-| **V1.3.0** | 2026-09-28 | AI Agent | 王辉 | 台账清理与 BL-8 闭环：补齐此前遗漏登记的已闭环条目（BL-4 拆分、BL-7 索引控制头、流程减法治理），BL-8 因技能包补齐 brainstorming / writing-plans 而闭环；修正 BL-3 来源路径，消除条目间多余空行。 |
 
 ---
 
@@ -26,6 +26,7 @@
 | ID | 事项 | 来源 | 优先级 | 状态 |
 | :--- | :--- | :--- | :--- | :--- |
 | **BL-1** | 非 NVIDIA GPU 加速：接入 ORT WebGPU plugin EP，需先通过 PoC 三判定点 | [vulkan-backend-feasibility-review.md](../explanation/zh/analysis/vulkan-backend-feasibility-review.md) R-1~R-8、issue #1 | P0 | 待 PoC |
+| **BL-10** | TaskManager 在持有状态锁时执行快照落盘与日志（`save_snapshot` 于 `submit`/pick/完成/`cancel`/`set_priority`）：磁盘抖动时 `get()`/`submit()` 被一并阻塞 | lost-wakeup 诊断（`fix/task-taskmanager-lost-wakeup`）| P2 | 未开始 |
 
 ## 已闭环事项
 
