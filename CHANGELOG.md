@@ -1,5 +1,67 @@
 # Change Log
 
+## [v0.34.2]
+
+### English
+
+#### Added
+
+- **Web UI**: Rebuilt the studio as "Deep Studio Workbench V2" — dynamic multi-processor pipeline editor, task queue panel (priority promote/demote/cancel), omni-perception canvas preview, multi-face selection with batch actions, and split compare/result views.
+- **Web API**: Task creation accepts structured `pipeline_steps`; new `/api/preview` endpoint; per-task output isolation and instant preview rendering.
+- **Web runtime**: Task snapshots are persisted and restored after restart (`web.persist_dir`); per-task execution timeout (`web.max_execution_seconds`); WebSocket error/status frames dispatched through the event loop.
+- **Configuration**: `inference.default_providers` is now wired — sessions follow the configured provider priority (default TensorRT > CUDA > CPU) with availability filtering and fallback; `inference.device_id` and `inference.engine_cache.enable/path` are applied.
+- **Configuration**: `engine_cache.max_entries` / `idle_timeout_seconds` now configure the session pool; default capacity raised from 3 to 10 so a single task's six sessions are not evicted.
+- **Build**: `build.py` builds the Web frontend as part of `--action build`/`package`; `--action dev` launches backend + Vite dev server together.
+- **Observability**: startup banner, configuration summary, hardware report, and a `Session Pool: capacity=..., ttl=...s` line.
+
+#### Changed
+
+- **Performance**: session pool capacity 3→10, domain services reused across videos, InSwapper embedding transform cached, face-cache toggle for the video path, GPU concurrency gate, session-key model fingerprinting for hot reload, TTL lazy cleanup, session factory moved outside the pool lock, strict-mode queue cap 4→16, checkpoint saving throttled to every 100 frames.
+- **Performance**: face enhancer skips the full-frame clone at 100% blend, and the in-place `addWeighted` UB is fixed (blend < 100 previously produced unchanged output).
+- **Build**: `--enable-gpu` is now an explicit no-op — GPU support is always compiled in and provider choice happens at runtime.
+- **Docs**: knowledge base migrated to the Diátaxis six-quadrant topology with CI doc gates (links / revision window / health); workflow documents slimmed (methodology delegated to skills, contracts stay in-repo); compiler-selection ADR renumbered as MADR 3.0 `0001-compiler-selection.md` with a weighted decision matrix.
+- **Tests**: task-manager test helpers wait for a terminal status instead of "not queued", removing a long-standing flake.
+
+#### Fixed
+
+- **Web**: WebSocket flakiness, task teardown segfault, non-ASCII upload filenames, result media serving, preview fallback after reload, blob URL sanitization, split-comparison synchronization.
+- **Build**: metadata sync script could clobber README code-block comments and rewrite the CMake project name; it now rewrites only first-match headings and leaves `project(...)` alone.
+- **Build**: E2E runner referenced the old binary name `FaceFusionCpp` instead of `ffc`.
+
+#### Removed
+
+- **Web UI**: legacy single-page studio layout (replaced by the V2 workbench).
+
+### 中文
+
+#### 新增
+
+- **Web UI**：重构为「Deep Studio Workbench V2」——动态多处理器流水线编辑器、任务队列面板（优先级升降/取消）、全感知画布预览、多脸选择与批量操作、分屏对比与结果视图。
+- **Web API**：任务创建支持结构化 `pipeline_steps`；新增 `/api/preview`；按任务隔离输出目录并即时渲染预览。
+- **Web 运行时**：任务快照落盘并在重启后恢复（`web.persist_dir`）；单任务执行超时（`web.max_execution_seconds`）；WebSocket 错误/状态帧经事件循环投递。
+- **配置**：`inference.default_providers` 已接线——会话按配置的优先级（默认 TensorRT > CUDA > CPU）选择后端，并自动做可用性过滤与降级；`inference.device_id` 与 `inference.engine_cache.enable/path` 同步生效。
+- **配置**：`engine_cache.max_entries` / `idle_timeout_seconds` 现用于配置会话池；默认容量由 3 提升到 10，避免单任务六个会话互相驱逐。
+- **构建**：`build.py` 在 `--action build`/`package` 中构建 Web 前端；`--action dev` 一键同时启动后端与 Vite 开发服务器。
+- **可观测性**：启动 Banner、配置摘要、硬件报告，以及 `Session Pool: capacity=..., ttl=...s` 启动日志。
+
+#### 变更
+
+- **性能**：会话池容量 3→10、跨视频复用领域服务、InSwapper 变换缓存、视频路径人脸缓存开关、GPU 并发闸门、会话 Key 加入模型指纹（热更新生效）、TTL 惰性清理、会话创建移出池锁、Strict 模式队列上限 4→16、checkpoint 每 100 帧落盘。
+- **性能**：人脸增强在 100% 混合时跳过整帧克隆，并修复 `addWeighted` in-place UB（此前 blend < 100 输出无变化）。
+- **构建**：`--enable-gpu` 改为显式 no-op——GPU 支持始终编译，后端选择在运行期由配置决定。
+- **文档**：知识库迁移至 Diátaxis 六象限并接入 CI 门禁（断链 / 修订窗口 / 健康度）；流程文档瘦身（方法层让位技能库、契约层留在仓库）；编译器选型 ADR 重编号为 MADR 3.0 `0001-compiler-selection.md` 并补加权决策矩阵。
+- **测试**：任务管理器测试助手改为等待终态而非「离开 Queued」，消除长期 flaky。
+
+#### 修复
+
+- **Web**：WebSocket 抖动、任务销毁段错误、非 ASCII 上传文件名、结果媒体文件服务、刷新后预览回退、blob URL 消毒、分屏对比同步。
+- **构建**：元数据同步脚本会误改 README 代码块注释与 CMake 工程名；现仅改写首个标题匹配且不再触碰 `project(...)`。
+- **构建**：E2E 执行器使用了旧二进制名 `FaceFusionCpp`，已改为 `ffc`。
+
+#### 移除
+
+- **Web UI**：旧版单页 Studio 布局（由 V2 工作台取代）。
+
 ## [v0.34.1]
 
 ### English

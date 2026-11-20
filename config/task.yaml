@@ -1,6 +1,6 @@
 # FaceFusionCpp 任务执行配置文件 (Task Configuration)
 # 作用: 声明单次处理任务的元数据、输入输出素材路径、多实例动态处理管线 (Pipeline)、人脸分析器及资源调度策略。
-config_version: "0.34.1"
+config_version: "0.34.2"
 
 # --- 任务元信息 (Task Metadata) ---
 task_info:

@@ -2,7 +2,7 @@
  * @file config_types.ixx
  * @brief Common types for the configuration system
  * @author CodingRookie
- * @date 2026-02-23
+ * @date 2026-11-20
  * @details Defines shared enums, constants, and error handling types (Result<T, E>)
  *          used throughout the application configuration.
  */
@@ -267,7 +267,7 @@ private:
 /**
  * @brief Currently supported configuration format version
  */
-inline constexpr const char* kSupportedConfigVersion = "0.34.1";
+inline constexpr const char* kSupportedConfigVersion = "0.34.2";
 
 /**
  * @brief Memory usage strategy for AI processors
