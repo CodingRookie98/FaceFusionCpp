@@ -19,8 +19,14 @@ def update_file(file_path, metadata, marker_pattern, replacement_map, dry_run=Fa
 
     new_content = content
     for pattern, value in replacement_map.items():
-        # Handle both literal markers and regex patterns
-        new_content = re.sub(pattern, value, new_content)
+        # Handle both literal markers and regex patterns.
+        # A mapping value may be (replacement, count) to limit how many matches are
+        # rewritten; without a limit a generic pattern such as "^# .*" would clobber
+        # every top-level heading in the file (README code-block comments included).
+        count = 0
+        if isinstance(value, tuple):
+            value, count = value
+        new_content = re.sub(pattern, value, new_content, count=count, flags=re.MULTILINE)
 
     if new_content != content:
         if dry_run:
@@ -70,7 +76,6 @@ def main():
         metadata,
         None,
         {
-            r'project\(\w+': f'project({proj["name"]}',
             r'VERSION \d+\.\d+\.\d+': f'VERSION {proj["version"]}',
             r'set\(CPACK_PACKAGE_NAME \$\{PROJECT_NAME\}\)': f'set(CPACK_PACKAGE_NAME "{proj["name"]}")'
         },
@@ -96,8 +101,8 @@ def main():
         metadata,
         None,
         {
-            r'# .*': f'# {proj["name"]}',
-            r'> \*\*.*\*\*': f'> **{proj["description"]}**'
+            r'^# .+$': (f'# {proj["name"]}', 1),
+            r'^> \*\*.*\*\*$': (f'> **{proj["description"]}**', 1)
         },
         args.dry_run
     )
