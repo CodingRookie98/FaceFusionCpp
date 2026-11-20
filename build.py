@@ -405,7 +405,10 @@ def main():
     parser.add_argument(
         "--enable-gpu",
         action="store_true",
-        help="Enable GPU support (activates FACEFUSION_ENABLE_GPU=ON)",
+        help=(
+            "Deprecated no-op: CUDA/TensorRT execution providers are always compiled in; "
+            "runtime provider selection follows inference.default_providers"
+        ),
     )
 
     args = parser.parse_args()
@@ -464,7 +467,12 @@ def main():
         extra_cmake_args.append("-DBUILD_TESTING=OFF")
 
     if args.enable_gpu:
-        extra_cmake_args.append("-DFACEFUSION_ENABLE_GPU=ON")
+        log(
+            "--enable-gpu is a no-op: GPU support (CUDA/TensorRT execution providers) is "
+            "always compiled in. Select providers at runtime via "
+            "inference.default_providers.",
+            "warning",
+        )
 
     # Action Dispatcher
     if args.action == "configure":

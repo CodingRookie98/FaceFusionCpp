@@ -2,17 +2,18 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-GUIDE-BUILD-2026
-> - **当前版本 (Version)**: V1.2.0
+> - **当前版本 (Version)**: V1.3.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-08-21
+> - **最后更新 (Last Updated)**: 2026-11-20
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.3.0** | 2026-11-20 | AI Agent | 王辉 | BL-5 澄清：`--enable-gpu` 为已废弃 no-op（GPU 支持始终编译，运行期由 `inference.default_providers` 决定），参数表补条目并说明兼容告警。 |
 | **V1.2.0** | 2026-08-21 | AI Agent | 王辉 | 将 Web 前端构建 (`web/` -> `assets/web/`) 默认集成至 `--action build` 与 `--action package`，并增补 `--no-web` (`--skip-web`) 快速跳过前端参数。 |
 | **V1.1.0** | 2026-08-17 | AI Agent | 王辉 | 增补 `--action dev` 一键启动 Web 开发环境、`--web-port` 参数与 `FFC_WEB_PORT` 环境变量联动说明。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
@@ -95,6 +96,7 @@ python build.py --action build
 | `--preset` | 手动指定 CMake Preset | CMakePresets.json 中定义的名称 | 自动检测 |
 | `--clean` | 清理构建目录 | `[flag]` | `False` |
 | `--enable-tests` | 启用测试构建 (自动开启 vcpkg feature) | `[flag]` | `False` |
+| `--enable-gpu` | **已废弃的 no-op**：CUDA/TensorRT EP 始终编译；运行期用 `inference.default_providers` 选择后端（保留该参数仅为兼容旧脚本，传了会打印告警） | `[flag]` | `False` |
 
 > **提示**: 当执行 `--action test` 时，脚本默认会先触发 `build` 动作。请确保您已通过 `--action configure --enable-tests` 开启了测试支持。
 
