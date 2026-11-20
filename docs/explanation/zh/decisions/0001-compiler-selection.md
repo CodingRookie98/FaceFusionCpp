@@ -1,29 +1,26 @@
-# 编译器选型技术决策记录 (Compiler Selection ADR)
+# ADR-0001：编译器选型（保持 Clang 21，不升级不切换）
 
 > **文档控制信息 (Document Control)**
-> - **文档标识 (Document ID)**: FFC-DEV-ZH-GUIDE-COMPILER-2026
-> - **当前版本 (Version)**: V1.0.0
+> - **文档标识 (Document ID)**: FFC-DEV-ZH-ADR-0001-2026
+> - **当前版本 (Version)**: V2.0.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-08-13
+> - **最后更新 (Last Updated)**: 2026-11-20
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V2.0.0** | 2026-11-20 | AI Agent | 王辉 | BL-6：按 MADR 3.0 重构——文件重编号为 `0001-compiler-selection.md`，补齐决策驱动因素、方案优劣、后果与**加权决策矩阵**；保留项目控制头（治理契约优先于 MADR YAML frontmatter，见 [workflow.md](../../../reference/zh/rules/workflow.md) §1.1）。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
 
-
-> **文档标识**: FACE-FUSION-ADR-COMPILER
-> **决策日期**: 2026-05-29
-> **状态**: 已采纳 (Accepted)
-> **决策人**: hui + hermes
+> **ADR 元数据**: 编号 `0001` · 决策日期 2026-05-29 · 状态 已采纳 (Accepted) · 决策人 hui + hermes
 
 ---
 
-## 1. 背景 (Context)
+## 1. 背景与问题陈述 (Context and Problem Statement)
 
 项目 faceFusionCpp 是一个重度依赖 C++20 Modules 的高性能人脸处理管线，当前使用 LLVM/Clang 工具链。随着 GCC 16 发布（默认 C++20 标准）和 Clang 22 发布（最新稳定版），需要评估编译器升级或切换的必要性。
 
@@ -49,13 +46,41 @@
 
 ---
 
-## 2. 决策 (Decision)
+## 2. 决策驱动因素 (Decision Drivers)
 
-**保持当前 Clang 21.1.8，不升级，不切换 GCC。**
+| ID | 驱动因素 | 权重 | 说明 |
+| :--- | :--- | :--- | :--- |
+| **D1** | C++20 Modules 稳定性 | 30% | 项目 98.9% 代码模块化，Modules 一旦不稳即全线崩塌 |
+| **D2** | 第三方库兼容性 | 25% | OpenCV / FFmpeg / OpenSSL / ORT 需与编译器版本匹配 |
+| **D3** | 工具链生态完整性 | 20% | clangd（LSP）、clang-tidy（静态分析）、clang-format |
+| **D4** | C++23 覆盖率 | 10% | 未来特性（`std::expected` 等）的可用性 |
+| **D5** | 迁移成本 | 15% | 依赖重编译、vcpkg baseline 更新、全量回归验证 |
 
 ---
 
-## 3. 方案对比 (Options Considered)
+## 3. 考虑过的方案 (Considered Options)
+
+| 编号 | 方案 | 结果 |
+| :--- | :--- | :--- |
+| **A** | 保持 Clang 21.1.8 | ✅ 采纳 |
+| **B** | 升级到 Clang 22 | ❌ 否决 |
+| **C** | 切换到 GCC 16 | ❌ 否决 |
+
+---
+
+## 4. 决策结果 (Decision Outcome)
+
+**保持当前 Clang 21.1.8，不升级，不切换 GCC。**
+
+### 4.1 后果 (Consequences)
+
+*   **正面**：124 个模块的构建稳定性、既有 vcpkg baseline 与 `patch_opencv.py` 修补全部继续有效；零迁移成本；clangd / clang-tidy / clang-format 工具链完整。
+*   **负面**：C++23 覆盖率停留在 ~89%（Clang 22 为 91.1%），个别新特性（如需要 Clang 22 修复的特性）暂不可用，需以变通实现替代。
+*   **中性**：CI 镜像固定 LLVM 21；未来升级须走 §8 的升级预案，不以"顺手升级"方式推进。
+
+---
+
+## 5. 各方案优劣 (Pros and Cons of the Options)
 
 ### 方案 A：继续 Clang 21（采纳 ✅）
 
@@ -85,9 +110,7 @@
    - OpenCV `types.hpp` 的 C++20 模板歧义（已通过 `patch_opencv.py` 修复）
    - FFmpeg 的某些 deprecated 用法
    - vcpkg 的包版本是针对特定编译器版本测试的，升级编译器可能需要更新 vcpkg baseline，引发连锁反应
-
 2. **收益不足**：C++23 支持率仅提升 2%（89% → 91.1%），不值得冒迁移风险
-
 3. **无明确驱动因素**：当前没有必须使用 Clang 22 才支持的 C++23 特性
 
 ### 方案 C：切换到 GCC 16（否决 ❌）
@@ -104,23 +127,34 @@
 **否决理由**：
 
 1. **Modules 仍为实验性**：GCC 16 官方明确声明 "C++20 modules support is still experimental and must be enabled by -fmodules"。项目已有 124 个模块，迁移风险不可接受。
-
 2. **工具链生态断裂**：
    - GCC 没有等价的 clangd（LSP），IDE 智能提示能力丧失
    - GCC 没有等价的 clang-tidy 集成，静态分析需要寻找替代方案
    - 即使切换编译器，仍需保留 LLVM 工具链，形成工具链分裂
-
 3. **C++23 覆盖率更低**：GCC 16 的 C++23 支持率（79%）低于 Clang 21（89%）
-
-4. **GCC 16 适合的场景**（本项目均不属于）：
-   - 嵌入式/交叉编译（ARM, RISC-V）
-   - Linux 内核/系统级开发
-   - 不使用 Modules 的传统项目
-   - 需要 GCC 特有优化的场景
+4. **GCC 16 适合的场景**（本项目均不属于）：嵌入式/交叉编译、Linux 内核/系统级开发、不使用 Modules 的传统项目、需要 GCC 特有优化的场景
 
 ---
 
-## 4. 升级触发条件 (When to Reconsider)
+## 6. 决策矩阵 (Decision Matrix)
+
+评分为 1–5（5 = 最优），权重见 §2；总分 = Σ(权重 × 得分)。
+
+| 驱动因素 | 权重 | A: Clang 21 | B: Clang 22 | C: GCC 16 |
+| :--- | :--- | :--- | :--- | :--- |
+| D1 Modules 稳定性 | 30% | 5 | 4 | 1 |
+| D2 第三方库兼容性 | 25% | 4 | 2 | 3 |
+| D3 工具链生态完整性 | 20% | 5 | 5 | 1 |
+| D4 C++23 覆盖率 | 10% | 4 | 5 | 3 |
+| D5 迁移成本（越高越优） | 15% | 5 | 2 | 1 |
+| **加权总分** | **100%** | **4.65** | **3.50** | **1.70** |
+| **排序** | — | **1（采纳）** | 2 | 3 |
+
+> 结论：方案 A 在加权总分上领先方案 B 1.15 分，领先方案 C 2.95 分；仅在 D4（C++23 覆盖率）单项落后于 B，不足以改变决策。
+
+---
+
+## 7. 重新评估的触发条件 (When to Reconsider)
 
 升级编译器的触发条件（满足以下任一即可重新评估）：
 
@@ -135,7 +169,7 @@
 
 ---
 
-## 5. 未来升级预案 (Upgrade Playbook)
+## 8. 升级预案 (Upgrade Playbook)
 
 如果未来必须升级，按以下步骤执行：
 
@@ -163,7 +197,7 @@ python build.py --action test --test-label integration
 
 ---
 
-## 6. 附录：编译器支持对比
+## 9. 附录 A：编译器支持对比
 
 ### C++20 核心特性
 
@@ -202,7 +236,7 @@ python build.py --action test --test-label integration
 
 ---
 
-## 7. 附录：已知第三方库兼容性问题
+## 10. 附录 B：已知第三方库兼容性问题
 
 ### OpenCV (已解决)
 
@@ -226,7 +260,9 @@ python build.py --action test --test-label integration
 
 ---
 
-## 8. 相关文档
+## 11. 相关链接 (More Information)
 
-- `AGENTS.md` — 项目开发规范
-- `vcpkg.json` — 依赖管理配置
+- [AGENTS.md](../../../../AGENTS.md) — 项目开发规范
+- [vcpkg.json](../../../../vcpkg.json) — 依赖管理配置
+- [workflow.md](../../../reference/zh/rules/workflow.md) — 工作流程与跨技能冲突裁决
+- [backlog.md](../../../project/backlog.md) — 待办与技术债台账（BL-6 来源）
