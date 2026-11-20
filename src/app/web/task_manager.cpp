@@ -181,27 +181,37 @@ struct TaskManager::Impl {
                     result_code = 1;
                     err_msg = e.what();
                 }
-                run_finished.store(true);
-                stop_cv.notify_all();
+                // Publish completion under the lock: a waiter that already passed
+                // its predicate check but has not yet blocked would otherwise miss
+                // this notification and sleep until the task timeout (or shutdown).
+                {
+                    std::lock_guard lock(mutex);
+                    run_finished.store(true);
+                    stop_cv.notify_all();
+                }
             });
 
             {
                 std::unique_lock lock(mutex);
-                auto started = std::chrono::steady_clock::now();
+                const auto deadline =
+                    std::chrono::steady_clock::now() + std::chrono::seconds(max_execution_seconds);
+                const auto finished_or_stopping = [this, &run_finished] {
+                    return run_finished.load() || stopping;
+                };
+
                 while (!run_finished.load()) {
+                    if (stopping) { break; }
                     if (max_execution_seconds > 0) {
-                        auto remaining = std::chrono::seconds(max_execution_seconds)
-                                       - (std::chrono::steady_clock::now() - started);
-                        if (remaining <= std::chrono::seconds(0)) {
+                        if (std::chrono::steady_clock::now() >= deadline) {
                             timed_out = true;
                             executor->cancel();
                             break;
                         }
-                        stop_cv.wait_for(lock, remaining);
+                        // Predicate form: the check is re-evaluated under the lock, so a
+                        // completion published between check and wait is never missed.
+                        stop_cv.wait_until(lock, deadline, finished_or_stopping);
                     } else {
-                        stop_cv.wait(lock, [this, &run_finished] {
-                            return run_finished.load() || stopping;
-                        });
+                        stop_cv.wait(lock, finished_or_stopping);
                         if (stopping && !run_finished.load()) { executor->cancel(); }
                     }
                 }

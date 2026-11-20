@@ -285,3 +285,18 @@ TEST(TaskManagerTest, TaskOutputDirectoryIsIsolatedPerTask) {
     EXPECT_TRUE(entry1->config.io.output.path.find(id1) != std::string::npos);
     EXPECT_TRUE(entry2->config.io.output.path.find(id2) != std::string::npos);
 }
+
+// Wakeup regression: the completion wait used a predicate-less wait_for, so a fast
+// executor could store "finished" + notify between the loop's predicate check and the
+// wait itself; the notification was then lost and the worker slept until the task
+// timeout. A short per-task timeout turns that into a fast failure instead of a stall.
+TEST(TaskManagerTest, RapidlyFinishingTasksDoNotStall) {
+    auto executor = std::make_shared<FakeExecutor>();
+    TaskManager mgr(executor, TaskManagerOptions{.persist_dir = "", .max_execution_seconds = 1});
+
+    for (int i = 0; i < 200; ++i) {
+        auto id = mgr.submit(MakeConfig());
+        ASSERT_EQ(WaitForTerminal(mgr, id, std::chrono::milliseconds(500)), TaskStatus::Done)
+            << "iteration " << i;
+    }
+}
