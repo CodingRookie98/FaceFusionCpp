@@ -10,7 +10,7 @@ inference:
   engine_cache:
     enable: true
     path: "./.cache/tensorrt"
-    max_entries: 3
+    max_entries: 10
     idle_timeout_seconds: 60
   # 推理执行提供者优先级 (从左至右回退)
   default_providers: ["tensorrt", "cuda", "cpu"]

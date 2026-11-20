@@ -2,7 +2,7 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DEV-ZH-PLAN-PROVIDER-WIRING-2026
-> - **当前版本 (Version)**: V1.1.0
+> - **当前版本 (Version)**: V1.2.0
 > - **状态 (Status)**: 已完成 (Completed)
 > - **权威性 (Authority)**: Normative
 > - **所有者 (Owner)**: 王辉
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.2.0** | 2026-11-20 | AI Agent | 王辉 | 追加阶段二（BL-9）：`engine_cache.max_entries` / `idle_timeout_seconds` 接入 `SessionPool`；默认容量 3→10（对齐单任务 6 会话）；启动序列新增 `Session Pool:` 日志。单测增至 332。 |
 | **V1.1.0** | 2026-11-20 | AI Agent | 王辉 | 验收完成：新增用例 10/10 绿，全量单元 329/329 绿；`pipeline_runner` 与 `app_cli` 两处写死调用已消除；`device_id` 与 `engine_cache.enable/path` 因与 `Options` 1:1 一并接线（`max_entries`/`idle_timeout_seconds` 另立 BL-9）。 |
 | **V1.0.0** | 2026-11-20 | AI Agent | 王辉 | 立项：闭合 BL-2（`inference.default_providers` 解析后从未映射为 `ExecutionProvider`）与 BL-3（用户 FAQ 与实现不一致）；登记语义裁决 D1–D4、TDD 用例清单与验收口径。用户已选定方案 B 并授权开工。 |
 
@@ -123,3 +124,32 @@
 | 显式配置 `cpu` 导致 GPU 环境性能骤降 | 用户误配 | FAQ 明示"删掉该键即自动选择最优" |
 
 回退路径：单 commit 回退到 `fix/task-inference-provider-wiring` 分支起点（`dev` @ `84492a2`），无数据迁移、无契约破坏。
+
+## 7. 阶段二：BL-9 引擎缓存配置接线（2026-11-20）
+
+### 7.1 缺陷确认
+
+`InferenceSessionRegistry::configure(PoolConfig, cache_path)` 早已存在，但**全仓库无调用点**：`SessionPool` 永远使用自身默认（`max_entries=10`、`idle_timeout=60s`），`engine_cache.max_entries` / `idle_timeout_seconds` 仅被解析与打印。
+
+### 7.2 裁决 D5
+
+| ID | 裁决 | 理由 |
+| :--- | :--- | :--- |
+| **D5** | 仅当配置值 `> 0` 时才覆盖池默认；`EngineCacheConfig::max_entries` 默认由 **3 调整为 10** | 单任务最多同时持有 6 个会话（perf-p1a 已把池容量由 3 抬到 10 以避免驱逐）；若沿用配置默认 3，接线后反而回退为互相驱逐 |
+
+### 7.3 实施
+
+*   `config.inference_options` 新增 `make_pool_config(const InferenceConfig&) -> session_pool::PoolConfig`（纯函数，`<=0` 保留池默认）。
+*   `App::configure_inference_registry()` 在 `App::run` 启动序列第 3 步调用 `InferenceSessionRegistry::configure(...)`，并打印 `Session Pool: capacity=..., ttl=...s, engine cache path=...`。
+*   同步 `config/app.yaml`、`app_config.ixx` 默认值与中英文配置指南。
+
+### 7.4 验收记录
+
+| 检查项 | 结果 |
+| :--- | :--- |
+| 新增用例（Red→Green） | `make_pool_config` 3 条（缺函数时红：`use of undeclared identifier`）→ 文件内 13/13 PASSED |
+| 全量单元 | 332 passed / 0 failed（329 + 3） |
+| 全量构建 | 成功（警告均为既存项：`config_merger.cpp` 未用 lambda 捕获、`task_manager.ixx` 未用参数） |
+| 运行时冒烟（默认配置） | `Session Pool: capacity=10, ttl=60s` |
+| 运行时冒烟（`max_entries=4` / `idle_timeout=30`） | `Session Pool: capacity=4, ttl=30s`（配置真正生效） |
+

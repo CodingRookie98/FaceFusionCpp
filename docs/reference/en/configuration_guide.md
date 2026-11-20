@@ -2,7 +2,7 @@
 
 > **Document Control**
 > - **Document ID**: FFC-USER-EN-CFG-2026
-> - **Version**: V1.4.0
+> - **Version**: V1.5.0
 > - **Status**: Official
 > - **Authority**: Informative
 > - **Owner**: 王辉
@@ -13,6 +13,7 @@
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.5.0** | 2026-11-20 | AI Agent | 王辉 | BL-9 wiring: `engine_cache.max_entries` (default 3 -> 10, sized for a single task's 6-session mix) and `idle_timeout_seconds` are now consumed by `SessionPool`; values <= 0 fall back to defaults. |
 | **V1.4.0** | 2026-11-20 | AI Agent | 王辉 | `inference.default_providers` semantics landed (BL-2 wiring): documented "priority list + first available entry + automatic fallbacks + unknown names ignored + omit key to auto-select". |
 | **V1.3.0** | 2026-08-27 | AI Agent | 王辉 | Per Web feature design review (V0.7.0), added `web:` section parameters: `max_execution_seconds` (task timeout, default 3600), `persist_dir` (task snapshot persistence directory). `max_queue_size` (queue cap) is planned and will be documented once implemented. |
 | **V1.2.0** | 2026-08-21 | AI Agent | 王辉 | Renamed configuration files (`config/app.yaml`, `config/task.yaml`); added `web:` section (`host`, `port`, `web_root`, `temp_dir`); clarified CLI search paths and required task config argument. |
@@ -50,8 +51,8 @@ inference:
   engine_cache:
     enable: true                # Enable推理引擎缓存 (Default: true. Speeds up startup).
     path: "./.cache/tensorrt"   # Cache location (relative to root).
-    max_entries: 3              # LRU (Least Recently Used) Cache Limit (Default: 3. Max number of model engines to keep in VRAM; oldest are unloaded first).
-    idle_timeout_seconds: 60    # TTL (Time To Live) auto-release time after idle (Default: 60s. How long before unloading engine to free VRAM).
+    max_entries: 10             # LRU cache capacity (Default: 10. One task holds up to 6 sessions; below 6 they evict each other. Values <= 0 fall back to the default).
+    idle_timeout_seconds: 60    # TTL auto-release after idle (Default: 60s. How long before unloading a session to free VRAM. Values <= 0 fall back to the default).
   default_providers:            # Inference backend priority list (Default: tensorrt > cuda > cpu).
     - tensorrt                  # First entry available on this machine wins; required fallbacks
     - cuda                      # are added automatically (TensorRT needs CUDA/CPU). Unknown

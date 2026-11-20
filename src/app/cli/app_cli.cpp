@@ -1,4 +1,5 @@
 module;
+#include <chrono>
 #include <iostream>
 #include <vector>
 #include <string>
@@ -260,9 +261,10 @@ int App::run(int argc, char** argv) {
         // ─────────────────────────────────────────────────────────────────────────
         // 启动日志序列 (符合 design.md 5.10.1 INFO 级必选场景)
         // ─────────────────────────────────────────────────────────────────────────
-        print_startup_banner();          // 1. 版本 Banner
-        log_config_summary(*app_config); // 2. 配置摘要
-        log_hardware_info();             // 3. 硬件信息
+        print_startup_banner();                    // 1. 版本 Banner
+        log_config_summary(*app_config);           // 2. 配置摘要
+        configure_inference_registry(*app_config); // 3. 会话池 / 引擎缓存接线
+        log_hardware_info();                       // 4. 硬件信息
 
         if (validate_only) {
             config::TaskConfig task_config;
@@ -639,6 +641,20 @@ void App::log_config_summary(const config::AppConfig& app_config) {
                              app_config.inference.engine_cache.max_entries,
                              app_config.inference.engine_cache.idle_timeout_seconds));
     logger->info("=============================");
+}
+
+void App::configure_inference_registry(const config::AppConfig& app_config) {
+    using foundation::infrastructure::logger::Logger;
+
+    const auto pool_config = config::make_pool_config(app_config.inference);
+    foundation::ai::inference_session::InferenceSessionRegistry::get_instance()->configure(
+        pool_config, app_config.inference.engine_cache.path);
+
+    const auto ttl_seconds =
+        std::chrono::duration_cast<std::chrono::seconds>(pool_config.idle_timeout).count();
+    Logger::get_instance()->info(
+        std::format("  Session Pool: capacity={}, ttl={}s, engine cache path={}",
+                    pool_config.max_entries, ttl_seconds, app_config.inference.engine_cache.path));
 }
 
 void App::log_hardware_info() {

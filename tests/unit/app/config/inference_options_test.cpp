@@ -7,6 +7,7 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <optional>
 #include <string>
 #include <unordered_set>
@@ -113,4 +114,38 @@ TEST(MakeInferenceOptionsTest, MapsTensorRtEngineCacheSettings) {
 
     EXPECT_FALSE(options.enable_tensorrt_cache);
     EXPECT_EQ(options.engine_cache_path, "./custom/cache");
+}
+
+// ============================================================================
+// make_pool_config（BL-9：engine_cache.max_entries / idle_timeout_seconds 接线）
+// ============================================================================
+
+TEST(MakePoolConfigTest, MapsConfiguredCapacityAndTtl) {
+    InferenceConfig config;
+    config.engine_cache.max_entries = 6;
+    config.engine_cache.idle_timeout_seconds = 120;
+
+    const auto pool = make_pool_config(config);
+
+    EXPECT_EQ(pool.max_entries, 6u);
+    EXPECT_EQ(pool.idle_timeout, std::chrono::milliseconds{120000});
+}
+
+TEST(MakePoolConfigTest, KeepsPoolDefaultsWhenConfigUnsetOrZero) {
+    InferenceConfig config;
+    config.engine_cache.max_entries = 0;
+    config.engine_cache.idle_timeout_seconds = 0;
+
+    const auto pool = make_pool_config(config);
+
+    EXPECT_EQ(pool.max_entries, 10u);
+    EXPECT_EQ(pool.idle_timeout, std::chrono::milliseconds{60000});
+}
+
+TEST(MakePoolConfigTest, DefaultCapacityAvoidsSingleTaskEviction) {
+    // 单任务最多同时持有 6 个会话；默认容量必须 >= 6，且与 PoolConfig 默认一致。
+    const InferenceConfig config{};
+
+    EXPECT_GE(config.engine_cache.max_entries, 6u);
+    EXPECT_EQ(make_pool_config(config).max_entries, 10u);
 }
