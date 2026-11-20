@@ -2,17 +2,18 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-PROJECT-ROADMAP-2026
-> - **当前版本 (Version)**: V1.2.0
+> - **当前版本 (Version)**: V1.3.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-09-28
+> - **最后更新 (Last Updated)**: 2026-11-20
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.3.0** | 2026-11-20 | AI Agent | 王辉 | 追加「推理 Provider 配置接线」里程碑：闭合 BL-2/BL-3，`inference.default_providers` 生效为优先级序列。 |
 | **V1.2.0** | 2026-09-28 | AI Agent | 王辉 | 追加「流程减法治理」里程碑：依据技能覆盖度分析剥离重复方法论、处置模板并确立跨技能冲突裁决。 |
 | **V1.1.0** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P0–P4 闭环后更新路线图：知识库治理移入已闭环，登记六象限迁移与 CI 门禁成果。 |
 | **V1.0.0** | 2026-09-28 | AI Agent | 王辉 | 建立路线图，依据已闭环计划文档、评估报告与当前分支状态归纳产品演进阶段。 |
@@ -43,6 +44,7 @@
 | 主题 | 交付内容 | 证据 |
 | :--- | :--- | :--- |
 | 流程减法治理 | 方法层让位技能、契约层留在仓库：workflow 306→166 行（新增技能路由与跨技能冲突裁决）、模板 704→262 行（task 按实际结构重写、evaluation 归档）、C++_quality_standard §7 归档 | [backlog.md](./backlog.md) |
+| 推理 Provider 配置接线 | `inference.default_providers` 从"解析后丢弃"变为真正决定会话 EP（优先级 + 可用性过滤 + 闭包展开），PipelineRunner 与 Web 人脸检测统一走 `config.inference_options`；FAQ/配置指南口径对齐 | [provider-wiring 计划](./plans/provider-wiring/IMPLEMENTATION_PLAN.md) |
 | 知识库治理（Diátaxis 标准化） | P0 自愈（健康度 37.2 → 100.0，断链 41 → 0、控制头 68/68）→ P1 立骨架（GOVERNANCE/llms.txt/象限）→ P2 六象限迁移（67 篇）→ P3 拆分 design.md（1052 行 → 总纲 + 5 子册）→ P4 规范同步与 CI 门禁 | [docs-governance 计划](./plans/docs-governance/IMPLEMENTATION_PLAN.md) |
 
 

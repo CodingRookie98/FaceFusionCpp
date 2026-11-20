@@ -2,17 +2,18 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-USER-ZH-FAQ-2026
-> - **当前版本 (Version)**: V1.0.0
+> - **当前版本 (Version)**: V1.1.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-08-13
+> - **最后更新 (Last Updated)**: 2026-11-20
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-11-20 | AI Agent | 王辉 | 性能问题 4 与实现对齐（BL-3）：`inference.default_providers` 已接线为优先级序列（取首个可用后端并补齐降级项），补充"写死 cpu / 删键自动"的行为说明与生效日志位置。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
 
 
@@ -86,7 +87,7 @@ FaceFusionCpp 使用特定的错误代码来标识问题。分为四类：系统
 1.  **禁用人脸增强** (如果不需要极致细节)。
 2.  **设置合理的内存策略**: 如果显存大于 8GB，务必在 `app_config.yaml` 中开启 `memory_strategy: tolerant`。
 3.  **调整线程数**: 默认 `thread_count: 0` 会使用逻辑核心数的一半。在多任务或核数极多的 CPU 上，手动设置（如 4 或 8）可能提高整体吞吐。
-4.  **使用 TensorRT**: 确保 `inference.default_providers` 中 `tensorrt` 优先级最高。
+4.  **让推理后端按预期选择**: `inference.default_providers` 是**优先级序列**，程序取列表中第一个「本机可用」的后端，并自动补齐必需的降级项（TensorRT 需要 CUDA/CPU 兜底）。保持默认的 `tensorrt → cuda → cpu` 即可；写死 `cpu` 会强制走 CPU（排障用）；删掉整个键等价于「自动选择最优」。实际生效的后端会打印在模型加载日志的 `Providers:` 行。
 
 ---
 

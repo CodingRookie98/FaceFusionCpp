@@ -2,17 +2,18 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-USER-ZH-CFG-2026
-> - **当前版本 (Version)**: V1.3.0
+> - **当前版本 (Version)**: V1.4.0
 > - **状态 (Status)**: 正式 (Official)
 > - **权威性 (Authority)**: Informative
 > - **所有者 (Owner)**: 王辉
 > - **审核人 (Reviewer)**: 王辉
-> - **最后更新 (Last Updated)**: 2026-08-27
+> - **最后更新 (Last Updated)**: 2026-11-20
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.4.0** | 2026-11-20 | AI Agent | 王辉 | `inference.default_providers` 语义落地（BL-2 接线）：明确「优先级序列 + 取首个可用后端 + 自动补齐降级项 + 未知名忽略 + 删键回退自动」口径。 |
 | **V1.3.0** | 2026-08-27 | AI Agent | 王辉 | 依据 Web 功能设计评估（V0.7.0）新增 `web:` 配置节参数：`max_execution_seconds`（任务超时，默认 3600）、`persist_dir`（任务快照持久化目录）。`max_queue_size`（队列上限）为已规划项，待实现后补充。 |
 | **V1.2.0** | 2026-08-21 | AI Agent | 王辉 | 配置文件重命名（`config/app.yaml`, `config/task.yaml`）；新增 `web:` 配置节（`host`, `port`, `web_root`, `temp_dir`）；明确 CLI 寻径与任务路径指定规则。 |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | 依据文档治理规范初始化文档控制信息与修订历史。 |
@@ -51,10 +52,10 @@ inference:
     path: "./.cache/tensorrt"   # 缓存位置 (相对于根目录)
     max_entries: 3              # LRU (Least Recently Used) 缓存容量上限 (默认: 3。显存最多保留的模型 Engine 数量，超过后自动卸载最久未用的模型)
     idle_timeout_seconds: 60    # TTL (Time To Live) 空闲自动释放时间 (默认: 60秒。推理引擎空闲多久后自动卸载以释放显存)
-  default_providers:            # 默认推理后端优先级 (默认顺序: tensorrt > cuda > cpu)
-    - tensorrt
-    - cuda
-    - cpu
+  default_providers:            # 推理后端优先级序列 (默认: tensorrt > cuda > cpu)
+    - tensorrt                  # 取「列表中第一个本机可用」的后端，并自动补齐降级项
+    - cuda                      # (TensorRT 需要 CUDA/CPU 兜底)；未知名称被忽略
+    - cpu                       # 删除整个键 = 自动选择最优；写死 cpu = 强制走 CPU
 
 # --- 资源与性能 (怎么管理你的内存和显存) ---
 resource:

@@ -2,17 +2,18 @@
 
 > **Document Control**
 > - **Document ID**: FFC-USER-EN-CFG-2026
-> - **Version**: V1.3.0
+> - **Version**: V1.4.0
 > - **Status**: Official
 > - **Authority**: Informative
 > - **Owner**: 王辉
 > - **Reviewer**: 王辉
-> - **Last Updated**: 2026-08-27
+> - **Last Updated**: 2026-11-20
 
 ## Revision History
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.4.0** | 2026-11-20 | AI Agent | 王辉 | `inference.default_providers` semantics landed (BL-2 wiring): documented "priority list + first available entry + automatic fallbacks + unknown names ignored + omit key to auto-select". |
 | **V1.3.0** | 2026-08-27 | AI Agent | 王辉 | Per Web feature design review (V0.7.0), added `web:` section parameters: `max_execution_seconds` (task timeout, default 3600), `persist_dir` (task snapshot persistence directory). `max_queue_size` (queue cap) is planned and will be documented once implemented. |
 | **V1.2.0** | 2026-08-21 | AI Agent | 王辉 | Renamed configuration files (`config/app.yaml`, `config/task.yaml`); added `web:` section (`host`, `port`, `web_root`, `temp_dir`); clarified CLI search paths and required task config argument. |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
@@ -51,10 +52,10 @@ inference:
     path: "./.cache/tensorrt"   # Cache location (relative to root).
     max_entries: 3              # LRU (Least Recently Used) Cache Limit (Default: 3. Max number of model engines to keep in VRAM; oldest are unloaded first).
     idle_timeout_seconds: 60    # TTL (Time To Live) auto-release time after idle (Default: 60s. How long before unloading engine to free VRAM).
-  default_providers:            # Default inference backend priority (Default: tensorrt > cuda > cpu).
-    - tensorrt
-    - cuda
-    - cpu
+  default_providers:            # Inference backend priority list (Default: tensorrt > cuda > cpu).
+    - tensorrt                  # First entry available on this machine wins; required fallbacks
+    - cuda                      # are added automatically (TensorRT needs CUDA/CPU). Unknown
+    - cpu                       # names are ignored. Omit the key = auto-select; pin cpu = CPU-only.
 
 # --- Resource & Performance (How to manage RAM/VRAM) ---
 resource:
