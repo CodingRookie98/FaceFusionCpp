@@ -13,6 +13,8 @@
 module;
 
 #include <cctype>
+#include <chrono>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -23,10 +25,12 @@ export module config.inference_options;
 
 export import config.app;
 export import foundation.ai.inference_session;
+export import foundation.ai.session_pool;
 
 export namespace config {
 
 namespace inference = foundation::ai::inference_session;
+namespace pool = foundation::ai::session_pool;
 
 /**
  * @brief Parse a configured execution provider name (case-insensitive)
@@ -91,6 +95,28 @@ inference::Options make_inference_options(const InferenceConfig& inference_confi
     options.enable_tensorrt_cache = inference_config.engine_cache.enable;
     options.engine_cache_path = inference_config.engine_cache.path;
     return options;
+}
+
+/**
+ * @brief Build the inference session pool configuration from the application configuration
+ * @param inference_config Parsed `inference` section of app.yaml
+ * @return Pool configuration; non-positive values (unset in YAML) keep the pool defaults
+ * @details `engine_cache.max_entries` maps to the LRU capacity and `idle_timeout_seconds`
+ *          to the TTL. Defaults stay authoritative so a missing/zeroed key cannot shrink the
+ *          pool below what a single task needs (BL-9).
+ */
+pool::PoolConfig make_pool_config(const InferenceConfig& inference_config) {
+    pool::PoolConfig pool_config;
+
+    if (inference_config.engine_cache.max_entries > 0) {
+        pool_config.max_entries = inference_config.engine_cache.max_entries;
+    }
+    if (inference_config.engine_cache.idle_timeout_seconds > 0) {
+        pool_config.idle_timeout = std::chrono::milliseconds{
+            static_cast<std::int64_t>(inference_config.engine_cache.idle_timeout_seconds) * 1000};
+    }
+
+    return pool_config;
 }
 
 } // namespace config

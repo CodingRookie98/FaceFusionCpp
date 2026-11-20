@@ -26,7 +26,7 @@ export namespace config {
 struct EngineCacheConfig {
     bool enable = true;                     ///< Enable or disable engine caching
     std::string path = "./.cache/tensorrt"; ///< Path to store cached engines
-    size_t max_entries = 3;                 ///< LRU Cache Capacity
+    size_t max_entries = 10;                ///< LRU Cache Capacity (>= 6: one task's model mix)
     int idle_timeout_seconds = 60;          ///< TTL Timeout in seconds
 };
 
