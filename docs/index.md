@@ -4,22 +4,22 @@
 
 > **文档控制信息 (Document Control)**
 > - **文档标识 (Document ID)**: FFC-DOC-INDEX-2026
-> - **当前版本 (Version)**: V2.0.0
+> - **当前版本 (Version)**: V2.1.0
 > **状态 (Status)**: 正式 (Official)
 > **权威性 (Authority)**: 规范 (Normative)
 > **所有者 (Owner)**: 王辉
 > **审核人 (Reviewer)**: 王辉
-> **最后更新 (Last Updated)**: 2026-09-28
+> **最后更新 (Last Updated)**: 2026-11-20
 
 ## 修订历史记录 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V2.1.0** | 2026-11-20 | AI Agent | 王辉 | 登记新增计划 [provider-wiring](./project/plans/provider-wiring/IMPLEMENTATION_PLAN.md)（BL-2/BL-3 闭环），工程文档增至 26 篇。 |
 | **V2.0.0** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P2 完成：索引按 Diátaxis 六象限重构，全量登记 73 篇文档；原「用户文档/开发文档」双语分区废止，迁移映射见 [docs-governance 计划](./project/plans/docs-governance/IMPLEMENTATION_PLAN.md)。 |
 | **V1.2.8** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P1 立骨架：登记 GOVERNANCE.md、llms.txt、project 与 proposals。 |
 | **V1.2.7** | 2026-09-28 | AI Agent | 王辉 | 文档治理 P0 自愈：断链清零、控制头全量合规、孤儿文档收录。 |
 | **V1.2.6** | 2026-09-25 | AI Agent | 王辉 | 新增 Vulkan 后端可行性评估报告并登记至评估索引。 |
-| **V1.2.5** | 2026-08-21 | AI Agent | 王辉 | 同步更新配置文件名称与 cli_reference、configuration_guide、web_guide、web_ui_design。 |
 
 > 仅保留最近 5 条记录，更早的历史可通过 `git log --oneline docs/index.md` 查阅。
 
@@ -156,6 +156,7 @@ docs/
 | [C++_task_strict_checkpoint_throttle.md](./project/plans/perf-p1b/task/C++_task_strict_checkpoint_throttle.md) | C++ 任务: Strict 模式 checkpoint 周期保存 |
 | [C++_task_web_ws_flaky.md](./project/plans/perf-p1b/task/C++_task_web_ws_flaky.md) | C++ 任务: Web 集成 flaky 修复（WS 超时放宽） |
 | [IMPLEMENTATION_PLAN.md](./project/plans/perf-p2minor/IMPLEMENTATION_PLAN.md) | 性能优化 P2 小项 实施计划 |
+| [IMPLEMENTATION_PLAN.md](./project/plans/provider-wiring/IMPLEMENTATION_PLAN.md) | 推理 Provider 配置接线（BL-2 + BL-3）实施计划 |
 | [IMPLEMENTATION_PLAN.md](./project/plans/web-robustness/IMPLEMENTATION_PLAN.md) | Web 任务持久化与超时机制 实施计划 |
 | [C++_task_config_serialize.md](./project/plans/web-robustness/task/C++_task_config_serialize.md) | C++ 任务: TaskConfig/TaskEntry JSON 序列化 |
 | [C++_task_config_wiring.md](./project/plans/web-robustness/task/C++_task_config_wiring.md) | C++ 任务: 配置接线（WebConfig + parser + app_cli） |

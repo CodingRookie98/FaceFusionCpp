@@ -2,17 +2,18 @@
 
 > **Document Control**
 > - **Document ID**: FFC-USER-EN-FAQ-2026
-> - **Version**: V1.0.0
+> - **Version**: V1.1.0
 > - **Status**: Official
 > - **Authority**: Informative
 > - **Owner**: 王辉
 > - **Reviewer**: 王辉
-> - **Last Updated**: 2026-08-13
+> - **Last Updated**: 2026-11-20
 
 ## Revision History
 
 | Version | Date | Author | Reviewer | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-11-20 | AI Agent | 王辉 | Aligned performance FAQ item 4 with the implementation (BL-3): `inference.default_providers` is now wired as a priority list (first available entry plus required fallbacks); documented the "pin cpu / omit key" behaviour and where the effective providers are logged. |
 | **V1.0.0** | 2026-08-13 | AI Agent | 王辉 | Initialized document control info per documentation governance. |
 
 
@@ -98,7 +99,7 @@ FaceFusionCpp uses specific error codes to identify issues. They fall into four 
 1. **Disable the face enhancer** (if extreme details are unnecessary).
 2. **Set a proper memory strategy**: If your VRAM > 8GB, ensure you enable `memory_strategy: tolerant` in `app_config.yaml`.
 3. **Tune Thread Count**: Default `thread_count: 0` uses half of your logical cores. On high-core-count CPUs, manually setting this (e.g., 4 or 8) might balance throughput better.
-4. **Prefer TensorRT**: Ensure `tensorrt` has the highest priority in `inference.default_providers`.
+4. **Let the provider priority work for you**: `inference.default_providers` is a *priority list* — the program picks the first entry that is actually available on this machine and adds the required fallbacks (TensorRT needs CUDA/CPU). Keep the default `tensorrt → cuda → cpu`; pin `cpu` to force CPU-only (useful when troubleshooting); remove the key entirely to auto-select the best providers. The providers actually used are printed on the `Providers:` line of each model-load log entry.
 
 ---
 
